@@ -25,6 +25,10 @@ run_sys() {
     checker="$1"
     logf="$2"
     run_whole_dir="$3"
+
+    { cd "${SYS_ROOT}" && stack build -j10; cd -; } >> "$logf" 2>&1  || {
+	fatal "stack build returned non-zero exit code"
+    }
     
     if ! [ -z "$run_whole_dir" ]; then
 	{ cd "${SYS_ROOT}" && stack exec -- sys -c "${checker}" -e prod -d "${INPUT_DIR}"; cd -; } >> "$logf" 2>&1  || {
@@ -87,8 +91,6 @@ for checker in "${checkers[@]}"; do
 	    logf="${output_sub_dir}/checker=${checker},bb=${block_bound},lb=${loop_bound}"
 	    run_sys "$checker" "${logf}" "${run_whole_dir}"
 	    set +o xtrace
-
-	    sleep 20
 	done
     done
 done
