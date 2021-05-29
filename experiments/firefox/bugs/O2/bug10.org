@@ -1,0 +1,96 @@
+* Bug 10 -- Hard to trace
+
+** Sys' Output
+   #+begin_src llvm
+Stack uninit bug
+Name "_ZN7mozilla2gl14TileGenFuncEGLEPNS0_9GLContextERKNS_3gfx12IntSizeTypedINS3_12UnknownUnitsEEE14gfxContentTypeNS0_12TextureImage5FlagsENS3_13SurfaceForm>
+in
+Name "_ZN7mozilla2gl14TileGenFuncEGLEPNS0_9GLContextERKNS_3gfx12IntSizeTypedINS3_12UnknownUnitsEEE14gfxContentTypeNS0_12TextureImage5FlagsENS3_13SurfaceForm>
+[UnName 5,UnName 12,UnName 14,UnName 33,UnName 45]
+"/home/s/git/firefox_ll_files/Unified_cpp_gfx_gl1.ll-O2_p"
+on line
+7
+   #+end_src
+   
+** Source
+   #+begin_src c++
+
+already_AddRefed<TextureImage> TileGenFuncEGL(
+    GLContext* gl, const gfx::IntSize& aSize,
+    TextureImage::ContentType aContentType, TextureImage::Flags aFlags,
+    TextureImage::ImageFormat aImageFormat) {
+  gl->MakeCurrent(); /// %12
+
+  GLuint texture;
+  gl->fGenTextures(1, &texture);
+  /// raw_fGenTextures(n, names);
+  /// /// BEFORE_GL_CALL;
+  /// /// /// if (BeforeGLCall(...)) do while(0) % 18
+  /// /// /// /// BeforeGLCall_Debug
+  /// /// mSymbols.fGenTextures(n, name); % 23
+  /// /// OnSyncCall();
+  /// /// AFTER_GL_CALL;
+  /// /// /// AfterGLCall(...)
+  /// TRACKING_CONTEXT(...)
+
+  
+  RefPtr<TextureImageEGL> teximage =
+      new TextureImageEGL(texture, aSize, LOCAL_GL_CLAMP_TO_EDGE, aContentType,
+                          gl, aFlags, TextureImage::Created, aImageFormat); /// % 33
+  ...
+
+
+
+  void raw_fGenTextures(GLsizei n, GLuint* names) {
+    BEFORE_GL_CALL;
+    mSymbols.fGenTextures(n, names);
+    OnSyncCall();
+    AFTER_GL_CALL;
+  }
+
+#define BEFORE_GL_CALL                               \
+  ANDROID_ONLY_PROFILER_LABEL                        \
+  if (MOZ_LIKELY(BeforeGLCall(MOZ_FUNCTION_NAME))) { \
+    do {                                             \
+  } while (0)
+
+#define AFTER_GL_CALL             \
+  AfterGLCall(MOZ_FUNCTION_NAME); \
+  }                               \
+  do {                            \
+  } while (0)
+
+
+  bool BeforeGLCall(const char* const funcName) const {
+    if (mImplicitMakeCurrent) {
+      if (MOZ_UNLIKELY(!MakeCurrent())) {
+        if (!mContextLost) {
+          OnImplicitMakeCurrentFailure(funcName); /// %18
+        }
+        return false;
+      }
+    }
+    MOZ_GL_ASSERT(this, IsCurrentImpl());
+
+    if (MOZ_UNLIKELY(mDebugFlags)) {
+      BeforeGLCall_Debug(funcName);
+    }
+    return true;
+  }
+
+
+
+
+
+
+
+
+
+
+   #+end_src
+
+** Bitcode
+   
+#+begin_src llvm
+
+#+end_src

@@ -1,0 +1,49 @@
+* Bug 3 -- Possibly a bug
+  
+** Sys' Output
+   #+begin_src llvm
+Stack uninit bug
+Name "_Z3Fooi_29"
+in
+Name "_Z3Fooi"
+[UnName 1,UnName 6,UnName 28]
+"/home/s/git/firefox_ll_files/SmokeDMD.ll-O0_p"
+on line
+2
+
+   #+end_src
+   
+** Source
+   #+begin_src c++
+// This function checks that heap blocks that have the same stack trace but
+// different (or no) reporters get aggregated separately.
+void Foo(int aSeven) {
+  char* a[6];
+  for (int i = 0; i < aSeven - 1; i++) {
+    a[i] = (char*)malloc(128 - 16 * i);
+    UseItOrLoseIt(a[i], aSeven);
+  }
+
+  // Oddly, some versions of clang will cause identical stack traces to be
+  // generated for adjacent calls to Report(), which breaks the test. Inserting
+  // the UseItOrLoseIt() calls in between is enough to prevent this.
+
+  Report(a[2]);  // reported
+
+  UseItOrLoseIt(a[2], aSeven);
+
+  for (int i = 0; i < aSeven - 5; i++) {
+    Report(a[i]);  // reported
+    UseItOrLoseIt(a[i], aSeven);
+  }
+
+  UseItOrLoseIt(a[2], aSeven);
+
+  Report(a[3]);  // reported
+
+  // a[4], a[5] unreported
+}
+   #+end_src
+
+** Bitcode
+   N/A

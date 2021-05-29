@@ -1,0 +1,119 @@
+* Bug 5 -- False Positive
+  
+** Sys' Output
+   #+begin_src llvm
+Stack uninit bug
+Name "_ZN4RAPLC2Ev_3"
+in
+Name "_ZN4RAPLC2Ev"
+[UnName 1,UnName 16,UnName 17]
+"/home/s/git/firefox_ll_files/rapl.ll-O2_p"
+on line
+12
+   #+end_src
+   
+** Source
+   #+begin_src c++
+ public:
+  RAPL() : mHasRamUnitsQuirk(false) {
+    // Work out which RAPL MSRs this CPU model supports.
+    int cpuModel;
+    size_t size = sizeof(cpuModel);
+    if (sysctlbyname("machdep.cpu.model", &cpuModel, &size, NULL, 0) != 0) {
+      Abort("sysctlbyname(\"machdep.cpu.model\") failed");
+    }
+
+    // This is similar to arch/x86/kernel/cpu/perf_event_intel_rapl.c in
+    // linux-4.1.5/.
+    //
+    // By linux-5.6.14/, this stuff had moved into
+    // arch/x86/events/intel/rapl.c, which references processor families in
+    // arch/x86/include/asm/intel-family.h.
+    switch (cpuModel) {
+      ...
+   #+end_src
+
+   False positive, Branch from block 16 -> 17 is impossible (Abort will kill the program)
+   
+** Bitcode
+   
+#+begin_src llvm
+define linkonce_odr hidden void @_ZN4RAPLC2Ev(%class.RAPL*) unnamed_addr #0 comdat align 2 !dbg !1591 {
+  %2 = alloca [256 x i8], align 16
+  call void @llvm.dbg.declare(metadata [256 x i8]* %2, metadata !1596, metadata !DIExpression()), !dbg !1667
+  %3 = alloca i32, align 4
+  call void @llvm.dbg.value(metadata %class.RAPL* %0, metadata !1593, metadata !DIExpression()), !dbg !1670
+  %4 = bitcast i32* %3 to i8*, !dbg !1671
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %4) #11, !dbg !1671
+  call void @llvm.dbg.value(metadata i32* %3, metadata !1594, metadata !DIExpression(DW_OP_deref)), !dbg !1672
+  call void @llvm.dbg.value(metadata i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.18, i64 0, i64 0), metadata !1602, metadata !DIExpression()) #11, !dbg !1673
+  call void @llvm.dbg.value(metadata i8* getelementptr inbounds ([1 x i8], [1 x i8]* @.str.19, i64 0, i64 0), metadata !1603, metadata !DIExpression()) #11, !dbg !1673
+  call void @llvm.dbg.value(metadata i8* getelementptr inbounds ([1 x i8], [1 x i8]* @.str.19, i64 0, i64 0), metadata !1604, metadata !DIExpression()) #11, !dbg !1673
+  call void @llvm.dbg.value(metadata i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str.20, i64 0, i64 0), metadata !1605, metadata !DIExpression()) #11, !dbg !1673
+  call void @llvm.dbg.value(metadata i32* %3, metadata !1606, metadata !DIExpression()) #11, !dbg !1673
+  %5 = getelementptr inbounds [256 x i8], [256 x i8]* %2, i64 0, i64 0, !dbg !1674
+  call void @llvm.lifetime.start.p0i8(i64 256, i8* nonnull %5) #11, !dbg !1674
+  %6 = call i32 (i8*, i8*, ...) @sprintf(i8* nonnull %5, i8* getelementptr inbounds ([43 x i8], [43 x i8]* @.str.27, i64 0, i64 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.18, i64 0, i64 0), i8* getelementptr inbounds ([1 x i8], [1 x i8]* @.str.19, i64 0, i64 0), i8* getelementptr inbounds ([1 x i8], [1 x i8]* @.str.19, i64 0, i64 0)) #11, !dbg !1675
+  %7 = call %struct._IO_FILE* @fopen(i8* nonnull %5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @.str.28, i64 0, i64 0)) #11, !dbg !1676
+  call void @llvm.dbg.value(metadata %struct._IO_FILE* %7, metadata !1607, metadata !DIExpression()) #11, !dbg !1673
+  %8 = icmp eq %struct._IO_FILE* %7, null, !dbg !1677
+  br i1 %8, label %16, label %9, !dbg !1679
+
+9:                                                ; preds = %1
+  %10 = call i32 (%struct._IO_FILE*, i8*, ...) @__isoc99_fscanf(%struct._IO_FILE* nonnull %7, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str.20, i64 0, i64 0), i32* nonnull %3) #11, !dbg !1680
+  %11 = icmp eq i32 %10, 1, !dbg !1682
+  br i1 %11, label %13, label %12, !dbg !1683
+
+12:                                               ; preds = %9
+  call void (i8*, ...) @_ZL5AbortPKcz(i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str.29, i64 0, i64 0)) #11, !dbg !1684
+  br label %13, !dbg !1686
+
+13:                                               ; preds = %9, %12
+  %14 = call i32 @fclose(%struct._IO_FILE* nonnull %7) #11, !dbg !1687
+  call void @llvm.lifetime.end.p0i8(i64 256, i8* nonnull %5) #11, !dbg !1688
+  %15 = load i32, i32* %3, align 4, !dbg !1689
+  br label %17, !dbg !1690
+
+16:                                               ; preds = %1
+  call void @llvm.lifetime.end.p0i8(i64 256, i8* nonnull %5) #11, !dbg !1688
+  tail call void (i8*, ...) @_ZL5AbortPKcz(i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.21, i64 0, i64 0)), !dbg !1691
+  br label %17, !dbg !1693
+
+17:                                               ; preds = %13, %16
+  %18 = phi i32 [ %15, %13 ], [ undef, %16 ], !dbg !1689
+  %19 = call i8* @_Znwm(i64 32) #20, !dbg !1694
+  %20 = bitcast i8* %19 to %class.Domain*, !dbg !1694
+  call void @llvm.dbg.value(metadata i32 %18, metadata !1594, metadata !DIExpression()), !dbg !1672
+  call void @_ZN6DomainC2EPKcjNS_10IsOptionalE(%class.Domain* nonnull %20, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.22, i64 0, i64 0), i32 %18, i32 1), !dbg !1695
+  %21 = getelementptr inbounds %class.RAPL, %class.RAPL* %0, i64 0, i32 0, !dbg !1696
+  %22 = bitcast %class.RAPL* %0 to i8**, !dbg !1697
+  store i8* %19, i8** %22, align 8, !dbg !1697
+  %23 = call i8* @_Znwm(i64 32) #20, !dbg !1698
+  %24 = bitcast i8* %23 to %class.Domain*, !dbg !1698
+  %25 = load i32, i32* %3, align 4, !dbg !1699
+  call void @llvm.dbg.value(metadata i32 %25, metadata !1594, metadata !DIExpression()), !dbg !1672
+  call void @_ZN6DomainC2EPKcjNS_10IsOptionalE(%class.Domain* nonnull %24, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @.str.23, i64 0, i64 0), i32 %25, i32 1), !dbg !1700
+  %26 = getelementptr inbounds %class.RAPL, %class.RAPL* %0, i64 0, i32 1, !dbg !1701
+  %27 = bitcast %class.Domain** %26 to i8**, !dbg !1702
+  store i8* %23, i8** %27, align 8, !dbg !1702
+  %28 = call i8* @_Znwm(i64 32) #20, !dbg !1703
+  %29 = bitcast i8* %28 to %class.Domain*, !dbg !1703
+  %30 = load i32, i32* %3, align 4, !dbg !1704
+  call void @llvm.dbg.value(metadata i32 %30, metadata !1594, metadata !DIExpression()), !dbg !1672
+  call void @_ZN6DomainC2EPKcjNS_10IsOptionalE(%class.Domain* nonnull %29, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.24, i64 0, i64 0), i32 %30, i32 0), !dbg !1705
+  %31 = getelementptr inbounds %class.RAPL, %class.RAPL* %0, i64 0, i32 2, !dbg !1706
+  %32 = bitcast %class.Domain** %31 to i8**, !dbg !1707
+  store i8* %28, i8** %32, align 8, !dbg !1707
+  %33 = call i8* @_Znwm(i64 32) #20, !dbg !1708
+  %34 = bitcast i8* %33 to %class.Domain*, !dbg !1708
+  %35 = load i32, i32* %3, align 4, !dbg !1709
+  call void @llvm.dbg.value(metadata i32 %35, metadata !1594, metadata !DIExpression()), !dbg !1672
+  call void @_ZN6DomainC2EPKcjNS_10IsOptionalE(%class.Domain* nonnull %34, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.25, i64 0, i64 0), i32 %35, i32 0), !dbg !1710
+  %36 = getelementptr inbounds %class.RAPL, %class.RAPL* %0, i64 0, i32 3, !dbg !1711
+  %37 = bitcast %class.Domain** %36 to i8**, !dbg !1712
+  store i8* %33, i8** %37, align 8, !dbg !1712
+  %38 = load %class.Domain*, %class.Domain** %21, align 8, !dbg !1713
+  %39 = icmp eq %class.Domain* %38, null, !dbg !1713
+  br i1 %39, label %46, label %40, !dbg !1715
+
+#+end_src

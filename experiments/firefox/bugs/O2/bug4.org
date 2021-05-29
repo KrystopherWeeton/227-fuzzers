@@ -1,0 +1,104 @@
+* Bug 4 -- Possibly a bug
+  
+** Sys' Output
+   #+begin_src llvm
+Stack uninit bug
+Name "avcodec_find_best_pix_fmt_of_list_5"
+in
+Name "avcodec_find_best_pix_fmt_of_list"
+[UnName 4,UnName 23,UnName 25]
+"/home/s/git/firefox_ll_files/imgconvert.ll-O2_p"
+on line
+2
+
+   #+end_src
+   
+** Source
+   #+begin_src c++
+enum AVPixelFormat avcodec_find_best_pix_fmt_of_list(const enum AVPixelFormat *pix_fmt_list,
+                                            enum AVPixelFormat src_pix_fmt,
+                                            int has_alpha, int *loss_ptr){
+    int i;
+
+    enum AVPixelFormat best = AV_PIX_FMT_NONE;
+    int loss;
+
+    for (i=0; pix_fmt_list[i] != AV_PIX_FMT_NONE; i++) {
+        loss = loss_ptr ? *loss_ptr : 0;
+        best = avcodec_find_best_pix_fmt_of_2(best, pix_fmt_list[i], src_pix_fmt, has_alpha, &loss);
+    }
+
+    if (loss_ptr)
+        *loss_ptr = loss;
+    return best;
+}
+   #+end_src
+
+** Bitcode
+   
+#+begin_src llvm
+	
+; Function Attrs: nounwind sspstrong uwtable
+define i32 @avcodec_find_best_pix_fmt_of_list(i32* nocapture readonly, i32, i32, i32*) local_unnamed_addr #0 !dbg !310 {
+  %5 = alloca i32, align 4
+  call void @llvm.dbg.value(metadata i32* %0, metadata !316, metadata !DIExpression()), !dbg !323
+  call void @llvm.dbg.value(metadata i32 %1, metadata !317, metadata !DIExpression()), !dbg !323
+  call void @llvm.dbg.value(metadata i32 %2, metadata !318, metadata !DIExpression()), !dbg !323
+  call void @llvm.dbg.value(metadata i32* %3, metadata !319, metadata !DIExpression()), !dbg !323
+  call void @llvm.dbg.value(metadata i32 -1, metadata !321, metadata !DIExpression()), !dbg !323
+  %6 = bitcast i32* %5 to i8*, !dbg !324
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %6) #5, !dbg !324
+  call void @llvm.dbg.value(metadata i32 0, metadata !320, metadata !DIExpression()), !dbg !323
+  call void @llvm.dbg.value(metadata i32 -1, metadata !321, metadata !DIExpression()), !dbg !323
+  %7 = load i32, i32* %0, align 4, !dbg !325
+  %8 = icmp eq i32 %7, -1, !dbg !328
+  %9 = icmp ne i32* %3, null, !dbg !323
+  br i1 %8, label %23, label %10, !dbg !329
+
+10:                                               ; preds = %4, %16
+  %11 = phi i64 [ %19, %16 ], [ 0, %4 ]
+  %12 = phi i32 [ %21, %16 ], [ %7, %4 ]
+  %13 = phi i32 [ %18, %16 ], [ -1, %4 ]
+  call void @llvm.dbg.value(metadata i32 %13, metadata !321, metadata !DIExpression()), !dbg !323
+  call void @llvm.dbg.value(metadata i64 %11, metadata !320, metadata !DIExpression()), !dbg !323
+  br i1 %9, label %14, label %16, !dbg !330
+
+14:                                               ; preds = %10
+  %15 = load i32, i32* %3, align 4, !dbg !332
+  br label %16, !dbg !330
+
+16:                                               ; preds = %10, %14
+  %17 = phi i32 [ %15, %14 ], [ 0, %10 ], !dbg !330
+  call void @llvm.dbg.value(metadata i32 %17, metadata !322, metadata !DIExpression()), !dbg !323
+  store i32 %17, i32* %5, align 4, !dbg !333
+  call void @llvm.dbg.value(metadata i32* %5, metadata !322, metadata !DIExpression(DW_OP_deref)), !dbg !323
+  call void @llvm.dbg.value(metadata i32 %13, metadata !290, metadata !DIExpression()) #5, !dbg !334
+  call void @llvm.dbg.value(metadata i32 %12, metadata !291, metadata !DIExpression()) #5, !dbg !334
+  call void @llvm.dbg.value(metadata i32 %1, metadata !292, metadata !DIExpression()) #5, !dbg !334
+  call void @llvm.dbg.value(metadata i32 %2, metadata !293, metadata !DIExpression()) #5, !dbg !334
+  call void @llvm.dbg.value(metadata i32* %5, metadata !294, metadata !DIExpression()) #5, !dbg !334
+  %18 = call i32 @av_find_best_pix_fmt_of_2(i32 %13, i32 %12, i32 %1, i32 %2, i32* nonnull %5) #5, !dbg !336
+  %19 = add nuw i64 %11, 1, !dbg !337
+  call void @llvm.dbg.value(metadata i32 %18, metadata !321, metadata !DIExpression()), !dbg !323
+  call void @llvm.dbg.value(metadata i32 undef, metadata !320, metadata !DIExpression(DW_OP_plus_uconst, 1, DW_OP_stack_value)), !dbg !323
+  %20 = getelementptr inbounds i32, i32* %0, i64 %19, !dbg !325
+  %21 = load i32, i32* %20, align 4, !dbg !325
+  %22 = icmp eq i32 %21, -1, !dbg !328
+  br i1 %22, label %23, label %10, !dbg !329, !llvm.loop !338
+
+23:                                               ; preds = %16, %4
+  %24 = phi i32 [ -1, %4 ], [ %18, %16 ], !dbg !323
+  call void @llvm.dbg.value(metadata i32 %24, metadata !321, metadata !DIExpression()), !dbg !323
+  br i1 %9, label %25, label %27, !dbg !340
+
+25:                                               ; preds = %23
+  %26 = load i32, i32* %5, align 4, !dbg !341
+  call void @llvm.dbg.value(metadata i32 %26, metadata !322, metadata !DIExpression()), !dbg !323
+  store i32 %26, i32* %3, align 4, !dbg !343
+  br label %27, !dbg !344
+
+27:                                               ; preds = %25, %23
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %6) #5, !dbg !345
+  ret i32 %24, !dbg !346
+}
+#+end_src
