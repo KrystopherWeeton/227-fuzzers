@@ -1,9 +1,3 @@
-void InvalidValue(const converter::LocationTrackerInterface &loc,
-                  StringPiece type_name,
-                  StringPiece value) override
-{
-    status_ = util::Status(
-        util::error::INVALID_ARGUMENT,
-        StrCat(GetLocString(loc), ": invalid value ", std::string(value),
-               " for type ", std::string(type_name)));
+void MissingField(const converter::LocationTrackerInterface &loc, StringPiece missing_name) override {
+    status_ = util::Status(util::error::INVALID_ARGUMENT, StrCat(GetLocString(loc), ": missing field ", std::string(missing_name)));
 }
