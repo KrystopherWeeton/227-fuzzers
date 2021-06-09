@@ -1,4 +1,4 @@
-## Chromium Bug 1
+## Chromium Bug 2
 ### Sys Description
 ```
 Stack uninit bug
@@ -314,6 +314,4 @@ void InvalidValue(const converter::LocationTrackerInterface &loc, StringPiece ty
 ```
 
 ### Reason
-```
 We found this bug hard to trace
-```

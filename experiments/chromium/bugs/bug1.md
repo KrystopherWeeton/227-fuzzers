@@ -152,7 +152,5 @@ bool FacetURI::IsValidWebFacetURI() const {
 ```
 
 ### Reason
-```
 In block 63, it checks for the comparison "scheme() == url::kHttpsScheme", and
 url::kHttpsScheme might be uninitialize. We checked the file chromium/url/third_party/mozilla/url_parse.h which defined the url namespace, but does not have element kHttpsScheme declared or initialized
-```

@@ -1,4 +1,4 @@
-## Chromium Bug 1
+## Chromium Bug 3
 ### Sys Description
 ```
 Stack uninit bug
@@ -210,6 +210,5 @@ void MissingField(const converter::LocationTrackerInterface &loc, StringPiece mi
 ```
 
 ### Reason
-```
+
 We found this bug hard to trace.
-```

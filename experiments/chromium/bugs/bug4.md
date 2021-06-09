@@ -1,4 +1,5 @@
 ## Chromium Bug 4
+This bug report contains information for bug4 ~ bug9.
 ### Sys Description
 ```
 Stack uninit bug
@@ -530,8 +531,7 @@ inline Queue* GetQueue(size_t index) {
 ```
 
 ### Reason
-```
 Chromium bug4 ~ bug9 all report the same bug on the same piece of source code. After tracing through its execution, we suspect that this may be caused by queue obtained from GetQueue() function to be uninitialized. However, since we are not able to be 100% sure on this, we'll categorize bug4 ~ bug9 as "Hard to Trace" for now.
-```
+
 
 
