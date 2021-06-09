@@ -1,0 +1,158 @@
+; ModuleID = '../../native_client/src/shared/platform/posix/nacl_threads.c'
+source_filename = "../../native_client/src/shared/platform/posix/nacl_threads.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.NaClThread = type { i64 }
+%union.pthread_attr_t = type { i64, [48 x i8] }
+
+@.str = private unnamed_addr constant [46 x i8] c"NaClThreadCtor: pthread_atr_init returned %d\0A\00", align 1
+@.str.1 = private unnamed_addr constant [55 x i8] c"NaClThreadCtor: pthread_attr_setstacksize returned %d\0A\00", align 1
+@.str.2 = private unnamed_addr constant [54 x i8] c"nacl_thread: pthread_attr_setdetachstate returned %d\0A\00", align 1
+@.str.3 = private unnamed_addr constant [41 x i8] c"nacl_thread: pthread_create returned %d\0A\00", align 1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClThreadCtor(%struct.NaClThread*, void (i8*)*, i8*, i64) local_unnamed_addr #0 {
+  %5 = tail call fastcc i32 @NaClThreadCreate(%struct.NaClThread* %0, void (i8*)* %1, i8* %2, i64 %3, i32 1)
+  ret i32 %5
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal fastcc i32 @NaClThreadCreate(%struct.NaClThread*, void (i8*)*, i8*, i64, i32) unnamed_addr #0 {
+  %6 = alloca %union.pthread_attr_t, align 8
+  %7 = bitcast %union.pthread_attr_t* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 56, i8* nonnull %7) #7
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %7, i8 -86, i64 56, i1 false)
+  %8 = call i32 @pthread_attr_init(%union.pthread_attr_t* nonnull %6) #7
+  %9 = icmp eq i32 %8, 0
+  br i1 %9, label %11, label %10
+
+10:                                               ; preds = %5
+  call void (i32, i8*, ...) @NaClLog(i32 -3, i8* getelementptr inbounds ([46 x i8], [46 x i8]* @.str, i64 0, i64 0), i32 %8) #7
+  br label %32
+
+11:                                               ; preds = %5
+  %12 = icmp ugt i64 %3, 16384
+  %13 = select i1 %12, i64 %3, i64 16384
+  %14 = call i32 @pthread_attr_setstacksize(%union.pthread_attr_t* nonnull %6, i64 %13) #7
+  %15 = icmp eq i32 %14, 0
+  br i1 %15, label %17, label %16
+
+16:                                               ; preds = %11
+  call void (i32, i8*, ...) @NaClLog(i32 -3, i8* getelementptr inbounds ([55 x i8], [55 x i8]* @.str.1, i64 0, i64 0), i32 %14) #7
+  br label %29
+
+17:                                               ; preds = %11
+  %18 = icmp eq i32 %4, 0
+  br i1 %18, label %23, label %19
+
+19:                                               ; preds = %17
+  %20 = call i32 @pthread_attr_setdetachstate(%union.pthread_attr_t* nonnull %6, i32 1) #7
+  %21 = icmp eq i32 %20, 0
+  br i1 %21, label %23, label %22
+
+22:                                               ; preds = %19
+  call void (i32, i8*, ...) @NaClLog(i32 -3, i8* getelementptr inbounds ([54 x i8], [54 x i8]* @.str.2, i64 0, i64 0), i32 %20) #7
+  br label %29
+
+23:                                               ; preds = %19, %17
+  %24 = getelementptr inbounds %struct.NaClThread, %struct.NaClThread* %0, i64 0, i32 0
+  %25 = bitcast void (i8*)* %1 to i8* (i8*)*
+  %26 = call i32 @pthread_create(i64* %24, %union.pthread_attr_t* nonnull %6, i8* (i8*)* %25, i8* %2) #7
+  %27 = icmp eq i32 %26, 0
+  br i1 %27, label %29, label %28
+
+28:                                               ; preds = %23
+  call void (i32, i8*, ...) @NaClLog(i32 -3, i8* getelementptr inbounds ([41 x i8], [41 x i8]* @.str.3, i64 0, i64 0), i32 %26) #7
+  br label %29
+
+29:                                               ; preds = %23, %28, %22, %16
+  %30 = phi i32 [ 0, %16 ], [ 0, %22 ], [ 0, %28 ], [ 1, %23 ]
+  %31 = call i32 @pthread_attr_destroy(%union.pthread_attr_t* nonnull %6) #7
+  br label %32
+
+32:                                               ; preds = %29, %10
+  %33 = phi i32 [ 0, %10 ], [ %30, %29 ]
+  call void @llvm.lifetime.end.p0i8(i64 56, i8* nonnull %7) #7
+  ret i32 %33
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClThreadCreateJoinable(%struct.NaClThread*, void (i8*)*, i8*, i64) local_unnamed_addr #0 {
+  %5 = tail call fastcc i32 @NaClThreadCreate(%struct.NaClThread* %0, void (i8*)* %1, i8* %2, i64 %3, i32 0)
+  ret i32 %5
+}
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden void @NaClThreadDtor(%struct.NaClThread* nocapture) local_unnamed_addr #1 {
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClThreadJoin(%struct.NaClThread* nocapture readonly) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClThread, %struct.NaClThread* %0, i64 0, i32 0
+  %3 = load i64, i64* %2, align 8
+  %4 = tail call i32 @pthread_join(i64 %3, i8** null) #7
+  ret void
+}
+
+declare i32 @pthread_join(i64, i8**) local_unnamed_addr #2
+
+; Function Attrs: noreturn nounwind ssp uwtable
+define hidden void @NaClThreadExit() local_unnamed_addr #3 {
+  tail call void @pthread_exit(i8* null) #8
+  unreachable
+}
+
+; Function Attrs: noreturn
+declare void @pthread_exit(i8*) local_unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClThreadYield() local_unnamed_addr #0 {
+  %1 = tail call i32 @sched_yield() #7
+  ret void
+}
+
+; Function Attrs: nounwind
+declare i32 @sched_yield() local_unnamed_addr #5
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #6
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #6
+
+; Function Attrs: nounwind
+declare i32 @pthread_attr_init(%union.pthread_attr_t*) local_unnamed_addr #5
+
+declare void @NaClLog(i32, i8*, ...) local_unnamed_addr #2
+
+; Function Attrs: nounwind
+declare i32 @pthread_attr_setstacksize(%union.pthread_attr_t*, i64) local_unnamed_addr #5
+
+; Function Attrs: nounwind
+declare i32 @pthread_attr_setdetachstate(%union.pthread_attr_t*, i32) local_unnamed_addr #5
+
+; Function Attrs: nounwind
+declare i32 @pthread_create(i64*, %union.pthread_attr_t*, i8* (i8*)*, i8*) local_unnamed_addr #5
+
+; Function Attrs: nounwind
+declare i32 @pthread_attr_destroy(%union.pthread_attr_t*) local_unnamed_addr #5
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #6
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { norecurse nounwind readnone ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { noreturn nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { noreturn "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { argmemonly nounwind }
+attributes #7 = { nounwind }
+attributes #8 = { noreturn nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}

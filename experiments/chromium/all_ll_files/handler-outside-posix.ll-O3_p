@@ -1,0 +1,93 @@
+; ModuleID = '../../v8/src/trap-handler/handler-outside-posix.cc'
+source_filename = "../../v8/src/trap-handler/handler-outside-posix.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.sigaction = type { %union.anon, %struct.__sigset_t, i32, void ()* }
+%union.anon = type { void (i32)* }
+%struct.__sigset_t = type { [16 x i64] }
+%struct.siginfo_t = type { i32, i32, i32, i32, %union.anon.0 }
+%union.anon.0 = type { %struct.anon.3, [80 x i8] }
+%struct.anon.3 = type { i32, i32, i32, i64, i64 }
+
+@_ZN2v88internal12trap_handler12_GLOBAL__N_138g_is_default_signal_handler_registeredE = internal unnamed_addr global i1 false, align 1
+@_ZN2v88internal12trap_handler12_GLOBAL__N_113g_old_handlerE = internal global %struct.sigaction zeroinitializer, align 8
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN2v88internal12trap_handler26RegisterDefaultTrapHandlerEv() local_unnamed_addr #0 {
+  %1 = alloca %struct.sigaction, align 8
+  %2 = load i1, i1* @_ZN2v88internal12trap_handler12_GLOBAL__N_138g_is_default_signal_handler_registeredE, align 1
+  br i1 %2, label %3, label %4
+
+3:                                                ; preds = %0
+  tail call void asm sideeffect "int3", "~{dirflag},~{fpsr},~{flags}"() #4, !srcloc !2
+  tail call void asm sideeffect "ud2", "~{dirflag},~{fpsr},~{flags}"() #4, !srcloc !3
+  unreachable
+
+4:                                                ; preds = %0
+  %5 = bitcast %struct.sigaction* %1 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 152, i8* nonnull %5) #4
+  %6 = bitcast %struct.sigaction* %1 to void (i32, %struct.siginfo_t*, i8*)**
+  store void (i32, %struct.siginfo_t*, i8*)* @_ZN2v88internal12trap_handler12HandleSignalEiP9siginfo_tPv, void (i32, %struct.siginfo_t*, i8*)** %6, align 8
+  %7 = getelementptr inbounds %struct.sigaction, %struct.sigaction* %1, i64 0, i32 2
+  store i32 4, i32* %7, align 8
+  %8 = getelementptr inbounds %struct.sigaction, %struct.sigaction* %1, i64 0, i32 1
+  %9 = call i32 @sigemptyset(%struct.__sigset_t* %8) #4
+  %10 = call i32 @sigaction(i32 11, %struct.sigaction* nonnull %1, %struct.sigaction* nonnull @_ZN2v88internal12trap_handler12_GLOBAL__N_113g_old_handlerE) #4
+  %11 = icmp eq i32 %10, 0
+  br i1 %11, label %12, label %13
+
+12:                                               ; preds = %4
+  store i1 true, i1* @_ZN2v88internal12trap_handler12_GLOBAL__N_138g_is_default_signal_handler_registeredE, align 1
+  br label %13
+
+13:                                               ; preds = %4, %12
+  %14 = phi i1 [ true, %12 ], [ false, %4 ]
+  call void @llvm.lifetime.end.p0i8(i64 152, i8* nonnull %5) #4
+  ret i1 %14
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #1
+
+declare void @_ZN2v88internal12trap_handler12HandleSignalEiP9siginfo_tPv(i32, %struct.siginfo_t*, i8*) #2
+
+; Function Attrs: nounwind
+declare i32 @sigemptyset(%struct.__sigset_t*) local_unnamed_addr #3
+
+; Function Attrs: nounwind
+declare i32 @sigaction(i32, %struct.sigaction*, %struct.sigaction*) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2v88internal12trap_handler17RemoveTrapHandlerEv() local_unnamed_addr #0 {
+  %1 = load i1, i1* @_ZN2v88internal12trap_handler12_GLOBAL__N_138g_is_default_signal_handler_registeredE, align 1
+  br i1 %1, label %2, label %6
+
+2:                                                ; preds = %0
+  %3 = tail call i32 @sigaction(i32 11, %struct.sigaction* nonnull @_ZN2v88internal12trap_handler12_GLOBAL__N_113g_old_handlerE, %struct.sigaction* null) #4
+  %4 = icmp eq i32 %3, 0
+  br i1 %4, label %5, label %6
+
+5:                                                ; preds = %2
+  store i1 false, i1* @_ZN2v88internal12trap_handler12_GLOBAL__N_138g_is_default_signal_handler_registeredE, align 1
+  br label %6
+
+6:                                                ; preds = %2, %5, %0
+  ret void
+}
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { argmemonly nounwind }
+attributes #2 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{i32 -2146041783}
+!3 = !{i32 -2146041762}

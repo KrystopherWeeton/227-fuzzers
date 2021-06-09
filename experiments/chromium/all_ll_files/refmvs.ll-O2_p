@@ -1,0 +1,4212 @@
+; ModuleID = '../../third_party/dav1d/libdav1d/src/refmvs.c'
+source_filename = "../../third_party/dav1d/libdav1d/src/refmvs.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.refmvs_tile = type { %struct.refmvs_frame*, [37 x %struct.refmvs_block*], %struct.refmvs_temporal_block*, %struct.anon.12, %struct.anon.12 }
+%struct.refmvs_frame = type { %struct.Dav1dFrameHeader*, i32, i32, i32, i32, i32, i32, [7 x i8], [7 x i8], [7 x i8], [3 x i8], [3 x i32], [3 x [7 x i32]], i32, %struct.refmvs_temporal_block*, %struct.refmvs_temporal_block**, %struct.refmvs_temporal_block*, i64, %struct.refmvs_block*, i64, i32, i32 }
+%struct.Dav1dFrameHeader = type { %struct.anon, i32, [2 x i32], i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, [32 x %struct.Dav1dFrameHeaderOperatingPoint], i32, i32, i32, %struct.anon.0, i32, i32, i32, [7 x i32], i32, i32, i32, i32, i32, %struct.anon.1, %struct.anon.2, %struct.anon.3, %struct.anon.4, i32, %struct.anon.7, %struct.anon.8, %struct.anon.9, i32, i32, i32, i32, [2 x i32], i32, i32, [7 x %struct.Dav1dWarpedMotionParams] }
+%struct.anon = type { %struct.Dav1dFilmGrainData, i32, i32 }
+%struct.Dav1dFilmGrainData = type { i32, i32, [14 x [2 x i8]], i32, [2 x i32], [2 x [10 x [2 x i8]]], i32, i32, [24 x i8], [2 x [28 x i8]], i64, i32, [2 x i32], [2 x i32], [2 x i32], i32, i32 }
+%struct.Dav1dFrameHeaderOperatingPoint = type { i32 }
+%struct.anon.0 = type { i32, i32 }
+%struct.anon.1 = type { i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, [65 x i16], [65 x i16], i32 }
+%struct.anon.2 = type { i32, i32, i32, i32, i32, i32, i32, i32, i32, i32 }
+%struct.anon.3 = type { i32, i32, i32, i32, %struct.Dav1dSegmentationDataSet, [8 x i32], [8 x i32] }
+%struct.Dav1dSegmentationDataSet = type { [8 x %struct.Dav1dSegmentationData], i32, i32 }
+%struct.Dav1dSegmentationData = type { i32, i32, i32, i32, i32, i32, i32, i32 }
+%struct.anon.4 = type { %struct.anon.5, %struct.anon.6 }
+%struct.anon.5 = type { i32, i32 }
+%struct.anon.6 = type { i32, i32, i32 }
+%struct.anon.7 = type { [2 x i32], i32, i32, i32, i32, %struct.Dav1dLoopfilterModeRefDeltas, i32 }
+%struct.Dav1dLoopfilterModeRefDeltas = type { [2 x i32], [8 x i32] }
+%struct.anon.8 = type { i32, i32, [8 x i32], [8 x i32] }
+%struct.anon.9 = type { [3 x i32], [2 x i32] }
+%struct.Dav1dWarpedMotionParams = type { i32, [6 x i32], %union.anon }
+%union.anon = type { %struct.anon.10 }
+%struct.anon.10 = type { i16, i16, i16, i16 }
+%struct.refmvs_block = type { %union.refmvs_mvpair, %union.refmvs_refpair, i8, i8 }
+%union.refmvs_mvpair = type { i64 }
+%union.refmvs_refpair = type { i16 }
+%struct.refmvs_temporal_block = type { %union.mv, i8 }
+%union.mv = type { i32 }
+%struct.anon.12 = type { i32, i32 }
+%struct.refmvs_candidate = type { %union.refmvs_mvpair, i32 }
+%struct.anon.11 = type { i16, i16 }
+%struct.Dav1dSequenceHeader = type { i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, [32 x %struct.Dav1dSequenceHeaderOperatingPoint], i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, [32 x %struct.Dav1dSequenceHeaderOperatingParameterInfo] }
+%struct.Dav1dSequenceHeaderOperatingPoint = type { i32, i32, i32, i32, i32, i32, i32 }
+%struct.Dav1dSequenceHeaderOperatingParameterInfo = type { i32, i32, i32 }
+
+@dav1d_block_dimensions = external local_unnamed_addr constant [22 x [4 x i8]], align 16
+@mv_projection.div_mult = internal unnamed_addr constant [32 x i16] [i16 0, i16 16384, i16 8192, i16 5461, i16 4096, i16 3276, i16 2730, i16 2340, i16 2048, i16 1820, i16 1638, i16 1489, i16 1365, i16 1260, i16 1170, i16 1092, i16 1024, i16 963, i16 910, i16 862, i16 819, i16 780, i16 744, i16 712, i16 682, i16 655, i16 630, i16 606, i16 585, i16 564, i16 546, i16 528], align 16
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @dav1d_refmvs_find(%struct.refmvs_tile* nocapture readonly, %struct.refmvs_candidate*, i32*, i32* nocapture, i16, i32, i32, i32, i32) local_unnamed_addr #0 {
+  %10 = alloca [2 x %union.mv], align 4
+  %11 = alloca [2 x %union.mv], align 4
+  %12 = alloca i32, align 4
+  %13 = alloca i32, align 4
+  %14 = alloca i32, align 4
+  %15 = alloca i32, align 4
+  %16 = alloca i32, align 4
+  %17 = alloca %struct.refmvs_candidate, align 8
+  %18 = alloca %struct.refmvs_candidate, align 8
+  %19 = alloca [4 x i32], align 16
+  %20 = trunc i16 %4 to i8
+  %21 = lshr i16 %4, 8
+  %22 = trunc i16 %21 to i8
+  %23 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 0
+  %24 = load %struct.refmvs_frame*, %struct.refmvs_frame** %23, align 8
+  %25 = zext i32 %5 to i64
+  %26 = getelementptr inbounds [22 x [4 x i8]], [22 x [4 x i8]]* @dav1d_block_dimensions, i64 0, i64 %25, i64 0
+  %27 = load i8, i8* %26, align 4
+  %28 = zext i8 %27 to i32
+  %29 = icmp ult i32 %28, 16
+  %30 = select i1 %29, i32 %28, i32 16
+  %31 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 3, i32 1
+  %32 = load i32, i32* %31, align 4
+  %33 = sub nsw i32 %32, %8
+  %34 = icmp slt i32 %30, %33
+  %35 = select i1 %34, i32 %30, i32 %33
+  %36 = getelementptr inbounds [22 x [4 x i8]], [22 x [4 x i8]]* @dav1d_block_dimensions, i64 0, i64 %25, i64 1
+  %37 = load i8, i8* %36, align 1
+  %38 = zext i8 %37 to i32
+  %39 = icmp ult i32 %38, 16
+  %40 = select i1 %39, i32 %38, i32 16
+  %41 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 4, i32 1
+  %42 = load i32, i32* %41, align 4
+  %43 = sub nsw i32 %42, %7
+  %44 = icmp slt i32 %40, %43
+  %45 = select i1 %44, i32 %40, i32 %43
+  %46 = bitcast [2 x %union.mv]* %10 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %46) #7
+  %47 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %10, i64 0, i64 0
+  %48 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %10, i64 0, i64 0, i32 0
+  store i32 -1431655766, i32* %48, align 4
+  %49 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %10, i64 0, i64 1, i32 0
+  store i32 -1431655766, i32* %49, align 4
+  %50 = bitcast [2 x %union.mv]* %11 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %50) #7
+  %51 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %11, i64 0, i64 0
+  %52 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %11, i64 0, i64 0, i32 0
+  store i32 -1431655766, i32* %52, align 4
+  %53 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %11, i64 0, i64 1, i32 0
+  store i32 -1431655766, i32* %53, align 4
+  store i32 0, i32* %2, align 4
+  %54 = and i16 %4, 255
+  %55 = zext i16 %54 to i32
+  %56 = icmp sgt i8 %20, -1
+  tail call void @llvm.assume(i1 %56)
+  %57 = icmp ult i16 %54, 9
+  tail call void @llvm.assume(i1 %57)
+  %58 = sext i8 %22 to i32
+  %59 = icmp sgt i8 %22, -2
+  tail call void @llvm.assume(i1 %59)
+  %60 = icmp slt i8 %22, 9
+  tail call void @llvm.assume(i1 %60)
+  %61 = icmp ne i16 %54, 0
+  br i1 %61, label %62, label %74
+
+62:                                               ; preds = %9
+  %63 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %24, i64 0, i32 0
+  %64 = load %struct.Dav1dFrameHeader*, %struct.Dav1dFrameHeader** %63, align 8
+  %65 = add nsw i32 %55, -1
+  %66 = sext i32 %65 to i64
+  %67 = getelementptr inbounds %struct.Dav1dFrameHeader, %struct.Dav1dFrameHeader* %64, i64 0, i32 49, i64 %66
+  %68 = tail call fastcc i32 @get_gmv_2d(%struct.Dav1dWarpedMotionParams* %67, i32 %8, i32 %7, i32 %28, i32 %38, %struct.Dav1dFrameHeader* %64)
+  store i32 %68, i32* %52, align 4
+  %69 = load %struct.Dav1dFrameHeader*, %struct.Dav1dFrameHeader** %63, align 8
+  %70 = getelementptr inbounds %struct.Dav1dFrameHeader, %struct.Dav1dFrameHeader* %69, i64 0, i32 49, i64 %66, i32 0
+  %71 = load i32, i32* %70, align 4
+  %72 = icmp ugt i32 %71, 1
+  %73 = select i1 %72, i32 %68, i32 -2147450880
+  br label %75
+
+74:                                               ; preds = %9
+  store i32 0, i32* %52, align 4
+  br label %75
+
+75:                                               ; preds = %62, %74
+  %76 = phi i32 [ -2147450880, %74 ], [ %73, %62 ]
+  %77 = phi i32 [ 0, %74 ], [ %68, %62 ]
+  store i32 %76, i32* %48, align 4
+  %78 = icmp sgt i8 %22, 0
+  br i1 %78, label %79, label %91
+
+79:                                               ; preds = %75
+  %80 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %24, i64 0, i32 0
+  %81 = load %struct.Dav1dFrameHeader*, %struct.Dav1dFrameHeader** %80, align 8
+  %82 = add nsw i32 %58, -1
+  %83 = sext i32 %82 to i64
+  %84 = getelementptr inbounds %struct.Dav1dFrameHeader, %struct.Dav1dFrameHeader* %81, i64 0, i32 49, i64 %83
+  %85 = tail call fastcc i32 @get_gmv_2d(%struct.Dav1dWarpedMotionParams* %84, i32 %8, i32 %7, i32 %28, i32 %38, %struct.Dav1dFrameHeader* %81)
+  store i32 %85, i32* %53, align 4
+  %86 = load %struct.Dav1dFrameHeader*, %struct.Dav1dFrameHeader** %80, align 8
+  %87 = getelementptr inbounds %struct.Dav1dFrameHeader, %struct.Dav1dFrameHeader* %86, i64 0, i32 49, i64 %83, i32 0
+  %88 = load i32, i32* %87, align 4
+  %89 = icmp ugt i32 %88, 1
+  %90 = select i1 %89, i32 %85, i32 -2147450880
+  store i32 %90, i32* %49, align 4
+  br label %91
+
+91:                                               ; preds = %79, %75
+  %92 = phi i32 [ -1431655766, %75 ], [ %85, %79 ]
+  %93 = bitcast i32* %12 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %93) #7
+  store i32 0, i32* %12, align 4
+  %94 = bitcast i32* %13 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %94) #7
+  store i32 0, i32* %13, align 4
+  %95 = bitcast i32* %14 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %95) #7
+  store i32 0, i32* %14, align 4
+  %96 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 4, i32 0
+  %97 = load i32, i32* %96, align 8
+  %98 = icmp slt i32 %97, %7
+  br i1 %98, label %99, label %117
+
+99:                                               ; preds = %91
+  %100 = add i32 %7, 1
+  %101 = sub i32 %100, %97
+  %102 = ashr i32 %101, 1
+  %103 = icmp ugt i8 %37, 1
+  %104 = select i1 %103, i32 3, i32 2
+  %105 = icmp slt i32 %102, %104
+  %106 = select i1 %105, i32 %102, i32 %104
+  %107 = and i32 %7, 31
+  %108 = add nuw nsw i32 %107, 4
+  %109 = zext i32 %108 to i64
+  %110 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 1, i64 %109
+  %111 = load %struct.refmvs_block*, %struct.refmvs_block** %110, align 8
+  %112 = sext i32 %8 to i64
+  %113 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %111, i64 %112
+  %114 = icmp ugt i8 %27, 15
+  %115 = select i1 %114, i32 4, i32 1
+  %116 = call fastcc i32 @scan_row(%struct.refmvs_candidate* %1, i32* %2, i16 %4, %union.mv* nonnull %47, %struct.refmvs_block* %113, i32 %28, i32 %35, i32 %106, i32 %115, i32* nonnull %12, i32* nonnull %14)
+  br label %117
+
+117:                                              ; preds = %99, %91
+  %118 = phi i32 [ %106, %99 ], [ 0, %91 ]
+  %119 = phi i32 [ %116, %99 ], [ -1, %91 ]
+  %120 = phi %struct.refmvs_block* [ %113, %99 ], [ inttoptr (i64 -6148914691236517206 to %struct.refmvs_block*), %91 ]
+  %121 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 3, i32 0
+  %122 = load i32, i32* %121, align 8
+  %123 = icmp slt i32 %122, %8
+  br i1 %123, label %124, label %140
+
+124:                                              ; preds = %117
+  %125 = add i32 %8, 1
+  %126 = sub i32 %125, %122
+  %127 = ashr i32 %126, 1
+  %128 = icmp ugt i8 %27, 1
+  %129 = select i1 %128, i32 3, i32 2
+  %130 = icmp slt i32 %127, %129
+  %131 = select i1 %130, i32 %127, i32 %129
+  %132 = and i32 %7, 31
+  %133 = add nuw nsw i32 %132, 5
+  %134 = zext i32 %133 to i64
+  %135 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 1, i64 %134
+  %136 = add nsw i32 %8, -1
+  %137 = icmp ugt i8 %37, 15
+  %138 = select i1 %137, i32 4, i32 1
+  %139 = call fastcc i32 @scan_col(%struct.refmvs_candidate* %1, i32* %2, i16 %4, %union.mv* nonnull %47, %struct.refmvs_block** %135, i32 %38, i32 %45, i32 %136, i32 %131, i32 %138, i32* nonnull %12, i32* nonnull %13)
+  br label %140
+
+140:                                              ; preds = %124, %117
+  %141 = phi i32 [ %131, %124 ], [ 0, %117 ]
+  %142 = phi i32 [ %139, %124 ], [ -1, %117 ]
+  %143 = phi %struct.refmvs_block** [ %135, %124 ], [ inttoptr (i64 -6148914691236517206 to %struct.refmvs_block**), %117 ]
+  %144 = icmp eq i32 %119, -1
+  %145 = and i32 %6, 1
+  %146 = icmp eq i32 %145, 0
+  %147 = or i1 %146, %144
+  br i1 %147, label %159, label %148
+
+148:                                              ; preds = %140
+  %149 = icmp ugt i32 %28, %38
+  %150 = select i1 %149, i32 %28, i32 %38
+  %151 = icmp slt i32 %150, 17
+  br i1 %151, label %152, label %159
+
+152:                                              ; preds = %148
+  %153 = add nsw i32 %28, %8
+  %154 = load i32, i32* %31, align 4
+  %155 = icmp slt i32 %153, %154
+  br i1 %155, label %156, label %159
+
+156:                                              ; preds = %152
+  %157 = zext i8 %27 to i64
+  %158 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %120, i64 %157
+  call fastcc void @add_spatial_candidate(%struct.refmvs_candidate* %1, i32* %2, i32 4, %struct.refmvs_block* %158, i16 %4, %union.mv* nonnull %47, i32* nonnull %12, i32* nonnull %14)
+  br label %159
+
+159:                                              ; preds = %140, %156, %152, %148
+  %160 = load i32, i32* %13, align 4
+  %161 = load i32, i32* %14, align 4
+  %162 = add nsw i32 %161, %160
+  %163 = load i32, i32* %2, align 4
+  %164 = icmp sgt i32 %163, 0
+  br i1 %164, label %165, label %184
+
+165:                                              ; preds = %159
+  %166 = zext i32 %163 to i64
+  %167 = add nsw i64 %166, -1
+  %168 = and i64 %166, 3
+  %169 = icmp ult i64 %167, 3
+  br i1 %169, label %172, label %170
+
+170:                                              ; preds = %165
+  %171 = sub nsw i64 %166, %168
+  br label %193
+
+172:                                              ; preds = %193, %165
+  %173 = phi i64 [ 0, %165 ], [ %211, %193 ]
+  %174 = icmp eq i64 %168, 0
+  br i1 %174, label %184, label %175
+
+175:                                              ; preds = %172, %175
+  %176 = phi i64 [ %181, %175 ], [ %173, %172 ]
+  %177 = phi i64 [ %182, %175 ], [ %168, %172 ]
+  %178 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %176, i32 1
+  %179 = load i32, i32* %178, align 8
+  %180 = add nsw i32 %179, 640
+  store i32 %180, i32* %178, align 8
+  %181 = add nuw nsw i64 %176, 1
+  %182 = add i64 %177, -1
+  %183 = icmp eq i64 %182, 0
+  br i1 %183, label %184, label %175, !llvm.loop !2
+
+184:                                              ; preds = %172, %175, %159
+  %185 = bitcast i32* %15 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %185) #7
+  %186 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %24, i64 0, i32 0
+  %187 = load %struct.Dav1dFrameHeader*, %struct.Dav1dFrameHeader** %186, align 8
+  %188 = getelementptr inbounds %struct.Dav1dFrameHeader, %struct.Dav1dFrameHeader* %187, i64 0, i32 32
+  %189 = load i32, i32* %188, align 8
+  store i32 %189, i32* %15, align 4
+  %190 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %24, i64 0, i32 6
+  %191 = load i32, i32* %190, align 4
+  %192 = icmp eq i32 %191, 0
+  br i1 %192, label %315, label %214
+
+193:                                              ; preds = %193, %170
+  %194 = phi i64 [ 0, %170 ], [ %211, %193 ]
+  %195 = phi i64 [ %171, %170 ], [ %212, %193 ]
+  %196 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %194, i32 1
+  %197 = load i32, i32* %196, align 8
+  %198 = add nsw i32 %197, 640
+  store i32 %198, i32* %196, align 8
+  %199 = or i64 %194, 1
+  %200 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %199, i32 1
+  %201 = load i32, i32* %200, align 8
+  %202 = add nsw i32 %201, 640
+  store i32 %202, i32* %200, align 8
+  %203 = or i64 %194, 2
+  %204 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %203, i32 1
+  %205 = load i32, i32* %204, align 8
+  %206 = add nsw i32 %205, 640
+  store i32 %206, i32* %204, align 8
+  %207 = or i64 %194, 3
+  %208 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %207, i32 1
+  %209 = load i32, i32* %208, align 8
+  %210 = add nsw i32 %209, 640
+  store i32 %210, i32* %208, align 8
+  %211 = add nuw nsw i64 %194, 4
+  %212 = add i64 %195, -4
+  %213 = icmp eq i64 %212, 0
+  br i1 %213, label %172, label %193
+
+214:                                              ; preds = %184
+  %215 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %24, i64 0, i32 17
+  %216 = load i64, i64* %215, align 8
+  %217 = ashr i32 %7, 1
+  %218 = ashr i32 %8, 1
+  %219 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 2
+  %220 = load %struct.refmvs_temporal_block*, %struct.refmvs_temporal_block** %219, align 8
+  %221 = and i32 %217, 15
+  %222 = zext i32 %221 to i64
+  %223 = mul nsw i64 %216, %222
+  %224 = sext i32 %218 to i64
+  %225 = add nsw i64 %223, %224
+  %226 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %220, i64 %225
+  %227 = icmp ugt i8 %37, 15
+  %228 = select i1 %227, i32 2, i32 1
+  %229 = add nsw i32 %35, 1
+  %230 = ashr i32 %229, 1
+  %231 = icmp slt i32 %230, 8
+  %232 = select i1 %231, i32 %230, i32 8
+  %233 = add nsw i32 %45, 1
+  %234 = ashr i32 %233, 1
+  %235 = icmp slt i32 %234, 8
+  %236 = select i1 %235, i32 %234, i32 8
+  %237 = icmp sgt i32 %45, 0
+  br i1 %237, label %238, label %247
+
+238:                                              ; preds = %214
+  %239 = icmp ugt i8 %27, 15
+  %240 = icmp sgt i32 %35, 0
+  %241 = zext i32 %228 to i64
+  %242 = mul nsw i64 %216, %241
+  %243 = select i1 %239, i64 2, i64 1
+  br label %244
+
+244:                                              ; preds = %238, %251
+  %245 = phi i32 [ 0, %238 ], [ %253, %251 ]
+  %246 = phi %struct.refmvs_temporal_block* [ %226, %238 ], [ %252, %251 ]
+  br i1 %240, label %255, label %251
+
+247:                                              ; preds = %251, %214
+  %248 = icmp ult i32 %28, %38
+  %249 = select i1 %248, i32 %28, i32 %38
+  %250 = icmp sgt i32 %249, 1
+  br i1 %250, label %265, label %315
+
+251:                                              ; preds = %255, %244
+  %252 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %246, i64 %242
+  %253 = add nuw nsw i32 %245, %228
+  %254 = icmp slt i32 %253, %236
+  br i1 %254, label %244, label %247
+
+255:                                              ; preds = %244, %255
+  %256 = phi i64 [ %262, %255 ], [ 0, %244 ]
+  %257 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %246, i64 %256
+  %258 = trunc i64 %256 to i32
+  %259 = or i32 %245, %258
+  %260 = icmp eq i32 %259, 0
+  %261 = select i1 %260, i32* %15, i32* null
+  call fastcc void @add_temporal_candidate(%struct.refmvs_frame* %24, %struct.refmvs_candidate* %1, i32* %2, %struct.refmvs_temporal_block* %257, i16 %4, i32* %261, %union.mv* nonnull %51)
+  %262 = add i64 %256, %243
+  %263 = trunc i64 %262 to i32
+  %264 = icmp sgt i32 %232, %263
+  br i1 %264, label %255, label %251
+
+265:                                              ; preds = %247
+  %266 = icmp ugt i32 %28, %38
+  %267 = select i1 %266, i32 %28, i32 %38
+  %268 = icmp slt i32 %267, 16
+  br i1 %268, label %269, label %315
+
+269:                                              ; preds = %265
+  %270 = lshr i32 %38, 1
+  %271 = lshr i32 %28, 1
+  %272 = zext i32 %270 to i64
+  %273 = mul nsw i64 %216, %272
+  %274 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %226, i64 %273
+  %275 = add nsw i32 %270, %217
+  %276 = load i32, i32* %41, align 4
+  %277 = ashr i32 %276, 1
+  %278 = add nsw i32 %217, 8
+  %279 = and i32 %278, -8
+  %280 = icmp slt i32 %277, %279
+  %281 = select i1 %280, i32 %277, i32 %279
+  %282 = icmp slt i32 %275, %281
+  br i1 %282, label %283, label %292
+
+283:                                              ; preds = %269
+  %284 = load i32, i32* %121, align 8
+  %285 = ashr i32 %284, 1
+  %286 = and i32 %218, -8
+  %287 = icmp sgt i32 %285, %286
+  %288 = select i1 %287, i32 %285, i32 %286
+  %289 = icmp sgt i32 %218, %288
+  br i1 %289, label %290, label %292
+
+290:                                              ; preds = %283
+  %291 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %274, i64 -1
+  call fastcc void @add_temporal_candidate(%struct.refmvs_frame* %24, %struct.refmvs_candidate* %1, i32* %2, %struct.refmvs_temporal_block* %291, i16 %4, i32* null, %union.mv* null)
+  br label %292
+
+292:                                              ; preds = %290, %283, %269
+  %293 = add nsw i32 %271, %218
+  %294 = load i32, i32* %31, align 4
+  %295 = ashr i32 %294, 1
+  %296 = add nsw i32 %218, 8
+  %297 = and i32 %296, -8
+  %298 = icmp slt i32 %295, %297
+  %299 = select i1 %298, i32 %295, i32 %297
+  %300 = icmp slt i32 %293, %299
+  br i1 %300, label %301, label %315
+
+301:                                              ; preds = %292
+  br i1 %282, label %302, label %305
+
+302:                                              ; preds = %301
+  %303 = zext i32 %271 to i64
+  %304 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %274, i64 %303
+  call fastcc void @add_temporal_candidate(%struct.refmvs_frame* %24, %struct.refmvs_candidate* %1, i32* %2, %struct.refmvs_temporal_block* %304, i16 %4, i32* null, %union.mv* null)
+  br label %305
+
+305:                                              ; preds = %302, %301
+  %306 = load i32, i32* %41, align 4
+  %307 = ashr i32 %306, 1
+  %308 = icmp slt i32 %307, %279
+  %309 = select i1 %308, i32 %307, i32 %279
+  %310 = icmp sgt i32 %275, %309
+  br i1 %310, label %315, label %311
+
+311:                                              ; preds = %305
+  %312 = zext i32 %271 to i64
+  %313 = sub nsw i64 %312, %216
+  %314 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %274, i64 %313
+  call fastcc void @add_temporal_candidate(%struct.refmvs_frame* %24, %struct.refmvs_candidate* %1, i32* %2, %struct.refmvs_temporal_block* %314, i16 %4, i32* null, %union.mv* null)
+  br label %315
+
+315:                                              ; preds = %247, %265, %305, %311, %292, %184
+  %316 = load i32, i32* %2, align 4
+  %317 = icmp slt i32 %316, 9
+  call void @llvm.assume(i1 %317)
+  %318 = bitcast i32* %16 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %318) #7
+  store i32 -1431655766, i32* %16, align 4
+  %319 = or i32 %142, %119
+  %320 = icmp eq i32 %319, -1
+  br i1 %320, label %323, label %321
+
+321:                                              ; preds = %315
+  %322 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %120, i64 -1
+  call fastcc void @add_spatial_candidate(%struct.refmvs_candidate* %1, i32* %2, i32 4, %struct.refmvs_block* %322, i16 %4, %union.mv* nonnull %47, i32* nonnull %16, i32* nonnull %14)
+  br label %323
+
+323:                                              ; preds = %315, %321
+  %324 = and i32 %7, 31
+  %325 = or i32 %8, 1
+  %326 = sext i32 %325 to i64
+  %327 = icmp ugt i8 %27, 15
+  %328 = select i1 %327, i32 4, i32 2
+  %329 = and i32 %7, 30
+  %330 = or i32 %329, 1
+  %331 = add nuw nsw i32 %330, 5
+  %332 = zext i32 %331 to i64
+  %333 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 1, i64 %332
+  %334 = icmp ugt i8 %37, 15
+  %335 = select i1 %334, i32 4, i32 2
+  %336 = icmp ugt i32 %119, 1
+  %337 = icmp ult i32 %118, 2
+  %338 = or i1 %336, %337
+  br i1 %338, label %350, label %339
+
+339:                                              ; preds = %323
+  %340 = add nsw i32 %324, -3
+  %341 = or i32 %340, 1
+  %342 = add nsw i32 %341, 5
+  %343 = sext i32 %342 to i64
+  %344 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 1, i64 %343
+  %345 = load %struct.refmvs_block*, %struct.refmvs_block** %344, align 8
+  %346 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %345, i64 %326
+  %347 = add nsw i32 %118, -1
+  %348 = call fastcc i32 @scan_row(%struct.refmvs_candidate* %1, i32* %2, i16 %4, %union.mv* nonnull %47, %struct.refmvs_block* %346, i32 %28, i32 %35, i32 %347, i32 %328, i32* nonnull %16, i32* nonnull %14)
+  %349 = add i32 %348, %119
+  br label %350
+
+350:                                              ; preds = %323, %339
+  %351 = phi i32 [ %349, %339 ], [ %119, %323 ]
+  %352 = icmp ugt i32 %142, 1
+  %353 = icmp ult i32 %141, 2
+  %354 = or i1 %352, %353
+  br i1 %354, label %361, label %355
+
+355:                                              ; preds = %350
+  %356 = add i32 %8, -3
+  %357 = or i32 %356, 1
+  %358 = add nsw i32 %141, -1
+  %359 = call fastcc i32 @scan_col(%struct.refmvs_candidate* %1, i32* %2, i16 %4, %union.mv* nonnull %47, %struct.refmvs_block** %333, i32 %38, i32 %45, i32 %357, i32 %358, i32 %335, i32* nonnull %16, i32* nonnull %13)
+  %360 = add i32 %359, %142
+  br label %361
+
+361:                                              ; preds = %350, %355
+  %362 = phi i32 [ %360, %355 ], [ %142, %350 ]
+  %363 = icmp ugt i32 %351, 2
+  %364 = icmp ult i32 %118, 3
+  %365 = or i1 %363, %364
+  br i1 %365, label %852, label %841
+
+366:                                              ; preds = %863
+  %367 = icmp slt i32 %869, 2
+  %368 = select i1 %367, i32 %869, i32 2
+  %369 = icmp sgt i32 %869, 0
+  %370 = zext i1 %369 to i32
+  br label %380
+
+371:                                              ; preds = %863
+  %372 = mul nsw i32 %869, 3
+  %373 = icmp slt i32 %372, 4
+  %374 = select i1 %373, i32 %372, i32 4
+  %375 = load i32, i32* %12, align 4
+  %376 = sub nsw i32 3, %375
+  br label %380
+
+377:                                              ; preds = %863
+  %378 = load i32, i32* %12, align 4
+  %379 = sub nsw i32 5, %378
+  br label %380
+
+380:                                              ; preds = %863, %377, %371, %366
+  %381 = phi i32 [ -1431655766, %863 ], [ 5, %377 ], [ %374, %371 ], [ %368, %366 ]
+  %382 = phi i32 [ -1431655766, %863 ], [ %379, %377 ], [ %376, %371 ], [ %370, %366 ]
+  %383 = icmp eq i32 %163, 0
+  br i1 %383, label %414, label %384
+
+384:                                              ; preds = %380
+  %385 = bitcast %struct.refmvs_candidate* %17 to i8*
+  br label %388
+
+386:                                              ; preds = %408
+  %387 = icmp eq i32 %409, 0
+  br i1 %387, label %412, label %388
+
+388:                                              ; preds = %384, %386
+  %389 = phi i32 [ %163, %384 ], [ %409, %386 ]
+  %390 = icmp sgt i32 %389, 1
+  br i1 %390, label %391, label %412
+
+391:                                              ; preds = %388
+  %392 = sext i32 %389 to i64
+  br label %393
+
+393:                                              ; preds = %408, %391
+  %394 = phi i64 [ 1, %391 ], [ %410, %408 ]
+  %395 = phi i32 [ 0, %391 ], [ %409, %408 ]
+  %396 = add nsw i64 %394, -1
+  %397 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %396, i32 1
+  %398 = load i32, i32* %397, align 8
+  %399 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %394, i32 1
+  %400 = load i32, i32* %399, align 8
+  %401 = icmp slt i32 %398, %400
+  br i1 %401, label %402, label %408
+
+402:                                              ; preds = %393
+  %403 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %394
+  %404 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %396
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %385)
+  %405 = bitcast %struct.refmvs_candidate* %404 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %385, i8* align 8 %405, i64 16, i1 false)
+  %406 = bitcast %struct.refmvs_candidate* %403 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %405, i8* align 8 %406, i64 16, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %406, i8* nonnull align 8 %385, i64 16, i1 false)
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %385)
+  %407 = trunc i64 %394 to i32
+  br label %408
+
+408:                                              ; preds = %393, %402
+  %409 = phi i32 [ %407, %402 ], [ %395, %393 ]
+  %410 = add nuw nsw i64 %394, 1
+  %411 = icmp eq i64 %410, %392
+  br i1 %411, label %386, label %393
+
+412:                                              ; preds = %388, %386
+  %413 = load i32, i32* %2, align 4
+  br label %414
+
+414:                                              ; preds = %412, %380
+  %415 = phi i32 [ %413, %412 ], [ %865, %380 ]
+  %416 = icmp sgt i32 %415, %163
+  br i1 %416, label %417, label %454
+
+417:                                              ; preds = %414
+  %418 = add nsw i32 %163, 1
+  %419 = bitcast %struct.refmvs_candidate* %18 to i8*
+  %420 = sext i32 %163 to i64
+  %421 = add nsw i64 %420, 1
+  br label %424
+
+422:                                              ; preds = %447
+  %423 = icmp sgt i32 %449, %163
+  br i1 %423, label %424, label %452
+
+424:                                              ; preds = %417, %422
+  %425 = phi i32 [ %415, %417 ], [ %449, %422 ]
+  %426 = icmp slt i32 %418, %425
+  br i1 %426, label %427, label %452
+
+427:                                              ; preds = %424
+  %428 = sext i32 %425 to i64
+  br label %429
+
+429:                                              ; preds = %427, %447
+  %430 = phi i64 [ %421, %427 ], [ %450, %447 ]
+  %431 = phi i32 [ %163, %427 ], [ %448, %447 ]
+  %432 = phi i32 [ %163, %427 ], [ %449, %447 ]
+  %433 = sext i32 %431 to i64
+  %434 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %433, i32 1
+  %435 = load i32, i32* %434, align 8
+  %436 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %430, i32 1
+  %437 = load i32, i32* %436, align 8
+  %438 = icmp slt i32 %435, %437
+  br i1 %438, label %441, label %439
+
+439:                                              ; preds = %429
+  %440 = trunc i64 %430 to i32
+  br label %447
+
+441:                                              ; preds = %429
+  %442 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %430
+  %443 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %433
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %419)
+  %444 = bitcast %struct.refmvs_candidate* %443 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %419, i8* align 8 %444, i64 16, i1 false)
+  %445 = bitcast %struct.refmvs_candidate* %442 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %444, i8* align 8 %445, i64 16, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %445, i8* nonnull align 8 %419, i64 16, i1 false)
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %419)
+  %446 = trunc i64 %430 to i32
+  br label %447
+
+447:                                              ; preds = %439, %441
+  %448 = phi i32 [ %440, %439 ], [ %446, %441 ]
+  %449 = phi i32 [ %432, %439 ], [ %446, %441 ]
+  %450 = add i64 %430, 1
+  %451 = icmp slt i64 %450, %428
+  br i1 %451, label %429, label %422
+
+452:                                              ; preds = %424, %422
+  %453 = load i32, i32* %2, align 4
+  br label %454
+
+454:                                              ; preds = %452, %414
+  %455 = phi i32 [ %453, %452 ], [ %415, %414 ]
+  %456 = icmp slt i32 %455, 2
+  br i1 %78, label %457, label %649
+
+457:                                              ; preds = %454
+  br i1 %456, label %458, label %574
+
+458:                                              ; preds = %457
+  %459 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %24, i64 0, i32 7
+  %460 = add nsw i32 %55, -1
+  %461 = sext i32 %460 to i64
+  %462 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %24, i64 0, i32 7, i64 %461
+  %463 = load i8, i8* %462, align 1
+  %464 = zext i8 %463 to i32
+  %465 = add nsw i32 %58, -1
+  %466 = sext i32 %465 to i64
+  %467 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %24, i64 0, i32 7, i64 %466
+  %468 = load i8, i8* %467, align 1
+  %469 = zext i8 %468 to i32
+  %470 = icmp slt i32 %35, %45
+  %471 = select i1 %470, i32 %35, i32 %45
+  %472 = sext i32 %455 to i64
+  %473 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %472
+  %474 = bitcast [4 x i32]* %19 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %474) #7
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %474, i8 0, i64 16, i1 false)
+  %475 = icmp ne i32 %853, -1
+  %476 = icmp sgt i32 %471, 0
+  %477 = and i1 %475, %476
+  br i1 %477, label %478, label %493
+
+478:                                              ; preds = %458
+  %479 = getelementptr inbounds [4 x i32], [4 x i32]* %19, i64 0, i64 0
+  %480 = getelementptr inbounds [7 x i8], [7 x i8]* %459, i64 0, i64 0
+  br label %481
+
+481:                                              ; preds = %478, %481
+  %482 = phi i32 [ 0, %478 ], [ %491, %481 ]
+  %483 = zext i32 %482 to i64
+  %484 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %120, i64 %483
+  call fastcc void @add_compound_extended_candidate(%struct.refmvs_candidate* %473, i32* nonnull %479, %struct.refmvs_block* %484, i32 %464, i32 %469, i16 %4, i8* %480)
+  %485 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %120, i64 %483, i32 2
+  %486 = load i8, i8* %485, align 2
+  %487 = zext i8 %486 to i64
+  %488 = getelementptr inbounds [22 x [4 x i8]], [22 x [4 x i8]]* @dav1d_block_dimensions, i64 0, i64 %487, i64 0
+  %489 = load i8, i8* %488, align 4
+  %490 = zext i8 %489 to i32
+  %491 = add nuw nsw i32 %482, %490
+  %492 = icmp slt i32 %491, %471
+  br i1 %492, label %481, label %493
+
+493:                                              ; preds = %481, %458
+  %494 = icmp ne i32 %864, -1
+  %495 = and i1 %494, %476
+  br i1 %495, label %496, label %515
+
+496:                                              ; preds = %493
+  %497 = add nsw i32 %8, -1
+  %498 = sext i32 %497 to i64
+  %499 = getelementptr inbounds [4 x i32], [4 x i32]* %19, i64 0, i64 0
+  %500 = getelementptr inbounds [7 x i8], [7 x i8]* %459, i64 0, i64 0
+  br label %501
+
+501:                                              ; preds = %496, %501
+  %502 = phi i32 [ 0, %496 ], [ %513, %501 ]
+  %503 = zext i32 %502 to i64
+  %504 = getelementptr inbounds %struct.refmvs_block*, %struct.refmvs_block** %143, i64 %503
+  %505 = load %struct.refmvs_block*, %struct.refmvs_block** %504, align 8
+  %506 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %505, i64 %498
+  call fastcc void @add_compound_extended_candidate(%struct.refmvs_candidate* %473, i32* nonnull %499, %struct.refmvs_block* %506, i32 %464, i32 %469, i16 %4, i8* %500)
+  %507 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %505, i64 %498, i32 2
+  %508 = load i8, i8* %507, align 2
+  %509 = zext i8 %508 to i64
+  %510 = getelementptr inbounds [22 x [4 x i8]], [22 x [4 x i8]]* @dav1d_block_dimensions, i64 0, i64 %509, i64 1
+  %511 = load i8, i8* %510, align 1
+  %512 = zext i8 %511 to i32
+  %513 = add nuw nsw i32 %502, %512
+  %514 = icmp slt i32 %513, %471
+  br i1 %514, label %501, label %515
+
+515:                                              ; preds = %501, %493
+  %516 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %473, i64 2
+  %517 = bitcast %struct.refmvs_candidate* %516 to [2 x %union.mv]*
+  %518 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %473, i64 1
+  %519 = bitcast %struct.refmvs_candidate* %518 to [2 x %union.mv]*
+  %520 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %516, i64 1
+  %521 = bitcast %struct.refmvs_candidate* %520 to [2 x %union.mv]*
+  %522 = getelementptr inbounds [4 x i32], [4 x i32]* %19, i64 0, i64 0
+  %523 = load i32, i32* %522, align 16
+  %524 = icmp sgt i32 %523, 1
+  br i1 %524, label %552, label %525
+
+525:                                              ; preds = %515
+  %526 = getelementptr inbounds [4 x i32], [4 x i32]* %19, i64 0, i64 2
+  %527 = load i32, i32* %526, align 8
+  %528 = icmp eq i32 %527, 0
+  br i1 %528, label %543, label %529
+
+529:                                              ; preds = %525
+  %530 = sext i32 %523 to i64
+  %531 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %473, i64 %530
+  %532 = bitcast %struct.refmvs_candidate* %516 to i32*
+  %533 = bitcast %struct.refmvs_candidate* %531 to i32*
+  %534 = load i32, i32* %532, align 4
+  store i32 %534, i32* %533, align 4
+  %535 = add nsw i32 %523, 1
+  %536 = icmp eq i32 %535, 2
+  br i1 %536, label %552, label %537
+
+537:                                              ; preds = %529
+  %538 = icmp eq i32 %527, 2
+  br i1 %538, label %539, label %543
+
+539:                                              ; preds = %537
+  %540 = bitcast %struct.refmvs_candidate* %520 to i32*
+  %541 = bitcast %struct.refmvs_candidate* %518 to i32*
+  %542 = load i32, i32* %540, align 4
+  store i32 %542, i32* %541, align 4
+  br label %552
+
+543:                                              ; preds = %525, %537
+  %544 = phi i32 [ %535, %537 ], [ %523, %525 ]
+  %545 = sext i32 %544 to i64
+  br label %546
+
+546:                                              ; preds = %546, %543
+  %547 = phi i64 [ %550, %546 ], [ %545, %543 ]
+  %548 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %473, i64 %547
+  %549 = bitcast %struct.refmvs_candidate* %548 to i32*
+  store i32 %77, i32* %549, align 4
+  %550 = add nsw i64 %547, 1
+  %551 = icmp slt i64 %550, 2
+  br i1 %551, label %546, label %552
+
+552:                                              ; preds = %546, %539, %529, %515
+  %553 = getelementptr inbounds [4 x i32], [4 x i32]* %19, i64 0, i64 1
+  %554 = load i32, i32* %553, align 4
+  %555 = icmp sgt i32 %554, 1
+  br i1 %555, label %838, label %809
+
+556:                                              ; preds = %838
+  %557 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 0, i32 0, i32 0
+  %558 = load i64, i64* %557, align 8
+  %559 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %473, i64 0, i32 0, i32 0
+  %560 = load i64, i64* %559, align 8
+  %561 = icmp eq i64 %558, %560
+  br i1 %561, label %562, label %566
+
+562:                                              ; preds = %556
+  %563 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 2, i32 0, i32 0
+  %564 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 1, i32 0, i32 0
+  %565 = load i64, i64* %563, align 8
+  store i64 %565, i64* %564, align 8
+  br label %566
+
+566:                                              ; preds = %562, %556, %838
+  %567 = sext i32 %839 to i64
+  br label %568
+
+568:                                              ; preds = %568, %566
+  %569 = phi i64 [ %571, %568 ], [ %567, %566 ]
+  %570 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %569, i32 1
+  store i32 2, i32* %570, align 8
+  %571 = add nsw i64 %569, 1
+  %572 = icmp slt i64 %571, 2
+  br i1 %572, label %568, label %573
+
+573:                                              ; preds = %568
+  store i32 2, i32* %2, align 4
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %474) #7
+  br label %574
+
+574:                                              ; preds = %573, %457
+  %575 = phi i32 [ 2, %573 ], [ %455, %457 ]
+  %576 = add nsw i32 %28, %8
+  %577 = shl i32 %576, 5
+  %578 = sub i32 -128, %577
+  %579 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %24, i64 0, i32 1
+  %580 = load i32, i32* %579, align 8
+  %581 = sub nsw i32 %580, %8
+  %582 = shl i32 %581, 5
+  %583 = add i32 %582, 128
+  %584 = add nsw i32 %38, %7
+  %585 = shl i32 %584, 5
+  %586 = sub i32 -128, %585
+  %587 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %24, i64 0, i32 2
+  %588 = load i32, i32* %587, align 4
+  %589 = sub nsw i32 %588, %7
+  %590 = shl i32 %589, 5
+  %591 = add i32 %590, 128
+  %592 = sext i32 %575 to i64
+  br label %593
+
+593:                                              ; preds = %593, %574
+  %594 = phi i64 [ %632, %593 ], [ 0, %574 ]
+  %595 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %594, i32 0
+  %596 = bitcast %union.refmvs_mvpair* %595 to [2 x %union.mv]*
+  %597 = bitcast %union.refmvs_mvpair* %595 to %struct.anon.11*
+  %598 = getelementptr inbounds %struct.anon.11, %struct.anon.11* %597, i64 0, i32 1
+  %599 = load i16, i16* %598, align 2
+  %600 = sext i16 %599 to i32
+  %601 = icmp sgt i32 %578, %600
+  %602 = icmp slt i32 %583, %600
+  %603 = select i1 %602, i32 %583, i32 %600
+  %604 = select i1 %601, i32 %578, i32 %603
+  %605 = trunc i32 %604 to i16
+  store i16 %605, i16* %598, align 2
+  %606 = bitcast %union.refmvs_mvpair* %595 to i16*
+  %607 = load i16, i16* %606, align 8
+  %608 = sext i16 %607 to i32
+  %609 = icmp sgt i32 %586, %608
+  %610 = icmp slt i32 %591, %608
+  %611 = select i1 %610, i32 %591, i32 %608
+  %612 = select i1 %609, i32 %586, i32 %611
+  %613 = trunc i32 %612 to i16
+  store i16 %613, i16* %606, align 8
+  %614 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %596, i64 0, i64 1
+  %615 = bitcast %union.mv* %614 to %struct.anon.11*
+  %616 = getelementptr inbounds %struct.anon.11, %struct.anon.11* %615, i64 0, i32 1
+  %617 = load i16, i16* %616, align 2
+  %618 = sext i16 %617 to i32
+  %619 = icmp sgt i32 %578, %618
+  %620 = icmp slt i32 %583, %618
+  %621 = select i1 %620, i32 %583, i32 %618
+  %622 = select i1 %619, i32 %578, i32 %621
+  %623 = trunc i32 %622 to i16
+  store i16 %623, i16* %616, align 2
+  %624 = bitcast %union.mv* %614 to i16*
+  %625 = load i16, i16* %624, align 4
+  %626 = sext i16 %625 to i32
+  %627 = icmp sgt i32 %586, %626
+  %628 = icmp slt i32 %591, %626
+  %629 = select i1 %628, i32 %591, i32 %626
+  %630 = select i1 %627, i32 %586, i32 %629
+  %631 = trunc i32 %630 to i16
+  store i16 %631, i16* %624, align 4
+  %632 = add nuw nsw i64 %594, 1
+  %633 = icmp slt i64 %632, %592
+  br i1 %633, label %593, label %634
+
+634:                                              ; preds = %593
+  %635 = ashr i32 %381, 1
+  switch i32 %635, label %808 [
+    i32 0, label %636
+    i32 1, label %639
+    i32 2, label %643
+  ]
+
+636:                                              ; preds = %634
+  %637 = icmp slt i32 %382, 1
+  %638 = select i1 %637, i32 %382, i32 1
+  br label %806
+
+639:                                              ; preds = %634
+  %640 = icmp slt i32 %382, 3
+  %641 = select i1 %640, i32 %382, i32 3
+  %642 = add nsw i32 %641, 1
+  br label %806
+
+643:                                              ; preds = %634
+  %644 = icmp slt i32 %382, 4
+  %645 = select i1 %644, i32 %382, i32 4
+  %646 = icmp sgt i32 %645, 1
+  %647 = select i1 %646, i32 %645, i32 1
+  %648 = add nuw nsw i32 %647, 3
+  br label %806
+
+649:                                              ; preds = %454
+  %650 = and i1 %61, %456
+  br i1 %650, label %651, label %707
+
+651:                                              ; preds = %649
+  %652 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %24, i64 0, i32 7
+  %653 = add nsw i32 %55, -1
+  %654 = sext i32 %653 to i64
+  %655 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %24, i64 0, i32 7, i64 %654
+  %656 = load i8, i8* %655, align 1
+  %657 = zext i8 %656 to i32
+  %658 = icmp slt i32 %35, %45
+  %659 = select i1 %658, i32 %35, i32 %45
+  %660 = icmp ne i32 %853, -1
+  %661 = icmp sgt i32 %659, 0
+  %662 = and i1 %660, %661
+  br i1 %662, label %663, label %681
+
+663:                                              ; preds = %651
+  %664 = getelementptr inbounds [7 x i8], [7 x i8]* %652, i64 0, i64 0
+  %665 = icmp slt i32 %455, 2
+  br i1 %665, label %666, label %681
+
+666:                                              ; preds = %663, %678
+  %667 = phi i32 [ %676, %678 ], [ 0, %663 ]
+  %668 = zext i32 %667 to i64
+  %669 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %120, i64 %668
+  call fastcc void @add_single_extended_candidate(%struct.refmvs_candidate* %1, i32* %2, %struct.refmvs_block* %669, i32 %657, i8* %664)
+  %670 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %120, i64 %668, i32 2
+  %671 = load i8, i8* %670, align 2
+  %672 = zext i8 %671 to i64
+  %673 = getelementptr inbounds [22 x [4 x i8]], [22 x [4 x i8]]* @dav1d_block_dimensions, i64 0, i64 %672, i64 0
+  %674 = load i8, i8* %673, align 4
+  %675 = zext i8 %674 to i32
+  %676 = add nuw nsw i32 %667, %675
+  %677 = icmp slt i32 %676, %659
+  br i1 %677, label %678, label %681
+
+678:                                              ; preds = %666
+  %679 = load i32, i32* %2, align 4
+  %680 = icmp slt i32 %679, 2
+  br i1 %680, label %666, label %681
+
+681:                                              ; preds = %678, %666, %663, %651
+  %682 = icmp ne i32 %864, -1
+  %683 = and i1 %682, %661
+  br i1 %683, label %684, label %707
+
+684:                                              ; preds = %681
+  %685 = add nsw i32 %8, -1
+  %686 = sext i32 %685 to i64
+  %687 = getelementptr inbounds [7 x i8], [7 x i8]* %652, i64 0, i64 0
+  br label %688
+
+688:                                              ; preds = %684, %694
+  %689 = phi i32 [ 0, %684 ], [ %705, %694 ]
+  %690 = load i32, i32* %2, align 4
+  %691 = icmp slt i32 %690, 2
+  br i1 %691, label %694, label %692
+
+692:                                              ; preds = %688
+  %693 = icmp slt i32 %690, 9
+  call void @llvm.assume(i1 %693)
+  br label %711
+
+694:                                              ; preds = %688
+  %695 = zext i32 %689 to i64
+  %696 = getelementptr inbounds %struct.refmvs_block*, %struct.refmvs_block** %143, i64 %695
+  %697 = load %struct.refmvs_block*, %struct.refmvs_block** %696, align 8
+  %698 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %697, i64 %686
+  call fastcc void @add_single_extended_candidate(%struct.refmvs_candidate* %1, i32* %2, %struct.refmvs_block* %698, i32 %657, i8* %687)
+  %699 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %697, i64 %686, i32 2
+  %700 = load i8, i8* %699, align 2
+  %701 = zext i8 %700 to i64
+  %702 = getelementptr inbounds [22 x [4 x i8]], [22 x [4 x i8]]* @dav1d_block_dimensions, i64 0, i64 %701, i64 1
+  %703 = load i8, i8* %702, align 1
+  %704 = zext i8 %703 to i32
+  %705 = add nuw nsw i32 %689, %704
+  %706 = icmp slt i32 %705, %659
+  br i1 %706, label %688, label %707
+
+707:                                              ; preds = %694, %681, %649
+  %708 = load i32, i32* %2, align 4
+  %709 = icmp slt i32 %708, 9
+  call void @llvm.assume(i1 %709)
+  %710 = icmp eq i32 %708, 0
+  br i1 %710, label %755, label %711
+
+711:                                              ; preds = %692, %707
+  %712 = phi i32 [ %690, %692 ], [ %708, %707 ]
+  %713 = add nsw i32 %28, %8
+  %714 = shl i32 %713, 5
+  %715 = sub i32 -128, %714
+  %716 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %24, i64 0, i32 1
+  %717 = load i32, i32* %716, align 8
+  %718 = sub nsw i32 %717, %8
+  %719 = shl i32 %718, 5
+  %720 = add i32 %719, 128
+  %721 = add nsw i32 %38, %7
+  %722 = shl i32 %721, 5
+  %723 = sub i32 -128, %722
+  %724 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %24, i64 0, i32 2
+  %725 = load i32, i32* %724, align 4
+  %726 = sub nsw i32 %725, %7
+  %727 = shl i32 %726, 5
+  %728 = add i32 %727, 128
+  %729 = sext i32 %712 to i64
+  br label %730
+
+730:                                              ; preds = %730, %711
+  %731 = phi i64 [ %750, %730 ], [ 0, %711 ]
+  %732 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %731, i32 0
+  %733 = bitcast %union.refmvs_mvpair* %732 to %struct.anon.11*
+  %734 = getelementptr inbounds %struct.anon.11, %struct.anon.11* %733, i64 0, i32 1
+  %735 = load i16, i16* %734, align 2
+  %736 = sext i16 %735 to i32
+  %737 = icmp sgt i32 %715, %736
+  %738 = icmp slt i32 %720, %736
+  %739 = select i1 %738, i32 %720, i32 %736
+  %740 = select i1 %737, i32 %715, i32 %739
+  %741 = trunc i32 %740 to i16
+  store i16 %741, i16* %734, align 2
+  %742 = bitcast %union.refmvs_mvpair* %732 to i16*
+  %743 = load i16, i16* %742, align 8
+  %744 = sext i16 %743 to i32
+  %745 = icmp sgt i32 %723, %744
+  %746 = icmp slt i32 %728, %744
+  %747 = select i1 %746, i32 %728, i32 %744
+  %748 = select i1 %745, i32 %723, i32 %747
+  %749 = trunc i32 %748 to i16
+  store i16 %749, i16* %742, align 8
+  %750 = add nuw nsw i64 %731, 1
+  %751 = icmp slt i64 %750, %729
+  br i1 %751, label %730, label %752
+
+752:                                              ; preds = %730
+  %753 = load i32, i32* %2, align 4
+  %754 = icmp slt i32 %753, 2
+  br i1 %754, label %755, label %773
+
+755:                                              ; preds = %707, %752
+  %756 = phi i32 [ %753, %752 ], [ 0, %707 ]
+  %757 = sext i32 %756 to i64
+  %758 = sub nsw i64 2, %757
+  %759 = sub nsw i64 1, %757
+  %760 = and i64 %758, 7
+  %761 = icmp eq i64 %760, 0
+  br i1 %761, label %770, label %762
+
+762:                                              ; preds = %755, %762
+  %763 = phi i64 [ %767, %762 ], [ %757, %755 ]
+  %764 = phi i64 [ %768, %762 ], [ %760, %755 ]
+  %765 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %763, i32 0
+  %766 = bitcast %union.refmvs_mvpair* %765 to i32*
+  store i32 %77, i32* %766, align 8
+  %767 = add nsw i64 %763, 1
+  %768 = add i64 %764, -1
+  %769 = icmp eq i64 %768, 0
+  br i1 %769, label %770, label %762, !llvm.loop !4
+
+770:                                              ; preds = %762, %755
+  %771 = phi i64 [ %757, %755 ], [ %767, %762 ]
+  %772 = icmp ult i64 %759, 7
+  br i1 %772, label %773, label %779
+
+773:                                              ; preds = %770, %779, %752
+  %774 = shl i32 %381, 4
+  %775 = load i32, i32* %15, align 4
+  %776 = shl i32 %775, 3
+  %777 = or i32 %382, %774
+  %778 = or i32 %777, %776
+  br label %806
+
+779:                                              ; preds = %770, %779
+  %780 = phi i64 [ %804, %779 ], [ %771, %770 ]
+  %781 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %780, i32 0
+  %782 = bitcast %union.refmvs_mvpair* %781 to i32*
+  store i32 %77, i32* %782, align 8
+  %783 = add nsw i64 %780, 1
+  %784 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %783, i32 0
+  %785 = bitcast %union.refmvs_mvpair* %784 to i32*
+  store i32 %77, i32* %785, align 8
+  %786 = add nsw i64 %780, 2
+  %787 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %786, i32 0
+  %788 = bitcast %union.refmvs_mvpair* %787 to i32*
+  store i32 %77, i32* %788, align 8
+  %789 = add nsw i64 %780, 3
+  %790 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %789, i32 0
+  %791 = bitcast %union.refmvs_mvpair* %790 to i32*
+  store i32 %77, i32* %791, align 8
+  %792 = add nsw i64 %780, 4
+  %793 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %792, i32 0
+  %794 = bitcast %union.refmvs_mvpair* %793 to i32*
+  store i32 %77, i32* %794, align 8
+  %795 = add nsw i64 %780, 5
+  %796 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %795, i32 0
+  %797 = bitcast %union.refmvs_mvpair* %796 to i32*
+  store i32 %77, i32* %797, align 8
+  %798 = add nsw i64 %780, 6
+  %799 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %798, i32 0
+  %800 = bitcast %union.refmvs_mvpair* %799 to i32*
+  store i32 %77, i32* %800, align 8
+  %801 = add nsw i64 %780, 7
+  %802 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %801, i32 0
+  %803 = bitcast %union.refmvs_mvpair* %802 to i32*
+  store i32 %77, i32* %803, align 8
+  %804 = add nsw i64 %780, 8
+  %805 = icmp eq i64 %804, 2
+  br i1 %805, label %773, label %779
+
+806:                                              ; preds = %773, %643, %639, %636
+  %807 = phi i32 [ %638, %636 ], [ %642, %639 ], [ %648, %643 ], [ %778, %773 ]
+  store i32 %807, i32* %3, align 4
+  br label %808
+
+808:                                              ; preds = %806, %634
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %318) #7
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %185) #7
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %95) #7
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %94) #7
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %93) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %50) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %46) #7
+  ret void
+
+809:                                              ; preds = %552
+  %810 = getelementptr inbounds [4 x i32], [4 x i32]* %19, i64 0, i64 3
+  %811 = load i32, i32* %810, align 4
+  %812 = icmp eq i32 %811, 0
+  br i1 %812, label %828, label %813
+
+813:                                              ; preds = %809
+  %814 = sext i32 %554 to i64
+  %815 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %473, i64 %814
+  %816 = bitcast %struct.refmvs_candidate* %815 to [2 x %union.mv]*
+  %817 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %517, i64 0, i64 1, i32 0
+  %818 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %816, i64 0, i64 1, i32 0
+  %819 = load i32, i32* %817, align 4
+  store i32 %819, i32* %818, align 4
+  %820 = add nsw i32 %554, 1
+  %821 = icmp eq i32 %820, 2
+  br i1 %821, label %838, label %822
+
+822:                                              ; preds = %813
+  %823 = icmp eq i32 %811, 2
+  br i1 %823, label %824, label %828
+
+824:                                              ; preds = %822
+  %825 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %521, i64 0, i64 1, i32 0
+  %826 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %519, i64 0, i64 1, i32 0
+  %827 = load i32, i32* %825, align 4
+  store i32 %827, i32* %826, align 4
+  br label %838
+
+828:                                              ; preds = %822, %809
+  %829 = phi i32 [ %820, %822 ], [ %554, %809 ]
+  %830 = sext i32 %829 to i64
+  br label %831
+
+831:                                              ; preds = %831, %828
+  %832 = phi i64 [ %836, %831 ], [ %830, %828 ]
+  %833 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %473, i64 %832
+  %834 = bitcast %struct.refmvs_candidate* %833 to [2 x %union.mv]*
+  %835 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %834, i64 0, i64 1, i32 0
+  store i32 %92, i32* %835, align 4
+  %836 = add nsw i64 %832, 1
+  %837 = icmp slt i64 %836, 2
+  br i1 %837, label %831, label %838
+
+838:                                              ; preds = %831, %824, %813, %552
+  %839 = load i32, i32* %2, align 4
+  %840 = icmp eq i32 %839, 1
+  br i1 %840, label %556, label %566
+
+841:                                              ; preds = %361
+  %842 = add nsw i32 %324, -5
+  %843 = or i32 %842, 1
+  %844 = add nsw i32 %843, 5
+  %845 = sext i32 %844 to i64
+  %846 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 1, i64 %845
+  %847 = load %struct.refmvs_block*, %struct.refmvs_block** %846, align 8
+  %848 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %847, i64 %326
+  %849 = add nsw i32 %118, -2
+  %850 = call fastcc i32 @scan_row(%struct.refmvs_candidate* %1, i32* %2, i16 %4, %union.mv* nonnull %47, %struct.refmvs_block* %848, i32 %28, i32 %35, i32 %849, i32 %328, i32* nonnull %16, i32* nonnull %14)
+  %851 = add i32 %850, %351
+  br label %852
+
+852:                                              ; preds = %841, %361
+  %853 = phi i32 [ %851, %841 ], [ %351, %361 ]
+  %854 = icmp ugt i32 %362, 2
+  %855 = icmp ult i32 %141, 3
+  %856 = or i1 %854, %855
+  br i1 %856, label %863, label %857
+
+857:                                              ; preds = %852
+  %858 = add i32 %8, -5
+  %859 = or i32 %858, 1
+  %860 = add nsw i32 %141, -2
+  %861 = call fastcc i32 @scan_col(%struct.refmvs_candidate* %1, i32* %2, i16 %4, %union.mv* nonnull %47, %struct.refmvs_block** %333, i32 %38, i32 %45, i32 %859, i32 %860, i32 %335, i32* nonnull %16, i32* nonnull %13)
+  %862 = add i32 %861, %362
+  br label %863
+
+863:                                              ; preds = %857, %852
+  %864 = phi i32 [ %862, %857 ], [ %362, %852 ]
+  %865 = load i32, i32* %2, align 4
+  %866 = icmp slt i32 %865, 9
+  call void @llvm.assume(i1 %866)
+  %867 = load i32, i32* %13, align 4
+  %868 = load i32, i32* %14, align 4
+  %869 = add nsw i32 %868, %867
+  switch i32 %162, label %380 [
+    i32 0, label %366
+    i32 1, label %371
+    i32 2, label %377
+  ]
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define internal fastcc i32 @get_gmv_2d(%struct.Dav1dWarpedMotionParams* nocapture readonly, i32, i32, i32, i32, %struct.Dav1dFrameHeader* nocapture readonly) unnamed_addr #2 {
+  %7 = getelementptr inbounds %struct.Dav1dWarpedMotionParams, %struct.Dav1dWarpedMotionParams* %0, i64 0, i32 0
+  %8 = load i32, i32* %7, align 4
+  switch i32 %8, label %9 [
+    i32 2, label %18
+    i32 0, label %119
+    i32 1, label %94
+  ]
+
+9:                                                ; preds = %6
+  %10 = getelementptr inbounds %struct.Dav1dWarpedMotionParams, %struct.Dav1dWarpedMotionParams* %0, i64 0, i32 1, i64 2
+  %11 = load i32, i32* %10, align 4
+  %12 = getelementptr inbounds %struct.Dav1dWarpedMotionParams, %struct.Dav1dWarpedMotionParams* %0, i64 0, i32 1, i64 3
+  %13 = load i32, i32* %12, align 4
+  %14 = getelementptr inbounds %struct.Dav1dWarpedMotionParams, %struct.Dav1dWarpedMotionParams* %0, i64 0, i32 1, i64 5
+  %15 = load i32, i32* %14, align 4
+  %16 = getelementptr inbounds %struct.Dav1dWarpedMotionParams, %struct.Dav1dWarpedMotionParams* %0, i64 0, i32 1, i64 4
+  %17 = load i32, i32* %16, align 4
+  br label %30
+
+18:                                               ; preds = %6
+  %19 = getelementptr inbounds %struct.Dav1dWarpedMotionParams, %struct.Dav1dWarpedMotionParams* %0, i64 0, i32 1, i64 5
+  %20 = load i32, i32* %19, align 4
+  %21 = getelementptr inbounds %struct.Dav1dWarpedMotionParams, %struct.Dav1dWarpedMotionParams* %0, i64 0, i32 1, i64 2
+  %22 = load i32, i32* %21, align 4
+  %23 = icmp eq i32 %20, %22
+  tail call void @llvm.assume(i1 %23)
+  %24 = getelementptr inbounds %struct.Dav1dWarpedMotionParams, %struct.Dav1dWarpedMotionParams* %0, i64 0, i32 1, i64 4
+  %25 = load i32, i32* %24, align 4
+  %26 = getelementptr inbounds %struct.Dav1dWarpedMotionParams, %struct.Dav1dWarpedMotionParams* %0, i64 0, i32 1, i64 3
+  %27 = load i32, i32* %26, align 4
+  %28 = sub nsw i32 0, %27
+  %29 = icmp eq i32 %25, %28
+  tail call void @llvm.assume(i1 %29)
+  br label %30
+
+30:                                               ; preds = %9, %18
+  %31 = phi i32 [ %17, %9 ], [ %25, %18 ]
+  %32 = phi i32 [ %15, %9 ], [ %20, %18 ]
+  %33 = phi i32 [ %13, %9 ], [ %27, %18 ]
+  %34 = phi i32 [ %11, %9 ], [ %22, %18 ]
+  %35 = shl i32 %1, 2
+  %36 = shl i32 %3, 1
+  %37 = add i32 %35, -1
+  %38 = add i32 %37, %36
+  %39 = shl i32 %2, 2
+  %40 = shl i32 %4, 1
+  %41 = add i32 %39, -1
+  %42 = add i32 %41, %40
+  %43 = add nsw i32 %34, -65536
+  %44 = mul nsw i32 %43, %38
+  %45 = mul nsw i32 %33, %42
+  %46 = add nsw i32 %44, %45
+  %47 = getelementptr inbounds %struct.Dav1dWarpedMotionParams, %struct.Dav1dWarpedMotionParams* %0, i64 0, i32 1, i64 0
+  %48 = load i32, i32* %47, align 4
+  %49 = add nsw i32 %46, %48
+  %50 = add nsw i32 %32, -65536
+  %51 = mul nsw i32 %50, %42
+  %52 = mul nsw i32 %31, %38
+  %53 = add nsw i32 %51, %52
+  %54 = getelementptr inbounds %struct.Dav1dWarpedMotionParams, %struct.Dav1dWarpedMotionParams* %0, i64 0, i32 1, i64 1
+  %55 = load i32, i32* %54, align 4
+  %56 = add nsw i32 %53, %55
+  %57 = getelementptr inbounds %struct.Dav1dFrameHeader, %struct.Dav1dFrameHeader* %5, i64 0, i32 29
+  %58 = load i32, i32* %57, align 4
+  %59 = icmp eq i32 %58, 0
+  %60 = select i1 %59, i32 14, i32 13
+  %61 = shl i32 1, %60
+  %62 = lshr exact i32 %61, 1
+  %63 = icmp slt i32 %56, 0
+  %64 = sub nsw i32 0, %56
+  %65 = select i1 %63, i32 %64, i32 %56
+  %66 = add nuw nsw i32 %62, %65
+  %67 = lshr i32 %66, %60
+  %68 = zext i1 %59 to i32
+  %69 = shl i32 %67, %68
+  %70 = sub nsw i32 0, %69
+  %71 = select i1 %63, i32 %70, i32 %69
+  %72 = trunc i32 %71 to i16
+  %73 = icmp slt i32 %49, 0
+  %74 = sub nsw i32 0, %49
+  %75 = select i1 %73, i32 %74, i32 %49
+  %76 = add nuw nsw i32 %62, %75
+  %77 = lshr i32 %76, %60
+  %78 = shl i32 %77, %68
+  %79 = sub nsw i32 0, %78
+  %80 = select i1 %73, i32 %79, i32 %78
+  %81 = trunc i32 %80 to i16
+  %82 = getelementptr inbounds %struct.Dav1dFrameHeader, %struct.Dav1dFrameHeader* %5, i64 0, i32 16
+  %83 = load i32, i32* %82, align 8
+  %84 = icmp eq i32 %83, 0
+  br i1 %84, label %119, label %85
+
+85:                                               ; preds = %30
+  %86 = lshr i16 %81, 15
+  %87 = add i16 %81, 3
+  %88 = add i16 %87, %86
+  %89 = and i16 %88, -8
+  %90 = lshr i16 %72, 15
+  %91 = add i16 %72, 3
+  %92 = add i16 %91, %90
+  %93 = and i16 %92, -8
+  br label %119
+
+94:                                               ; preds = %6
+  %95 = getelementptr inbounds %struct.Dav1dWarpedMotionParams, %struct.Dav1dWarpedMotionParams* %0, i64 0, i32 1, i64 0
+  %96 = load i32, i32* %95, align 4
+  %97 = lshr i32 %96, 13
+  %98 = trunc i32 %97 to i16
+  %99 = getelementptr inbounds %struct.Dav1dWarpedMotionParams, %struct.Dav1dWarpedMotionParams* %0, i64 0, i32 1, i64 1
+  %100 = load i32, i32* %99, align 4
+  %101 = lshr i32 %100, 13
+  %102 = trunc i32 %101 to i16
+  %103 = getelementptr inbounds %struct.Dav1dFrameHeader, %struct.Dav1dFrameHeader* %5, i64 0, i32 16
+  %104 = load i32, i32* %103, align 8
+  %105 = icmp eq i32 %104, 0
+  br i1 %105, label %119, label %106
+
+106:                                              ; preds = %94
+  %107 = lshr i32 %100, 28
+  %108 = trunc i32 %107 to i16
+  %109 = and i16 %108, 1
+  %110 = add i16 %102, 3
+  %111 = add i16 %110, %109
+  %112 = and i16 %111, -8
+  %113 = lshr i32 %96, 28
+  %114 = trunc i32 %113 to i16
+  %115 = and i16 %114, 1
+  %116 = add i16 %98, 3
+  %117 = add i16 %116, %115
+  %118 = and i16 %117, -8
+  br label %119
+
+119:                                              ; preds = %6, %85, %30, %94, %106
+  %120 = phi i16 [ %81, %30 ], [ %89, %85 ], [ %102, %94 ], [ %112, %106 ], [ 0, %6 ]
+  %121 = phi i16 [ %72, %30 ], [ %93, %85 ], [ %98, %94 ], [ %118, %106 ], [ 0, %6 ]
+  %122 = zext i16 %120 to i32
+  %123 = shl nuw i32 %122, 16
+  %124 = zext i16 %121 to i32
+  %125 = or i32 %123, %124
+  ret i32 %125
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: nounwind ssp uwtable
+define internal fastcc i32 @scan_row(%struct.refmvs_candidate* nocapture, i32* nocapture, i16, %union.mv* nocapture readonly, %struct.refmvs_block* nocapture readonly, i32, i32, i32, i32, i32* nocapture, i32* nocapture) unnamed_addr #0 {
+  %12 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %4, i64 0, i32 2
+  %13 = load i8, i8* %12, align 2
+  %14 = zext i8 %13 to i64
+  %15 = getelementptr inbounds [22 x [4 x i8]], [22 x [4 x i8]]* @dav1d_block_dimensions, i64 0, i64 %14, i64 0
+  %16 = load i8, i8* %15, align 4
+  %17 = zext i8 %16 to i32
+  %18 = icmp sgt i32 %17, %5
+  %19 = select i1 %18, i32 %5, i32 %17
+  %20 = icmp slt i32 %19, %8
+  %21 = select i1 %20, i32 %8, i32 %19
+  %22 = icmp slt i32 %17, %5
+  br i1 %22, label %23, label %26
+
+23:                                               ; preds = %11
+  %24 = shl nsw i32 %21, 1
+  tail call fastcc void @add_spatial_candidate(%struct.refmvs_candidate* %0, i32* %1, i32 %24, %struct.refmvs_block* %4, i16 %2, %union.mv* %3, i32* %9, i32* %10)
+  %25 = icmp slt i32 %21, %6
+  br i1 %25, label %41, label %57
+
+26:                                               ; preds = %11
+  %27 = icmp eq i32 %5, 1
+  br i1 %27, label %37, label %28
+
+28:                                               ; preds = %26
+  %29 = shl nsw i32 %7, 1
+  %30 = getelementptr inbounds [22 x [4 x i8]], [22 x [4 x i8]]* @dav1d_block_dimensions, i64 0, i64 %14, i64 1
+  %31 = load i8, i8* %30, align 1
+  %32 = zext i8 %31 to i32
+  %33 = icmp slt i32 %29, %32
+  %34 = select i1 %33, i32 %29, i32 %32
+  %35 = icmp sgt i32 %34, 2
+  %36 = select i1 %35, i32 %34, i32 2
+  br label %37
+
+37:                                               ; preds = %26, %28
+  %38 = phi i32 [ %36, %28 ], [ 2, %26 ]
+  %39 = mul nsw i32 %38, %21
+  tail call fastcc void @add_spatial_candidate(%struct.refmvs_candidate* %0, i32* %1, i32 %39, %struct.refmvs_block* %4, i16 %2, %union.mv* %3, i32* %9, i32* %10)
+  %40 = lshr i32 %38, 1
+  br label %57
+
+41:                                               ; preds = %23, %41
+  %42 = phi i32 [ %55, %41 ], [ %21, %23 ]
+  %43 = sext i32 %42 to i64
+  %44 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %4, i64 %43
+  %45 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %4, i64 %43, i32 2
+  %46 = load i8, i8* %45, align 2
+  %47 = zext i8 %46 to i64
+  %48 = getelementptr inbounds [22 x [4 x i8]], [22 x [4 x i8]]* @dav1d_block_dimensions, i64 0, i64 %47, i64 0
+  %49 = load i8, i8* %48, align 4
+  %50 = zext i8 %49 to i32
+  %51 = icmp slt i32 %50, %5
+  tail call void @llvm.assume(i1 %51)
+  %52 = icmp slt i32 %50, %8
+  %53 = select i1 %52, i32 %8, i32 %50
+  %54 = shl nuw nsw i32 %53, 1
+  tail call fastcc void @add_spatial_candidate(%struct.refmvs_candidate* %0, i32* %1, i32 %54, %struct.refmvs_block* %44, i16 %2, %union.mv* %3, i32* %9, i32* %10)
+  %55 = add nsw i32 %42, %53
+  %56 = icmp slt i32 %55, %6
+  br i1 %56, label %41, label %57
+
+57:                                               ; preds = %41, %23, %37
+  %58 = phi i32 [ %40, %37 ], [ 1, %23 ], [ 1, %41 ]
+  ret i32 %58
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal fastcc i32 @scan_col(%struct.refmvs_candidate* nocapture, i32* nocapture, i16, %union.mv* nocapture readonly, %struct.refmvs_block** nocapture readonly, i32, i32, i32, i32, i32, i32* nocapture, i32* nocapture) unnamed_addr #0 {
+  %13 = load %struct.refmvs_block*, %struct.refmvs_block** %4, align 8
+  %14 = sext i32 %7 to i64
+  %15 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %13, i64 %14
+  %16 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %13, i64 %14, i32 2
+  %17 = load i8, i8* %16, align 2
+  %18 = zext i8 %17 to i64
+  %19 = getelementptr inbounds [22 x [4 x i8]], [22 x [4 x i8]]* @dav1d_block_dimensions, i64 0, i64 %18, i64 0
+  %20 = getelementptr inbounds [22 x [4 x i8]], [22 x [4 x i8]]* @dav1d_block_dimensions, i64 0, i64 %18, i64 1
+  %21 = load i8, i8* %20, align 1
+  %22 = zext i8 %21 to i32
+  %23 = icmp sgt i32 %22, %5
+  %24 = select i1 %23, i32 %5, i32 %22
+  %25 = icmp slt i32 %24, %9
+  %26 = select i1 %25, i32 %9, i32 %24
+  %27 = icmp slt i32 %22, %5
+  br i1 %27, label %28, label %31
+
+28:                                               ; preds = %12
+  %29 = shl nsw i32 %26, 1
+  tail call fastcc void @add_spatial_candidate(%struct.refmvs_candidate* %0, i32* %1, i32 %29, %struct.refmvs_block* %15, i16 %2, %union.mv* %3, i32* %10, i32* %11)
+  %30 = icmp slt i32 %26, %6
+  br i1 %30, label %45, label %63
+
+31:                                               ; preds = %12
+  %32 = icmp eq i32 %5, 1
+  br i1 %32, label %41, label %33
+
+33:                                               ; preds = %31
+  %34 = shl nsw i32 %8, 1
+  %35 = load i8, i8* %19, align 4
+  %36 = zext i8 %35 to i32
+  %37 = icmp slt i32 %34, %36
+  %38 = select i1 %37, i32 %34, i32 %36
+  %39 = icmp sgt i32 %38, 2
+  %40 = select i1 %39, i32 %38, i32 2
+  br label %41
+
+41:                                               ; preds = %31, %33
+  %42 = phi i32 [ %40, %33 ], [ 2, %31 ]
+  %43 = mul nsw i32 %42, %26
+  tail call fastcc void @add_spatial_candidate(%struct.refmvs_candidate* %0, i32* %1, i32 %43, %struct.refmvs_block* %15, i16 %2, %union.mv* %3, i32* %10, i32* %11)
+  %44 = lshr i32 %42, 1
+  br label %63
+
+45:                                               ; preds = %28, %45
+  %46 = phi i32 [ %61, %45 ], [ %26, %28 ]
+  %47 = sext i32 %46 to i64
+  %48 = getelementptr inbounds %struct.refmvs_block*, %struct.refmvs_block** %4, i64 %47
+  %49 = load %struct.refmvs_block*, %struct.refmvs_block** %48, align 8
+  %50 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %49, i64 %14
+  %51 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %49, i64 %14, i32 2
+  %52 = load i8, i8* %51, align 2
+  %53 = zext i8 %52 to i64
+  %54 = getelementptr inbounds [22 x [4 x i8]], [22 x [4 x i8]]* @dav1d_block_dimensions, i64 0, i64 %53, i64 1
+  %55 = load i8, i8* %54, align 1
+  %56 = zext i8 %55 to i32
+  %57 = icmp slt i32 %56, %5
+  tail call void @llvm.assume(i1 %57)
+  %58 = icmp slt i32 %56, %9
+  %59 = select i1 %58, i32 %9, i32 %56
+  %60 = shl nuw nsw i32 %59, 1
+  tail call fastcc void @add_spatial_candidate(%struct.refmvs_candidate* %0, i32* %1, i32 %60, %struct.refmvs_block* %50, i16 %2, %union.mv* %3, i32* %10, i32* %11)
+  %61 = add nsw i32 %46, %59
+  %62 = icmp slt i32 %61, %6
+  br i1 %62, label %45, label %63
+
+63:                                               ; preds = %45, %28, %41
+  %64 = phi i32 [ %44, %41 ], [ 1, %28 ], [ 1, %45 ]
+  ret i32 %64
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define internal fastcc void @add_spatial_candidate(%struct.refmvs_candidate* nocapture, i32* nocapture, i32, %struct.refmvs_block* nocapture readonly, i16, %union.mv* nocapture readonly, i32* nocapture, i32* nocapture) unnamed_addr #3 {
+  %9 = zext i16 %4 to i32
+  %10 = bitcast %struct.refmvs_block* %3 to [2 x %union.mv]*
+  %11 = bitcast %struct.refmvs_block* %3 to i32*
+  %12 = load i32, i32* %11, align 8
+  %13 = icmp eq i32 %12, -2147450880
+  br i1 %13, label %76, label %14
+
+14:                                               ; preds = %8
+  %15 = icmp ugt i16 %4, -257
+  br i1 %15, label %16, label %77
+
+16:                                               ; preds = %14
+  %17 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %3, i64 0, i32 1
+  %18 = shl i32 %9, 24
+  %19 = ashr exact i32 %18, 24
+  %20 = bitcast %union.refmvs_refpair* %17 to i8*
+  %21 = load i8, i8* %20, align 1
+  %22 = sext i8 %21 to i32
+  %23 = icmp eq i32 %19, %22
+  br i1 %23, label %30, label %24
+
+24:                                               ; preds = %16
+  %25 = bitcast %union.refmvs_refpair* %17 to [2 x i8]*
+  %26 = getelementptr inbounds [2 x i8], [2 x i8]* %25, i64 0, i64 1
+  %27 = load i8, i8* %26, align 1
+  %28 = sext i8 %27 to i32
+  %29 = icmp eq i32 %19, %28
+  br i1 %29, label %30, label %76
+
+30:                                               ; preds = %24, %16
+  %31 = phi i64 [ 0, %16 ], [ 1, %24 ]
+  %32 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %3, i64 0, i32 3
+  %33 = load i8, i8* %32, align 1
+  %34 = and i8 %33, 1
+  %35 = icmp eq i8 %34, 0
+  br i1 %35, label %40, label %36
+
+36:                                               ; preds = %30
+  %37 = getelementptr inbounds %union.mv, %union.mv* %5, i64 0, i32 0
+  %38 = load i32, i32* %37, align 4
+  %39 = icmp eq i32 %38, -2147450880
+  br i1 %39, label %40, label %43
+
+40:                                               ; preds = %36, %30
+  %41 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %10, i64 0, i64 %31, i32 0
+  %42 = load i32, i32* %41, align 4
+  br label %43
+
+43:                                               ; preds = %36, %40
+  %44 = phi i32 [ %42, %40 ], [ %38, %36 ]
+  store i32 1, i32* %7, align 4
+  %45 = load i8, i8* %32, align 1
+  %46 = lshr i8 %45, 1
+  %47 = zext i8 %46 to i32
+  %48 = load i32, i32* %6, align 4
+  %49 = or i32 %48, %47
+  store i32 %49, i32* %6, align 4
+  %50 = load i32, i32* %1, align 4
+  %51 = icmp sgt i32 %50, 0
+  br i1 %51, label %52, label %70
+
+52:                                               ; preds = %43
+  %53 = zext i32 %50 to i64
+  br label %56
+
+54:                                               ; preds = %56
+  %55 = icmp eq i64 %62, %53
+  br i1 %55, label %68, label %56
+
+56:                                               ; preds = %54, %52
+  %57 = phi i64 [ 0, %52 ], [ %62, %54 ]
+  %58 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %0, i64 %57
+  %59 = bitcast %struct.refmvs_candidate* %58 to i32*
+  %60 = load i32, i32* %59, align 8
+  %61 = icmp eq i32 %60, %44
+  %62 = add nuw nsw i64 %57, 1
+  br i1 %61, label %63, label %54
+
+63:                                               ; preds = %56
+  %64 = and i64 %57, 4294967295
+  %65 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %0, i64 %64, i32 1
+  %66 = load i32, i32* %65, align 8
+  %67 = add nsw i32 %66, %2
+  store i32 %67, i32* %65, align 8
+  br label %76
+
+68:                                               ; preds = %54
+  %69 = icmp slt i32 %50, 8
+  br i1 %69, label %70, label %76
+
+70:                                               ; preds = %43, %68
+  %71 = sext i32 %50 to i64
+  %72 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %0, i64 %71
+  %73 = bitcast %struct.refmvs_candidate* %72 to i32*
+  store i32 %44, i32* %73, align 8
+  %74 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %0, i64 %71, i32 1
+  store i32 %2, i32* %74, align 8
+  %75 = add nsw i32 %50, 1
+  store i32 %75, i32* %1, align 4
+  br label %76
+
+76:                                               ; preds = %24, %125, %132, %130, %63, %70, %68, %8, %77
+  ret void
+
+77:                                               ; preds = %14
+  %78 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %3, i64 0, i32 1, i32 0
+  %79 = load i16, i16* %78, align 8
+  %80 = icmp eq i16 %79, %4
+  br i1 %80, label %81, label %76
+
+81:                                               ; preds = %77
+  %82 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %3, i64 0, i32 3
+  %83 = load i8, i8* %82, align 1
+  %84 = and i8 %83, 1
+  %85 = icmp eq i8 %84, 0
+  br i1 %85, label %86, label %88
+
+86:                                               ; preds = %81
+  %87 = zext i32 %12 to i64
+  br label %98
+
+88:                                               ; preds = %81
+  %89 = getelementptr inbounds %union.mv, %union.mv* %5, i64 0, i32 0
+  %90 = load i32, i32* %89, align 4
+  %91 = icmp eq i32 %90, -2147450880
+  %92 = select i1 %91, i32* %11, i32* %89
+  %93 = load i32, i32* %92, align 4
+  %94 = zext i32 %93 to i64
+  %95 = getelementptr inbounds %union.mv, %union.mv* %5, i64 1, i32 0
+  %96 = load i32, i32* %95, align 4
+  %97 = icmp eq i32 %96, -2147450880
+  br i1 %97, label %98, label %102
+
+98:                                               ; preds = %86, %88
+  %99 = phi i64 [ %94, %88 ], [ %87, %86 ]
+  %100 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %10, i64 0, i64 1, i32 0
+  %101 = load i32, i32* %100, align 4
+  br label %102
+
+102:                                              ; preds = %88, %98
+  %103 = phi i32 [ %101, %98 ], [ %96, %88 ]
+  %104 = phi i64 [ %99, %98 ], [ %94, %88 ]
+  %105 = zext i32 %103 to i64
+  %106 = shl nuw i64 %105, 32
+  %107 = or i64 %106, %104
+  store i32 1, i32* %7, align 4
+  %108 = load i8, i8* %82, align 1
+  %109 = lshr i8 %108, 1
+  %110 = zext i8 %109 to i32
+  %111 = load i32, i32* %6, align 4
+  %112 = or i32 %111, %110
+  store i32 %112, i32* %6, align 4
+  %113 = load i32, i32* %1, align 4
+  %114 = icmp sgt i32 %113, 0
+  br i1 %114, label %115, label %132
+
+115:                                              ; preds = %102
+  %116 = zext i32 %113 to i64
+  br label %119
+
+117:                                              ; preds = %119
+  %118 = icmp eq i64 %124, %116
+  br i1 %118, label %130, label %119
+
+119:                                              ; preds = %117, %115
+  %120 = phi i64 [ 0, %115 ], [ %124, %117 ]
+  %121 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %0, i64 %120, i32 0, i32 0
+  %122 = load i64, i64* %121, align 8
+  %123 = icmp eq i64 %122, %107
+  %124 = add nuw nsw i64 %120, 1
+  br i1 %123, label %125, label %117
+
+125:                                              ; preds = %119
+  %126 = and i64 %120, 4294967295
+  %127 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %0, i64 %126, i32 1
+  %128 = load i32, i32* %127, align 8
+  %129 = add nsw i32 %128, %2
+  store i32 %129, i32* %127, align 8
+  br label %76
+
+130:                                              ; preds = %117
+  %131 = icmp slt i32 %113, 8
+  br i1 %131, label %132, label %76
+
+132:                                              ; preds = %102, %130
+  %133 = sext i32 %113 to i64
+  %134 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %0, i64 %133, i32 0, i32 0
+  store i64 %107, i64* %134, align 8
+  %135 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %0, i64 %133, i32 1
+  store i32 %2, i32* %135, align 8
+  %136 = add nsw i32 %113, 1
+  store i32 %136, i32* %1, align 4
+  br label %76
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal fastcc void @add_temporal_candidate(%struct.refmvs_frame* nocapture readonly, %struct.refmvs_candidate* nocapture, i32* nocapture, %struct.refmvs_temporal_block* nocapture readonly, i16, i32*, %union.mv* nocapture readonly) unnamed_addr #0 {
+  %8 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %3, i64 0, i32 0, i32 0
+  %9 = load i32, i32* %8, align 4
+  %10 = icmp eq i32 %9, -2147450880
+  br i1 %10, label %239, label %11
+
+11:                                               ; preds = %7
+  %12 = lshr i16 %4, 8
+  %13 = zext i16 %4 to i32
+  %14 = shl i32 %13, 24
+  %15 = ashr exact i32 %14, 24
+  %16 = add nsw i32 %15, -1
+  %17 = sext i32 %16 to i64
+  %18 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 9, i64 %17
+  %19 = load i8, i8* %18, align 1
+  %20 = sext i8 %19 to i32
+  %21 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %3, i64 0, i32 1
+  %22 = load i8, i8* %21, align 4
+  %23 = sext i8 %22 to i32
+  %24 = add nsw i32 %23, -1
+  %25 = icmp ult i32 %24, 31
+  tail call void @llvm.assume(i1 %25) #7
+  %26 = add nsw i32 %20, 31
+  %27 = icmp ult i32 %26, 63
+  tail call void @llvm.assume(i1 %27) #7
+  %28 = sext i8 %22 to i64
+  %29 = getelementptr inbounds [32 x i16], [32 x i16]* @mv_projection.div_mult, i64 0, i64 %28
+  %30 = load i16, i16* %29, align 2
+  %31 = zext i16 %30 to i32
+  %32 = mul nsw i32 %31, %20
+  %33 = shl i32 %9, 16
+  %34 = ashr exact i32 %33, 16
+  %35 = mul nsw i32 %32, %34
+  %36 = ashr i32 %9, 16
+  %37 = mul nsw i32 %32, %36
+  %38 = add nsw i32 %35, 8192
+  %39 = ashr i32 %35, 31
+  %40 = add nsw i32 %38, %39
+  %41 = ashr i32 %40, 14
+  %42 = icmp slt i32 %41, 16383
+  %43 = select i1 %42, i32 %41, i32 16383
+  %44 = icmp sgt i32 %43, -16383
+  %45 = select i1 %44, i32 %43, i32 -16383
+  %46 = add nsw i32 %37, 8192
+  %47 = ashr i32 %37, 31
+  %48 = add nsw i32 %46, %47
+  %49 = ashr i32 %48, 14
+  %50 = icmp slt i32 %49, 16383
+  %51 = select i1 %50, i32 %49, i32 16383
+  %52 = icmp sgt i32 %51, -16383
+  %53 = select i1 %52, i32 %51, i32 -16383
+  %54 = trunc i32 %45 to i16
+  %55 = trunc i32 %53 to i16
+  %56 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 0
+  %57 = load %struct.Dav1dFrameHeader*, %struct.Dav1dFrameHeader** %56, align 8
+  %58 = getelementptr inbounds %struct.Dav1dFrameHeader, %struct.Dav1dFrameHeader* %57, i64 0, i32 16
+  %59 = load i32, i32* %58, align 8
+  %60 = icmp eq i32 %59, 0
+  br i1 %60, label %70, label %61
+
+61:                                               ; preds = %11
+  %62 = lshr i16 %55, 15
+  %63 = add nsw i16 %55, 3
+  %64 = add nsw i16 %63, %62
+  %65 = and i16 %64, -8
+  %66 = lshr i16 %54, 15
+  %67 = add nsw i16 %54, 3
+  %68 = add nsw i16 %67, %66
+  %69 = and i16 %68, -8
+  br label %81
+
+70:                                               ; preds = %11
+  %71 = getelementptr inbounds %struct.Dav1dFrameHeader, %struct.Dav1dFrameHeader* %57, i64 0, i32 29
+  %72 = load i32, i32* %71, align 4
+  %73 = icmp eq i32 %72, 0
+  br i1 %73, label %74, label %81
+
+74:                                               ; preds = %70
+  %75 = ashr i16 %55, 15
+  %76 = sub nsw i16 %55, %75
+  %77 = and i16 %76, -2
+  %78 = ashr i16 %54, 15
+  %79 = sub nsw i16 %54, %78
+  %80 = and i16 %79, -2
+  br label %81
+
+81:                                               ; preds = %61, %70, %74
+  %82 = phi i16 [ %77, %74 ], [ %55, %70 ], [ %65, %61 ]
+  %83 = phi i16 [ %80, %74 ], [ %54, %70 ], [ %69, %61 ]
+  %84 = load i32, i32* %2, align 4
+  %85 = icmp eq i16 %12, 255
+  br i1 %85, label %86, label %143
+
+86:                                               ; preds = %81
+  %87 = icmp eq i32* %5, null
+  br i1 %87, label %109, label %88
+
+88:                                               ; preds = %86
+  %89 = sext i16 %82 to i32
+  %90 = bitcast %union.mv* %6 to %struct.anon.11*
+  %91 = getelementptr inbounds %struct.anon.11, %struct.anon.11* %90, i64 0, i32 1
+  %92 = load i16, i16* %91, align 2
+  %93 = sext i16 %92 to i32
+  %94 = sub nsw i32 %89, %93
+  %95 = icmp slt i32 %94, 0
+  %96 = sub nsw i32 0, %94
+  %97 = select i1 %95, i32 %96, i32 %94
+  %98 = sext i16 %83 to i32
+  %99 = bitcast %union.mv* %6 to i16*
+  %100 = load i16, i16* %99, align 4
+  %101 = sext i16 %100 to i32
+  %102 = sub nsw i32 %98, %101
+  %103 = icmp slt i32 %102, 0
+  %104 = sub nsw i32 0, %102
+  %105 = select i1 %103, i32 %104, i32 %102
+  %106 = or i32 %105, %97
+  %107 = icmp sgt i32 %106, 15
+  %108 = zext i1 %107 to i32
+  store i32 %108, i32* %5, align 4
+  br label %109
+
+109:                                              ; preds = %86, %88
+  %110 = icmp sgt i32 %84, 0
+  br i1 %110, label %111, label %133
+
+111:                                              ; preds = %109
+  %112 = zext i16 %82 to i32
+  %113 = shl nuw i32 %112, 16
+  %114 = zext i16 %83 to i32
+  %115 = or i32 %113, %114
+  %116 = zext i32 %84 to i64
+  br label %119
+
+117:                                              ; preds = %119
+  %118 = icmp eq i64 %125, %116
+  br i1 %118, label %131, label %119
+
+119:                                              ; preds = %117, %111
+  %120 = phi i64 [ 0, %111 ], [ %125, %117 ]
+  %121 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %120
+  %122 = bitcast %struct.refmvs_candidate* %121 to i32*
+  %123 = load i32, i32* %122, align 8
+  %124 = icmp eq i32 %123, %115
+  %125 = add nuw nsw i64 %120, 1
+  br i1 %124, label %126, label %117
+
+126:                                              ; preds = %119
+  %127 = and i64 %120, 4294967295
+  %128 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %127, i32 1
+  %129 = load i32, i32* %128, align 8
+  %130 = add nsw i32 %129, 2
+  store i32 %130, i32* %128, align 8
+  br label %239
+
+131:                                              ; preds = %117
+  %132 = icmp slt i32 %84, 8
+  br i1 %132, label %133, label %239
+
+133:                                              ; preds = %109, %131
+  %134 = sext i32 %84 to i64
+  %135 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %134
+  %136 = bitcast %struct.refmvs_candidate* %135 to i32*
+  %137 = zext i16 %82 to i32
+  %138 = shl nuw i32 %137, 16
+  %139 = zext i16 %83 to i32
+  %140 = or i32 %138, %139
+  store i32 %140, i32* %136, align 8
+  %141 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %134, i32 1
+  store i32 2, i32* %141, align 8
+  %142 = add nsw i32 %84, 1
+  store i32 %142, i32* %2, align 4
+  br label %239
+
+143:                                              ; preds = %81
+  %144 = zext i16 %12 to i32
+  %145 = shl nuw i32 %144, 24
+  %146 = ashr exact i32 %145, 24
+  %147 = zext i16 %82 to i32
+  %148 = shl nuw i32 %147, 16
+  %149 = zext i16 %83 to i32
+  %150 = or i32 %148, %149
+  %151 = add nsw i32 %146, -1
+  %152 = sext i32 %151 to i64
+  %153 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 9, i64 %152
+  %154 = load i8, i8* %153, align 1
+  %155 = sext i8 %154 to i32
+  %156 = add nsw i32 %155, 31
+  %157 = icmp ult i32 %156, 63
+  tail call void @llvm.assume(i1 %157) #7
+  %158 = mul nsw i32 %155, %31
+  %159 = mul nsw i32 %158, %34
+  %160 = mul nsw i32 %158, %36
+  %161 = add nsw i32 %159, 8192
+  %162 = ashr i32 %159, 31
+  %163 = add nsw i32 %161, %162
+  %164 = ashr i32 %163, 14
+  %165 = icmp slt i32 %164, 16383
+  %166 = select i1 %165, i32 %164, i32 16383
+  %167 = icmp sgt i32 %166, -16383
+  %168 = select i1 %167, i32 %166, i32 -16383
+  %169 = add nsw i32 %160, 8192
+  %170 = ashr i32 %160, 31
+  %171 = add nsw i32 %169, %170
+  %172 = ashr i32 %171, 14
+  %173 = icmp slt i32 %172, 16383
+  %174 = select i1 %173, i32 %172, i32 16383
+  %175 = icmp sgt i32 %174, -16383
+  %176 = select i1 %175, i32 %174, i32 -16383
+  %177 = trunc i32 %168 to i16
+  %178 = trunc i32 %176 to i16
+  br i1 %60, label %188, label %179
+
+179:                                              ; preds = %143
+  %180 = lshr i16 %178, 15
+  %181 = add nsw i16 %178, 3
+  %182 = add nsw i16 %181, %180
+  %183 = and i16 %182, -8
+  %184 = lshr i16 %177, 15
+  %185 = add nsw i16 %177, 3
+  %186 = add nsw i16 %185, %184
+  %187 = and i16 %186, -8
+  br label %199
+
+188:                                              ; preds = %143
+  %189 = getelementptr inbounds %struct.Dav1dFrameHeader, %struct.Dav1dFrameHeader* %57, i64 0, i32 29
+  %190 = load i32, i32* %189, align 4
+  %191 = icmp eq i32 %190, 0
+  br i1 %191, label %192, label %199
+
+192:                                              ; preds = %188
+  %193 = ashr i16 %178, 15
+  %194 = sub nsw i16 %178, %193
+  %195 = and i16 %194, -2
+  %196 = ashr i16 %177, 15
+  %197 = sub nsw i16 %177, %196
+  %198 = and i16 %197, -2
+  br label %199
+
+199:                                              ; preds = %179, %188, %192
+  %200 = phi i16 [ %195, %192 ], [ %178, %188 ], [ %183, %179 ]
+  %201 = phi i16 [ %198, %192 ], [ %177, %188 ], [ %187, %179 ]
+  %202 = icmp sgt i32 %84, 0
+  br i1 %202, label %203, label %227
+
+203:                                              ; preds = %199
+  %204 = zext i16 %200 to i64
+  %205 = shl nuw nsw i64 %204, 16
+  %206 = zext i16 %201 to i64
+  %207 = or i64 %205, %206
+  %208 = shl nuw i64 %207, 32
+  %209 = zext i32 %150 to i64
+  %210 = or i64 %208, %209
+  %211 = zext i32 %84 to i64
+  br label %214
+
+212:                                              ; preds = %214
+  %213 = icmp eq i64 %219, %211
+  br i1 %213, label %225, label %214
+
+214:                                              ; preds = %212, %203
+  %215 = phi i64 [ 0, %203 ], [ %219, %212 ]
+  %216 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %215, i32 0, i32 0
+  %217 = load i64, i64* %216, align 8
+  %218 = icmp eq i64 %217, %210
+  %219 = add nuw nsw i64 %215, 1
+  br i1 %218, label %220, label %212
+
+220:                                              ; preds = %214
+  %221 = and i64 %215, 4294967295
+  %222 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %221, i32 1
+  %223 = load i32, i32* %222, align 8
+  %224 = add nsw i32 %223, 2
+  store i32 %224, i32* %222, align 8
+  br label %239
+
+225:                                              ; preds = %212
+  %226 = icmp slt i32 %84, 8
+  br i1 %226, label %227, label %239
+
+227:                                              ; preds = %199, %225
+  %228 = sext i32 %84 to i64
+  %229 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %228, i32 0, i32 0
+  %230 = zext i16 %200 to i64
+  %231 = shl nuw nsw i64 %230, 16
+  %232 = zext i16 %201 to i64
+  %233 = or i64 %231, %232
+  %234 = shl nuw i64 %233, 32
+  %235 = zext i32 %150 to i64
+  %236 = or i64 %234, %235
+  store i64 %236, i64* %229, align 8
+  %237 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %1, i64 %228, i32 1
+  store i32 2, i32* %237, align 8
+  %238 = add nsw i32 %84, 1
+  store i32 %238, i32* %2, align 4
+  br label %239
+
+239:                                              ; preds = %126, %220, %131, %133, %225, %227, %7
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define internal fastcc void @add_compound_extended_candidate(%struct.refmvs_candidate* nocapture, i32* nocapture, %struct.refmvs_block* nocapture readonly, i32, i32, i16, i8* nocapture readonly) unnamed_addr #3 {
+  %8 = zext i16 %5 to i32
+  %9 = lshr i16 %5, 8
+  %10 = zext i16 %9 to i32
+  %11 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %0, i64 2
+  %12 = getelementptr inbounds i32, i32* %1, i64 2
+  %13 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %2, i64 0, i32 1
+  %14 = bitcast %union.refmvs_refpair* %13 to [2 x i8]*
+  %15 = bitcast %struct.refmvs_block* %2 to [2 x %union.mv]*
+  %16 = shl i32 %8, 24
+  %17 = ashr exact i32 %16, 24
+  %18 = shl nuw i32 %10, 24
+  %19 = ashr exact i32 %18, 24
+  %20 = getelementptr inbounds i32, i32* %1, i64 3
+  %21 = getelementptr inbounds i32, i32* %1, i64 1
+  %22 = add nsw i32 %19, -1
+  %23 = sext i32 %22 to i64
+  %24 = getelementptr inbounds i8, i8* %6, i64 %23
+  %25 = add nsw i32 %17, -1
+  %26 = sext i32 %25 to i64
+  %27 = getelementptr inbounds i8, i8* %6, i64 %26
+  br label %28
+
+28:                                               ; preds = %151, %7
+  %29 = phi i64 [ 0, %7 ], [ %152, %151 ]
+  %30 = getelementptr inbounds [2 x i8], [2 x i8]* %14, i64 0, i64 %29
+  %31 = load i8, i8* %30, align 1
+  %32 = sext i8 %31 to i32
+  %33 = icmp slt i8 %31, 1
+  br i1 %33, label %154, label %34
+
+34:                                               ; preds = %28
+  %35 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %15, i64 0, i64 %29
+  %36 = bitcast %union.mv* %35 to i8*
+  %37 = bitcast %union.mv* %35 to i16*
+  %38 = load i16, i16* %37, align 4
+  %39 = getelementptr inbounds i8, i8* %36, i64 2
+  %40 = bitcast i8* %39 to i16*
+  %41 = load i16, i16* %40, align 2
+  %42 = icmp eq i32 %17, %32
+  br i1 %42, label %43, label %74
+
+43:                                               ; preds = %34
+  %44 = load i32, i32* %1, align 4
+  %45 = icmp slt i32 %44, 2
+  br i1 %45, label %46, label %54
+
+46:                                               ; preds = %43
+  %47 = add nsw i32 %44, 1
+  store i32 %47, i32* %1, align 4
+  %48 = sext i32 %44 to i64
+  %49 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %0, i64 %48
+  %50 = bitcast %struct.refmvs_candidate* %49 to i8*
+  %51 = bitcast %struct.refmvs_candidate* %49 to i16*
+  store i16 %38, i16* %51, align 8
+  %52 = getelementptr inbounds i8, i8* %50, i64 2
+  %53 = bitcast i8* %52 to i16*
+  store i16 %41, i16* %53, align 2
+  br label %54
+
+54:                                               ; preds = %46, %43
+  %55 = load i32, i32* %20, align 4
+  %56 = icmp slt i32 %55, 2
+  br i1 %56, label %57, label %151
+
+57:                                               ; preds = %54
+  %58 = load i8, i8* %27, align 1
+  %59 = zext i8 %58 to i32
+  %60 = icmp eq i32 %59, %4
+  %61 = sub i16 0, %38
+  %62 = sub i16 0, %41
+  %63 = select i1 %60, i16 %41, i16 %62
+  %64 = select i1 %60, i16 %38, i16 %61
+  %65 = add nsw i32 %55, 1
+  store i32 %65, i32* %20, align 4
+  %66 = sext i32 %55 to i64
+  %67 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %11, i64 %66
+  %68 = bitcast %struct.refmvs_candidate* %67 to [2 x %union.mv]*
+  %69 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %68, i64 0, i64 1
+  %70 = bitcast %union.mv* %69 to i8*
+  %71 = bitcast %union.mv* %69 to i16*
+  store i16 %64, i16* %71, align 4
+  %72 = getelementptr inbounds i8, i8* %70, i64 2
+  %73 = bitcast i8* %72 to i16*
+  store i16 %63, i16* %73, align 2
+  br label %151
+
+74:                                               ; preds = %34
+  %75 = icmp eq i32 %19, %32
+  br i1 %75, label %76, label %107
+
+76:                                               ; preds = %74
+  %77 = load i32, i32* %21, align 4
+  %78 = icmp slt i32 %77, 2
+  br i1 %78, label %79, label %89
+
+79:                                               ; preds = %76
+  %80 = add nsw i32 %77, 1
+  store i32 %80, i32* %21, align 4
+  %81 = sext i32 %77 to i64
+  %82 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %0, i64 %81, i32 0
+  %83 = bitcast %union.refmvs_mvpair* %82 to [2 x %union.mv]*
+  %84 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %83, i64 0, i64 1
+  %85 = bitcast %union.mv* %84 to i8*
+  %86 = bitcast %union.mv* %84 to i16*
+  store i16 %38, i16* %86, align 4
+  %87 = getelementptr inbounds i8, i8* %85, i64 2
+  %88 = bitcast i8* %87 to i16*
+  store i16 %41, i16* %88, align 2
+  br label %89
+
+89:                                               ; preds = %79, %76
+  %90 = load i32, i32* %12, align 4
+  %91 = icmp slt i32 %90, 2
+  br i1 %91, label %92, label %151
+
+92:                                               ; preds = %89
+  %93 = load i8, i8* %24, align 1
+  %94 = zext i8 %93 to i32
+  %95 = icmp eq i32 %94, %3
+  %96 = sub i16 0, %38
+  %97 = sub i16 0, %41
+  %98 = select i1 %95, i16 %41, i16 %97
+  %99 = select i1 %95, i16 %38, i16 %96
+  %100 = add nsw i32 %90, 1
+  store i32 %100, i32* %12, align 4
+  %101 = sext i32 %90 to i64
+  %102 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %11, i64 %101
+  %103 = bitcast %struct.refmvs_candidate* %102 to i8*
+  %104 = bitcast %struct.refmvs_candidate* %102 to i16*
+  store i16 %99, i16* %104, align 8
+  %105 = getelementptr inbounds i8, i8* %103, i64 2
+  %106 = bitcast i8* %105 to i16*
+  store i16 %98, i16* %106, align 2
+  br label %151
+
+107:                                              ; preds = %74
+  %108 = sub i16 0, %38
+  %109 = sub i16 0, %41
+  %110 = load i32, i32* %12, align 4
+  %111 = icmp slt i32 %110, 2
+  br i1 %111, label %112, label %128
+
+112:                                              ; preds = %107
+  %113 = add nsw i32 %110, 1
+  store i32 %113, i32* %12, align 4
+  %114 = sext i32 %110 to i64
+  %115 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %11, i64 %114
+  %116 = add nsw i32 %32, -1
+  %117 = sext i32 %116 to i64
+  %118 = getelementptr inbounds i8, i8* %6, i64 %117
+  %119 = load i8, i8* %118, align 1
+  %120 = zext i8 %119 to i32
+  %121 = icmp eq i32 %120, %3
+  %122 = bitcast %struct.refmvs_candidate* %115 to i8*
+  %123 = bitcast %struct.refmvs_candidate* %115 to i16*
+  %124 = select i1 %121, i16 %38, i16 %108
+  %125 = select i1 %121, i16 %41, i16 %109
+  store i16 %124, i16* %123, align 8
+  %126 = getelementptr inbounds i8, i8* %122, i64 2
+  %127 = bitcast i8* %126 to i16*
+  store i16 %125, i16* %127, align 2
+  br label %128
+
+128:                                              ; preds = %112, %107
+  %129 = load i32, i32* %20, align 4
+  %130 = icmp slt i32 %129, 2
+  br i1 %130, label %131, label %151
+
+131:                                              ; preds = %128
+  %132 = add nsw i32 %129, 1
+  store i32 %132, i32* %20, align 4
+  %133 = sext i32 %129 to i64
+  %134 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %11, i64 %133
+  %135 = bitcast %struct.refmvs_candidate* %134 to [2 x %union.mv]*
+  %136 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %135, i64 0, i64 1
+  %137 = add nsw i32 %32, -1
+  %138 = sext i32 %137 to i64
+  %139 = getelementptr inbounds i8, i8* %6, i64 %138
+  %140 = load i8, i8* %139, align 1
+  %141 = zext i8 %140 to i32
+  %142 = icmp eq i32 %141, %4
+  %143 = bitcast %union.mv* %136 to i8*
+  %144 = bitcast %union.mv* %136 to i16*
+  br i1 %142, label %148, label %145
+
+145:                                              ; preds = %131
+  store i16 %108, i16* %144, align 4
+  %146 = getelementptr inbounds i8, i8* %143, i64 2
+  %147 = bitcast i8* %146 to i16*
+  store i16 %109, i16* %147, align 2
+  br label %151
+
+148:                                              ; preds = %131
+  store i16 %38, i16* %144, align 4
+  %149 = getelementptr inbounds i8, i8* %143, i64 2
+  %150 = bitcast i8* %149 to i16*
+  store i16 %41, i16* %150, align 2
+  br label %151
+
+151:                                              ; preds = %128, %148, %145, %92, %89, %54, %57
+  %152 = add nuw nsw i64 %29, 1
+  %153 = icmp eq i64 %152, 2
+  br i1 %153, label %154, label %28
+
+154:                                              ; preds = %151, %28
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define internal fastcc void @add_single_extended_candidate(%struct.refmvs_candidate* nocapture, i32* nocapture, %struct.refmvs_block* nocapture readonly, i32, i8* nocapture readonly) unnamed_addr #3 {
+  %6 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %2, i64 0, i32 1
+  %7 = bitcast %union.refmvs_refpair* %6 to [2 x i8]*
+  %8 = bitcast %struct.refmvs_block* %2 to [2 x %union.mv]*
+  %9 = bitcast %union.refmvs_refpair* %6 to i8*
+  %10 = load i8, i8* %9, align 1
+  %11 = icmp slt i8 %10, 1
+  br i1 %11, label %67, label %12
+
+12:                                               ; preds = %5
+  %13 = sext i8 %10 to i64
+  %14 = bitcast %struct.refmvs_block* %2 to i8*
+  %15 = bitcast %struct.refmvs_block* %2 to i16*
+  %16 = load i16, i16* %15, align 4
+  %17 = getelementptr inbounds i8, i8* %14, i64 2
+  %18 = bitcast i8* %17 to i16*
+  %19 = load i16, i16* %18, align 2
+  %20 = add nsw i64 %13, -1
+  %21 = getelementptr inbounds i8, i8* %4, i64 %20
+  %22 = load i8, i8* %21, align 1
+  %23 = zext i8 %22 to i32
+  %24 = icmp eq i32 %23, %3
+  %25 = sub i16 0, %16
+  %26 = sub i16 0, %19
+  %27 = select i1 %24, i16 %19, i16 %26
+  %28 = select i1 %24, i16 %16, i16 %25
+  %29 = load i32, i32* %1, align 4
+  %30 = zext i16 %27 to i32
+  %31 = shl nuw i32 %30, 16
+  %32 = zext i16 %28 to i32
+  %33 = or i32 %31, %32
+  %34 = icmp sgt i32 %29, 0
+  br i1 %34, label %35, label %50
+
+35:                                               ; preds = %12
+  %36 = zext i32 %29 to i64
+  br label %37
+
+37:                                               ; preds = %44, %35
+  %38 = phi i64 [ 0, %35 ], [ %45, %44 ]
+  %39 = phi i32 [ 0, %35 ], [ %46, %44 ]
+  %40 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %0, i64 %38, i32 0
+  %41 = bitcast %union.refmvs_mvpair* %40 to i32*
+  %42 = load i32, i32* %41, align 8
+  %43 = icmp eq i32 %33, %42
+  br i1 %43, label %48, label %44
+
+44:                                               ; preds = %37
+  %45 = add nuw nsw i64 %38, 1
+  %46 = add nuw nsw i32 %39, 1
+  %47 = icmp eq i64 %45, %36
+  br i1 %47, label %50, label %37
+
+48:                                               ; preds = %37
+  %49 = trunc i64 %38 to i32
+  br label %50
+
+50:                                               ; preds = %44, %48, %12
+  %51 = phi i32 [ 0, %12 ], [ %49, %48 ], [ %46, %44 ]
+  %52 = icmp eq i32 %51, %29
+  br i1 %52, label %53, label %62
+
+53:                                               ; preds = %50
+  %54 = zext i32 %29 to i64
+  %55 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %0, i64 %54
+  %56 = bitcast %struct.refmvs_candidate* %55 to i8*
+  %57 = bitcast %struct.refmvs_candidate* %55 to i16*
+  store i16 %28, i16* %57, align 8
+  %58 = getelementptr inbounds i8, i8* %56, i64 2
+  %59 = bitcast i8* %58 to i16*
+  store i16 %27, i16* %59, align 2
+  %60 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %0, i64 %54, i32 1
+  store i32 2, i32* %60, align 8
+  %61 = add nsw i32 %29, 1
+  store i32 %61, i32* %1, align 4
+  br label %62
+
+62:                                               ; preds = %53, %50
+  %63 = phi i32 [ %61, %53 ], [ %29, %50 ]
+  %64 = getelementptr inbounds [2 x i8], [2 x i8]* %7, i64 0, i64 1
+  %65 = load i8, i8* %64, align 1
+  %66 = icmp slt i8 %65, 1
+  br i1 %66, label %67, label %68
+
+67:                                               ; preds = %106, %109, %62, %5
+  ret void
+
+68:                                               ; preds = %62
+  %69 = sext i8 %65 to i64
+  %70 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %8, i64 0, i64 1
+  %71 = bitcast %union.mv* %70 to i8*
+  %72 = bitcast %union.mv* %70 to i16*
+  %73 = load i16, i16* %72, align 4
+  %74 = getelementptr inbounds i8, i8* %71, i64 2
+  %75 = bitcast i8* %74 to i16*
+  %76 = load i16, i16* %75, align 2
+  %77 = add nsw i64 %69, -1
+  %78 = getelementptr inbounds i8, i8* %4, i64 %77
+  %79 = load i8, i8* %78, align 1
+  %80 = zext i8 %79 to i32
+  %81 = icmp eq i32 %80, %3
+  %82 = sub i16 0, %73
+  %83 = sub i16 0, %76
+  %84 = select i1 %81, i16 %76, i16 %83
+  %85 = select i1 %81, i16 %73, i16 %82
+  %86 = zext i16 %84 to i32
+  %87 = shl nuw i32 %86, 16
+  %88 = zext i16 %85 to i32
+  %89 = or i32 %87, %88
+  %90 = icmp sgt i32 %63, 0
+  br i1 %90, label %91, label %106
+
+91:                                               ; preds = %68
+  %92 = zext i32 %63 to i64
+  br label %93
+
+93:                                               ; preds = %100, %91
+  %94 = phi i64 [ 0, %91 ], [ %101, %100 ]
+  %95 = phi i32 [ 0, %91 ], [ %102, %100 ]
+  %96 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %0, i64 %94, i32 0
+  %97 = bitcast %union.refmvs_mvpair* %96 to i32*
+  %98 = load i32, i32* %97, align 8
+  %99 = icmp eq i32 %89, %98
+  br i1 %99, label %104, label %100
+
+100:                                              ; preds = %93
+  %101 = add nuw nsw i64 %94, 1
+  %102 = add nuw nsw i32 %95, 1
+  %103 = icmp eq i64 %101, %92
+  br i1 %103, label %106, label %93
+
+104:                                              ; preds = %93
+  %105 = trunc i64 %94 to i32
+  br label %106
+
+106:                                              ; preds = %100, %104, %68
+  %107 = phi i32 [ 0, %68 ], [ %105, %104 ], [ %102, %100 ]
+  %108 = icmp eq i32 %107, %63
+  br i1 %108, label %109, label %67
+
+109:                                              ; preds = %106
+  %110 = zext i32 %63 to i64
+  %111 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %0, i64 %110
+  %112 = bitcast %struct.refmvs_candidate* %111 to i8*
+  %113 = bitcast %struct.refmvs_candidate* %111 to i16*
+  store i16 %85, i16* %113, align 8
+  %114 = getelementptr inbounds i8, i8* %112, i64 2
+  %115 = bitcast i8* %114 to i16*
+  store i16 %84, i16* %115, align 2
+  %116 = getelementptr inbounds %struct.refmvs_candidate, %struct.refmvs_candidate* %0, i64 %110, i32 1
+  store i32 2, i32* %116, align 8
+  %117 = add nsw i32 %63, 1
+  store i32 %117, i32* %1, align 4
+  br label %67
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @dav1d_refmvs_tile_sbrow_init(%struct.refmvs_tile* nocapture, %struct.refmvs_frame*, i32, i32, i32, i32, i32, i32) local_unnamed_addr #3 {
+  %9 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %1, i64 0, i32 21
+  %10 = load i32, i32* %9, align 4
+  %11 = icmp eq i32 %10, 1
+  %12 = select i1 %11, i32 0, i32 %7
+  %13 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %1, i64 0, i32 16
+  %14 = load %struct.refmvs_temporal_block*, %struct.refmvs_temporal_block** %13, align 8
+  %15 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %1, i64 0, i32 17
+  %16 = load i64, i64* %15, align 8
+  %17 = shl i64 %16, 4
+  %18 = sext i32 %12 to i64
+  %19 = mul nsw i64 %17, %18
+  %20 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %14, i64 %19
+  %21 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 2
+  store %struct.refmvs_temporal_block* %20, %struct.refmvs_temporal_block** %21, align 8
+  %22 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %1, i64 0, i32 18
+  %23 = load %struct.refmvs_block*, %struct.refmvs_block** %22, align 8
+  %24 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %1, i64 0, i32 19
+  %25 = load i64, i64* %24, align 8
+  %26 = mul nsw i64 %18, 35
+  %27 = mul i64 %26, %25
+  %28 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %23, i64 %27
+  %29 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %1, i64 0, i32 5
+  %30 = load i32, i32* %29, align 8
+  %31 = mul nsw i32 %30, %6
+  %32 = and i32 %31, 16
+  %33 = icmp sgt i32 %30, 0
+  br i1 %33, label %34, label %59
+
+34:                                               ; preds = %8
+  %35 = or i32 %32, 5
+  %36 = zext i32 %35 to i64
+  %37 = zext i32 %30 to i64
+  %38 = add nsw i64 %37, -1
+  %39 = and i64 %37, 3
+  %40 = icmp ult i64 %38, 3
+  br i1 %40, label %43, label %41
+
+41:                                               ; preds = %34
+  %42 = sub nsw i64 %37, %39
+  br label %81
+
+43:                                               ; preds = %81, %34
+  %44 = phi %struct.refmvs_block* [ undef, %34 ], [ %104, %81 ]
+  %45 = phi i64 [ 0, %34 ], [ %102, %81 ]
+  %46 = phi %struct.refmvs_block* [ %28, %34 ], [ %104, %81 ]
+  %47 = icmp eq i64 %39, 0
+  br i1 %47, label %59, label %48
+
+48:                                               ; preds = %43, %48
+  %49 = phi i64 [ %54, %48 ], [ %45, %43 ]
+  %50 = phi %struct.refmvs_block* [ %56, %48 ], [ %46, %43 ]
+  %51 = phi i64 [ %57, %48 ], [ %39, %43 ]
+  %52 = add nuw nsw i64 %49, %36
+  %53 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 1, i64 %52
+  store %struct.refmvs_block* %50, %struct.refmvs_block** %53, align 8
+  %54 = add nuw nsw i64 %49, 1
+  %55 = load i64, i64* %24, align 8
+  %56 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %50, i64 %55
+  %57 = add i64 %51, -1
+  %58 = icmp eq i64 %57, 0
+  br i1 %58, label %59, label %48, !llvm.loop !5
+
+59:                                               ; preds = %43, %48, %8
+  %60 = phi %struct.refmvs_block* [ %28, %8 ], [ %44, %43 ], [ %56, %48 ]
+  %61 = zext i32 %32 to i64
+  %62 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 1, i64 %61
+  store %struct.refmvs_block* %60, %struct.refmvs_block** %62, align 8
+  %63 = load i64, i64* %24, align 8
+  %64 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %60, i64 %63
+  %65 = or i32 %32, 1
+  %66 = zext i32 %65 to i64
+  %67 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 1, i64 %66
+  store %struct.refmvs_block* null, %struct.refmvs_block** %67, align 8
+  %68 = or i32 %32, 2
+  %69 = zext i32 %68 to i64
+  %70 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 1, i64 %69
+  store %struct.refmvs_block* %64, %struct.refmvs_block** %70, align 8
+  %71 = load i64, i64* %24, align 8
+  %72 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %64, i64 %71
+  %73 = or i32 %32, 3
+  %74 = zext i32 %73 to i64
+  %75 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 1, i64 %74
+  store %struct.refmvs_block* null, %struct.refmvs_block** %75, align 8
+  %76 = or i32 %32, 4
+  %77 = zext i32 %76 to i64
+  %78 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 1, i64 %77
+  store %struct.refmvs_block* %72, %struct.refmvs_block** %78, align 8
+  %79 = and i32 %6, 1
+  %80 = icmp eq i32 %79, 0
+  br i1 %80, label %129, label %107
+
+81:                                               ; preds = %81, %41
+  %82 = phi i64 [ 0, %41 ], [ %102, %81 ]
+  %83 = phi %struct.refmvs_block* [ %28, %41 ], [ %104, %81 ]
+  %84 = phi i64 [ %42, %41 ], [ %105, %81 ]
+  %85 = add nuw nsw i64 %82, %36
+  %86 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 1, i64 %85
+  store %struct.refmvs_block* %83, %struct.refmvs_block** %86, align 8
+  %87 = or i64 %82, 1
+  %88 = load i64, i64* %24, align 8
+  %89 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %83, i64 %88
+  %90 = add nuw nsw i64 %87, %36
+  %91 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 1, i64 %90
+  store %struct.refmvs_block* %89, %struct.refmvs_block** %91, align 8
+  %92 = or i64 %82, 2
+  %93 = load i64, i64* %24, align 8
+  %94 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %89, i64 %93
+  %95 = add nuw nsw i64 %92, %36
+  %96 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 1, i64 %95
+  store %struct.refmvs_block* %94, %struct.refmvs_block** %96, align 8
+  %97 = or i64 %82, 3
+  %98 = load i64, i64* %24, align 8
+  %99 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %94, i64 %98
+  %100 = add nuw nsw i64 %97, %36
+  %101 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 1, i64 %100
+  store %struct.refmvs_block* %99, %struct.refmvs_block** %101, align 8
+  %102 = add nuw nsw i64 %82, 4
+  %103 = load i64, i64* %24, align 8
+  %104 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %99, i64 %103
+  %105 = add i64 %84, -4
+  %106 = icmp eq i64 %105, 0
+  br i1 %106, label %43, label %81
+
+107:                                              ; preds = %59
+  %108 = ptrtoint %struct.refmvs_block* %60 to i64
+  %109 = bitcast %struct.refmvs_block** %62 to i64*
+  %110 = add nsw i32 %32, %30
+  %111 = sext i32 %110 to i64
+  %112 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 1, i64 %111
+  %113 = bitcast %struct.refmvs_block** %112 to i64*
+  %114 = load i64, i64* %113, align 8
+  store i64 %114, i64* %109, align 8
+  store i64 %108, i64* %113, align 8
+  %115 = bitcast %struct.refmvs_block** %70 to i64*
+  %116 = load i64, i64* %115, align 8
+  %117 = add nsw i32 %110, 2
+  %118 = sext i32 %117 to i64
+  %119 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 1, i64 %118
+  %120 = bitcast %struct.refmvs_block** %119 to i64*
+  %121 = load i64, i64* %120, align 8
+  store i64 %121, i64* %115, align 8
+  store i64 %116, i64* %120, align 8
+  %122 = bitcast %struct.refmvs_block** %78 to i64*
+  %123 = load i64, i64* %122, align 8
+  %124 = add nsw i32 %110, 4
+  %125 = sext i32 %124 to i64
+  %126 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 1, i64 %125
+  %127 = bitcast %struct.refmvs_block** %126 to i64*
+  %128 = load i64, i64* %127, align 8
+  store i64 %128, i64* %122, align 8
+  store i64 %123, i64* %127, align 8
+  br label %129
+
+129:                                              ; preds = %59, %107
+  %130 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 0
+  store %struct.refmvs_frame* %1, %struct.refmvs_frame** %130, align 8
+  %131 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 4, i32 0
+  store i32 %4, i32* %131, align 8
+  %132 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %1, i64 0, i32 2
+  %133 = load i32, i32* %132, align 4
+  %134 = icmp sgt i32 %133, %5
+  %135 = select i1 %134, i32 %5, i32 %133
+  %136 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 4, i32 1
+  store i32 %135, i32* %136, align 4
+  %137 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 3, i32 0
+  store i32 %2, i32* %137, align 8
+  %138 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %1, i64 0, i32 1
+  %139 = load i32, i32* %138, align 8
+  %140 = icmp sgt i32 %139, %3
+  %141 = select i1 %140, i32 %3, i32 %139
+  %142 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 3, i32 1
+  store i32 %141, i32* %142, align 4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @dav1d_refmvs_load_tmvs(%struct.refmvs_frame* nocapture readonly, i32, i32, i32, i32, i32) local_unnamed_addr #0 {
+  %7 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 21
+  %8 = load i32, i32* %7, align 4
+  %9 = icmp eq i32 %8, 1
+  %10 = select i1 %9, i32 0, i32 %1
+  %11 = icmp sgt i32 %4, -1
+  tail call void @llvm.assume(i1 %11)
+  %12 = sub nsw i32 %5, %4
+  %13 = icmp ult i32 %12, 17
+  tail call void @llvm.assume(i1 %13)
+  %14 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 4
+  %15 = load i32, i32* %14, align 4
+  %16 = icmp sgt i32 %15, %5
+  %17 = select i1 %16, i32 %5, i32 %15
+  %18 = icmp sgt i32 %2, 8
+  %19 = select i1 %18, i32 %2, i32 8
+  %20 = add nsw i32 %19, -8
+  %21 = add nsw i32 %3, 8
+  %22 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 3
+  %23 = load i32, i32* %22, align 8
+  %24 = icmp slt i32 %21, %23
+  %25 = select i1 %24, i32 %21, i32 %23
+  %26 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 17
+  %27 = load i64, i64* %26, align 8
+  %28 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 16
+  %29 = shl nsw i64 %27, 4
+  %30 = sext i32 %10 to i64
+  %31 = mul nsw i64 %29, %30
+  %32 = icmp sgt i32 %17, %4
+  br i1 %32, label %33, label %62
+
+33:                                               ; preds = %6
+  %34 = load %struct.refmvs_temporal_block*, %struct.refmvs_temporal_block** %28, align 8
+  %35 = and i32 %4, 15
+  %36 = zext i32 %35 to i64
+  %37 = mul nsw i64 %27, %36
+  %38 = add nsw i64 %31, %37
+  %39 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %34, i64 %38
+  %40 = icmp slt i32 %2, %3
+  %41 = sext i32 %2 to i64
+  %42 = sext i32 %3 to i64
+  %43 = sub nsw i64 %42, %41
+  %44 = xor i64 %41, -1
+  %45 = add nsw i64 %44, %42
+  %46 = and i64 %43, 7
+  %47 = icmp eq i64 %46, 0
+  %48 = icmp ult i64 %45, 7
+  br label %49
+
+49:                                               ; preds = %33, %73
+  %50 = phi i32 [ %4, %33 ], [ %75, %73 ]
+  %51 = phi %struct.refmvs_temporal_block* [ %39, %33 ], [ %74, %73 ]
+  br i1 %40, label %52, label %73
+
+52:                                               ; preds = %49
+  br i1 %47, label %60, label %53
+
+53:                                               ; preds = %52, %53
+  %54 = phi i64 [ %57, %53 ], [ %41, %52 ]
+  %55 = phi i64 [ %58, %53 ], [ %46, %52 ]
+  %56 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %51, i64 %54, i32 0, i32 0
+  store i32 -2147450880, i32* %56, align 4
+  %57 = add nsw i64 %54, 1
+  %58 = add i64 %55, -1
+  %59 = icmp eq i64 %58, 0
+  br i1 %59, label %60, label %53, !llvm.loop !6
+
+60:                                               ; preds = %53, %52
+  %61 = phi i64 [ %41, %52 ], [ %57, %53 ]
+  br i1 %48, label %73, label %77
+
+62:                                               ; preds = %73, %6
+  %63 = load %struct.refmvs_temporal_block*, %struct.refmvs_temporal_block** %28, align 8
+  %64 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %63, i64 %31
+  %65 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 13
+  %66 = load i32, i32* %65, align 8
+  %67 = icmp sgt i32 %66, 0
+  br i1 %67, label %68, label %96
+
+68:                                               ; preds = %62
+  %69 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 15
+  %70 = zext i32 %4 to i64
+  %71 = mul nsw i64 %27, %70
+  %72 = icmp slt i32 %20, %25
+  br label %97
+
+73:                                               ; preds = %60, %77, %49
+  %74 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %51, i64 %27
+  %75 = add nuw nsw i32 %50, 1
+  %76 = icmp slt i32 %75, %17
+  br i1 %76, label %49, label %62
+
+77:                                               ; preds = %60, %77
+  %78 = phi i64 [ %94, %77 ], [ %61, %60 ]
+  %79 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %51, i64 %78, i32 0, i32 0
+  store i32 -2147450880, i32* %79, align 4
+  %80 = add nsw i64 %78, 1
+  %81 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %51, i64 %80, i32 0, i32 0
+  store i32 -2147450880, i32* %81, align 4
+  %82 = add nsw i64 %78, 2
+  %83 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %51, i64 %82, i32 0, i32 0
+  store i32 -2147450880, i32* %83, align 4
+  %84 = add nsw i64 %78, 3
+  %85 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %51, i64 %84, i32 0, i32 0
+  store i32 -2147450880, i32* %85, align 4
+  %86 = add nsw i64 %78, 4
+  %87 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %51, i64 %86, i32 0, i32 0
+  store i32 -2147450880, i32* %87, align 4
+  %88 = add nsw i64 %78, 5
+  %89 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %51, i64 %88, i32 0, i32 0
+  store i32 -2147450880, i32* %89, align 4
+  %90 = add nsw i64 %78, 6
+  %91 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %51, i64 %90, i32 0, i32 0
+  store i32 -2147450880, i32* %91, align 4
+  %92 = add nsw i64 %78, 7
+  %93 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %51, i64 %92, i32 0, i32 0
+  store i32 -2147450880, i32* %93, align 4
+  %94 = add nsw i64 %78, 8
+  %95 = icmp eq i64 %94, %42
+  br i1 %95, label %73, label %77
+
+96:                                               ; preds = %254, %62
+  ret void
+
+97:                                               ; preds = %68, %254
+  %98 = phi i64 [ 0, %68 ], [ %255, %254 ]
+  %99 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 11, i64 %98
+  %100 = load i32, i32* %99, align 4
+  %101 = icmp eq i32 %100, -2147483648
+  br i1 %101, label %254, label %102
+
+102:                                              ; preds = %97
+  %103 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 10, i64 %98
+  %104 = load i8, i8* %103, align 1
+  %105 = zext i8 %104 to i32
+  %106 = add nsw i32 %105, -4
+  br i1 %32, label %107, label %254
+
+107:                                              ; preds = %102
+  %108 = load %struct.refmvs_temporal_block**, %struct.refmvs_temporal_block*** %69, align 8
+  %109 = zext i8 %104 to i64
+  %110 = getelementptr inbounds %struct.refmvs_temporal_block*, %struct.refmvs_temporal_block** %108, i64 %109
+  %111 = load %struct.refmvs_temporal_block*, %struct.refmvs_temporal_block** %110, align 8
+  %112 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %111, i64 %71
+  %113 = add i32 %100, 31
+  %114 = icmp ult i32 %113, 63
+  br label %115
+
+115:                                              ; preds = %107, %124
+  %116 = phi i32 [ %4, %107 ], [ %126, %124 ]
+  %117 = phi %struct.refmvs_temporal_block* [ %112, %107 ], [ %125, %124 ]
+  %118 = and i32 %116, 2147483640
+  %119 = icmp ugt i32 %118, %4
+  %120 = select i1 %119, i32 %118, i32 %4
+  %121 = add nuw nsw i32 %118, 8
+  %122 = icmp slt i32 %121, %17
+  %123 = select i1 %122, i32 %121, i32 %17
+  br i1 %72, label %128, label %124
+
+124:                                              ; preds = %250, %115
+  %125 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %117, i64 %27
+  %126 = add nuw nsw i32 %116, 1
+  %127 = icmp slt i32 %126, %17
+  br i1 %127, label %115, label %254
+
+128:                                              ; preds = %115, %250
+  %129 = phi i32 [ %252, %250 ], [ %20, %115 ]
+  %130 = sext i32 %129 to i64
+  %131 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %117, i64 %130
+  %132 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %117, i64 %130, i32 1
+  %133 = load i8, i8* %132, align 4
+  %134 = icmp eq i8 %133, 0
+  br i1 %134, label %250, label %135
+
+135:                                              ; preds = %128
+  %136 = sext i8 %133 to i64
+  %137 = add nsw i64 %136, -1
+  %138 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 12, i64 %98, i64 %137
+  %139 = load i32, i32* %138, align 4
+  %140 = icmp eq i32 %139, 0
+  br i1 %140, label %250, label %141
+
+141:                                              ; preds = %135
+  %142 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %131, i64 0, i32 0, i32 0
+  %143 = load i32, i32* %142, align 4
+  %144 = add i32 %139, -1
+  %145 = icmp ult i32 %144, 31
+  tail call void @llvm.assume(i1 %145) #7
+  tail call void @llvm.assume(i1 %114) #7
+  %146 = sext i32 %139 to i64
+  %147 = getelementptr inbounds [32 x i16], [32 x i16]* @mv_projection.div_mult, i64 0, i64 %146
+  %148 = load i16, i16* %147, align 2
+  %149 = zext i16 %148 to i32
+  %150 = mul nsw i32 %100, %149
+  %151 = shl i32 %143, 16
+  %152 = ashr exact i32 %151, 16
+  %153 = mul nsw i32 %150, %152
+  %154 = ashr i32 %143, 16
+  %155 = mul nsw i32 %150, %154
+  %156 = add nsw i32 %153, 8192
+  %157 = ashr i32 %153, 31
+  %158 = add nsw i32 %156, %157
+  %159 = ashr i32 %158, 14
+  %160 = icmp slt i32 %159, 16383
+  %161 = select i1 %160, i32 %159, i32 16383
+  %162 = icmp sgt i32 %161, -16383
+  %163 = select i1 %162, i32 %161, i32 -16383
+  %164 = add nsw i32 %155, 8192
+  %165 = ashr i32 %155, 31
+  %166 = add nsw i32 %164, %165
+  %167 = ashr i32 %166, 14
+  %168 = icmp slt i32 %167, 16383
+  %169 = select i1 %168, i32 %167, i32 16383
+  %170 = icmp sgt i32 %169, -16383
+  %171 = select i1 %170, i32 %169, i32 -16383
+  %172 = icmp slt i32 %171, 0
+  %173 = sub nsw i32 0, %171
+  %174 = select i1 %172, i32 %173, i32 %171
+  %175 = lshr i32 %174, 6
+  %176 = icmp slt i32 %163, 0
+  %177 = sub nsw i32 0, %163
+  %178 = select i1 %176, i32 %177, i32 %163
+  %179 = lshr i32 %178, 6
+  %180 = xor i32 %163, %106
+  %181 = icmp slt i32 %180, 0
+  %182 = sub nsw i32 0, %179
+  %183 = select i1 %181, i32 %182, i32 %179
+  %184 = add nsw i32 %183, %116
+  %185 = icmp sge i32 %184, %120
+  %186 = icmp slt i32 %184, %123
+  %187 = and i1 %185, %186
+  br i1 %187, label %188, label %233
+
+188:                                              ; preds = %141
+  %189 = xor i32 %171, %106
+  %190 = icmp slt i32 %189, 0
+  %191 = sub nsw i32 0, %175
+  %192 = select i1 %190, i32 %191, i32 %175
+  %193 = and i32 %184, 15
+  %194 = zext i32 %193 to i64
+  %195 = mul nsw i64 %27, %194
+  %196 = trunc i32 %139 to i8
+  %197 = add i32 %192, %129
+  %198 = sext i32 %197 to i64
+  br label %199
+
+199:                                              ; preds = %228, %188
+  %200 = phi i64 [ %232, %228 ], [ %198, %188 ]
+  %201 = phi i32 [ %221, %228 ], [ %129, %188 ]
+  %202 = phi %struct.refmvs_temporal_block* [ %224, %228 ], [ %131, %188 ]
+  %203 = and i32 %201, -8
+  %204 = add nsw i32 %203, -8
+  %205 = icmp sgt i32 %204, %2
+  %206 = select i1 %205, i32 %204, i32 %2
+  %207 = sext i32 %206 to i64
+  %208 = icmp slt i64 %200, %207
+  br i1 %208, label %220, label %209
+
+209:                                              ; preds = %199
+  %210 = add nsw i32 %203, 16
+  %211 = icmp slt i32 %210, %3
+  %212 = select i1 %211, i32 %210, i32 %3
+  %213 = sext i32 %212 to i64
+  %214 = icmp slt i64 %200, %213
+  br i1 %214, label %215, label %220
+
+215:                                              ; preds = %209
+  %216 = add nsw i64 %195, %200
+  %217 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %64, i64 %216
+  %218 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %217, i64 0, i32 0, i32 0
+  store i32 %143, i32* %218, align 4
+  %219 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %217, i64 0, i32 1
+  store i8 %196, i8* %219, align 4
+  br label %220
+
+220:                                              ; preds = %199, %215, %209
+  %221 = add nsw i32 %201, 1
+  %222 = icmp slt i32 %221, %25
+  br i1 %222, label %223, label %247
+
+223:                                              ; preds = %220
+  %224 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %202, i64 1
+  %225 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %202, i64 1, i32 1
+  %226 = load i8, i8* %225, align 4
+  %227 = icmp eq i8 %226, %133
+  br i1 %227, label %228, label %247
+
+228:                                              ; preds = %223
+  %229 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %224, i64 0, i32 0, i32 0
+  %230 = load i32, i32* %229, align 4
+  %231 = icmp eq i32 %230, %143
+  %232 = add nsw i64 %200, 1
+  br i1 %231, label %199, label %247
+
+233:                                              ; preds = %141, %243
+  %234 = phi i32 [ %236, %243 ], [ %129, %141 ]
+  %235 = phi %struct.refmvs_temporal_block* [ %239, %243 ], [ %131, %141 ]
+  %236 = add nsw i32 %234, 1
+  %237 = icmp slt i32 %236, %25
+  br i1 %237, label %238, label %247
+
+238:                                              ; preds = %233
+  %239 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %235, i64 1
+  %240 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %235, i64 1, i32 1
+  %241 = load i8, i8* %240, align 4
+  %242 = icmp eq i8 %241, %133
+  br i1 %242, label %243, label %247
+
+243:                                              ; preds = %238
+  %244 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %239, i64 0, i32 0, i32 0
+  %245 = load i32, i32* %244, align 4
+  %246 = icmp eq i32 %245, %143
+  br i1 %246, label %233, label %247
+
+247:                                              ; preds = %243, %238, %233, %223, %220, %228
+  %248 = phi i32 [ %221, %228 ], [ %221, %220 ], [ %221, %223 ], [ %236, %233 ], [ %236, %238 ], [ %236, %243 ]
+  %249 = add nsw i32 %248, -1
+  br label %250
+
+250:                                              ; preds = %247, %135, %128
+  %251 = phi i32 [ %129, %128 ], [ %249, %247 ], [ %129, %135 ]
+  %252 = add nsw i32 %251, 1
+  %253 = icmp slt i32 %252, %25
+  br i1 %253, label %128, label %124
+
+254:                                              ; preds = %124, %102, %97
+  %255 = add nuw nsw i64 %98, 1
+  %256 = load i32, i32* %65, align 8
+  %257 = sext i32 %256 to i64
+  %258 = icmp slt i64 %255, %257
+  br i1 %258, label %97, label %96
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @dav1d_refmvs_save_tmvs(%struct.refmvs_tile* nocapture readonly, i32, i32, i32, i32) local_unnamed_addr #0 {
+  %6 = alloca [3 x i8], align 1
+  %7 = alloca [3 x i8], align 1
+  %8 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 0
+  %9 = load %struct.refmvs_frame*, %struct.refmvs_frame** %8, align 8
+  %10 = icmp sgt i32 %3, -1
+  tail call void @llvm.assume(i1 %10)
+  %11 = sub nsw i32 %4, %3
+  %12 = icmp ult i32 %11, 17
+  tail call void @llvm.assume(i1 %12)
+  %13 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %9, i64 0, i32 4
+  %14 = load i32, i32* %13, align 4
+  %15 = icmp sgt i32 %14, %4
+  %16 = select i1 %15, i32 %4, i32 %14
+  %17 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %9, i64 0, i32 3
+  %18 = load i32, i32* %17, align 8
+  %19 = icmp sgt i32 %18, %2
+  %20 = select i1 %19, i32 %2, i32 %18
+  %21 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %9, i64 0, i32 17
+  %22 = load i64, i64* %21, align 8
+  %23 = icmp sgt i32 %16, %3
+  br i1 %23, label %24, label %33
+
+24:                                               ; preds = %5
+  %25 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %9, i64 0, i32 14
+  %26 = load %struct.refmvs_temporal_block*, %struct.refmvs_temporal_block** %25, align 8
+  %27 = zext i32 %3 to i64
+  %28 = mul nsw i64 %22, %27
+  %29 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %26, i64 %28
+  %30 = icmp sgt i32 %20, %1
+  %31 = getelementptr inbounds [3 x i8], [3 x i8]* %6, i64 0, i64 0
+  %32 = getelementptr inbounds [3 x i8], [3 x i8]* %7, i64 0, i64 0
+  br label %34
+
+33:                                               ; preds = %43, %5
+  ret void
+
+34:                                               ; preds = %24, %43
+  %35 = phi i32 [ %3, %24 ], [ %45, %43 ]
+  %36 = phi %struct.refmvs_temporal_block* [ %29, %24 ], [ %44, %43 ]
+  %37 = shl nuw i32 %35, 1
+  %38 = and i32 %37, 30
+  %39 = add nuw nsw i32 %38, 6
+  %40 = zext i32 %39 to i64
+  %41 = getelementptr inbounds %struct.refmvs_tile, %struct.refmvs_tile* %0, i64 0, i32 1, i64 %40
+  %42 = load %struct.refmvs_block*, %struct.refmvs_block** %41, align 8
+  br i1 %30, label %47, label %43
+
+43:                                               ; preds = %264, %34
+  %44 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %22
+  %45 = add nuw nsw i32 %35, 1
+  %46 = icmp slt i32 %45, %16
+  br i1 %46, label %34, label %33
+
+47:                                               ; preds = %34, %264
+  %48 = phi i32 [ %265, %264 ], [ %1, %34 ]
+  %49 = shl nsw i32 %48, 1
+  %50 = or i32 %49, 1
+  %51 = sext i32 %50 to i64
+  %52 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %42, i64 %51
+  %53 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %42, i64 %51, i32 2
+  %54 = load i8, i8* %53, align 2
+  %55 = zext i8 %54 to i64
+  %56 = getelementptr inbounds [22 x [4 x i8]], [22 x [4 x i8]]* @dav1d_block_dimensions, i64 0, i64 %55, i64 0
+  %57 = load i8, i8* %56, align 4
+  %58 = zext i8 %57 to i32
+  %59 = add nuw nsw i32 %58, 1
+  %60 = lshr i32 %59, 1
+  %61 = getelementptr inbounds %struct.refmvs_block, %struct.refmvs_block* %42, i64 %51, i32 1
+  %62 = bitcast %union.refmvs_refpair* %61 to [2 x i8]*
+  %63 = getelementptr inbounds [2 x i8], [2 x i8]* %62, i64 0, i64 1
+  %64 = load i8, i8* %63, align 1
+  %65 = icmp sgt i8 %64, 0
+  br i1 %65, label %66, label %130
+
+66:                                               ; preds = %47
+  %67 = sext i8 %64 to i64
+  %68 = add nsw i64 %67, -1
+  %69 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %9, i64 0, i32 8, i64 %68
+  %70 = load i8, i8* %69, align 1
+  %71 = icmp eq i8 %70, 0
+  br i1 %71, label %130, label %72
+
+72:                                               ; preds = %66
+  %73 = bitcast %struct.refmvs_block* %52 to [2 x %union.mv]*
+  %74 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %73, i64 0, i64 1
+  %75 = bitcast %union.mv* %74 to %struct.anon.11*
+  %76 = bitcast %union.mv* %74 to i16*
+  %77 = load i16, i16* %76, align 4
+  %78 = sext i16 %77 to i32
+  %79 = icmp slt i32 %78, 0
+  %80 = sub nsw i32 0, %78
+  %81 = select i1 %79, i32 %80, i32 %78
+  %82 = getelementptr inbounds %struct.anon.11, %struct.anon.11* %75, i64 0, i32 1
+  %83 = load i16, i16* %82, align 2
+  %84 = sext i16 %83 to i32
+  %85 = icmp slt i32 %84, 0
+  %86 = sub nsw i32 0, %84
+  %87 = select i1 %85, i32 %86, i32 %84
+  %88 = or i32 %87, %81
+  %89 = icmp slt i32 %88, 4096
+  br i1 %89, label %90, label %130
+
+90:                                               ; preds = %72
+  %91 = icmp eq i32 %60, 0
+  br i1 %91, label %264, label %92
+
+92:                                               ; preds = %90
+  %93 = getelementptr inbounds [2 x %union.mv], [2 x %union.mv]* %73, i64 0, i64 1, i32 0
+  %94 = sext i32 %48 to i64
+  %95 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %94
+  %96 = load i32, i32* %93, align 4
+  %97 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %95, i64 0, i32 0, i32 0
+  store i32 %96, i32* %97, align 4
+  %98 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %94, i32 1
+  store i8 %64, i8* %98, align 4
+  %99 = bitcast %struct.refmvs_temporal_block* %95 to i8*
+  %100 = getelementptr inbounds i8, i8* %99, i64 5
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %100, i8* nonnull align 1 %31, i64 3, i1 false)
+  %101 = add nsw i64 %94, 1
+  %102 = icmp eq i32 %60, 1
+  br i1 %102, label %261, label %103
+
+103:                                              ; preds = %92
+  %104 = add nsw i32 %60, -1
+  %105 = and i32 %104, 1
+  %106 = icmp eq i32 %60, 2
+  br i1 %106, label %248, label %107
+
+107:                                              ; preds = %103
+  %108 = sub nsw i32 %104, %105
+  br label %109
+
+109:                                              ; preds = %109, %107
+  %110 = phi i64 [ %101, %107 ], [ %127, %109 ]
+  %111 = phi i32 [ %108, %107 ], [ %128, %109 ]
+  %112 = load i8, i8* %63, align 1
+  %113 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %110
+  %114 = load i32, i32* %93, align 4
+  %115 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %113, i64 0, i32 0, i32 0
+  store i32 %114, i32* %115, align 4
+  %116 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %110, i32 1
+  store i8 %112, i8* %116, align 4
+  %117 = bitcast %struct.refmvs_temporal_block* %113 to i8*
+  %118 = getelementptr inbounds i8, i8* %117, i64 5
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %118, i8* nonnull align 1 %31, i64 3, i1 false)
+  %119 = add nsw i64 %110, 1
+  %120 = load i8, i8* %63, align 1
+  %121 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %119
+  %122 = load i32, i32* %93, align 4
+  %123 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %121, i64 0, i32 0, i32 0
+  store i32 %122, i32* %123, align 4
+  %124 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %119, i32 1
+  store i8 %120, i8* %124, align 4
+  %125 = bitcast %struct.refmvs_temporal_block* %121 to i8*
+  %126 = getelementptr inbounds i8, i8* %125, i64 5
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %126, i8* nonnull align 1 %31, i64 3, i1 false)
+  %127 = add nsw i64 %110, 2
+  %128 = add i32 %111, -2
+  %129 = icmp eq i32 %128, 0
+  br i1 %129, label %248, label %109
+
+130:                                              ; preds = %66, %72, %47
+  %131 = bitcast %union.refmvs_refpair* %61 to i8*
+  %132 = load i8, i8* %131, align 8
+  %133 = icmp sgt i8 %132, 0
+  br i1 %133, label %134, label %196
+
+134:                                              ; preds = %130
+  %135 = sext i8 %132 to i64
+  %136 = add nsw i64 %135, -1
+  %137 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %9, i64 0, i32 8, i64 %136
+  %138 = load i8, i8* %137, align 1
+  %139 = icmp eq i8 %138, 0
+  br i1 %139, label %196, label %140
+
+140:                                              ; preds = %134
+  %141 = bitcast %struct.refmvs_block* %52 to %struct.anon.11*
+  %142 = bitcast %struct.refmvs_block* %52 to i16*
+  %143 = load i16, i16* %142, align 8
+  %144 = sext i16 %143 to i32
+  %145 = icmp slt i32 %144, 0
+  %146 = sub nsw i32 0, %144
+  %147 = select i1 %145, i32 %146, i32 %144
+  %148 = getelementptr inbounds %struct.anon.11, %struct.anon.11* %141, i64 0, i32 1
+  %149 = load i16, i16* %148, align 2
+  %150 = sext i16 %149 to i32
+  %151 = icmp slt i32 %150, 0
+  %152 = sub nsw i32 0, %150
+  %153 = select i1 %151, i32 %152, i32 %150
+  %154 = or i32 %153, %147
+  %155 = icmp slt i32 %154, 4096
+  br i1 %155, label %156, label %196
+
+156:                                              ; preds = %140
+  %157 = icmp eq i32 %60, 0
+  br i1 %157, label %264, label %158
+
+158:                                              ; preds = %156
+  %159 = bitcast %struct.refmvs_block* %52 to i32*
+  %160 = sext i32 %48 to i64
+  %161 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %160
+  %162 = load i32, i32* %159, align 8
+  %163 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %161, i64 0, i32 0, i32 0
+  store i32 %162, i32* %163, align 4
+  %164 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %160, i32 1
+  store i8 %132, i8* %164, align 4
+  %165 = bitcast %struct.refmvs_temporal_block* %161 to i8*
+  %166 = getelementptr inbounds i8, i8* %165, i64 5
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %166, i8* nonnull align 1 %32, i64 3, i1 false)
+  %167 = add nsw i64 %160, 1
+  %168 = icmp eq i32 %60, 1
+  br i1 %168, label %245, label %169
+
+169:                                              ; preds = %158
+  %170 = add nsw i32 %60, -1
+  %171 = and i32 %170, 1
+  %172 = icmp eq i32 %60, 2
+  br i1 %172, label %232, label %173
+
+173:                                              ; preds = %169
+  %174 = sub nsw i32 %170, %171
+  br label %175
+
+175:                                              ; preds = %175, %173
+  %176 = phi i64 [ %167, %173 ], [ %193, %175 ]
+  %177 = phi i32 [ %174, %173 ], [ %194, %175 ]
+  %178 = load i8, i8* %131, align 8
+  %179 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %176
+  %180 = load i32, i32* %159, align 8
+  %181 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %179, i64 0, i32 0, i32 0
+  store i32 %180, i32* %181, align 4
+  %182 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %176, i32 1
+  store i8 %178, i8* %182, align 4
+  %183 = bitcast %struct.refmvs_temporal_block* %179 to i8*
+  %184 = getelementptr inbounds i8, i8* %183, i64 5
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %184, i8* nonnull align 1 %32, i64 3, i1 false)
+  %185 = add nsw i64 %176, 1
+  %186 = load i8, i8* %131, align 8
+  %187 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %185
+  %188 = load i32, i32* %159, align 8
+  %189 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %187, i64 0, i32 0, i32 0
+  store i32 %188, i32* %189, align 4
+  %190 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %185, i32 1
+  store i8 %186, i8* %190, align 4
+  %191 = bitcast %struct.refmvs_temporal_block* %187 to i8*
+  %192 = getelementptr inbounds i8, i8* %191, i64 5
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %192, i8* nonnull align 1 %32, i64 3, i1 false)
+  %193 = add nsw i64 %176, 2
+  %194 = add i32 %177, -2
+  %195 = icmp eq i32 %194, 0
+  br i1 %195, label %232, label %175
+
+196:                                              ; preds = %134, %140, %130
+  %197 = icmp eq i32 %60, 0
+  br i1 %197, label %264, label %198
+
+198:                                              ; preds = %196
+  %199 = sext i32 %48 to i64
+  %200 = add nsw i32 %60, -1
+  %201 = and i32 %60, 3
+  %202 = icmp ult i32 %200, 3
+  br i1 %202, label %218, label %203
+
+203:                                              ; preds = %198
+  %204 = sub nsw i32 %60, %201
+  br label %205
+
+205:                                              ; preds = %205, %203
+  %206 = phi i64 [ %199, %203 ], [ %215, %205 ]
+  %207 = phi i32 [ %204, %203 ], [ %216, %205 ]
+  %208 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %206, i32 1
+  store i8 0, i8* %208, align 4
+  %209 = add nsw i64 %206, 1
+  %210 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %209, i32 1
+  store i8 0, i8* %210, align 4
+  %211 = add nsw i64 %206, 2
+  %212 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %211, i32 1
+  store i8 0, i8* %212, align 4
+  %213 = add nsw i64 %206, 3
+  %214 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %213, i32 1
+  store i8 0, i8* %214, align 4
+  %215 = add nsw i64 %206, 4
+  %216 = add i32 %207, -4
+  %217 = icmp eq i32 %216, 0
+  br i1 %217, label %218, label %205
+
+218:                                              ; preds = %205, %198
+  %219 = phi i64 [ undef, %198 ], [ %215, %205 ]
+  %220 = phi i64 [ %199, %198 ], [ %215, %205 ]
+  %221 = icmp eq i32 %201, 0
+  br i1 %221, label %229, label %222
+
+222:                                              ; preds = %218, %222
+  %223 = phi i64 [ %226, %222 ], [ %220, %218 ]
+  %224 = phi i32 [ %227, %222 ], [ %201, %218 ]
+  %225 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %223, i32 1
+  store i8 0, i8* %225, align 4
+  %226 = add nsw i64 %223, 1
+  %227 = add i32 %224, -1
+  %228 = icmp eq i32 %227, 0
+  br i1 %228, label %229, label %222, !llvm.loop !7
+
+229:                                              ; preds = %222, %218
+  %230 = phi i64 [ %219, %218 ], [ %226, %222 ]
+  %231 = trunc i64 %230 to i32
+  br label %264
+
+232:                                              ; preds = %175, %169
+  %233 = phi i64 [ undef, %169 ], [ %193, %175 ]
+  %234 = phi i64 [ %167, %169 ], [ %193, %175 ]
+  %235 = icmp eq i32 %171, 0
+  br i1 %235, label %245, label %236
+
+236:                                              ; preds = %232
+  %237 = load i8, i8* %131, align 8
+  %238 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %234
+  %239 = load i32, i32* %159, align 8
+  %240 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %238, i64 0, i32 0, i32 0
+  store i32 %239, i32* %240, align 4
+  %241 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %234, i32 1
+  store i8 %237, i8* %241, align 4
+  %242 = bitcast %struct.refmvs_temporal_block* %238 to i8*
+  %243 = getelementptr inbounds i8, i8* %242, i64 5
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %243, i8* nonnull align 1 %32, i64 3, i1 false)
+  %244 = add nsw i64 %234, 1
+  br label %245
+
+245:                                              ; preds = %236, %232, %158
+  %246 = phi i64 [ %167, %158 ], [ %233, %232 ], [ %244, %236 ]
+  %247 = trunc i64 %246 to i32
+  br label %264
+
+248:                                              ; preds = %109, %103
+  %249 = phi i64 [ undef, %103 ], [ %127, %109 ]
+  %250 = phi i64 [ %101, %103 ], [ %127, %109 ]
+  %251 = icmp eq i32 %105, 0
+  br i1 %251, label %261, label %252
+
+252:                                              ; preds = %248
+  %253 = load i8, i8* %63, align 1
+  %254 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %250
+  %255 = load i32, i32* %93, align 4
+  %256 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %254, i64 0, i32 0, i32 0
+  store i32 %255, i32* %256, align 4
+  %257 = getelementptr inbounds %struct.refmvs_temporal_block, %struct.refmvs_temporal_block* %36, i64 %250, i32 1
+  store i8 %253, i8* %257, align 4
+  %258 = bitcast %struct.refmvs_temporal_block* %254 to i8*
+  %259 = getelementptr inbounds i8, i8* %258, i64 5
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %259, i8* nonnull align 1 %31, i64 3, i1 false)
+  %260 = add nsw i64 %250, 1
+  br label %261
+
+261:                                              ; preds = %252, %248, %92
+  %262 = phi i64 [ %101, %92 ], [ %249, %248 ], [ %260, %252 ]
+  %263 = trunc i64 %262 to i32
+  br label %264
+
+264:                                              ; preds = %261, %245, %229, %90, %156, %196
+  %265 = phi i32 [ %48, %196 ], [ %48, %156 ], [ %48, %90 ], [ %231, %229 ], [ %247, %245 ], [ %263, %261 ]
+  %266 = icmp slt i32 %265, %20
+  br i1 %266, label %47, label %43
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @dav1d_refmvs_init_frame(%struct.refmvs_frame*, %struct.Dav1dSequenceHeader* nocapture readonly, %struct.Dav1dFrameHeader*, i32* nocapture readonly, %struct.refmvs_temporal_block*, [7 x i32]* nocapture readonly, %struct.refmvs_temporal_block**, i32) local_unnamed_addr #0 {
+  %9 = getelementptr inbounds %struct.Dav1dSequenceHeader, %struct.Dav1dSequenceHeader* %1, i64 0, i32 30
+  %10 = load i32, i32* %9, align 4
+  %11 = shl i32 16, %10
+  %12 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 5
+  store i32 %11, i32* %12, align 8
+  %13 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 0
+  store %struct.Dav1dFrameHeader* %2, %struct.Dav1dFrameHeader** %13, align 8
+  %14 = getelementptr inbounds %struct.Dav1dFrameHeader, %struct.Dav1dFrameHeader* %2, i64 0, i32 2, i64 0
+  %15 = load i32, i32* %14, align 4
+  %16 = add nsw i32 %15, 7
+  %17 = ashr i32 %16, 3
+  %18 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 3
+  store i32 %17, i32* %18, align 8
+  %19 = getelementptr inbounds %struct.Dav1dFrameHeader, %struct.Dav1dFrameHeader* %2, i64 0, i32 3
+  %20 = load i32, i32* %19, align 4
+  %21 = add nsw i32 %20, 7
+  %22 = ashr i32 %21, 3
+  %23 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 4
+  store i32 %22, i32* %23, align 4
+  %24 = shl nsw i32 %17, 1
+  %25 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 1
+  store i32 %24, i32* %25, align 8
+  %26 = shl nsw i32 %22, 1
+  %27 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 2
+  store i32 %26, i32* %27, align 4
+  %28 = load i32, i32* %14, align 4
+  %29 = add nsw i32 %28, 127
+  %30 = ashr i32 %29, 2
+  %31 = and i32 %30, -32
+  %32 = sext i32 %31 to i64
+  %33 = icmp sgt i32 %7, 1
+  br i1 %33, label %34, label %37
+
+34:                                               ; preds = %8
+  %35 = getelementptr inbounds %struct.Dav1dFrameHeader, %struct.Dav1dFrameHeader* %2, i64 0, i32 34, i32 9
+  %36 = load i32, i32* %35, align 4
+  br label %37
+
+37:                                               ; preds = %8, %34
+  %38 = phi i32 [ %36, %34 ], [ 1, %8 ]
+  %39 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 19
+  %40 = load i64, i64* %39, align 8
+  %41 = icmp eq i64 %40, %32
+  br i1 %41, label %42, label %46
+
+42:                                               ; preds = %37
+  %43 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 20
+  %44 = load i32, i32* %43, align 8
+  %45 = icmp eq i32 %38, %44
+  br i1 %45, label %60, label %46
+
+46:                                               ; preds = %42, %37
+  %47 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 18
+  %48 = load %struct.refmvs_block*, %struct.refmvs_block** %47, align 8
+  %49 = icmp eq %struct.refmvs_block* %48, null
+  br i1 %49, label %52, label %50
+
+50:                                               ; preds = %46
+  %51 = bitcast %struct.refmvs_block* %48 to i8*
+  tail call void @free(i8* %51) #7
+  br label %52
+
+52:                                               ; preds = %46, %50
+  %53 = mul nsw i64 %32, 560
+  %54 = sext i32 %38 to i64
+  %55 = mul i64 %53, %54
+  %56 = tail call noalias i8* @malloc(i64 %55) #7
+  %57 = bitcast %struct.refmvs_block** %47 to i8**
+  store i8* %56, i8** %57, align 8
+  %58 = icmp eq i8* %56, null
+  br i1 %58, label %289, label %59
+
+59:                                               ; preds = %52
+  store i64 %32, i64* %39, align 8
+  br label %60
+
+60:                                               ; preds = %42, %59
+  %61 = ashr exact i64 %32, 1
+  %62 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 17
+  %63 = load i64, i64* %62, align 8
+  %64 = icmp eq i64 %61, %63
+  br i1 %64, label %65, label %69
+
+65:                                               ; preds = %60
+  %66 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 20
+  %67 = load i32, i32* %66, align 8
+  %68 = icmp eq i32 %38, %67
+  br i1 %68, label %83, label %69
+
+69:                                               ; preds = %65, %60
+  %70 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 16
+  %71 = load %struct.refmvs_temporal_block*, %struct.refmvs_temporal_block** %70, align 8
+  %72 = icmp eq %struct.refmvs_temporal_block* %71, null
+  br i1 %72, label %75, label %73
+
+73:                                               ; preds = %69
+  %74 = bitcast %struct.refmvs_temporal_block* %71 to i8*
+  tail call void @free(i8* %74) #7
+  br label %75
+
+75:                                               ; preds = %69, %73
+  %76 = shl nsw i64 %32, 6
+  %77 = sext i32 %38 to i64
+  %78 = mul i64 %76, %77
+  %79 = tail call noalias i8* @malloc(i64 %78) #7
+  %80 = bitcast %struct.refmvs_temporal_block** %70 to i8**
+  store i8* %79, i8** %80, align 8
+  %81 = icmp eq i8* %79, null
+  br i1 %81, label %289, label %82
+
+82:                                               ; preds = %75
+  store i64 %61, i64* %62, align 8
+  br label %83
+
+83:                                               ; preds = %65, %82
+  %84 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 20
+  store i32 %38, i32* %84, align 8
+  %85 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 21
+  store i32 %7, i32* %85, align 4
+  %86 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 14
+  store %struct.refmvs_temporal_block* %4, %struct.refmvs_temporal_block** %86, align 8
+  %87 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 15
+  store %struct.refmvs_temporal_block** %6, %struct.refmvs_temporal_block*** %87, align 8
+  %88 = getelementptr inbounds %struct.Dav1dFrameHeader, %struct.Dav1dFrameHeader* %2, i64 0, i32 4
+  %89 = load i32, i32* %88, align 8
+  %90 = getelementptr inbounds %struct.Dav1dSequenceHeader, %struct.Dav1dSequenceHeader* %1, i64 0, i32 42
+  %91 = load i32, i32* %90, align 4
+  %92 = icmp eq i32 %91, 0
+  br i1 %92, label %102, label %93
+
+93:                                               ; preds = %83
+  %94 = load i32, i32* %3, align 4
+  %95 = add nsw i32 %91, -1
+  %96 = shl i32 1, %95
+  %97 = sub nsw i32 %94, %89
+  %98 = add nsw i32 %96, -1
+  %99 = and i32 %97, %98
+  %100 = and i32 %97, %96
+  %101 = sub nsw i32 %99, %100
+  br label %102
+
+102:                                              ; preds = %83, %93
+  %103 = phi i32 [ %101, %93 ], [ 0, %83 ]
+  %104 = icmp sgt i32 %103, 0
+  %105 = zext i1 %104 to i8
+  %106 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 7, i64 0
+  store i8 %105, i8* %106, align 1
+  %107 = lshr i32 %103, 31
+  %108 = trunc i32 %107 to i8
+  %109 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 8, i64 0
+  store i8 %108, i8* %109, align 1
+  %110 = load i32, i32* %90, align 4
+  %111 = icmp eq i32 %110, 0
+  br i1 %111, label %125, label %112
+
+112:                                              ; preds = %102
+  %113 = load i32, i32* %3, align 4
+  %114 = add nsw i32 %110, -1
+  %115 = shl i32 1, %114
+  %116 = sub nsw i32 %89, %113
+  %117 = add nsw i32 %115, -1
+  %118 = and i32 %116, %117
+  %119 = and i32 %116, %115
+  %120 = sub nsw i32 %118, %119
+  %121 = icmp sgt i32 %120, 31
+  br i1 %121, label %125, label %122
+
+122:                                              ; preds = %112
+  %123 = icmp sgt i32 %120, -31
+  %124 = select i1 %123, i32 %120, i32 -31
+  br label %125
+
+125:                                              ; preds = %122, %112, %102
+  %126 = phi i32 [ 0, %102 ], [ 31, %112 ], [ %124, %122 ]
+  %127 = trunc i32 %126 to i8
+  %128 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 9, i64 0
+  store i8 %127, i8* %128, align 1
+  %129 = load i32, i32* %90, align 4
+  %130 = getelementptr inbounds i32, i32* %3, i64 1
+  %131 = icmp eq i32 %129, 0
+  br i1 %131, label %400, label %391
+
+132:                                              ; preds = %619
+  %133 = load i32, i32* %90, align 4
+  %134 = icmp eq i32 %133, 0
+  br i1 %134, label %284, label %135
+
+135:                                              ; preds = %132
+  %136 = load %struct.refmvs_temporal_block*, %struct.refmvs_temporal_block** %6, align 8
+  %137 = icmp eq %struct.refmvs_temporal_block* %136, null
+  br i1 %137, label %145, label %138
+
+138:                                              ; preds = %135
+  %139 = getelementptr inbounds [7 x i32], [7 x i32]* %5, i64 0, i64 6
+  %140 = load i32, i32* %139, align 4
+  %141 = load i32, i32* %467, align 4
+  %142 = icmp eq i32 %140, %141
+  br i1 %142, label %145, label %143
+
+143:                                              ; preds = %138
+  store i32 1, i32* %622, align 8
+  %144 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 10, i64 0
+  store i8 0, i8* %144, align 1
+  br label %145
+
+145:                                              ; preds = %138, %135, %143
+  %146 = phi i32 [ 1, %143 ], [ 0, %138 ], [ 0, %135 ]
+  %147 = phi i32 [ 3, %143 ], [ 2, %138 ], [ 2, %135 ]
+  %148 = getelementptr inbounds %struct.refmvs_temporal_block*, %struct.refmvs_temporal_block** %6, i64 4
+  %149 = load %struct.refmvs_temporal_block*, %struct.refmvs_temporal_block** %148, align 8
+  %150 = icmp eq %struct.refmvs_temporal_block* %149, null
+  br i1 %150, label %168, label %151
+
+151:                                              ; preds = %145
+  %152 = load i32, i32* %90, align 4
+  %153 = icmp eq i32 %152, 0
+  br i1 %153, label %168, label %154
+
+154:                                              ; preds = %151
+  %155 = load i32, i32* %88, align 8
+  %156 = load i32, i32* %506, align 4
+  %157 = add nsw i32 %152, -1
+  %158 = shl i32 1, %157
+  %159 = sub nsw i32 %156, %155
+  %160 = add nsw i32 %158, -1
+  %161 = and i32 %159, %160
+  %162 = and i32 %159, %158
+  %163 = icmp sgt i32 %161, %162
+  br i1 %163, label %164, label %168
+
+164:                                              ; preds = %154
+  %165 = add nuw nsw i32 %146, 1
+  store i32 %165, i32* %622, align 8
+  %166 = zext i32 %146 to i64
+  %167 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 10, i64 %166
+  store i8 4, i8* %167, align 1
+  br label %168
+
+168:                                              ; preds = %151, %145, %164, %154
+  %169 = getelementptr inbounds %struct.refmvs_temporal_block*, %struct.refmvs_temporal_block** %6, i64 5
+  %170 = load %struct.refmvs_temporal_block*, %struct.refmvs_temporal_block** %169, align 8
+  %171 = icmp eq %struct.refmvs_temporal_block* %170, null
+  br i1 %171, label %190, label %172
+
+172:                                              ; preds = %168
+  %173 = load i32, i32* %90, align 4
+  %174 = icmp eq i32 %173, 0
+  br i1 %174, label %190, label %175
+
+175:                                              ; preds = %172
+  %176 = load i32, i32* %88, align 8
+  %177 = load i32, i32* %545, align 4
+  %178 = add nsw i32 %173, -1
+  %179 = shl i32 1, %178
+  %180 = sub nsw i32 %177, %176
+  %181 = add nsw i32 %179, -1
+  %182 = and i32 %180, %181
+  %183 = and i32 %180, %179
+  %184 = icmp sgt i32 %182, %183
+  br i1 %184, label %185, label %190
+
+185:                                              ; preds = %175
+  %186 = load i32, i32* %622, align 8
+  %187 = add nsw i32 %186, 1
+  store i32 %187, i32* %622, align 8
+  %188 = sext i32 %186 to i64
+  %189 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 10, i64 %188
+  store i8 5, i8* %189, align 1
+  br label %190
+
+190:                                              ; preds = %172, %168, %185, %175
+  %191 = load i32, i32* %622, align 8
+  %192 = icmp slt i32 %191, %147
+  br i1 %192, label %193, label %215
+
+193:                                              ; preds = %190
+  %194 = getelementptr inbounds %struct.refmvs_temporal_block*, %struct.refmvs_temporal_block** %6, i64 6
+  %195 = load %struct.refmvs_temporal_block*, %struct.refmvs_temporal_block** %194, align 8
+  %196 = icmp eq %struct.refmvs_temporal_block* %195, null
+  br i1 %196, label %215, label %197
+
+197:                                              ; preds = %193
+  %198 = load i32, i32* %90, align 4
+  %199 = icmp eq i32 %198, 0
+  br i1 %199, label %215, label %200
+
+200:                                              ; preds = %197
+  %201 = load i32, i32* %88, align 8
+  %202 = load i32, i32* %584, align 4
+  %203 = add nsw i32 %198, -1
+  %204 = shl i32 1, %203
+  %205 = sub nsw i32 %202, %201
+  %206 = add nsw i32 %204, -1
+  %207 = and i32 %205, %206
+  %208 = and i32 %205, %204
+  %209 = icmp sgt i32 %207, %208
+  br i1 %209, label %210, label %215
+
+210:                                              ; preds = %200
+  %211 = add nsw i32 %191, 1
+  store i32 %211, i32* %622, align 8
+  %212 = sext i32 %191 to i64
+  %213 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 10, i64 %212
+  store i8 6, i8* %213, align 1
+  %214 = load i32, i32* %622, align 8
+  br label %215
+
+215:                                              ; preds = %197, %193, %210, %200, %190
+  %216 = phi i32 [ %191, %197 ], [ %191, %193 ], [ %214, %210 ], [ %191, %200 ], [ %191, %190 ]
+  %217 = icmp slt i32 %216, %147
+  br i1 %217, label %218, label %227
+
+218:                                              ; preds = %215
+  %219 = getelementptr inbounds %struct.refmvs_temporal_block*, %struct.refmvs_temporal_block** %6, i64 1
+  %220 = load %struct.refmvs_temporal_block*, %struct.refmvs_temporal_block** %219, align 8
+  %221 = icmp eq %struct.refmvs_temporal_block* %220, null
+  br i1 %221, label %227, label %222
+
+222:                                              ; preds = %218
+  %223 = add nsw i32 %216, 1
+  store i32 %223, i32* %622, align 8
+  %224 = sext i32 %216 to i64
+  %225 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 10, i64 %224
+  store i8 1, i8* %225, align 1
+  %226 = load i32, i32* %622, align 8
+  br label %227
+
+227:                                              ; preds = %218, %222, %215
+  %228 = phi i32 [ %216, %218 ], [ %226, %222 ], [ %216, %215 ]
+  %229 = icmp sgt i32 %228, 0
+  br i1 %229, label %230, label %284
+
+230:                                              ; preds = %227, %279
+  %231 = phi i64 [ %280, %279 ], [ 0, %227 ]
+  %232 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 10, i64 %231
+  %233 = load i8, i8* %232, align 1
+  %234 = zext i8 %233 to i64
+  %235 = getelementptr inbounds i32, i32* %3, i64 %234
+  %236 = load i32, i32* %235, align 4
+  %237 = load i32, i32* %90, align 4
+  %238 = icmp eq i32 %237, 0
+  br i1 %238, label %254, label %239
+
+239:                                              ; preds = %230
+  %240 = load i32, i32* %88, align 8
+  %241 = add nsw i32 %237, -1
+  %242 = shl i32 1, %241
+  %243 = sub nsw i32 %236, %240
+  %244 = add nsw i32 %242, -1
+  %245 = and i32 %243, %244
+  %246 = and i32 %243, %242
+  %247 = sub nsw i32 %245, %246
+  %248 = icmp slt i32 %247, 0
+  %249 = sub nsw i32 0, %247
+  %250 = select i1 %248, i32 %249, i32 %247
+  %251 = icmp sgt i32 %250, 31
+  br i1 %251, label %252, label %254
+
+252:                                              ; preds = %239
+  %253 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 11, i64 %231
+  store i32 -2147483648, i32* %253, align 4
+  br label %279
+
+254:                                              ; preds = %230, %239
+  %255 = phi i32 [ %247, %239 ], [ 0, %230 ]
+  %256 = phi i32 [ %249, %239 ], [ 0, %230 ]
+  %257 = icmp ult i8 %233, 4
+  %258 = select i1 %257, i32 %256, i32 %255
+  %259 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 11, i64 %231
+  store i32 %258, i32* %259, align 4
+  %260 = load i32, i32* %90, align 4
+  %261 = icmp eq i32 %260, 0
+  br i1 %261, label %274, label %262
+
+262:                                              ; preds = %254
+  %263 = getelementptr inbounds [7 x i32], [7 x i32]* %5, i64 %234, i64 0
+  %264 = load i32, i32* %263, align 4
+  %265 = add nsw i32 %260, -1
+  %266 = shl i32 1, %265
+  %267 = sub nsw i32 %236, %264
+  %268 = add nsw i32 %266, -1
+  %269 = and i32 %267, %268
+  %270 = and i32 %267, %266
+  %271 = sub nsw i32 %269, %270
+  %272 = icmp ugt i32 %271, 31
+  %273 = select i1 %272, i32 0, i32 %271
+  br label %274
+
+274:                                              ; preds = %262, %254
+  %275 = phi i32 [ 0, %254 ], [ %273, %262 ]
+  %276 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 12, i64 %231, i64 0
+  store i32 %275, i32* %276, align 4
+  %277 = load i32, i32* %90, align 4
+  %278 = icmp eq i32 %277, 0
+  br i1 %278, label %303, label %291
+
+279:                                              ; preds = %388, %252
+  %280 = add nuw nsw i64 %231, 1
+  %281 = load i32, i32* %622, align 8
+  %282 = sext i32 %281 to i64
+  %283 = icmp slt i64 %280, %282
+  br i1 %283, label %230, label %284
+
+284:                                              ; preds = %279, %227, %132, %619
+  %285 = phi i32 [ %228, %227 ], [ 0, %132 ], [ 0, %619 ], [ %281, %279 ]
+  %286 = icmp sgt i32 %285, 0
+  %287 = zext i1 %286 to i32
+  %288 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 6
+  store i32 %287, i32* %288, align 4
+  br label %289
+
+289:                                              ; preds = %284, %75, %52
+  %290 = phi i32 [ -12, %52 ], [ 0, %284 ], [ -12, %75 ]
+  ret i32 %290
+
+291:                                              ; preds = %274
+  %292 = getelementptr inbounds [7 x i32], [7 x i32]* %5, i64 %234, i64 1
+  %293 = load i32, i32* %292, align 4
+  %294 = add nsw i32 %277, -1
+  %295 = shl i32 1, %294
+  %296 = sub nsw i32 %236, %293
+  %297 = add nsw i32 %295, -1
+  %298 = and i32 %296, %297
+  %299 = and i32 %296, %295
+  %300 = sub nsw i32 %298, %299
+  %301 = icmp ugt i32 %300, 31
+  %302 = select i1 %301, i32 0, i32 %300
+  br label %303
+
+303:                                              ; preds = %291, %274
+  %304 = phi i32 [ 0, %274 ], [ %302, %291 ]
+  %305 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 12, i64 %231, i64 1
+  store i32 %304, i32* %305, align 4
+  %306 = load i32, i32* %90, align 4
+  %307 = icmp eq i32 %306, 0
+  br i1 %307, label %320, label %308
+
+308:                                              ; preds = %303
+  %309 = getelementptr inbounds [7 x i32], [7 x i32]* %5, i64 %234, i64 2
+  %310 = load i32, i32* %309, align 4
+  %311 = add nsw i32 %306, -1
+  %312 = shl i32 1, %311
+  %313 = sub nsw i32 %236, %310
+  %314 = add nsw i32 %312, -1
+  %315 = and i32 %313, %314
+  %316 = and i32 %313, %312
+  %317 = sub nsw i32 %315, %316
+  %318 = icmp ugt i32 %317, 31
+  %319 = select i1 %318, i32 0, i32 %317
+  br label %320
+
+320:                                              ; preds = %308, %303
+  %321 = phi i32 [ 0, %303 ], [ %319, %308 ]
+  %322 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 12, i64 %231, i64 2
+  store i32 %321, i32* %322, align 4
+  %323 = load i32, i32* %90, align 4
+  %324 = icmp eq i32 %323, 0
+  br i1 %324, label %337, label %325
+
+325:                                              ; preds = %320
+  %326 = getelementptr inbounds [7 x i32], [7 x i32]* %5, i64 %234, i64 3
+  %327 = load i32, i32* %326, align 4
+  %328 = add nsw i32 %323, -1
+  %329 = shl i32 1, %328
+  %330 = sub nsw i32 %236, %327
+  %331 = add nsw i32 %329, -1
+  %332 = and i32 %330, %331
+  %333 = and i32 %330, %329
+  %334 = sub nsw i32 %332, %333
+  %335 = icmp ugt i32 %334, 31
+  %336 = select i1 %335, i32 0, i32 %334
+  br label %337
+
+337:                                              ; preds = %325, %320
+  %338 = phi i32 [ 0, %320 ], [ %336, %325 ]
+  %339 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 12, i64 %231, i64 3
+  store i32 %338, i32* %339, align 4
+  %340 = load i32, i32* %90, align 4
+  %341 = icmp eq i32 %340, 0
+  br i1 %341, label %354, label %342
+
+342:                                              ; preds = %337
+  %343 = getelementptr inbounds [7 x i32], [7 x i32]* %5, i64 %234, i64 4
+  %344 = load i32, i32* %343, align 4
+  %345 = add nsw i32 %340, -1
+  %346 = shl i32 1, %345
+  %347 = sub nsw i32 %236, %344
+  %348 = add nsw i32 %346, -1
+  %349 = and i32 %347, %348
+  %350 = and i32 %347, %346
+  %351 = sub nsw i32 %349, %350
+  %352 = icmp ugt i32 %351, 31
+  %353 = select i1 %352, i32 0, i32 %351
+  br label %354
+
+354:                                              ; preds = %342, %337
+  %355 = phi i32 [ 0, %337 ], [ %353, %342 ]
+  %356 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 12, i64 %231, i64 4
+  store i32 %355, i32* %356, align 4
+  %357 = load i32, i32* %90, align 4
+  %358 = icmp eq i32 %357, 0
+  br i1 %358, label %371, label %359
+
+359:                                              ; preds = %354
+  %360 = getelementptr inbounds [7 x i32], [7 x i32]* %5, i64 %234, i64 5
+  %361 = load i32, i32* %360, align 4
+  %362 = add nsw i32 %357, -1
+  %363 = shl i32 1, %362
+  %364 = sub nsw i32 %236, %361
+  %365 = add nsw i32 %363, -1
+  %366 = and i32 %364, %365
+  %367 = and i32 %364, %363
+  %368 = sub nsw i32 %366, %367
+  %369 = icmp ugt i32 %368, 31
+  %370 = select i1 %369, i32 0, i32 %368
+  br label %371
+
+371:                                              ; preds = %359, %354
+  %372 = phi i32 [ 0, %354 ], [ %370, %359 ]
+  %373 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 12, i64 %231, i64 5
+  store i32 %372, i32* %373, align 4
+  %374 = load i32, i32* %90, align 4
+  %375 = icmp eq i32 %374, 0
+  br i1 %375, label %388, label %376
+
+376:                                              ; preds = %371
+  %377 = getelementptr inbounds [7 x i32], [7 x i32]* %5, i64 %234, i64 6
+  %378 = load i32, i32* %377, align 4
+  %379 = add nsw i32 %374, -1
+  %380 = shl i32 1, %379
+  %381 = sub nsw i32 %236, %378
+  %382 = add nsw i32 %380, -1
+  %383 = and i32 %381, %382
+  %384 = and i32 %381, %380
+  %385 = sub nsw i32 %383, %384
+  %386 = icmp ugt i32 %385, 31
+  %387 = select i1 %386, i32 0, i32 %385
+  br label %388
+
+388:                                              ; preds = %376, %371
+  %389 = phi i32 [ 0, %371 ], [ %387, %376 ]
+  %390 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 12, i64 %231, i64 6
+  store i32 %389, i32* %390, align 4
+  br label %279
+
+391:                                              ; preds = %125
+  %392 = load i32, i32* %130, align 4
+  %393 = add nsw i32 %129, -1
+  %394 = shl i32 1, %393
+  %395 = sub nsw i32 %392, %89
+  %396 = add nsw i32 %394, -1
+  %397 = and i32 %395, %396
+  %398 = and i32 %395, %394
+  %399 = sub nsw i32 %397, %398
+  br label %400
+
+400:                                              ; preds = %391, %125
+  %401 = phi i32 [ %399, %391 ], [ 0, %125 ]
+  %402 = icmp sgt i32 %401, 0
+  %403 = zext i1 %402 to i8
+  %404 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 7, i64 1
+  store i8 %403, i8* %404, align 1
+  %405 = lshr i32 %401, 31
+  %406 = trunc i32 %405 to i8
+  %407 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 8, i64 1
+  store i8 %406, i8* %407, align 1
+  %408 = load i32, i32* %90, align 4
+  %409 = icmp eq i32 %408, 0
+  br i1 %409, label %423, label %410
+
+410:                                              ; preds = %400
+  %411 = load i32, i32* %130, align 4
+  %412 = add nsw i32 %408, -1
+  %413 = shl i32 1, %412
+  %414 = sub nsw i32 %89, %411
+  %415 = add nsw i32 %413, -1
+  %416 = and i32 %414, %415
+  %417 = and i32 %414, %413
+  %418 = sub nsw i32 %416, %417
+  %419 = icmp sgt i32 %418, 31
+  br i1 %419, label %423, label %420
+
+420:                                              ; preds = %410
+  %421 = icmp sgt i32 %418, -31
+  %422 = select i1 %421, i32 %418, i32 -31
+  br label %423
+
+423:                                              ; preds = %420, %410, %400
+  %424 = phi i32 [ 0, %400 ], [ 31, %410 ], [ %422, %420 ]
+  %425 = trunc i32 %424 to i8
+  %426 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 9, i64 1
+  store i8 %425, i8* %426, align 1
+  %427 = load i32, i32* %90, align 4
+  %428 = getelementptr inbounds i32, i32* %3, i64 2
+  %429 = icmp eq i32 %427, 0
+  br i1 %429, label %439, label %430
+
+430:                                              ; preds = %423
+  %431 = load i32, i32* %428, align 4
+  %432 = add nsw i32 %427, -1
+  %433 = shl i32 1, %432
+  %434 = sub nsw i32 %431, %89
+  %435 = add nsw i32 %433, -1
+  %436 = and i32 %434, %435
+  %437 = and i32 %434, %433
+  %438 = sub nsw i32 %436, %437
+  br label %439
+
+439:                                              ; preds = %430, %423
+  %440 = phi i32 [ %438, %430 ], [ 0, %423 ]
+  %441 = icmp sgt i32 %440, 0
+  %442 = zext i1 %441 to i8
+  %443 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 7, i64 2
+  store i8 %442, i8* %443, align 1
+  %444 = lshr i32 %440, 31
+  %445 = trunc i32 %444 to i8
+  %446 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 8, i64 2
+  store i8 %445, i8* %446, align 1
+  %447 = load i32, i32* %90, align 4
+  %448 = icmp eq i32 %447, 0
+  br i1 %448, label %462, label %449
+
+449:                                              ; preds = %439
+  %450 = load i32, i32* %428, align 4
+  %451 = add nsw i32 %447, -1
+  %452 = shl i32 1, %451
+  %453 = sub nsw i32 %89, %450
+  %454 = add nsw i32 %452, -1
+  %455 = and i32 %453, %454
+  %456 = and i32 %453, %452
+  %457 = sub nsw i32 %455, %456
+  %458 = icmp sgt i32 %457, 31
+  br i1 %458, label %462, label %459
+
+459:                                              ; preds = %449
+  %460 = icmp sgt i32 %457, -31
+  %461 = select i1 %460, i32 %457, i32 -31
+  br label %462
+
+462:                                              ; preds = %459, %449, %439
+  %463 = phi i32 [ 0, %439 ], [ 31, %449 ], [ %461, %459 ]
+  %464 = trunc i32 %463 to i8
+  %465 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 9, i64 2
+  store i8 %464, i8* %465, align 1
+  %466 = load i32, i32* %90, align 4
+  %467 = getelementptr inbounds i32, i32* %3, i64 3
+  %468 = icmp eq i32 %466, 0
+  br i1 %468, label %478, label %469
+
+469:                                              ; preds = %462
+  %470 = load i32, i32* %467, align 4
+  %471 = add nsw i32 %466, -1
+  %472 = shl i32 1, %471
+  %473 = sub nsw i32 %470, %89
+  %474 = add nsw i32 %472, -1
+  %475 = and i32 %473, %474
+  %476 = and i32 %473, %472
+  %477 = sub nsw i32 %475, %476
+  br label %478
+
+478:                                              ; preds = %469, %462
+  %479 = phi i32 [ %477, %469 ], [ 0, %462 ]
+  %480 = icmp sgt i32 %479, 0
+  %481 = zext i1 %480 to i8
+  %482 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 7, i64 3
+  store i8 %481, i8* %482, align 1
+  %483 = lshr i32 %479, 31
+  %484 = trunc i32 %483 to i8
+  %485 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 8, i64 3
+  store i8 %484, i8* %485, align 1
+  %486 = load i32, i32* %90, align 4
+  %487 = icmp eq i32 %486, 0
+  br i1 %487, label %501, label %488
+
+488:                                              ; preds = %478
+  %489 = load i32, i32* %467, align 4
+  %490 = add nsw i32 %486, -1
+  %491 = shl i32 1, %490
+  %492 = sub nsw i32 %89, %489
+  %493 = add nsw i32 %491, -1
+  %494 = and i32 %492, %493
+  %495 = and i32 %492, %491
+  %496 = sub nsw i32 %494, %495
+  %497 = icmp sgt i32 %496, 31
+  br i1 %497, label %501, label %498
+
+498:                                              ; preds = %488
+  %499 = icmp sgt i32 %496, -31
+  %500 = select i1 %499, i32 %496, i32 -31
+  br label %501
+
+501:                                              ; preds = %498, %488, %478
+  %502 = phi i32 [ 0, %478 ], [ 31, %488 ], [ %500, %498 ]
+  %503 = trunc i32 %502 to i8
+  %504 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 9, i64 3
+  store i8 %503, i8* %504, align 1
+  %505 = load i32, i32* %90, align 4
+  %506 = getelementptr inbounds i32, i32* %3, i64 4
+  %507 = icmp eq i32 %505, 0
+  br i1 %507, label %517, label %508
+
+508:                                              ; preds = %501
+  %509 = load i32, i32* %506, align 4
+  %510 = add nsw i32 %505, -1
+  %511 = shl i32 1, %510
+  %512 = sub nsw i32 %509, %89
+  %513 = add nsw i32 %511, -1
+  %514 = and i32 %512, %513
+  %515 = and i32 %512, %511
+  %516 = sub nsw i32 %514, %515
+  br label %517
+
+517:                                              ; preds = %508, %501
+  %518 = phi i32 [ %516, %508 ], [ 0, %501 ]
+  %519 = icmp sgt i32 %518, 0
+  %520 = zext i1 %519 to i8
+  %521 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 7, i64 4
+  store i8 %520, i8* %521, align 1
+  %522 = lshr i32 %518, 31
+  %523 = trunc i32 %522 to i8
+  %524 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 8, i64 4
+  store i8 %523, i8* %524, align 1
+  %525 = load i32, i32* %90, align 4
+  %526 = icmp eq i32 %525, 0
+  br i1 %526, label %540, label %527
+
+527:                                              ; preds = %517
+  %528 = load i32, i32* %506, align 4
+  %529 = add nsw i32 %525, -1
+  %530 = shl i32 1, %529
+  %531 = sub nsw i32 %89, %528
+  %532 = add nsw i32 %530, -1
+  %533 = and i32 %531, %532
+  %534 = and i32 %531, %530
+  %535 = sub nsw i32 %533, %534
+  %536 = icmp sgt i32 %535, 31
+  br i1 %536, label %540, label %537
+
+537:                                              ; preds = %527
+  %538 = icmp sgt i32 %535, -31
+  %539 = select i1 %538, i32 %535, i32 -31
+  br label %540
+
+540:                                              ; preds = %537, %527, %517
+  %541 = phi i32 [ 0, %517 ], [ 31, %527 ], [ %539, %537 ]
+  %542 = trunc i32 %541 to i8
+  %543 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 9, i64 4
+  store i8 %542, i8* %543, align 1
+  %544 = load i32, i32* %90, align 4
+  %545 = getelementptr inbounds i32, i32* %3, i64 5
+  %546 = icmp eq i32 %544, 0
+  br i1 %546, label %556, label %547
+
+547:                                              ; preds = %540
+  %548 = load i32, i32* %545, align 4
+  %549 = add nsw i32 %544, -1
+  %550 = shl i32 1, %549
+  %551 = sub nsw i32 %548, %89
+  %552 = add nsw i32 %550, -1
+  %553 = and i32 %551, %552
+  %554 = and i32 %551, %550
+  %555 = sub nsw i32 %553, %554
+  br label %556
+
+556:                                              ; preds = %547, %540
+  %557 = phi i32 [ %555, %547 ], [ 0, %540 ]
+  %558 = icmp sgt i32 %557, 0
+  %559 = zext i1 %558 to i8
+  %560 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 7, i64 5
+  store i8 %559, i8* %560, align 1
+  %561 = lshr i32 %557, 31
+  %562 = trunc i32 %561 to i8
+  %563 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 8, i64 5
+  store i8 %562, i8* %563, align 1
+  %564 = load i32, i32* %90, align 4
+  %565 = icmp eq i32 %564, 0
+  br i1 %565, label %580, label %566
+
+566:                                              ; preds = %556
+  %567 = load i32, i32* %545, align 4
+  %568 = add nsw i32 %564, -1
+  %569 = shl i32 1, %568
+  %570 = sub nsw i32 %89, %567
+  %571 = add nsw i32 %569, -1
+  %572 = and i32 %570, %571
+  %573 = and i32 %570, %569
+  %574 = sub nsw i32 %572, %573
+  %575 = icmp sgt i32 %574, 31
+  br i1 %575, label %580, label %576
+
+576:                                              ; preds = %566
+  %577 = icmp sgt i32 %574, -31
+  %578 = select i1 %577, i32 %574, i32 -31
+  %579 = trunc i32 %578 to i8
+  br label %580
+
+580:                                              ; preds = %576, %566, %556
+  %581 = phi i8 [ 0, %556 ], [ 31, %566 ], [ %579, %576 ]
+  %582 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 9, i64 5
+  store i8 %581, i8* %582, align 1
+  %583 = load i32, i32* %90, align 4
+  %584 = getelementptr inbounds i32, i32* %3, i64 6
+  %585 = icmp eq i32 %583, 0
+  br i1 %585, label %595, label %586
+
+586:                                              ; preds = %580
+  %587 = load i32, i32* %584, align 4
+  %588 = add nsw i32 %583, -1
+  %589 = shl i32 1, %588
+  %590 = sub nsw i32 %587, %89
+  %591 = add nsw i32 %589, -1
+  %592 = and i32 %590, %591
+  %593 = and i32 %590, %589
+  %594 = sub nsw i32 %592, %593
+  br label %595
+
+595:                                              ; preds = %586, %580
+  %596 = phi i32 [ %594, %586 ], [ 0, %580 ]
+  %597 = icmp sgt i32 %596, 0
+  %598 = zext i1 %597 to i8
+  %599 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 7, i64 6
+  store i8 %598, i8* %599, align 1
+  %600 = lshr i32 %596, 31
+  %601 = trunc i32 %600 to i8
+  %602 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 8, i64 6
+  store i8 %601, i8* %602, align 1
+  %603 = load i32, i32* %90, align 4
+  %604 = icmp eq i32 %603, 0
+  br i1 %604, label %619, label %605
+
+605:                                              ; preds = %595
+  %606 = load i32, i32* %584, align 4
+  %607 = add nsw i32 %603, -1
+  %608 = shl i32 1, %607
+  %609 = sub nsw i32 %89, %606
+  %610 = add nsw i32 %608, -1
+  %611 = and i32 %609, %610
+  %612 = and i32 %609, %608
+  %613 = sub nsw i32 %611, %612
+  %614 = icmp sgt i32 %613, 31
+  br i1 %614, label %619, label %615
+
+615:                                              ; preds = %605
+  %616 = icmp sgt i32 %613, -31
+  %617 = select i1 %616, i32 %613, i32 -31
+  %618 = trunc i32 %617 to i8
+  br label %619
+
+619:                                              ; preds = %615, %605, %595
+  %620 = phi i8 [ 0, %595 ], [ 31, %605 ], [ %618, %615 ]
+  %621 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 9, i64 6
+  store i8 %620, i8* %621, align 1
+  %622 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 13
+  store i32 0, i32* %622, align 8
+  %623 = getelementptr inbounds %struct.Dav1dFrameHeader, %struct.Dav1dFrameHeader* %2, i64 0, i32 32
+  %624 = load i32, i32* %623, align 8
+  %625 = icmp eq i32 %624, 0
+  br i1 %625, label %284, label %132
+}
+
+; Function Attrs: nounwind
+declare void @free(i8* nocapture) local_unnamed_addr #4
+
+; Function Attrs: nofree nounwind
+declare noalias i8* @malloc(i64) local_unnamed_addr #5
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable writeonly
+define hidden void @dav1d_refmvs_init(%struct.refmvs_frame* nocapture) local_unnamed_addr #6 {
+  %2 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 16
+  %3 = bitcast %struct.refmvs_temporal_block** %2 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %3, i8 0, i64 32, i1 false)
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @dav1d_refmvs_clear(%struct.refmvs_frame* nocapture readonly) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 18
+  %3 = load %struct.refmvs_block*, %struct.refmvs_block** %2, align 8
+  %4 = icmp eq %struct.refmvs_block* %3, null
+  br i1 %4, label %7, label %5
+
+5:                                                ; preds = %1
+  %6 = bitcast %struct.refmvs_block* %3 to i8*
+  tail call void @free(i8* %6) #7
+  br label %7
+
+7:                                                ; preds = %1, %5
+  %8 = getelementptr inbounds %struct.refmvs_frame, %struct.refmvs_frame* %0, i64 0, i32 16
+  %9 = load %struct.refmvs_temporal_block*, %struct.refmvs_temporal_block** %8, align 8
+  %10 = icmp eq %struct.refmvs_temporal_block* %9, null
+  br i1 %10, label %13, label %11
+
+11:                                               ; preds = %7
+  %12 = bitcast %struct.refmvs_temporal_block* %9 to i8*
+  tail call void @free(i8* %12) #7
+  br label %13
+
+13:                                               ; preds = %7, %11
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @llvm.assume(i1) #7
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { argmemonly nounwind }
+attributes #2 = { inlinehint nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nofree norecurse nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nofree nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nofree norecurse nounwind ssp uwtable writeonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = distinct !{!2, !3}
+!3 = !{!"llvm.loop.unroll.disable"}
+!4 = distinct !{!4, !3}
+!5 = distinct !{!5, !3}
+!6 = distinct !{!6, !3}
+!7 = distinct !{!7, !3}

@@ -1,0 +1,2829 @@
+; ModuleID = '../../base/allocator/partition_allocator/thread_cache.cc'
+source_filename = "../../base/allocator/partition_allocator/thread_cache.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.base::TimeDelta" = type { i64 }
+%"struct.base::trace_event::TraceCategory" = type { i8, i32, i8* }
+%"struct.std::__1::atomic.17" = type { %"struct.std::__1::__atomic_base.18" }
+%"struct.std::__1::__atomic_base.18" = type { %"struct.std::__1::__cxx_atomic_impl.19" }
+%"struct.std::__1::__cxx_atomic_impl.19" = type { %"struct.std::__1::__cxx_atomic_base_impl.20" }
+%"struct.std::__1::__cxx_atomic_base_impl.20" = type { %"struct.base::PartitionRoot"* }
+%"struct.base::PartitionRoot" = type <{ i8, i8, i8, i8, i8, i8, i8, i8, %"class.base::internal::MaybeSpinLock", [4 x i8], [128 x %"struct.base::internal::PartitionBucket"], %"struct.base::internal::PartitionBucket", i8, [7 x i8], %"struct.std::__1::atomic.10", %"struct.std::__1::atomic.10", %"struct.std::__1::atomic.10", i8*, i8*, i8*, %"struct.base::internal::PartitionSuperPageExtentEntry"*, %"struct.base::internal::PartitionSuperPageExtentEntry"*, %"struct.base::internal::PartitionDirectMapExtent"*, [16 x %"struct.base::internal::SlotSpanMetadata"*], i16, [6 x i8], i64, %"struct.std::__1::atomic", [4 x i8] }>
+%"class.base::internal::MaybeSpinLock" = type { %"class.base::internal::SpinningMutex" }
+%"class.base::internal::SpinningMutex" = type { %"struct.std::__1::atomic" }
+%"struct.base::internal::PartitionBucket" = type { %"struct.base::internal::SlotSpanMetadata"*, %"struct.base::internal::SlotSpanMetadata"*, %"struct.base::internal::SlotSpanMetadata"*, i32, i32, i64 }
+%"struct.base::internal::SlotSpanMetadata" = type <{ %"class.base::internal::PartitionFreelistEntry"*, %"struct.base::internal::SlotSpanMetadata"*, %"struct.base::internal::PartitionBucket"*, i16, i16, i8, i8 }>
+%"class.base::internal::PartitionFreelistEntry" = type { %"struct.base::internal::EncodedPartitionFreelistEntry"*, i64 }
+%"struct.base::internal::EncodedPartitionFreelistEntry" = type { [8 x i8], [8 x i8] }
+%"struct.std::__1::atomic.10" = type { %"struct.std::__1::__atomic_base.11" }
+%"struct.std::__1::__atomic_base.11" = type { %"struct.std::__1::__atomic_base.12" }
+%"struct.std::__1::__atomic_base.12" = type { %"struct.std::__1::__cxx_atomic_impl.13" }
+%"struct.std::__1::__cxx_atomic_impl.13" = type { %"struct.std::__1::__cxx_atomic_base_impl.14" }
+%"struct.std::__1::__cxx_atomic_base_impl.14" = type { i64 }
+%"struct.base::internal::PartitionSuperPageExtentEntry" = type { %"struct.base::PartitionRoot"*, i8*, i8*, %"struct.base::internal::PartitionSuperPageExtentEntry"* }
+%"struct.base::internal::PartitionDirectMapExtent" = type opaque
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.0" }
+%"struct.std::__1::__atomic_base.0" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"class.base::internal::ThreadCache" = type { [89 x %"struct.base::internal::ThreadCache::Bucket"], i64, %"struct.std::__1::atomic.6", %"struct.base::ThreadCacheStats", %"struct.base::PartitionRoot"*, %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"* }
+%"struct.base::internal::ThreadCache::Bucket" = type <{ %"class.base::internal::PartitionFreelistEntry"*, i8, %"struct.std::__1::atomic.1", i16, [4 x i8] }>
+%"struct.std::__1::atomic.1" = type { %"struct.std::__1::__atomic_base.2" }
+%"struct.std::__1::__atomic_base.2" = type { %"struct.std::__1::__atomic_base.3" }
+%"struct.std::__1::__atomic_base.3" = type { %"struct.std::__1::__cxx_atomic_impl.4" }
+%"struct.std::__1::__cxx_atomic_impl.4" = type { %"struct.std::__1::__cxx_atomic_base_impl.5" }
+%"struct.std::__1::__cxx_atomic_base_impl.5" = type { i8 }
+%"struct.std::__1::atomic.6" = type { %"struct.std::__1::__atomic_base.7" }
+%"struct.std::__1::__atomic_base.7" = type { %"struct.std::__1::__cxx_atomic_impl.8" }
+%"struct.std::__1::__cxx_atomic_impl.8" = type { %"struct.std::__1::__cxx_atomic_base_impl.9" }
+%"struct.std::__1::__cxx_atomic_base_impl.9" = type { i8 }
+%"struct.base::ThreadCacheStats" = type { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, [129 x i64], [129 x i64] }
+%"class.base::internal::ThreadCacheRegistry" = type <{ %"class.base::internal::MaybeSpinLock", [4 x i8], %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8, [7 x i8] }>
+%"class.base::Location" = type { i8*, i8*, i32, i8* }
+%"class.base::OnceCallback" = type { %"class.base::internal::CallbackBase" }
+%"class.base::internal::CallbackBase" = type { %class.scoped_refptr.15 }
+%class.scoped_refptr.15 = type { %"class.base::internal::BindStateBase"* }
+%"class.base::internal::BindStateBase" = type { %"class.base::RefCountedThreadSafe.16", void ()*, void (%"class.base::internal::BindStateBase"*)*, i1 (%"class.base::internal::BindStateBase"*, i32)* }
+%"class.base::RefCountedThreadSafe.16" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%class.scoped_refptr = type { %"class.base::SingleThreadTaskRunner"* }
+%"class.base::SingleThreadTaskRunner" = type { %"class.base::SequencedTaskRunner.base", [4 x i8] }
+%"class.base::SequencedTaskRunner.base" = type { %"class.base::TaskRunner.base" }
+%"class.base::TaskRunner.base" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe" }>
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::TaskRunner" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe", [4 x i8] }>
+%"class.base::TimeTicks" = type { %"class.base::time_internal::TimeBase" }
+%"class.base::time_internal::TimeBase" = type { i64 }
+%"class.base::trace_event::TraceArguments" = type { i8, [2 x i8], [2 x i8*], [2 x %"union.base::trace_event::TraceValue"] }
+%"union.base::trace_event::TraceValue" = type { i64 }
+%"struct.base::internal::DeferredUnmap" = type { i8*, i64 }
+%"struct.base::internal::PartitionPage" = type { %union.anon, i8, i8 }
+%union.anon = type <{ %"struct.base::internal::SubsequentPageMetadata", [22 x i8] }>
+%"struct.base::internal::SubsequentPageMetadata" = type { i64 }
+
+$_ZN4base8internal7InvokerINS0_9BindStateIMNS0_19ThreadCacheRegistryEFvvEJNS0_17UnretainedWrapperIS3_EEEEEFvvEE7RunOnceEPNS0_13BindStateBaseE = comdat any
+
+$_ZN4base8internal9BindStateIMNS0_19ThreadCacheRegistryEFvvEJNS0_17UnretainedWrapperIS2_EEEE7DestroyEPKNS0_13BindStateBaseE = comdat any
+
+@_ZN4base8internal18g_thread_cache_keyE = hidden global i32 0, align 4
+@_ZN4base8internal19ThreadCacheRegistry17kMinPurgeIntervalE = hidden local_unnamed_addr constant %"class.base::TimeDelta" { i64 1000000 }, align 8
+@_ZN4base8internal19ThreadCacheRegistry17kMaxPurgeIntervalE = hidden local_unnamed_addr constant %"class.base::TimeDelta" { i64 60000000 }, align 8
+@_ZN4base8internal19ThreadCacheRegistry21kDefaultPurgeIntervalE = hidden local_unnamed_addr constant %"class.base::TimeDelta" { i64 2000000 }, align 8
+@_ZN4base8internal19ThreadCacheRegistry26kMinCachedMemoryForPurgingE = hidden local_unnamed_addr constant i64 512000, align 8
+@_ZN4base8internal11ThreadCache14global_limits_E = hidden local_unnamed_addr global [89 x i8] zeroinitializer, align 16
+@_ZN4base8internal11ThreadCache28largest_active_bucket_index_E = hidden local_unnamed_addr global i16 40, align 2
+@.str = private unnamed_addr constant [21 x i8] c"PostDelayedPurgeTask\00", align 1
+@.str.1 = private unnamed_addr constant [57 x i8] c"../../base/allocator/partition_allocator/thread_cache.cc\00", align 1
+@_ZN4base11trace_event16CategoryRegistry11categories_E = external global [300 x %"struct.base::trace_event::TraceCategory"], align 16
+@.str.2 = private unnamed_addr constant [14 x i8] c"PeriodicPurge\00", align 1
+@_ZN4base8internal12_GLOBAL__N_126g_thread_cache_key_createdE = internal unnamed_addr global i1 false, align 1
+@.str.3 = private unnamed_addr constant [79 x i8] c"../../base/allocator/partition_allocator/thread_cache.cc(287) Check failed: ok\00", align 1
+@.str.4 = private unnamed_addr constant [141 x i8] c"../../base/allocator/partition_allocator/thread_cache.cc(293) Check failed: root->buckets[kBucketCount - 1].slot_size == kLargeSizeThreshold\00", align 1
+@.str.5 = private unnamed_addr constant [155 x i8] c"../../base/allocator/partition_allocator/thread_cache.cc(295) Check failed: root->buckets[largest_active_bucket_index_].slot_size == kDefaultSizeThreshold\00", align 1
+@_ZN4base8internal12_GLOBAL__N_119g_thread_cache_rootE = internal global %"struct.std::__1::atomic.17" zeroinitializer, align 8
+@.str.6 = private unnamed_addr constant [82 x i8] c"../../base/allocator/partition_allocator/thread_cache.cc(304) Check failed: false\00", align 1
+@.str.7 = private unnamed_addr constant [120 x i8] c"../../base/allocator/partition_allocator/thread_cache.cc(360) Check failed: largest_active_bucket_index_ < kBucketCount\00", align 1
+@.str.8 = private unnamed_addr constant [81 x i8] c"../../base/allocator/partition_allocator/thread_cache.cc(365) Check failed: root\00", align 1
+@.str.9 = private unnamed_addr constant [97 x i8] c"../../base/allocator/partition_allocator/thread_cache.cc(586) Check failed: cached_memory_ == 0u\00", align 1
+@_ZN4base8internal12_GLOBAL__N_110g_instanceE = internal global { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 } { { { { { i32 } } } } zeroinitializer, %"class.base::internal::ThreadCache"* null, %"class.base::TimeDelta" { i64 2000000 }, i8 0 }, align 8
+@_ZZN4base8internal17BucketIndexLookup8GetIndexEmE6lookup = internal unnamed_addr constant { [128 x i64], [521 x i16] } { [128 x i64] [i64 16, i64 18, i64 20, i64 22, i64 24, i64 26, i64 28, i64 30, i64 32, i64 36, i64 40, i64 44, i64 48, i64 52, i64 56, i64 60, i64 64, i64 72, i64 80, i64 88, i64 96, i64 104, i64 112, i64 120, i64 128, i64 144, i64 160, i64 176, i64 192, i64 208, i64 224, i64 240, i64 256, i64 288, i64 320, i64 352, i64 384, i64 416, i64 448, i64 480, i64 512, i64 576, i64 640, i64 704, i64 768, i64 832, i64 896, i64 960, i64 1024, i64 1152, i64 1280, i64 1408, i64 1536, i64 1664, i64 1792, i64 1920, i64 2048, i64 2304, i64 2560, i64 2816, i64 3072, i64 3328, i64 3584, i64 3840, i64 4096, i64 4608, i64 5120, i64 5632, i64 6144, i64 6656, i64 7168, i64 7680, i64 8192, i64 9216, i64 10240, i64 11264, i64 12288, i64 13312, i64 14336, i64 15360, i64 16384, i64 18432, i64 20480, i64 22528, i64 24576, i64 26624, i64 28672, i64 30720, i64 32768, i64 36864, i64 40960, i64 45056, i64 49152, i64 53248, i64 57344, i64 61440, i64 65536, i64 73728, i64 81920, i64 90112, i64 98304, i64 106496, i64 114688, i64 122880, i64 131072, i64 147456, i64 163840, i64 180224, i64 196608, i64 212992, i64 229376, i64 245760, i64 262144, i64 294912, i64 327680, i64 360448, i64 393216, i64 425984, i64 458752, i64 491520, i64 524288, i64 589824, i64 655360, i64 720896, i64 786432, i64 851968, i64 917504, i64 983040], [521 x i16] [i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 0, i16 8, i16 8, i16 8, i16 8, i16 8, i16 8, i16 8, i16 8, i16 12, i16 12, i16 12, i16 12, i16 16, i16 16, i16 16, i16 16, i16 18, i16 18, i16 20, i16 20, i16 22, i16 22, i16 24, i16 24, i16 25, i16 26, i16 27, i16 28, i16 29, i16 30, i16 31, i16 32, i16 33, i16 34, i16 35, i16 36, i16 37, i16 38, i16 39, i16 40, i16 41, i16 42, i16 43, i16 44, i16 45, i16 46, i16 47, i16 48, i16 49, i16 50, i16 51, i16 52, i16 53, i16 54, i16 55, i16 56, i16 57, i16 58, i16 59, i16 60, i16 61, i16 62, i16 63, i16 64, i16 65, i16 66, i16 67, i16 68, i16 69, i16 70, i16 71, i16 72, i16 73, i16 74, i16 75, i16 76, i16 77, i16 78, i16 79, i16 80, i16 81, i16 82, i16 83, i16 84, i16 85, i16 86, i16 87, i16 88, i16 89, i16 90, i16 91, i16 92, i16 93, i16 94, i16 95, i16 96, i16 97, i16 98, i16 99, i16 100, i16 101, i16 102, i16 103, i16 104, i16 105, i16 106, i16 107, i16 108, i16 109, i16 110, i16 111, i16 112, i16 113, i16 114, i16 115, i16 116, i16 117, i16 118, i16 119, i16 120, i16 121, i16 122, i16 123, i16 124, i16 125, i16 126, i16 127, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128, i16 128] }, align 8
+@_ZN4base12_GLOBAL__N_116kOrderIndexShiftE = internal unnamed_addr constant [65 x i8] c"\00\00\00\00\00\01\02\03\04\05\06\07\08\09\0A\0B\0C\0D\0E\0F\10\11\12\13\14\15\16\17\18\19\1A\1B\1C\1D\1E\1F !\22#$%&'()*+,-./0123456789:;<", align 16
+@_ZN4base12_GLOBAL__N_118kOrderSubIndexMaskE = internal unnamed_addr constant [65 x i64] [i64 0, i64 0, i64 0, i64 0, i64 0, i64 1, i64 3, i64 7, i64 15, i64 31, i64 63, i64 127, i64 255, i64 511, i64 1023, i64 2047, i64 4095, i64 8191, i64 16383, i64 32767, i64 65535, i64 131071, i64 262143, i64 524287, i64 1048575, i64 2097151, i64 4194303, i64 8388607, i64 16777215, i64 33554431, i64 67108863, i64 134217727, i64 268435455, i64 536870911, i64 1073741823, i64 2147483647, i64 4294967295, i64 8589934591, i64 17179869183, i64 34359738367, i64 68719476735, i64 137438953471, i64 274877906943, i64 549755813887, i64 1099511627775, i64 2199023255551, i64 4398046511103, i64 8796093022207, i64 17592186044415, i64 35184372088831, i64 70368744177663, i64 140737488355327, i64 281474976710655, i64 562949953421311, i64 1125899906842623, i64 2251799813685247, i64 4503599627370495, i64 9007199254740991, i64 18014398509481983, i64 36028797018963967, i64 72057594037927935, i64 144115188075855871, i64 288230376151711743, i64 576460752303423487, i64 1152921504606846975], align 16
+@.str.11 = private unnamed_addr constant [105 x i8] c"../../base/allocator/partition_allocator/partition_page.h(549) Check failed: slot_start != freelist_head\00", align 1
+
+@_ZN4base8internal11ThreadCacheC1EPNS_13PartitionRootILb1EEE = hidden unnamed_addr alias void (%"class.base::internal::ThreadCache"*, %"struct.base::PartitionRoot"*), void (%"class.base::internal::ThreadCache"*, %"struct.base::PartitionRoot"*)* @_ZN4base8internal11ThreadCacheC2EPNS_13PartitionRootILb1EEE
+@_ZN4base8internal11ThreadCacheD1Ev = hidden unnamed_addr alias void (%"class.base::internal::ThreadCache"*), void (%"class.base::internal::ThreadCache"*)* @_ZN4base8internal11ThreadCacheD2Ev
+@_ZN4base8internal11ThreadCache6BucketC1Ev = hidden unnamed_addr alias void (%"struct.base::internal::ThreadCache::Bucket"*), void (%"struct.base::internal::ThreadCache::Bucket"*)* @_ZN4base8internal11ThreadCache6BucketC2Ev
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden dereferenceable(32) %"class.base::internal::ThreadCacheRegistry"* @_ZN4base8internal19ThreadCacheRegistry8InstanceEv() local_unnamed_addr #0 align 2 {
+  ret %"class.base::internal::ThreadCacheRegistry"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::ThreadCacheRegistry"*)
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal19ThreadCacheRegistry19RegisterThreadCacheEPNS0_11ThreadCacheE(%"class.base::internal::ThreadCacheRegistry"* nocapture, %"class.base::internal::ThreadCache"*) local_unnamed_addr #1 align 2 {
+  br label %3
+
+3:                                                ; preds = %15, %2
+  %4 = phi i32 [ 0, %2 ], [ %16, %15 ]
+  %5 = phi i32 [ 1, %2 ], [ %19, %15 ]
+  %6 = load atomic i32, i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0) monotonic, align 8
+  %7 = icmp eq i32 %6, 0
+  br i1 %7, label %8, label %11, !prof !2
+
+8:                                                ; preds = %3
+  %9 = cmpxchg weak i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0, i32 1 acquire monotonic
+  %10 = extractvalue { i32, i1 } %9, 1
+  br i1 %10, label %26, label %11, !prof !3
+
+11:                                               ; preds = %8, %3
+  %12 = icmp sgt i32 %5, 0
+  br i1 %12, label %21, label %15
+
+13:                                               ; preds = %21
+  %14 = add i32 %5, %4
+  br label %15
+
+15:                                               ; preds = %13, %11
+  %16 = phi i32 [ %4, %11 ], [ %14, %13 ]
+  %17 = shl i32 %5, 1
+  %18 = icmp slt i32 %17, 64
+  %19 = select i1 %18, i32 %17, i32 64
+  %20 = icmp slt i32 %16, 1000
+  br i1 %20, label %3, label %25
+
+21:                                               ; preds = %11, %21
+  %22 = phi i32 [ %23, %21 ], [ 0, %11 ]
+  tail call void asm sideeffect "pause", "~{dirflag},~{fpsr},~{flags}"() #13, !srcloc !4
+  %23 = add nuw nsw i32 %22, 1
+  %24 = icmp eq i32 %23, %5
+  br i1 %24, label %13, label %21
+
+25:                                               ; preds = %15
+  tail call void @_ZN4base8internal13SpinningMutex8LockSlowEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %26
+
+26:                                               ; preds = %8, %25
+  %27 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %1, i64 0, i32 5
+  %28 = getelementptr inbounds %"class.base::internal::ThreadCacheRegistry", %"class.base::internal::ThreadCacheRegistry"* %0, i64 0, i32 2
+  %29 = bitcast %"class.base::internal::ThreadCache"** %27 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %29, i8 0, i64 16, i1 false)
+  %30 = load %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"** %28, align 8
+  store %"class.base::internal::ThreadCache"* %1, %"class.base::internal::ThreadCache"** %28, align 8
+  store %"class.base::internal::ThreadCache"* %30, %"class.base::internal::ThreadCache"** %27, align 8
+  %31 = icmp eq %"class.base::internal::ThreadCache"* %30, null
+  br i1 %31, label %34, label %32
+
+32:                                               ; preds = %26
+  %33 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %30, i64 0, i32 6
+  store %"class.base::internal::ThreadCache"* %1, %"class.base::internal::ThreadCache"** %33, align 8
+  br label %34
+
+34:                                               ; preds = %26, %32
+  %35 = atomicrmw xchg i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0 release
+  %36 = icmp eq i32 %35, 2
+  br i1 %36, label %37, label %38, !prof !5
+
+37:                                               ; preds = %34
+  tail call void @_ZN4base8internal13SpinningMutex9FutexWakeEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %38
+
+38:                                               ; preds = %34, %37
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal19ThreadCacheRegistry21UnregisterThreadCacheEPNS0_11ThreadCacheE(%"class.base::internal::ThreadCacheRegistry"* nocapture, %"class.base::internal::ThreadCache"* readonly) local_unnamed_addr #1 align 2 {
+  br label %3
+
+3:                                                ; preds = %15, %2
+  %4 = phi i32 [ 0, %2 ], [ %16, %15 ]
+  %5 = phi i32 [ 1, %2 ], [ %19, %15 ]
+  %6 = load atomic i32, i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0) monotonic, align 8
+  %7 = icmp eq i32 %6, 0
+  br i1 %7, label %8, label %11, !prof !2
+
+8:                                                ; preds = %3
+  %9 = cmpxchg weak i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0, i32 1 acquire monotonic
+  %10 = extractvalue { i32, i1 } %9, 1
+  br i1 %10, label %26, label %11, !prof !3
+
+11:                                               ; preds = %8, %3
+  %12 = icmp sgt i32 %5, 0
+  br i1 %12, label %21, label %15
+
+13:                                               ; preds = %21
+  %14 = add i32 %5, %4
+  br label %15
+
+15:                                               ; preds = %13, %11
+  %16 = phi i32 [ %4, %11 ], [ %14, %13 ]
+  %17 = shl i32 %5, 1
+  %18 = icmp slt i32 %17, 64
+  %19 = select i1 %18, i32 %17, i32 64
+  %20 = icmp slt i32 %16, 1000
+  br i1 %20, label %3, label %25
+
+21:                                               ; preds = %11, %21
+  %22 = phi i32 [ %23, %21 ], [ 0, %11 ]
+  tail call void asm sideeffect "pause", "~{dirflag},~{fpsr},~{flags}"() #13, !srcloc !4
+  %23 = add nuw nsw i32 %22, 1
+  %24 = icmp eq i32 %23, %5
+  br i1 %24, label %13, label %21
+
+25:                                               ; preds = %15
+  tail call void @_ZN4base8internal13SpinningMutex8LockSlowEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %26
+
+26:                                               ; preds = %8, %25
+  %27 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %1, i64 0, i32 6
+  %28 = load %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"** %27, align 8
+  %29 = icmp eq %"class.base::internal::ThreadCache"* %28, null
+  br i1 %29, label %36, label %30
+
+30:                                               ; preds = %26
+  %31 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %1, i64 0, i32 5
+  %32 = bitcast %"class.base::internal::ThreadCache"** %31 to i64*
+  %33 = load i64, i64* %32, align 8
+  %34 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %28, i64 0, i32 5
+  %35 = bitcast %"class.base::internal::ThreadCache"** %34 to i64*
+  store i64 %33, i64* %35, align 8
+  br label %36
+
+36:                                               ; preds = %26, %30
+  %37 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %1, i64 0, i32 5
+  %38 = load %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"** %37, align 8
+  %39 = icmp eq %"class.base::internal::ThreadCache"* %38, null
+  br i1 %39, label %45, label %40
+
+40:                                               ; preds = %36
+  %41 = bitcast %"class.base::internal::ThreadCache"** %27 to i64*
+  %42 = load i64, i64* %41, align 8
+  %43 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %38, i64 0, i32 6
+  %44 = bitcast %"class.base::internal::ThreadCache"** %43 to i64*
+  store i64 %42, i64* %44, align 8
+  br label %45
+
+45:                                               ; preds = %36, %40
+  %46 = getelementptr inbounds %"class.base::internal::ThreadCacheRegistry", %"class.base::internal::ThreadCacheRegistry"* %0, i64 0, i32 2
+  %47 = load %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"** %46, align 8
+  %48 = icmp eq %"class.base::internal::ThreadCache"* %47, %1
+  br i1 %48, label %49, label %53
+
+49:                                               ; preds = %45
+  %50 = bitcast %"class.base::internal::ThreadCache"** %37 to i64*
+  %51 = load i64, i64* %50, align 8
+  %52 = bitcast %"class.base::internal::ThreadCache"** %46 to i64*
+  store i64 %51, i64* %52, align 8
+  br label %53
+
+53:                                               ; preds = %49, %45
+  %54 = atomicrmw xchg i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0 release
+  %55 = icmp eq i32 %54, 2
+  br i1 %55, label %56, label %57, !prof !5
+
+56:                                               ; preds = %53
+  tail call void @_ZN4base8internal13SpinningMutex9FutexWakeEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %57
+
+57:                                               ; preds = %53, %56
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal19ThreadCacheRegistry9DumpStatsEbPNS_16ThreadCacheStatsE(%"class.base::internal::ThreadCacheRegistry"* nocapture readonly, i1 zeroext, %"struct.base::ThreadCacheStats"* nocapture) local_unnamed_addr #1 align 2 {
+  tail call void @_ZN4base8internal11ThreadCache35EnsureThreadSpecificDataInitializedEv()
+  %4 = bitcast %"struct.base::ThreadCacheStats"* %2 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 1 %4, i8 0, i64 2152, i1 false)
+  br label %5
+
+5:                                                ; preds = %17, %3
+  %6 = phi i32 [ 0, %3 ], [ %18, %17 ]
+  %7 = phi i32 [ 1, %3 ], [ %21, %17 ]
+  %8 = load atomic i32, i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0) monotonic, align 8
+  %9 = icmp eq i32 %8, 0
+  br i1 %9, label %10, label %13, !prof !2
+
+10:                                               ; preds = %5
+  %11 = cmpxchg weak i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0, i32 1 acquire monotonic
+  %12 = extractvalue { i32, i1 } %11, 1
+  br i1 %12, label %28, label %13, !prof !3
+
+13:                                               ; preds = %10, %5
+  %14 = icmp sgt i32 %7, 0
+  br i1 %14, label %23, label %17
+
+15:                                               ; preds = %23
+  %16 = add i32 %7, %6
+  br label %17
+
+17:                                               ; preds = %15, %13
+  %18 = phi i32 [ %6, %13 ], [ %16, %15 ]
+  %19 = shl i32 %7, 1
+  %20 = icmp slt i32 %19, 64
+  %21 = select i1 %20, i32 %19, i32 64
+  %22 = icmp slt i32 %18, 1000
+  br i1 %22, label %5, label %27
+
+23:                                               ; preds = %13, %23
+  %24 = phi i32 [ %25, %23 ], [ 0, %13 ]
+  tail call void asm sideeffect "pause", "~{dirflag},~{fpsr},~{flags}"() #13, !srcloc !4
+  %25 = add nuw nsw i32 %24, 1
+  %26 = icmp eq i32 %25, %7
+  br i1 %26, label %15, label %23
+
+27:                                               ; preds = %17
+  tail call void @_ZN4base8internal13SpinningMutex8LockSlowEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %28
+
+28:                                               ; preds = %10, %27
+  br i1 %1, label %29, label %35
+
+29:                                               ; preds = %28
+  %30 = load i32, i32* @_ZN4base8internal18g_thread_cache_keyE, align 4
+  %31 = tail call i8* @pthread_getspecific(i32 %30) #13
+  %32 = icmp ugt i8* %31, inttoptr (i64 1 to i8*)
+  br i1 %32, label %33, label %44
+
+33:                                               ; preds = %29
+  %34 = bitcast i8* %31 to %"class.base::internal::ThreadCache"*
+  tail call void @_ZNK4base8internal11ThreadCache15AccumulateStatsEPNS_16ThreadCacheStatsE(%"class.base::internal::ThreadCache"* %34, %"struct.base::ThreadCacheStats"* %2)
+  br label %44
+
+35:                                               ; preds = %28
+  %36 = getelementptr inbounds %"class.base::internal::ThreadCacheRegistry", %"class.base::internal::ThreadCacheRegistry"* %0, i64 0, i32 2
+  %37 = load %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"** %36, align 8
+  %38 = icmp eq %"class.base::internal::ThreadCache"* %37, null
+  br i1 %38, label %44, label %39
+
+39:                                               ; preds = %35, %39
+  %40 = phi %"class.base::internal::ThreadCache"* [ %42, %39 ], [ %37, %35 ]
+  tail call void @_ZNK4base8internal11ThreadCache15AccumulateStatsEPNS_16ThreadCacheStatsE(%"class.base::internal::ThreadCache"* nonnull %40, %"struct.base::ThreadCacheStats"* %2)
+  %41 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %40, i64 0, i32 5
+  %42 = load %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"** %41, align 8
+  %43 = icmp eq %"class.base::internal::ThreadCache"* %42, null
+  br i1 %43, label %44, label %39
+
+44:                                               ; preds = %39, %35, %33, %29
+  %45 = atomicrmw xchg i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0 release
+  %46 = icmp eq i32 %45, 2
+  br i1 %46, label %47, label %48, !prof !5
+
+47:                                               ; preds = %44
+  tail call void @_ZN4base8internal13SpinningMutex9FutexWakeEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %48
+
+48:                                               ; preds = %44, %47
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal11ThreadCache35EnsureThreadSpecificDataInitializedEv() local_unnamed_addr #1 align 2 {
+  br label %1
+
+1:                                                ; preds = %13, %0
+  %2 = phi i32 [ 0, %0 ], [ %14, %13 ]
+  %3 = phi i32 [ 1, %0 ], [ %17, %13 ]
+  %4 = load atomic i32, i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0) monotonic, align 8
+  %5 = icmp eq i32 %4, 0
+  br i1 %5, label %6, label %9, !prof !2
+
+6:                                                ; preds = %1
+  %7 = cmpxchg weak i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0, i32 1 acquire monotonic
+  %8 = extractvalue { i32, i1 } %7, 1
+  br i1 %8, label %24, label %9, !prof !3
+
+9:                                                ; preds = %6, %1
+  %10 = icmp sgt i32 %3, 0
+  br i1 %10, label %19, label %13
+
+11:                                               ; preds = %19
+  %12 = add i32 %3, %2
+  br label %13
+
+13:                                               ; preds = %11, %9
+  %14 = phi i32 [ %2, %9 ], [ %12, %11 ]
+  %15 = shl i32 %3, 1
+  %16 = icmp slt i32 %15, 64
+  %17 = select i1 %16, i32 %15, i32 64
+  %18 = icmp slt i32 %14, 1000
+  br i1 %18, label %1, label %23
+
+19:                                               ; preds = %9, %19
+  %20 = phi i32 [ %21, %19 ], [ 0, %9 ]
+  tail call void asm sideeffect "pause", "~{dirflag},~{fpsr},~{flags}"() #13, !srcloc !4
+  %21 = add nuw nsw i32 %20, 1
+  %22 = icmp eq i32 %21, %3
+  br i1 %22, label %11, label %19
+
+23:                                               ; preds = %13
+  tail call void @_ZN4base8internal13SpinningMutex8LockSlowEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %24
+
+24:                                               ; preds = %6, %23
+  %25 = load i1, i1* @_ZN4base8internal12_GLOBAL__N_126g_thread_cache_key_createdE, align 1
+  br i1 %25, label %31, label %26
+
+26:                                               ; preds = %24
+  %27 = tail call i32 @pthread_key_create(i32* nonnull @_ZN4base8internal18g_thread_cache_keyE, void (i8*)* nonnull @_ZN4base8internal11ThreadCache6DeleteEPv) #13
+  %28 = icmp eq i32 %27, 0
+  br i1 %28, label %30, label %29, !prof !3
+
+29:                                               ; preds = %26
+  tail call void @_ZN7logging8RawCheckEPKc(i8* getelementptr inbounds ([79 x i8], [79 x i8]* @.str.3, i64 0, i64 0)) #13
+  br label %30
+
+30:                                               ; preds = %26, %29
+  store i1 true, i1* @_ZN4base8internal12_GLOBAL__N_126g_thread_cache_key_createdE, align 1
+  br label %31
+
+31:                                               ; preds = %24, %30
+  %32 = atomicrmw xchg i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0 release
+  %33 = icmp eq i32 %32, 2
+  br i1 %33, label %34, label %35, !prof !5
+
+34:                                               ; preds = %31
+  tail call void @_ZN4base8internal13SpinningMutex9FutexWakeEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %35
+
+35:                                               ; preds = %31, %34
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZNK4base8internal11ThreadCache15AccumulateStatsEPNS_16ThreadCacheStatsE(%"class.base::internal::ThreadCache"* nocapture readonly, %"struct.base::ThreadCacheStats"* nocapture) local_unnamed_addr #3 align 2 {
+  %3 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 3, i32 0
+  %4 = load i64, i64* %3, align 8
+  %5 = getelementptr inbounds %"struct.base::ThreadCacheStats", %"struct.base::ThreadCacheStats"* %1, i64 0, i32 0
+  %6 = load i64, i64* %5, align 8
+  %7 = add i64 %6, %4
+  store i64 %7, i64* %5, align 8
+  %8 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 3, i32 1
+  %9 = load i64, i64* %8, align 8
+  %10 = getelementptr inbounds %"struct.base::ThreadCacheStats", %"struct.base::ThreadCacheStats"* %1, i64 0, i32 1
+  %11 = load i64, i64* %10, align 8
+  %12 = add i64 %11, %9
+  store i64 %12, i64* %10, align 8
+  %13 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 3, i32 2
+  %14 = load i64, i64* %13, align 8
+  %15 = getelementptr inbounds %"struct.base::ThreadCacheStats", %"struct.base::ThreadCacheStats"* %1, i64 0, i32 2
+  %16 = load i64, i64* %15, align 8
+  %17 = add i64 %16, %14
+  store i64 %17, i64* %15, align 8
+  %18 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 3, i32 3
+  %19 = load i64, i64* %18, align 8
+  %20 = getelementptr inbounds %"struct.base::ThreadCacheStats", %"struct.base::ThreadCacheStats"* %1, i64 0, i32 3
+  %21 = load i64, i64* %20, align 8
+  %22 = add i64 %21, %19
+  store i64 %22, i64* %20, align 8
+  %23 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 3, i32 4
+  %24 = load i64, i64* %23, align 8
+  %25 = getelementptr inbounds %"struct.base::ThreadCacheStats", %"struct.base::ThreadCacheStats"* %1, i64 0, i32 4
+  %26 = load i64, i64* %25, align 8
+  %27 = add i64 %26, %24
+  store i64 %27, i64* %25, align 8
+  %28 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 3, i32 5
+  %29 = load i64, i64* %28, align 8
+  %30 = getelementptr inbounds %"struct.base::ThreadCacheStats", %"struct.base::ThreadCacheStats"* %1, i64 0, i32 5
+  %31 = load i64, i64* %30, align 8
+  %32 = add i64 %31, %29
+  store i64 %32, i64* %30, align 8
+  %33 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 3, i32 6
+  %34 = load i64, i64* %33, align 8
+  %35 = getelementptr inbounds %"struct.base::ThreadCacheStats", %"struct.base::ThreadCacheStats"* %1, i64 0, i32 6
+  %36 = load i64, i64* %35, align 8
+  %37 = add i64 %36, %34
+  store i64 %37, i64* %35, align 8
+  %38 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 3, i32 7
+  %39 = load i64, i64* %38, align 8
+  %40 = getelementptr inbounds %"struct.base::ThreadCacheStats", %"struct.base::ThreadCacheStats"* %1, i64 0, i32 7
+  %41 = load i64, i64* %40, align 8
+  %42 = add i64 %41, %39
+  store i64 %42, i64* %40, align 8
+  %43 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 3, i32 8
+  %44 = load i64, i64* %43, align 8
+  %45 = getelementptr inbounds %"struct.base::ThreadCacheStats", %"struct.base::ThreadCacheStats"* %1, i64 0, i32 8
+  %46 = load i64, i64* %45, align 8
+  %47 = add i64 %46, %44
+  store i64 %47, i64* %45, align 8
+  %48 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 4
+  br label %58
+
+49:                                               ; preds = %58
+  %50 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 1
+  %51 = load i64, i64* %50, align 8
+  %52 = getelementptr inbounds %"struct.base::ThreadCacheStats", %"struct.base::ThreadCacheStats"* %1, i64 0, i32 9
+  %53 = bitcast i64* %52 to <2 x i64>*
+  %54 = load <2 x i64>, <2 x i64>* %53, align 8
+  %55 = insertelement <2 x i64> <i64 undef, i64 3616>, i64 %51, i32 0
+  %56 = add <2 x i64> %54, %55
+  %57 = bitcast i64* %52 to <2 x i64>*
+  store <2 x i64> %56, <2 x i64>* %57, align 8
+  ret void
+
+58:                                               ; preds = %72, %2
+  %59 = phi i64 [ 0, %2 ], [ %83, %72 ]
+  %60 = load %"struct.base::PartitionRoot"*, %"struct.base::PartitionRoot"** %48, align 8
+  %61 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %60, i64 0, i32 10, i64 %59, i32 3
+  %62 = load i32, i32* %61, align 8
+  %63 = zext i32 %62 to i64
+  %64 = getelementptr inbounds %"struct.base::ThreadCacheStats", %"struct.base::ThreadCacheStats"* %1, i64 0, i32 11, i64 %59
+  store i64 %63, i64* %64, align 8
+  %65 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 3, i32 12, i64 %59
+  %66 = load i64, i64* %65, align 8
+  %67 = getelementptr inbounds %"struct.base::ThreadCacheStats", %"struct.base::ThreadCacheStats"* %1, i64 0, i32 12, i64 %59
+  %68 = load i64, i64* %67, align 8
+  %69 = add i64 %68, %66
+  store i64 %69, i64* %67, align 8
+  %70 = or i64 %59, 1
+  %71 = icmp eq i64 %70, 129
+  br i1 %71, label %49, label %72
+
+72:                                               ; preds = %58
+  %73 = load %"struct.base::PartitionRoot"*, %"struct.base::PartitionRoot"** %48, align 8
+  %74 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %73, i64 0, i32 10, i64 %70, i32 3
+  %75 = load i32, i32* %74, align 8
+  %76 = zext i32 %75 to i64
+  %77 = getelementptr inbounds %"struct.base::ThreadCacheStats", %"struct.base::ThreadCacheStats"* %1, i64 0, i32 11, i64 %70
+  store i64 %76, i64* %77, align 8
+  %78 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 3, i32 12, i64 %70
+  %79 = load i64, i64* %78, align 8
+  %80 = getelementptr inbounds %"struct.base::ThreadCacheStats", %"struct.base::ThreadCacheStats"* %1, i64 0, i32 12, i64 %70
+  %81 = load i64, i64* %80, align 8
+  %82 = add i64 %81, %79
+  store i64 %82, i64* %80, align 8
+  %83 = add nuw nsw i64 %59, 2
+  br label %58
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal19ThreadCacheRegistry8PurgeAllEv(%"class.base::internal::ThreadCacheRegistry"* nocapture readonly) local_unnamed_addr #1 align 2 {
+  %2 = load i32, i32* @_ZN4base8internal18g_thread_cache_keyE, align 4
+  %3 = tail call i8* @pthread_getspecific(i32 %2) #13
+  %4 = bitcast i8* %3 to %"class.base::internal::ThreadCache"*
+  %5 = icmp ugt i8* %3, inttoptr (i64 1 to i8*)
+  br i1 %5, label %6, label %30
+
+6:                                                ; preds = %1
+  %7 = getelementptr inbounds i8, i8* %3, i64 1432
+  store atomic i8 0, i8* %7 monotonic, align 1
+  %8 = bitcast i8* %3 to %"struct.base::internal::ThreadCache::Bucket"*
+  %9 = getelementptr inbounds i8, i8* %3, i64 1424
+  %10 = bitcast i8* %9 to %"struct.base::internal::ThreadCache::Bucket"*
+  %11 = bitcast i8* %9 to i64*
+  br label %12
+
+12:                                               ; preds = %27, %6
+  %13 = phi %"struct.base::internal::ThreadCache::Bucket"* [ %8, %6 ], [ %28, %27 ]
+  %14 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %13, i64 0, i32 1
+  %15 = load i8, i8* %14, align 8
+  %16 = icmp eq i8 %15, 0
+  br i1 %16, label %27, label %17
+
+17:                                               ; preds = %12
+  %18 = zext i8 %15 to i64
+  %19 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %13, i64 0, i32 0
+  %20 = load %"class.base::internal::PartitionFreelistEntry"*, %"class.base::internal::PartitionFreelistEntry"** %19, align 8
+  tail call void @_ZN4base8internal11ThreadCache9FreeAfterEPNS0_22PartitionFreelistEntryE(%"class.base::internal::ThreadCache"* %4, %"class.base::internal::PartitionFreelistEntry"* %20) #13
+  store %"class.base::internal::PartitionFreelistEntry"* null, %"class.base::internal::PartitionFreelistEntry"** %19, align 8
+  store i8 0, i8* %14, align 8
+  %21 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %13, i64 0, i32 3
+  %22 = load i16, i16* %21, align 2
+  %23 = zext i16 %22 to i64
+  %24 = mul nuw nsw i64 %23, %18
+  %25 = load i64, i64* %11, align 8
+  %26 = sub i64 %25, %24
+  store i64 %26, i64* %11, align 8
+  br label %27
+
+27:                                               ; preds = %17, %12
+  %28 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %13, i64 1
+  %29 = icmp eq %"struct.base::internal::ThreadCache::Bucket"* %28, %10
+  br i1 %29, label %30, label %12
+
+30:                                               ; preds = %27, %1
+  br label %31
+
+31:                                               ; preds = %30, %43
+  %32 = phi i32 [ %44, %43 ], [ 0, %30 ]
+  %33 = phi i32 [ %47, %43 ], [ 1, %30 ]
+  %34 = load atomic i32, i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0) monotonic, align 8
+  %35 = icmp eq i32 %34, 0
+  br i1 %35, label %36, label %39, !prof !2
+
+36:                                               ; preds = %31
+  %37 = cmpxchg weak i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0, i32 1 acquire monotonic
+  %38 = extractvalue { i32, i1 } %37, 1
+  br i1 %38, label %54, label %39, !prof !3
+
+39:                                               ; preds = %36, %31
+  %40 = icmp sgt i32 %33, 0
+  br i1 %40, label %49, label %43
+
+41:                                               ; preds = %49
+  %42 = add i32 %33, %32
+  br label %43
+
+43:                                               ; preds = %41, %39
+  %44 = phi i32 [ %32, %39 ], [ %42, %41 ]
+  %45 = shl i32 %33, 1
+  %46 = icmp slt i32 %45, 64
+  %47 = select i1 %46, i32 %45, i32 64
+  %48 = icmp slt i32 %44, 1000
+  br i1 %48, label %31, label %53
+
+49:                                               ; preds = %39, %49
+  %50 = phi i32 [ %51, %49 ], [ 0, %39 ]
+  tail call void asm sideeffect "pause", "~{dirflag},~{fpsr},~{flags}"() #13, !srcloc !4
+  %51 = add nuw nsw i32 %50, 1
+  %52 = icmp eq i32 %51, %33
+  br i1 %52, label %41, label %49
+
+53:                                               ; preds = %43
+  tail call void @_ZN4base8internal13SpinningMutex8LockSlowEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %54
+
+54:                                               ; preds = %36, %53
+  %55 = getelementptr inbounds %"class.base::internal::ThreadCacheRegistry", %"class.base::internal::ThreadCacheRegistry"* %0, i64 0, i32 2
+  %56 = load %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"** %55, align 8
+  %57 = icmp eq %"class.base::internal::ThreadCache"* %56, null
+  br i1 %57, label %67, label %58
+
+58:                                               ; preds = %54, %63
+  %59 = phi %"class.base::internal::ThreadCache"* [ %65, %63 ], [ %56, %54 ]
+  %60 = icmp eq %"class.base::internal::ThreadCache"* %59, %4
+  br i1 %60, label %63, label %61
+
+61:                                               ; preds = %58
+  %62 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %59, i64 0, i32 2, i32 0, i32 0, i32 0, i32 0
+  store atomic i8 1, i8* %62 monotonic, align 1
+  br label %63
+
+63:                                               ; preds = %58, %61
+  %64 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %59, i64 0, i32 5
+  %65 = load %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"** %64, align 8
+  %66 = icmp eq %"class.base::internal::ThreadCache"* %65, null
+  br i1 %66, label %67, label %58
+
+67:                                               ; preds = %63, %54
+  %68 = atomicrmw xchg i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0 release
+  %69 = icmp eq i32 %68, 2
+  br i1 %69, label %70, label %71, !prof !5
+
+70:                                               ; preds = %67
+  tail call void @_ZN4base8internal13SpinningMutex9FutexWakeEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %71
+
+71:                                               ; preds = %67, %70
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal11ThreadCache5PurgeEv(%"class.base::internal::ThreadCache"*) local_unnamed_addr #1 align 2 {
+  %2 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 2, i32 0, i32 0, i32 0, i32 0
+  store atomic i8 0, i8* %2 monotonic, align 1
+  %3 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 0
+  %4 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 89
+  %5 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 1
+  br label %6
+
+6:                                                ; preds = %21, %1
+  %7 = phi %"struct.base::internal::ThreadCache::Bucket"* [ %3, %1 ], [ %22, %21 ]
+  %8 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %7, i64 0, i32 1
+  %9 = load i8, i8* %8, align 8
+  %10 = icmp eq i8 %9, 0
+  br i1 %10, label %21, label %11
+
+11:                                               ; preds = %6
+  %12 = zext i8 %9 to i64
+  %13 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %7, i64 0, i32 0
+  %14 = load %"class.base::internal::PartitionFreelistEntry"*, %"class.base::internal::PartitionFreelistEntry"** %13, align 8
+  tail call void @_ZN4base8internal11ThreadCache9FreeAfterEPNS0_22PartitionFreelistEntryE(%"class.base::internal::ThreadCache"* %0, %"class.base::internal::PartitionFreelistEntry"* %14) #13
+  store %"class.base::internal::PartitionFreelistEntry"* null, %"class.base::internal::PartitionFreelistEntry"** %13, align 8
+  store i8 0, i8* %8, align 8
+  %15 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %7, i64 0, i32 3
+  %16 = load i16, i16* %15, align 2
+  %17 = zext i16 %16 to i64
+  %18 = mul nuw nsw i64 %17, %12
+  %19 = load i64, i64* %5, align 8
+  %20 = sub i64 %19, %18
+  store i64 %20, i64* %5, align 8
+  br label %21
+
+21:                                               ; preds = %11, %6
+  %22 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %7, i64 1
+  %23 = icmp eq %"struct.base::internal::ThreadCache::Bucket"* %22, %4
+  br i1 %23, label %24, label %6
+
+24:                                               ; preds = %21
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN4base8internal11ThreadCache14SetShouldPurgeEv(%"class.base::internal::ThreadCache"* nocapture) local_unnamed_addr #3 align 2 {
+  %2 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 2, i32 0, i32 0, i32 0, i32 0
+  store atomic i8 1, i8* %2 monotonic, align 1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal19ThreadCacheRegistry34ForcePurgeAllThreadAfterForkUnsafeEv(%"class.base::internal::ThreadCacheRegistry"* nocapture readonly) local_unnamed_addr #1 align 2 {
+  br label %2
+
+2:                                                ; preds = %14, %1
+  %3 = phi i32 [ 0, %1 ], [ %15, %14 ]
+  %4 = phi i32 [ 1, %1 ], [ %18, %14 ]
+  %5 = load atomic i32, i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0) monotonic, align 8
+  %6 = icmp eq i32 %5, 0
+  br i1 %6, label %7, label %10, !prof !2
+
+7:                                                ; preds = %2
+  %8 = cmpxchg weak i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0, i32 1 acquire monotonic
+  %9 = extractvalue { i32, i1 } %8, 1
+  br i1 %9, label %25, label %10, !prof !3
+
+10:                                               ; preds = %7, %2
+  %11 = icmp sgt i32 %4, 0
+  br i1 %11, label %20, label %14
+
+12:                                               ; preds = %20
+  %13 = add i32 %4, %3
+  br label %14
+
+14:                                               ; preds = %12, %10
+  %15 = phi i32 [ %3, %10 ], [ %13, %12 ]
+  %16 = shl i32 %4, 1
+  %17 = icmp slt i32 %16, 64
+  %18 = select i1 %17, i32 %16, i32 64
+  %19 = icmp slt i32 %15, 1000
+  br i1 %19, label %2, label %24
+
+20:                                               ; preds = %10, %20
+  %21 = phi i32 [ %22, %20 ], [ 0, %10 ]
+  tail call void asm sideeffect "pause", "~{dirflag},~{fpsr},~{flags}"() #13, !srcloc !4
+  %22 = add nuw nsw i32 %21, 1
+  %23 = icmp eq i32 %22, %4
+  br i1 %23, label %12, label %20
+
+24:                                               ; preds = %14
+  tail call void @_ZN4base8internal13SpinningMutex8LockSlowEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %25
+
+25:                                               ; preds = %7, %24
+  %26 = getelementptr inbounds %"class.base::internal::ThreadCacheRegistry", %"class.base::internal::ThreadCacheRegistry"* %0, i64 0, i32 2
+  %27 = load %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"** %26, align 8
+  %28 = icmp eq %"class.base::internal::ThreadCache"* %27, null
+  br i1 %28, label %57, label %29
+
+29:                                               ; preds = %25, %53
+  %30 = phi %"class.base::internal::ThreadCache"* [ %55, %53 ], [ %27, %25 ]
+  %31 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %30, i64 0, i32 2, i32 0, i32 0, i32 0, i32 0
+  store atomic i8 0, i8* %31 monotonic, align 1
+  %32 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %30, i64 0, i32 0, i64 0
+  %33 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %30, i64 0, i32 0, i64 89
+  %34 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %30, i64 0, i32 1
+  br label %35
+
+35:                                               ; preds = %50, %29
+  %36 = phi %"struct.base::internal::ThreadCache::Bucket"* [ %32, %29 ], [ %51, %50 ]
+  %37 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %36, i64 0, i32 1
+  %38 = load i8, i8* %37, align 8
+  %39 = icmp eq i8 %38, 0
+  br i1 %39, label %50, label %40
+
+40:                                               ; preds = %35
+  %41 = zext i8 %38 to i64
+  %42 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %36, i64 0, i32 0
+  %43 = load %"class.base::internal::PartitionFreelistEntry"*, %"class.base::internal::PartitionFreelistEntry"** %42, align 8
+  tail call void @_ZN4base8internal11ThreadCache9FreeAfterEPNS0_22PartitionFreelistEntryE(%"class.base::internal::ThreadCache"* nonnull %30, %"class.base::internal::PartitionFreelistEntry"* %43) #13
+  store %"class.base::internal::PartitionFreelistEntry"* null, %"class.base::internal::PartitionFreelistEntry"** %42, align 8
+  store i8 0, i8* %37, align 8
+  %44 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %36, i64 0, i32 3
+  %45 = load i16, i16* %44, align 2
+  %46 = zext i16 %45 to i64
+  %47 = mul nuw nsw i64 %46, %41
+  %48 = load i64, i64* %34, align 8
+  %49 = sub i64 %48, %47
+  store i64 %49, i64* %34, align 8
+  br label %50
+
+50:                                               ; preds = %40, %35
+  %51 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %36, i64 1
+  %52 = icmp eq %"struct.base::internal::ThreadCache::Bucket"* %51, %33
+  br i1 %52, label %53, label %35
+
+53:                                               ; preds = %50
+  %54 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %30, i64 0, i32 5
+  %55 = load %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"** %54, align 8
+  %56 = icmp eq %"class.base::internal::ThreadCache"* %55, null
+  br i1 %56, label %57, label %29
+
+57:                                               ; preds = %53, %25
+  %58 = atomicrmw xchg i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0 release
+  %59 = icmp eq i32 %58, 2
+  br i1 %59, label %60, label %61, !prof !5
+
+60:                                               ; preds = %57
+  tail call void @_ZN4base8internal13SpinningMutex9FutexWakeEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %61
+
+61:                                               ; preds = %57, %60
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal19ThreadCacheRegistry18StartPeriodicPurgeEv(%"class.base::internal::ThreadCacheRegistry"*) local_unnamed_addr #1 align 2 {
+  %2 = alloca %"class.base::Location", align 8
+  %3 = alloca %"class.base::OnceCallback", align 8
+  tail call void @_ZN4base8internal11ThreadCache35EnsureThreadSpecificDataInitializedEv()
+  %4 = getelementptr inbounds %"class.base::internal::ThreadCacheRegistry", %"class.base::internal::ThreadCacheRegistry"* %0, i64 0, i32 4
+  %5 = load i8, i8* %4, align 8, !range !6
+  %6 = icmp eq i8 %5, 0
+  br i1 %6, label %7, label %29
+
+7:                                                ; preds = %1
+  store i8 1, i8* %4, align 8
+  %8 = bitcast %"class.base::OnceCallback"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %8)
+  %9 = tail call dereferenceable(8) %class.scoped_refptr* @_ZN4base22ThreadTaskRunnerHandle3GetEv() #13
+  %10 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %9, i64 0, i32 0
+  %11 = load %"class.base::SingleThreadTaskRunner"*, %"class.base::SingleThreadTaskRunner"** %10, align 8
+  %12 = bitcast %"class.base::SingleThreadTaskRunner"* %11 to %"class.base::TaskRunner"*
+  %13 = bitcast %"class.base::Location"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %13) #13
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %2, i8* getelementptr inbounds ([21 x i8], [21 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([57 x i8], [57 x i8]* @.str.1, i64 0, i64 0), i32 215) #13
+  %14 = ptrtoint %"class.base::internal::ThreadCacheRegistry"* %0 to i64
+  %15 = call i8* @_Znwm(i64 56) #14, !noalias !7
+  %16 = bitcast i8* %15 to %"class.base::internal::BindStateBase"*
+  call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"* nonnull %16, void ()* bitcast (void (%"class.base::internal::BindStateBase"*)* @_ZN4base8internal7InvokerINS0_9BindStateIMNS0_19ThreadCacheRegistryEFvvEJNS0_17UnretainedWrapperIS3_EEEEEFvvEE7RunOnceEPNS0_13BindStateBaseE to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @_ZN4base8internal9BindStateIMNS0_19ThreadCacheRegistryEFvvEJNS0_17UnretainedWrapperIS2_EEEE7DestroyEPKNS0_13BindStateBaseE) #13, !noalias !7
+  %17 = getelementptr inbounds i8, i8* %15, i64 32
+  %18 = bitcast i8* %17 to <2 x i64>*
+  store <2 x i64> <i64 ptrtoint (void (%"class.base::internal::ThreadCacheRegistry"*)* @_ZN4base8internal19ThreadCacheRegistry13PeriodicPurgeEv to i64), i64 0>, <2 x i64>* %18, align 8, !noalias !7
+  %19 = getelementptr inbounds i8, i8* %15, i64 48
+  %20 = bitcast i8* %19 to i64*
+  store i64 %14, i64* %20, align 8, !noalias !7
+  %21 = bitcast %"class.base::OnceCallback"* %3 to i8**
+  store i8* %15, i8** %21, align 8, !alias.scope !7
+  %22 = getelementptr inbounds %"class.base::internal::ThreadCacheRegistry", %"class.base::internal::ThreadCacheRegistry"* %0, i64 0, i32 3, i32 0
+  %23 = load i64, i64* %22, align 8
+  %24 = bitcast %"class.base::SingleThreadTaskRunner"* %11 to i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)***
+  %25 = load i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)**, i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)*** %24, align 8
+  %26 = load i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)*, i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)** %25, align 8
+  %27 = call zeroext i1 %26(%"class.base::TaskRunner"* %12, %"class.base::Location"* nonnull dereferenceable(32) %2, %"class.base::OnceCallback"* nonnull %3, i64 %23) #13
+  %28 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %3, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %28) #13
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %13) #13
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %8)
+  br label %29
+
+29:                                               ; preds = %1, %7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal19ThreadCacheRegistry20PostDelayedPurgeTaskEv(%"class.base::internal::ThreadCacheRegistry"*) local_unnamed_addr #1 align 2 {
+  %2 = alloca %"class.base::Location", align 8
+  %3 = alloca %"class.base::OnceCallback", align 8
+  %4 = tail call dereferenceable(8) %class.scoped_refptr* @_ZN4base22ThreadTaskRunnerHandle3GetEv() #13
+  %5 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %4, i64 0, i32 0
+  %6 = load %"class.base::SingleThreadTaskRunner"*, %"class.base::SingleThreadTaskRunner"** %5, align 8
+  %7 = bitcast %"class.base::SingleThreadTaskRunner"* %6 to %"class.base::TaskRunner"*
+  %8 = bitcast %"class.base::Location"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %8) #13
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %2, i8* getelementptr inbounds ([21 x i8], [21 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([57 x i8], [57 x i8]* @.str.1, i64 0, i64 0), i32 215) #13
+  %9 = ptrtoint %"class.base::internal::ThreadCacheRegistry"* %0 to i64
+  %10 = call i8* @_Znwm(i64 56) #14, !noalias !12
+  %11 = bitcast i8* %10 to %"class.base::internal::BindStateBase"*
+  call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"* nonnull %11, void ()* bitcast (void (%"class.base::internal::BindStateBase"*)* @_ZN4base8internal7InvokerINS0_9BindStateIMNS0_19ThreadCacheRegistryEFvvEJNS0_17UnretainedWrapperIS3_EEEEEFvvEE7RunOnceEPNS0_13BindStateBaseE to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @_ZN4base8internal9BindStateIMNS0_19ThreadCacheRegistryEFvvEJNS0_17UnretainedWrapperIS2_EEEE7DestroyEPKNS0_13BindStateBaseE) #13, !noalias !12
+  %12 = getelementptr inbounds i8, i8* %10, i64 32
+  %13 = bitcast i8* %12 to <2 x i64>*
+  store <2 x i64> <i64 ptrtoint (void (%"class.base::internal::ThreadCacheRegistry"*)* @_ZN4base8internal19ThreadCacheRegistry13PeriodicPurgeEv to i64), i64 0>, <2 x i64>* %13, align 8, !noalias !12
+  %14 = getelementptr inbounds i8, i8* %10, i64 48
+  %15 = bitcast i8* %14 to i64*
+  store i64 %9, i64* %15, align 8, !noalias !12
+  %16 = bitcast %"class.base::OnceCallback"* %3 to i8**
+  store i8* %10, i8** %16, align 8, !alias.scope !12
+  %17 = getelementptr inbounds %"class.base::internal::ThreadCacheRegistry", %"class.base::internal::ThreadCacheRegistry"* %0, i64 0, i32 3, i32 0
+  %18 = load i64, i64* %17, align 8
+  %19 = bitcast %"class.base::SingleThreadTaskRunner"* %6 to i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)***
+  %20 = load i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)**, i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)*** %19, align 8
+  %21 = load i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)*, i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)** %20, align 8
+  %22 = call zeroext i1 %21(%"class.base::TaskRunner"* %7, %"class.base::Location"* nonnull dereferenceable(32) %2, %"class.base::OnceCallback"* nonnull %3, i64 %18) #13
+  %23 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %3, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %23) #13
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %8) #13
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal19ThreadCacheRegistry24SetThreadCacheMultiplierEf(%"class.base::internal::ThreadCacheRegistry"* nocapture readonly, float) local_unnamed_addr #1 align 2 {
+  br label %3
+
+3:                                                ; preds = %15, %2
+  %4 = phi i32 [ 0, %2 ], [ %16, %15 ]
+  %5 = phi i32 [ 1, %2 ], [ %19, %15 ]
+  %6 = load atomic i32, i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0) monotonic, align 8
+  %7 = icmp eq i32 %6, 0
+  br i1 %7, label %8, label %11, !prof !2
+
+8:                                                ; preds = %3
+  %9 = cmpxchg weak i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0, i32 1 acquire monotonic
+  %10 = extractvalue { i32, i1 } %9, 1
+  br i1 %10, label %26, label %11, !prof !3
+
+11:                                               ; preds = %8, %3
+  %12 = icmp sgt i32 %5, 0
+  br i1 %12, label %21, label %15
+
+13:                                               ; preds = %21
+  %14 = add i32 %5, %4
+  br label %15
+
+15:                                               ; preds = %13, %11
+  %16 = phi i32 [ %4, %11 ], [ %14, %13 ]
+  %17 = shl i32 %5, 1
+  %18 = icmp slt i32 %17, 64
+  %19 = select i1 %18, i32 %17, i32 64
+  %20 = icmp slt i32 %16, 1000
+  br i1 %20, label %3, label %25
+
+21:                                               ; preds = %11, %21
+  %22 = phi i32 [ %23, %21 ], [ 0, %11 ]
+  tail call void asm sideeffect "pause", "~{dirflag},~{fpsr},~{flags}"() #13, !srcloc !4
+  %23 = add nuw nsw i32 %22, 1
+  %24 = icmp eq i32 %23, %5
+  br i1 %24, label %13, label %21
+
+25:                                               ; preds = %15
+  tail call void @_ZN4base8internal13SpinningMutex8LockSlowEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %26
+
+26:                                               ; preds = %8, %25
+  %27 = getelementptr inbounds %"class.base::internal::ThreadCacheRegistry", %"class.base::internal::ThreadCacheRegistry"* %0, i64 0, i32 2
+  %28 = load %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"** %27, align 8
+  %29 = icmp eq %"class.base::internal::ThreadCache"* %28, null
+  br i1 %29, label %76, label %30
+
+30:                                               ; preds = %26
+  %31 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %28, i64 0, i32 4
+  %32 = load %"struct.base::PartitionRoot"*, %"struct.base::PartitionRoot"** %31, align 8
+  %33 = fmul float %1, 6.400000e+01
+  %34 = fptoui float %33 to i64
+  %35 = lshr i64 %34, 1
+  br label %36
+
+36:                                               ; preds = %58, %30
+  %37 = phi i64 [ 0, %30 ], [ %61, %58 ]
+  %38 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %32, i64 0, i32 10, i64 %37, i32 0
+  %39 = load %"struct.base::internal::SlotSpanMetadata"*, %"struct.base::internal::SlotSpanMetadata"** %38, align 8
+  %40 = icmp eq %"struct.base::internal::SlotSpanMetadata"* %39, null
+  br i1 %40, label %58, label %41
+
+41:                                               ; preds = %36
+  %42 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %32, i64 0, i32 10, i64 %37, i32 3
+  %43 = load i32, i32* %42, align 8
+  %44 = icmp ult i32 %43, 129
+  br i1 %44, label %51, label %45
+
+45:                                               ; preds = %41
+  %46 = icmp ult i32 %43, 257
+  br i1 %46, label %51, label %47
+
+47:                                               ; preds = %45
+  %48 = icmp ult i32 %43, 513
+  %49 = select i1 %48, i64 2, i64 3
+  %50 = lshr i64 %34, %49
+  br label %51
+
+51:                                               ; preds = %47, %45, %41
+  %52 = phi i64 [ %34, %41 ], [ %35, %45 ], [ %50, %47 ]
+  %53 = icmp ult i64 %52, 254
+  %54 = select i1 %53, i64 %52, i64 254
+  %55 = trunc i64 %54 to i8
+  %56 = icmp ugt i8 %55, 1
+  %57 = select i1 %56, i8 %55, i8 1
+  br label %58
+
+58:                                               ; preds = %36, %51
+  %59 = phi i8 [ %57, %51 ], [ 0, %36 ]
+  %60 = getelementptr inbounds [89 x i8], [89 x i8]* @_ZN4base8internal11ThreadCache14global_limits_E, i64 0, i64 %37
+  store i8 %59, i8* %60, align 1
+  %61 = add nuw nsw i64 %37, 1
+  %62 = icmp eq i64 %61, 89
+  br i1 %62, label %63, label %36
+
+63:                                               ; preds = %58, %65
+  %64 = phi %"class.base::internal::ThreadCache"* [ %67, %65 ], [ %28, %58 ]
+  br label %69
+
+65:                                               ; preds = %69
+  %66 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %64, i64 0, i32 5
+  %67 = load %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"** %66, align 8
+  %68 = icmp eq %"class.base::internal::ThreadCache"* %67, null
+  br i1 %68, label %76, label %63
+
+69:                                               ; preds = %81, %63
+  %70 = phi i64 [ 0, %63 ], [ %93, %81 ]
+  %71 = getelementptr inbounds [89 x i8], [89 x i8]* @_ZN4base8internal11ThreadCache14global_limits_E, i64 0, i64 %70
+  %72 = load i8, i8* %71, align 4
+  %73 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %64, i64 0, i32 0, i64 %70, i32 2, i32 0, i32 0, i32 0, i32 0, i32 0
+  store atomic i8 %72, i8* %73 monotonic, align 1
+  %74 = or i64 %70, 1
+  %75 = icmp eq i64 %74, 89
+  br i1 %75, label %65, label %81
+
+76:                                               ; preds = %65, %26
+  %77 = atomicrmw xchg i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0 release
+  %78 = icmp eq i32 %77, 2
+  br i1 %78, label %79, label %80, !prof !5
+
+79:                                               ; preds = %76
+  tail call void @_ZN4base8internal13SpinningMutex9FutexWakeEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %80
+
+80:                                               ; preds = %76, %79
+  ret void
+
+81:                                               ; preds = %69
+  %82 = getelementptr inbounds [89 x i8], [89 x i8]* @_ZN4base8internal11ThreadCache14global_limits_E, i64 0, i64 %74
+  %83 = load i8, i8* %82, align 1
+  %84 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %64, i64 0, i32 0, i64 %74, i32 2, i32 0, i32 0, i32 0, i32 0, i32 0
+  store atomic i8 %83, i8* %84 monotonic, align 1
+  %85 = or i64 %70, 2
+  %86 = getelementptr inbounds [89 x i8], [89 x i8]* @_ZN4base8internal11ThreadCache14global_limits_E, i64 0, i64 %85
+  %87 = load i8, i8* %86, align 2
+  %88 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %64, i64 0, i32 0, i64 %85, i32 2, i32 0, i32 0, i32 0, i32 0, i32 0
+  store atomic i8 %87, i8* %88 monotonic, align 1
+  %89 = or i64 %70, 3
+  %90 = getelementptr inbounds [89 x i8], [89 x i8]* @_ZN4base8internal11ThreadCache14global_limits_E, i64 0, i64 %89
+  %91 = load i8, i8* %90, align 1
+  %92 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %64, i64 0, i32 0, i64 %89, i32 2, i32 0, i32 0, i32 0, i32 0, i32 0
+  store atomic i8 %91, i8* %92 monotonic, align 1
+  %93 = add nuw nsw i64 %70, 4
+  br label %69
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal11ThreadCache15SetGlobalLimitsEPNS_13PartitionRootILb1EEEf(%"struct.base::PartitionRoot"* nocapture readonly, float) local_unnamed_addr #1 align 2 {
+  %3 = fmul float %1, 6.400000e+01
+  %4 = fptoui float %3 to i64
+  %5 = lshr i64 %4, 1
+  br label %7
+
+6:                                                ; preds = %29
+  ret void
+
+7:                                                ; preds = %29, %2
+  %8 = phi i64 [ 0, %2 ], [ %32, %29 ]
+  %9 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %0, i64 0, i32 10, i64 %8, i32 0
+  %10 = load %"struct.base::internal::SlotSpanMetadata"*, %"struct.base::internal::SlotSpanMetadata"** %9, align 8
+  %11 = icmp eq %"struct.base::internal::SlotSpanMetadata"* %10, null
+  br i1 %11, label %29, label %12
+
+12:                                               ; preds = %7
+  %13 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %0, i64 0, i32 10, i64 %8, i32 3
+  %14 = load i32, i32* %13, align 8
+  %15 = icmp ult i32 %14, 129
+  br i1 %15, label %22, label %16
+
+16:                                               ; preds = %12
+  %17 = icmp ult i32 %14, 257
+  br i1 %17, label %22, label %18
+
+18:                                               ; preds = %16
+  %19 = icmp ult i32 %14, 513
+  %20 = select i1 %19, i64 2, i64 3
+  %21 = lshr i64 %4, %20
+  br label %22
+
+22:                                               ; preds = %18, %16, %12
+  %23 = phi i64 [ %4, %12 ], [ %5, %16 ], [ %21, %18 ]
+  %24 = icmp ult i64 %23, 254
+  %25 = select i1 %24, i64 %23, i64 254
+  %26 = trunc i64 %25 to i8
+  %27 = icmp ugt i8 %26, 1
+  %28 = select i1 %27, i8 %26, i8 1
+  br label %29
+
+29:                                               ; preds = %7, %22
+  %30 = phi i8 [ %28, %22 ], [ 0, %7 ]
+  %31 = getelementptr inbounds [89 x i8], [89 x i8]* @_ZN4base8internal11ThreadCache14global_limits_E, i64 0, i64 %8
+  store i8 %30, i8* %31, align 1
+  %32 = add nuw nsw i64 %8, 1
+  %33 = icmp eq i64 %32, 89
+  br i1 %33, label %6, label %7
+}
+
+declare dereferenceable(8) %class.scoped_refptr* @_ZN4base22ThreadTaskRunnerHandle3GetEv() local_unnamed_addr #4
+
+declare void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* sret, i8*, i8*, i32) local_unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal19ThreadCacheRegistry13PeriodicPurgeEv(%"class.base::internal::ThreadCacheRegistry"*) #1 align 2 {
+  %2 = alloca %"class.base::Location", align 8
+  %3 = alloca %"class.base::OnceCallback", align 8
+  %4 = alloca %"class.base::TimeTicks", align 8
+  %5 = alloca i64, align 8
+  %6 = alloca i64, align 8
+  %7 = alloca i64, align 8
+  %8 = load i8, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 81, i32 0), align 16
+  %9 = and i8 %8, 25
+  %10 = icmp eq i8 %9, 0
+  br i1 %10, label %17, label %11, !prof !3
+
+11:                                               ; preds = %1
+  %12 = tail call i32 @_ZN4base14PlatformThread9CurrentIdEv() #13
+  %13 = bitcast %"class.base::TimeTicks"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %13) #13
+  %14 = getelementptr inbounds %"class.base::TimeTicks", %"class.base::TimeTicks"* %4, i64 0, i32 0, i32 0
+  %15 = tail call i64 @_ZN4base6subtle28TimeTicksNowIgnoringOverrideEv() #13
+  store i64 %15, i64* %14, align 8
+  %16 = call i64 @_ZN20trace_event_internal37AddTraceEventWithThreadIdAndTimestampEcPKhPKcS3_yyiRKN4base9TimeTicksEPNS4_11trace_event14TraceArgumentsEj(i8 signext 88, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 81, i32 0), i8* getelementptr inbounds ([14 x i8], [14 x i8]* @.str.2, i64 0, i64 0), i8* null, i64 0, i64 0, i32 %12, %"class.base::TimeTicks"* nonnull dereferenceable(8) %4, %"class.base::trace_event::TraceArguments"* null, i32 0) #13
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %13) #13
+  br label %17
+
+17:                                               ; preds = %1, %11
+  %18 = phi i64 [ -6148914691236517206, %1 ], [ %16, %11 ]
+  %19 = phi i8* [ inttoptr (i64 -6148914691236517206 to i8*), %1 ], [ getelementptr inbounds ([14 x i8], [14 x i8]* @.str.2, i64 0, i64 0), %11 ]
+  %20 = phi i8* [ null, %1 ], [ getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 81, i32 0), %11 ]
+  %21 = getelementptr inbounds %"class.base::internal::ThreadCacheRegistry", %"class.base::internal::ThreadCacheRegistry"* %0, i64 0, i32 4
+  %22 = load i8, i8* %21, align 8, !range !6
+  %23 = icmp eq i8 %22, 0
+  br i1 %23, label %130, label %24
+
+24:                                               ; preds = %17, %36
+  %25 = phi i32 [ %37, %36 ], [ 0, %17 ]
+  %26 = phi i32 [ %40, %36 ], [ 1, %17 ]
+  %27 = load atomic i32, i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0) monotonic, align 8
+  %28 = icmp eq i32 %27, 0
+  br i1 %28, label %29, label %32, !prof !2
+
+29:                                               ; preds = %24
+  %30 = cmpxchg weak i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0, i32 1 acquire monotonic
+  %31 = extractvalue { i32, i1 } %30, 1
+  br i1 %31, label %47, label %32, !prof !3
+
+32:                                               ; preds = %29, %24
+  %33 = icmp sgt i32 %26, 0
+  br i1 %33, label %42, label %36
+
+34:                                               ; preds = %42
+  %35 = add i32 %26, %25
+  br label %36
+
+36:                                               ; preds = %34, %32
+  %37 = phi i32 [ %25, %32 ], [ %35, %34 ]
+  %38 = shl i32 %26, 1
+  %39 = icmp slt i32 %38, 64
+  %40 = select i1 %39, i32 %38, i32 64
+  %41 = icmp slt i32 %37, 1000
+  br i1 %41, label %24, label %46
+
+42:                                               ; preds = %32, %42
+  %43 = phi i32 [ %44, %42 ], [ 0, %32 ]
+  call void asm sideeffect "pause", "~{dirflag},~{fpsr},~{flags}"() #13, !srcloc !4
+  %44 = add nuw nsw i32 %43, 1
+  %45 = icmp eq i32 %44, %26
+  br i1 %45, label %34, label %42
+
+46:                                               ; preds = %36
+  call void @_ZN4base8internal13SpinningMutex8LockSlowEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %47
+
+47:                                               ; preds = %29, %46
+  %48 = getelementptr inbounds %"class.base::internal::ThreadCacheRegistry", %"class.base::internal::ThreadCacheRegistry"* %0, i64 0, i32 2
+  %49 = load %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"** %48, align 8
+  %50 = icmp eq %"class.base::internal::ThreadCache"* %49, null
+  br i1 %50, label %60, label %51
+
+51:                                               ; preds = %47, %51
+  %52 = phi %"class.base::internal::ThreadCache"* [ %58, %51 ], [ %49, %47 ]
+  %53 = phi i64 [ %56, %51 ], [ 0, %47 ]
+  %54 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %52, i64 0, i32 1
+  %55 = load i64, i64* %54, align 8
+  %56 = add i64 %55, %53
+  %57 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %52, i64 0, i32 5
+  %58 = load %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"** %57, align 8
+  %59 = icmp eq %"class.base::internal::ThreadCache"* %58, null
+  br i1 %59, label %60, label %51
+
+60:                                               ; preds = %51, %47
+  %61 = phi i1 [ false, %47 ], [ true, %51 ]
+  %62 = phi i64 [ 0, %47 ], [ %56, %51 ]
+  %63 = atomicrmw xchg i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0 release
+  %64 = icmp eq i32 %63, 2
+  br i1 %64, label %65, label %66, !prof !5
+
+65:                                               ; preds = %60
+  call void @_ZN4base8internal13SpinningMutex9FutexWakeEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %66
+
+66:                                               ; preds = %60, %65
+  br i1 %61, label %67, label %130
+
+67:                                               ; preds = %66
+  %68 = icmp ugt i64 %62, 5120000
+  br i1 %68, label %69, label %77
+
+69:                                               ; preds = %67
+  %70 = bitcast i64* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %70)
+  %71 = getelementptr inbounds %"class.base::internal::ThreadCacheRegistry", %"class.base::internal::ThreadCacheRegistry"* %0, i64 0, i32 3, i32 0
+  %72 = load i64, i64* %71, align 8
+  %73 = sdiv i64 %72, 2
+  store i64 %73, i64* %5, align 8
+  %74 = icmp slt i64 %72, 4000000
+  %75 = bitcast i64* %5 to %"class.base::TimeDelta"*
+  %76 = select i1 %74, %"class.base::TimeDelta"* %75, %"class.base::TimeDelta"* @_ZN4base8internal19ThreadCacheRegistry21kDefaultPurgeIntervalE
+  br label %102
+
+77:                                               ; preds = %67
+  %78 = icmp ugt i64 %62, 1024000
+  br i1 %78, label %79, label %87
+
+79:                                               ; preds = %77
+  %80 = bitcast i64* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %80)
+  %81 = getelementptr inbounds %"class.base::internal::ThreadCacheRegistry", %"class.base::internal::ThreadCacheRegistry"* %0, i64 0, i32 3, i32 0
+  %82 = load i64, i64* %81, align 8
+  %83 = sdiv i64 %82, 2
+  store i64 %83, i64* %6, align 8
+  %84 = icmp sgt i64 %82, 2000001
+  %85 = bitcast i64* %6 to %"class.base::TimeDelta"*
+  %86 = select i1 %84, %"class.base::TimeDelta"* %85, %"class.base::TimeDelta"* @_ZN4base8internal19ThreadCacheRegistry17kMinPurgeIntervalE
+  br label %102
+
+87:                                               ; preds = %77
+  %88 = icmp ult i64 %62, 512000
+  br i1 %88, label %89, label %108
+
+89:                                               ; preds = %87
+  %90 = bitcast i64* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %90)
+  %91 = getelementptr inbounds %"class.base::internal::ThreadCacheRegistry", %"class.base::internal::ThreadCacheRegistry"* %0, i64 0, i32 3, i32 0
+  %92 = load i64, i64* %91, align 8
+  %93 = call { i64, i1 } @llvm.smul.with.overflow.i64(i64 %92, i64 2) #13
+  %94 = extractvalue { i64, i1 } %93, 1
+  %95 = extractvalue { i64, i1 } %93, 0
+  %96 = icmp sgt i64 %92, -1
+  %97 = select i1 %96, i64 9223372036854775807, i64 -9223372036854775808
+  %98 = select i1 %94, i64 %97, i64 %95
+  store i64 %98, i64* %7, align 8
+  %99 = icmp slt i64 %98, 60000000
+  %100 = bitcast i64* %7 to %"class.base::TimeDelta"*
+  %101 = select i1 %99, %"class.base::TimeDelta"* %100, %"class.base::TimeDelta"* @_ZN4base8internal19ThreadCacheRegistry17kMaxPurgeIntervalE
+  br label %102
+
+102:                                              ; preds = %69, %89, %79
+  %103 = phi %"class.base::TimeDelta"* [ %86, %79 ], [ %101, %89 ], [ %76, %69 ]
+  %104 = phi i64* [ %81, %79 ], [ %91, %89 ], [ %71, %69 ]
+  %105 = phi i8* [ %80, %79 ], [ %90, %89 ], [ %70, %69 ]
+  %106 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %103, i64 0, i32 0
+  %107 = load i64, i64* %106, align 8
+  store i64 %107, i64* %104, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %105)
+  br label %108
+
+108:                                              ; preds = %102, %87
+  call void @_ZN4base8internal19ThreadCacheRegistry8PurgeAllEv(%"class.base::internal::ThreadCacheRegistry"* %0)
+  %109 = bitcast %"class.base::OnceCallback"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %109)
+  %110 = call dereferenceable(8) %class.scoped_refptr* @_ZN4base22ThreadTaskRunnerHandle3GetEv() #13
+  %111 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %110, i64 0, i32 0
+  %112 = load %"class.base::SingleThreadTaskRunner"*, %"class.base::SingleThreadTaskRunner"** %111, align 8
+  %113 = bitcast %"class.base::SingleThreadTaskRunner"* %112 to %"class.base::TaskRunner"*
+  %114 = bitcast %"class.base::Location"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %114) #13
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %2, i8* getelementptr inbounds ([21 x i8], [21 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([57 x i8], [57 x i8]* @.str.1, i64 0, i64 0), i32 215) #13
+  %115 = ptrtoint %"class.base::internal::ThreadCacheRegistry"* %0 to i64
+  %116 = call i8* @_Znwm(i64 56) #14, !noalias !17
+  %117 = bitcast i8* %116 to %"class.base::internal::BindStateBase"*
+  call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"* nonnull %117, void ()* bitcast (void (%"class.base::internal::BindStateBase"*)* @_ZN4base8internal7InvokerINS0_9BindStateIMNS0_19ThreadCacheRegistryEFvvEJNS0_17UnretainedWrapperIS3_EEEEEFvvEE7RunOnceEPNS0_13BindStateBaseE to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @_ZN4base8internal9BindStateIMNS0_19ThreadCacheRegistryEFvvEJNS0_17UnretainedWrapperIS2_EEEE7DestroyEPKNS0_13BindStateBaseE) #13, !noalias !17
+  %118 = getelementptr inbounds i8, i8* %116, i64 32
+  %119 = bitcast i8* %118 to <2 x i64>*
+  store <2 x i64> <i64 ptrtoint (void (%"class.base::internal::ThreadCacheRegistry"*)* @_ZN4base8internal19ThreadCacheRegistry13PeriodicPurgeEv to i64), i64 0>, <2 x i64>* %119, align 8, !noalias !17
+  %120 = getelementptr inbounds i8, i8* %116, i64 48
+  %121 = bitcast i8* %120 to i64*
+  store i64 %115, i64* %121, align 8, !noalias !17
+  %122 = bitcast %"class.base::OnceCallback"* %3 to i8**
+  store i8* %116, i8** %122, align 8, !alias.scope !17
+  %123 = getelementptr inbounds %"class.base::internal::ThreadCacheRegistry", %"class.base::internal::ThreadCacheRegistry"* %0, i64 0, i32 3, i32 0
+  %124 = load i64, i64* %123, align 8
+  %125 = bitcast %"class.base::SingleThreadTaskRunner"* %112 to i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)***
+  %126 = load i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)**, i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)*** %125, align 8
+  %127 = load i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)*, i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)** %126, align 8
+  %128 = call zeroext i1 %127(%"class.base::TaskRunner"* %113, %"class.base::Location"* nonnull dereferenceable(32) %2, %"class.base::OnceCallback"* nonnull %3, i64 %124) #13
+  %129 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %3, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %129) #13
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %114) #13
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %109)
+  br label %130
+
+130:                                              ; preds = %108, %66, %17
+  %131 = icmp eq i8* %20, null
+  br i1 %131, label %136, label %132
+
+132:                                              ; preds = %130
+  %133 = load i8, i8* %20, align 1
+  %134 = icmp eq i8 %133, 0
+  br i1 %134, label %136, label %135
+
+135:                                              ; preds = %132
+  call void @_ZN20trace_event_internal24UpdateTraceEventDurationEPKhPKcN4base11trace_event16TraceEventHandleE(i8* nonnull %20, i8* %19, i64 %18) #13
+  br label %136
+
+136:                                              ; preds = %130, %132, %135
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"*) unnamed_addr #5
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable writeonly
+define hidden void @_ZN4base8internal19ThreadCacheRegistry15ResetForTestingEv(%"class.base::internal::ThreadCacheRegistry"* nocapture) local_unnamed_addr #6 align 2 {
+  %2 = getelementptr inbounds %"class.base::internal::ThreadCacheRegistry", %"class.base::internal::ThreadCacheRegistry"* %0, i64 0, i32 3, i32 0
+  store i64 2000000, i64* %2, align 8
+  %3 = getelementptr inbounds %"class.base::internal::ThreadCacheRegistry", %"class.base::internal::ThreadCacheRegistry"* %0, i64 0, i32 4
+  store i8 0, i8* %3, align 8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal11ThreadCache6DeleteEPv(i8*) #1 align 2 {
+  %2 = alloca %"struct.base::internal::DeferredUnmap", align 8
+  %3 = bitcast i8* %0 to %"class.base::internal::ThreadCache"*
+  %4 = getelementptr inbounds i8, i8* %0, i64 3592
+  %5 = bitcast i8* %4 to %"struct.base::PartitionRoot"**
+  %6 = load %"struct.base::PartitionRoot"*, %"struct.base::PartitionRoot"** %5, align 8
+  tail call void @_ZN4base8internal11ThreadCacheD2Ev(%"class.base::internal::ThreadCache"* %3) #13
+  %7 = ptrtoint i8* %0 to i64
+  %8 = and i64 %7, -2097152
+  %9 = or i64 %8, 4096
+  %10 = inttoptr i64 %9 to i8*
+  %11 = lshr i64 %7, 9
+  %12 = and i64 %11, 4064
+  %13 = getelementptr inbounds i8, i8* %10, i64 %12
+  %14 = bitcast i8* %13 to %"struct.base::internal::PartitionPage"*
+  %15 = getelementptr inbounds i8, i8* %13, i64 30
+  %16 = load i8, i8* %15, align 2
+  %17 = zext i8 %16 to i64
+  %18 = sub nsw i64 0, %17
+  %19 = getelementptr inbounds %"struct.base::internal::PartitionPage", %"struct.base::internal::PartitionPage"* %14, i64 %18, i32 0
+  %20 = bitcast %union.anon* %19 to %"struct.base::internal::SlotSpanMetadata"*
+  %21 = bitcast %"struct.base::internal::DeferredUnmap"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %21) #13
+  %22 = getelementptr inbounds %"struct.base::internal::DeferredUnmap", %"struct.base::internal::DeferredUnmap"* %2, i64 0, i32 0
+  %23 = getelementptr inbounds %"struct.base::internal::DeferredUnmap", %"struct.base::internal::DeferredUnmap"* %2, i64 0, i32 1
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %21, i8 0, i64 16, i1 false) #13
+  %24 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %6, i64 0, i32 8
+  %25 = getelementptr inbounds %"class.base::internal::MaybeSpinLock", %"class.base::internal::MaybeSpinLock"* %24, i64 0, i32 0
+  %26 = getelementptr inbounds %"class.base::internal::MaybeSpinLock", %"class.base::internal::MaybeSpinLock"* %24, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  br label %27
+
+27:                                               ; preds = %39, %1
+  %28 = phi i32 [ 0, %1 ], [ %40, %39 ]
+  %29 = phi i32 [ 1, %1 ], [ %43, %39 ]
+  %30 = load atomic i32, i32* %26 monotonic, align 4
+  %31 = icmp eq i32 %30, 0
+  br i1 %31, label %32, label %35, !prof !2
+
+32:                                               ; preds = %27
+  %33 = cmpxchg weak i32* %26, i32 0, i32 1 acquire monotonic
+  %34 = extractvalue { i32, i1 } %33, 1
+  br i1 %34, label %50, label %35, !prof !3
+
+35:                                               ; preds = %32, %27
+  %36 = icmp sgt i32 %29, 0
+  br i1 %36, label %45, label %39
+
+37:                                               ; preds = %45
+  %38 = add i32 %29, %28
+  br label %39
+
+39:                                               ; preds = %37, %35
+  %40 = phi i32 [ %28, %35 ], [ %38, %37 ]
+  %41 = shl i32 %29, 1
+  %42 = icmp slt i32 %41, 64
+  %43 = select i1 %42, i32 %41, i32 64
+  %44 = icmp slt i32 %40, 1000
+  br i1 %44, label %27, label %49
+
+45:                                               ; preds = %35, %45
+  %46 = phi i32 [ %47, %45 ], [ 0, %35 ]
+  tail call void asm sideeffect "pause", "~{dirflag},~{fpsr},~{flags}"() #13, !srcloc !4
+  %47 = add nuw nsw i32 %46, 1
+  %48 = icmp eq i32 %47, %29
+  br i1 %48, label %37, label %45
+
+49:                                               ; preds = %39
+  tail call void @_ZN4base8internal13SpinningMutex8LockSlowEv(%"class.base::internal::SpinningMutex"* %25) #13
+  br label %50
+
+50:                                               ; preds = %32, %49
+  %51 = bitcast %union.anon* %19 to i8**
+  %52 = load i8*, i8** %51, align 1
+  %53 = icmp eq i8* %52, %0
+  br i1 %53, label %56, label %54, !prof !5
+
+54:                                               ; preds = %50
+  %55 = ptrtoint i8* %52 to i64
+  br label %59
+
+56:                                               ; preds = %50
+  tail call void @_ZN7logging8RawCheckEPKc(i8* getelementptr inbounds ([105 x i8], [105 x i8]* @.str.11, i64 0, i64 0)) #13
+  %57 = getelementptr inbounds %union.anon, %union.anon* %19, i64 0, i32 0, i32 0
+  %58 = load i64, i64* %57, align 1
+  br label %59
+
+59:                                               ; preds = %56, %54
+  %60 = phi i64 [ %55, %54 ], [ %58, %56 ]
+  %61 = tail call i64 @llvm.bswap.i64(i64 %60) #13
+  %62 = inttoptr i64 %61 to %"struct.base::internal::EncodedPartitionFreelistEntry"*
+  %63 = bitcast i8* %0 to %"struct.base::internal::EncodedPartitionFreelistEntry"**
+  store %"struct.base::internal::EncodedPartitionFreelistEntry"* %62, %"struct.base::internal::EncodedPartitionFreelistEntry"** %63, align 8
+  %64 = xor i64 %61, -1
+  %65 = getelementptr inbounds i8, i8* %0, i64 8
+  %66 = bitcast i8* %65 to i64*
+  store i64 %64, i64* %66, align 8
+  store i8* %0, i8** %51, align 1
+  %67 = getelementptr inbounds %"struct.base::internal::PartitionPage", %"struct.base::internal::PartitionPage"* %14, i64 %18, i32 0, i32 1, i64 16
+  %68 = bitcast i8* %67 to i16*
+  %69 = load i16, i16* %68, align 1
+  %70 = add i16 %69, -1
+  store i16 %70, i16* %68, align 1
+  %71 = icmp slt i16 %70, 1
+  br i1 %71, label %72, label %76, !prof !5
+
+72:                                               ; preds = %59
+  %73 = tail call { i8*, i64 } @_ZN4base8internal16SlotSpanMetadataILb1EE12FreeSlowPathEv(%"struct.base::internal::SlotSpanMetadata"* %20) #13
+  %74 = extractvalue { i8*, i64 } %73, 0
+  %75 = extractvalue { i8*, i64 } %73, 1
+  br label %76
+
+76:                                               ; preds = %72, %59
+  %77 = phi i8* [ %74, %72 ], [ null, %59 ]
+  %78 = phi i64 [ %75, %72 ], [ 0, %59 ]
+  store i8* %77, i8** %22, align 8
+  store i64 %78, i64* %23, align 8
+  %79 = atomicrmw xchg i32* %26, i32 0 release
+  %80 = icmp eq i32 %79, 2
+  br i1 %80, label %81, label %82, !prof !5
+
+81:                                               ; preds = %76
+  tail call void @_ZN4base8internal13SpinningMutex9FutexWakeEv(%"class.base::internal::SpinningMutex"* %25) #13
+  br label %82
+
+82:                                               ; preds = %81, %76
+  %83 = load i8*, i8** %22, align 8
+  %84 = icmp eq i8* %83, null
+  br i1 %84, label %86, label %85, !prof !3
+
+85:                                               ; preds = %82
+  call void @_ZN4base8internal13DeferredUnmap5UnmapEv(%"struct.base::internal::DeferredUnmap"* nonnull %2) #13
+  br label %86
+
+86:                                               ; preds = %82, %85
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %21) #13
+  ret void
+}
+
+declare void @_ZN7logging8RawCheckEPKc(i8*) local_unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal11ThreadCache4InitEPNS_13PartitionRootILb1EEE(%"struct.base::PartitionRoot"*) local_unnamed_addr #1 align 2 {
+  %2 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %0, i64 0, i32 10, i64 88, i32 3
+  %3 = load i32, i32* %2, align 8
+  %4 = icmp eq i32 %3, 32768
+  br i1 %4, label %6, label %5, !prof !3
+
+5:                                                ; preds = %1
+  tail call void @_ZN7logging8RawCheckEPKc(i8* getelementptr inbounds ([141 x i8], [141 x i8]* @.str.4, i64 0, i64 0)) #13
+  br label %6
+
+6:                                                ; preds = %1, %5
+  %7 = load i16, i16* @_ZN4base8internal11ThreadCache28largest_active_bucket_index_E, align 2
+  %8 = zext i16 %7 to i64
+  %9 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %0, i64 0, i32 10, i64 %8, i32 3
+  %10 = load i32, i32* %9, align 8
+  %11 = icmp eq i32 %10, 512
+  br i1 %11, label %13, label %12, !prof !3
+
+12:                                               ; preds = %6
+  tail call void @_ZN7logging8RawCheckEPKc(i8* getelementptr inbounds ([155 x i8], [155 x i8]* @.str.5, i64 0, i64 0)) #13
+  br label %13
+
+13:                                               ; preds = %6, %12
+  tail call void @_ZN4base8internal11ThreadCache35EnsureThreadSpecificDataInitializedEv()
+  %14 = ptrtoint %"struct.base::PartitionRoot"* %0 to i64
+  %15 = cmpxchg i64* bitcast (%"struct.std::__1::atomic.17"* @_ZN4base8internal12_GLOBAL__N_119g_thread_cache_rootE to i64*), i64 0, i64 %14 seq_cst seq_cst
+  %16 = extractvalue { i64, i1 } %15, 1
+  br i1 %16, label %18, label %17
+
+17:                                               ; preds = %13
+  tail call void @_ZN7logging8RawCheckEPKc(i8* getelementptr inbounds ([82 x i8], [82 x i8]* @.str.6, i64 0, i64 0)) #13
+  br label %18
+
+18:                                               ; preds = %13, %17
+  br label %19
+
+19:                                               ; preds = %18, %33
+  %20 = phi i64 [ %36, %33 ], [ 0, %18 ]
+  %21 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %0, i64 0, i32 10, i64 %20, i32 0
+  %22 = load %"struct.base::internal::SlotSpanMetadata"*, %"struct.base::internal::SlotSpanMetadata"** %21, align 8
+  %23 = icmp eq %"struct.base::internal::SlotSpanMetadata"* %22, null
+  br i1 %23, label %33, label %24
+
+24:                                               ; preds = %19
+  %25 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %0, i64 0, i32 10, i64 %20, i32 3
+  %26 = load i32, i32* %25, align 8
+  %27 = icmp ult i32 %26, 129
+  br i1 %27, label %33, label %28
+
+28:                                               ; preds = %24
+  %29 = icmp ult i32 %26, 257
+  br i1 %29, label %33, label %30
+
+30:                                               ; preds = %28
+  %31 = icmp ult i32 %26, 513
+  %32 = select i1 %31, i8 32, i8 16
+  br label %33
+
+33:                                               ; preds = %24, %28, %30, %19
+  %34 = phi i8 [ 0, %19 ], [ -128, %24 ], [ 64, %28 ], [ %32, %30 ]
+  %35 = getelementptr inbounds [89 x i8], [89 x i8]* @_ZN4base8internal11ThreadCache14global_limits_E, i64 0, i64 %20
+  store i8 %34, i8* %35, align 1
+  %36 = add nuw nsw i64 %20, 1
+  %37 = icmp eq i64 %36, 89
+  br i1 %37, label %38, label %19
+
+38:                                               ; preds = %33
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal11ThreadCache20SetLargestCachedSizeEm(i64) local_unnamed_addr #1 align 2 {
+  %2 = icmp ult i64 %0, 32768
+  %3 = select i1 %2, i64 %0, i64 32768
+  %4 = tail call i64 @llvm.ctlz.i64(i64 %3, i1 false) #13, !range !22
+  %5 = sub nuw nsw i64 64, %4
+  %6 = and i64 %5, 255
+  %7 = getelementptr inbounds [65 x i8], [65 x i8]* @_ZN4base12_GLOBAL__N_116kOrderIndexShiftE, i64 0, i64 %6
+  %8 = load i8, i8* %7, align 1
+  %9 = zext i8 %8 to i64
+  %10 = lshr i64 %3, %9
+  %11 = and i64 %10, 7
+  %12 = getelementptr inbounds [65 x i64], [65 x i64]* @_ZN4base12_GLOBAL__N_118kOrderSubIndexMaskE, i64 0, i64 %6
+  %13 = load i64, i64* %12, align 8
+  %14 = and i64 %13, %3
+  %15 = shl nuw nsw i64 %6, 3
+  %16 = or i64 %11, %15
+  %17 = icmp ne i64 %14, 0
+  %18 = zext i1 %17 to i64
+  %19 = add nuw nsw i64 %16, %18
+  %20 = getelementptr inbounds { [128 x i64], [521 x i16] }, { [128 x i64], [521 x i16] }* @_ZZN4base8internal17BucketIndexLookup8GetIndexEmE6lookup, i64 0, i32 1, i64 %19
+  %21 = load i16, i16* %20, align 2
+  store i16 %21, i16* @_ZN4base8internal11ThreadCache28largest_active_bucket_index_E, align 2
+  %22 = icmp ugt i16 %21, 88
+  br i1 %22, label %23, label %24, !prof !5
+
+23:                                               ; preds = %1
+  tail call void @_ZN7logging8RawCheckEPKc(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @.str.7, i64 0, i64 0)) #13
+  br label %24
+
+24:                                               ; preds = %1, %23
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden %"class.base::internal::ThreadCache"* @_ZN4base8internal11ThreadCache6CreateEPNS_13PartitionRootILb1EEE(%"struct.base::PartitionRoot"*) local_unnamed_addr #1 align 2 {
+  %2 = alloca i8, align 1
+  %3 = icmp eq %"struct.base::PartitionRoot"* %0, null
+  br i1 %3, label %4, label %5, !prof !5
+
+4:                                                ; preds = %1
+  tail call void @_ZN7logging8RawCheckEPKc(i8* getelementptr inbounds ([81 x i8], [81 x i8]* @.str.8, i64 0, i64 0)) #13
+  br label %5
+
+5:                                                ; preds = %1, %4
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %2) #13
+  store i8 -86, i8* %2, align 1
+  %6 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %0, i64 0, i32 10, i64 63
+  %7 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %0, i64 0, i32 8
+  %8 = getelementptr inbounds %"class.base::internal::MaybeSpinLock", %"class.base::internal::MaybeSpinLock"* %7, i64 0, i32 0
+  %9 = getelementptr inbounds %"class.base::internal::MaybeSpinLock", %"class.base::internal::MaybeSpinLock"* %7, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  br label %10
+
+10:                                               ; preds = %22, %5
+  %11 = phi i32 [ 0, %5 ], [ %23, %22 ]
+  %12 = phi i32 [ 1, %5 ], [ %26, %22 ]
+  %13 = load atomic i32, i32* %9 monotonic, align 4
+  %14 = icmp eq i32 %13, 0
+  br i1 %14, label %15, label %18, !prof !2
+
+15:                                               ; preds = %10
+  %16 = cmpxchg weak i32* %9, i32 0, i32 1 acquire monotonic
+  %17 = extractvalue { i32, i1 } %16, 1
+  br i1 %17, label %33, label %18, !prof !3
+
+18:                                               ; preds = %15, %10
+  %19 = icmp sgt i32 %12, 0
+  br i1 %19, label %28, label %22
+
+20:                                               ; preds = %28
+  %21 = add i32 %12, %11
+  br label %22
+
+22:                                               ; preds = %20, %18
+  %23 = phi i32 [ %11, %18 ], [ %21, %20 ]
+  %24 = shl i32 %12, 1
+  %25 = icmp slt i32 %24, 64
+  %26 = select i1 %25, i32 %24, i32 64
+  %27 = icmp slt i32 %23, 1000
+  br i1 %27, label %10, label %32
+
+28:                                               ; preds = %18, %28
+  %29 = phi i32 [ %30, %28 ], [ 0, %18 ]
+  tail call void asm sideeffect "pause", "~{dirflag},~{fpsr},~{flags}"() #13, !srcloc !4
+  %30 = add nuw nsw i32 %29, 1
+  %31 = icmp eq i32 %30, %12
+  br i1 %31, label %20, label %28
+
+32:                                               ; preds = %22
+  tail call void @_ZN4base8internal13SpinningMutex8LockSlowEv(%"class.base::internal::SpinningMutex"* %8) #13
+  br label %33
+
+33:                                               ; preds = %15, %32
+  %34 = getelementptr inbounds %"struct.base::internal::PartitionBucket", %"struct.base::internal::PartitionBucket"* %6, i64 0, i32 0
+  %35 = load %"struct.base::internal::SlotSpanMetadata"*, %"struct.base::internal::SlotSpanMetadata"** %34, align 8
+  %36 = bitcast %"struct.base::internal::SlotSpanMetadata"* %35 to i8**
+  %37 = load i8*, i8** %36, align 1
+  %38 = icmp eq i8* %37, null
+  br i1 %38, label %63, label %39, !prof !5
+
+39:                                               ; preds = %33
+  %40 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %35, i64 0, i32 0
+  store i8 0, i8* %2, align 1
+  %41 = bitcast i8* %37 to %"struct.base::internal::EncodedPartitionFreelistEntry"**
+  %42 = load %"struct.base::internal::EncodedPartitionFreelistEntry"*, %"struct.base::internal::EncodedPartitionFreelistEntry"** %41, align 8
+  %43 = icmp eq %"struct.base::internal::EncodedPartitionFreelistEntry"* %42, null
+  %44 = ptrtoint %"struct.base::internal::EncodedPartitionFreelistEntry"* %42 to i64
+  br i1 %43, label %45, label %47
+
+45:                                               ; preds = %39
+  %46 = tail call i64 @llvm.bswap.i64(i64 %44) #13
+  br label %57
+
+47:                                               ; preds = %39
+  %48 = xor i64 %44, -1
+  %49 = getelementptr inbounds i8, i8* %37, i64 8
+  %50 = bitcast i8* %49 to i64*
+  %51 = load i64, i64* %50, align 8
+  %52 = icmp eq i64 %51, %48
+  br i1 %52, label %54, label %53, !prof !3
+
+53:                                               ; preds = %47
+  tail call fastcc void @_ZN4base8internal12_GLOBAL__N_126FreelistCorruptionDetectedEv() #15
+  unreachable
+
+54:                                               ; preds = %47
+  %55 = tail call i64 @llvm.bswap.i64(i64 %44) #13
+  %56 = inttoptr i64 %55 to i8*
+  tail call void @llvm.prefetch(i8* nonnull %56, i32 0, i32 3, i32 1) #13
+  br label %57
+
+57:                                               ; preds = %54, %45
+  %58 = phi i64 [ %46, %45 ], [ %55, %54 ]
+  %59 = inttoptr i64 %58 to %"class.base::internal::PartitionFreelistEntry"*
+  store %"class.base::internal::PartitionFreelistEntry"* %59, %"class.base::internal::PartitionFreelistEntry"** %40, align 1
+  %60 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %35, i64 0, i32 3
+  %61 = load i16, i16* %60, align 1
+  %62 = add i16 %61, 1
+  store i16 %62, i16* %60, align 1
+  br label %65
+
+63:                                               ; preds = %33
+  %64 = call i8* @_ZN4base8internal15PartitionBucketILb1EE13SlowPathAllocEPNS_13PartitionRootILb1EEEimmPb(%"struct.base::internal::PartitionBucket"* %6, %"struct.base::PartitionRoot"* %0, i32 2, i64 3616, i64 16384, i8* nonnull %2) #13
+  br label %65
+
+65:                                               ; preds = %63, %57
+  %66 = phi i8* [ %37, %57 ], [ %64, %63 ]
+  %67 = atomicrmw xchg i32* %9, i32 0 release
+  %68 = icmp eq i32 %67, 2
+  br i1 %68, label %69, label %70, !prof !5
+
+69:                                               ; preds = %65
+  call void @_ZN4base8internal13SpinningMutex9FutexWakeEv(%"class.base::internal::SpinningMutex"* %8) #13
+  br label %70
+
+70:                                               ; preds = %65, %69
+  %71 = bitcast i8* %66 to %"class.base::internal::ThreadCache"*
+  call void @_ZN4base8internal11ThreadCacheC2EPNS_13PartitionRootILb1EEE(%"class.base::internal::ThreadCache"* %71, %"struct.base::PartitionRoot"* %0)
+  %72 = load i32, i32* @_ZN4base8internal18g_thread_cache_keyE, align 4
+  %73 = call i32 @pthread_setspecific(i32 %72, i8* %66) #13
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %2) #13
+  ret %"class.base::internal::ThreadCache"* %71
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal11ThreadCacheC2EPNS_13PartitionRootILb1EEE(%"class.base::internal::ThreadCache"*, %"struct.base::PartitionRoot"*) unnamed_addr #1 align 2 {
+  %3 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 0
+  %4 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 89
+  br label %5
+
+5:                                                ; preds = %75, %2
+  %6 = phi %"struct.base::internal::ThreadCache::Bucket"* [ %3, %2 ], [ %96, %75 ]
+  %7 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %6, i64 0, i32 2, i32 0, i32 0, i32 0, i32 0, i32 0
+  %8 = bitcast %"struct.base::internal::ThreadCache::Bucket"* %6 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %8, i8 0, i64 12, i1 false) #13
+  store atomic i8 0, i8* %7 monotonic, align 1
+  %9 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %6, i64 1
+  %10 = icmp eq %"struct.base::internal::ThreadCache::Bucket"* %9, %4
+  br i1 %10, label %11, label %75
+
+11:                                               ; preds = %5
+  %12 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 1
+  store i64 0, i64* %12, align 8
+  %13 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 2, i32 0, i32 0, i32 0, i32 0
+  store i8 0, i8* %13, align 1
+  %14 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 3
+  %15 = bitcast %"struct.base::ThreadCacheStats"* %14 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %15, i8 0, i64 2152, i1 false)
+  %16 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 4
+  store %"struct.base::PartitionRoot"* %1, %"struct.base::PartitionRoot"** %16, align 8
+  %17 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 5
+  %18 = bitcast %"class.base::internal::ThreadCache"** %17 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %18, i8 0, i64 16, i1 false)
+  br label %19
+
+19:                                               ; preds = %31, %11
+  %20 = phi i32 [ 0, %11 ], [ %32, %31 ]
+  %21 = phi i32 [ 1, %11 ], [ %35, %31 ]
+  %22 = load atomic i32, i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0) monotonic, align 8
+  %23 = icmp eq i32 %22, 0
+  br i1 %23, label %24, label %27, !prof !2
+
+24:                                               ; preds = %19
+  %25 = cmpxchg weak i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0, i32 1 acquire monotonic
+  %26 = extractvalue { i32, i1 } %25, 1
+  br i1 %26, label %42, label %27, !prof !3
+
+27:                                               ; preds = %24, %19
+  %28 = icmp sgt i32 %21, 0
+  br i1 %28, label %37, label %31
+
+29:                                               ; preds = %37
+  %30 = add i32 %21, %20
+  br label %31
+
+31:                                               ; preds = %29, %27
+  %32 = phi i32 [ %20, %27 ], [ %30, %29 ]
+  %33 = shl i32 %21, 1
+  %34 = icmp slt i32 %33, 64
+  %35 = select i1 %34, i32 %33, i32 64
+  %36 = icmp slt i32 %32, 1000
+  br i1 %36, label %19, label %41
+
+37:                                               ; preds = %27, %37
+  %38 = phi i32 [ %39, %37 ], [ 0, %27 ]
+  tail call void asm sideeffect "pause", "~{dirflag},~{fpsr},~{flags}"() #13, !srcloc !4
+  %39 = add nuw nsw i32 %38, 1
+  %40 = icmp eq i32 %39, %21
+  br i1 %40, label %29, label %37
+
+41:                                               ; preds = %31
+  tail call void @_ZN4base8internal13SpinningMutex8LockSlowEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %42
+
+42:                                               ; preds = %24, %41
+  %43 = getelementptr inbounds %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"** %17, i64 1
+  %44 = bitcast %"class.base::internal::ThreadCache"** %43 to i64*
+  store i64 0, i64* %44, align 8
+  %45 = load %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"** getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 1), align 8
+  store %"class.base::internal::ThreadCache"* %0, %"class.base::internal::ThreadCache"** getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 1), align 8
+  store %"class.base::internal::ThreadCache"* %45, %"class.base::internal::ThreadCache"** %17, align 8
+  %46 = icmp eq %"class.base::internal::ThreadCache"* %45, null
+  br i1 %46, label %49, label %47
+
+47:                                               ; preds = %42
+  %48 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %45, i64 0, i32 6
+  store %"class.base::internal::ThreadCache"* %0, %"class.base::internal::ThreadCache"** %48, align 8
+  br label %49
+
+49:                                               ; preds = %47, %42
+  %50 = atomicrmw xchg i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0 release
+  %51 = icmp eq i32 %50, 2
+  br i1 %51, label %52, label %53, !prof !5
+
+52:                                               ; preds = %49
+  tail call void @_ZN4base8internal13SpinningMutex9FutexWakeEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %53
+
+53:                                               ; preds = %49, %52
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %15, i8 0, i64 2152, i1 false)
+  br label %55
+
+54:                                               ; preds = %70
+  ret void
+
+55:                                               ; preds = %70, %53
+  %56 = phi i64 [ 0, %53 ], [ %73, %70 ]
+  %57 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 %56, i32 0
+  store %"class.base::internal::PartitionFreelistEntry"* null, %"class.base::internal::PartitionFreelistEntry"** %57, align 8
+  %58 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 %56, i32 1
+  store i8 0, i8* %58, align 8
+  %59 = getelementptr inbounds [89 x i8], [89 x i8]* @_ZN4base8internal11ThreadCache14global_limits_E, i64 0, i64 %56
+  %60 = load i8, i8* %59, align 1
+  %61 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 %56, i32 2, i32 0, i32 0, i32 0, i32 0, i32 0
+  store atomic i8 %60, i8* %61 monotonic, align 1
+  %62 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %1, i64 0, i32 10, i64 %56, i32 0
+  %63 = load %"struct.base::internal::SlotSpanMetadata"*, %"struct.base::internal::SlotSpanMetadata"** %62, align 8
+  %64 = icmp eq %"struct.base::internal::SlotSpanMetadata"* %63, null
+  br i1 %64, label %65, label %66
+
+65:                                               ; preds = %55
+  store atomic i8 0, i8* %61 monotonic, align 1
+  br label %70
+
+66:                                               ; preds = %55
+  %67 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %1, i64 0, i32 10, i64 %56, i32 3
+  %68 = load i32, i32* %67, align 8
+  %69 = trunc i32 %68 to i16
+  br label %70
+
+70:                                               ; preds = %66, %65
+  %71 = phi i16 [ %69, %66 ], [ 0, %65 ]
+  %72 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 %56, i32 3
+  store i16 %71, i16* %72, align 2
+  %73 = add nuw nsw i64 %56, 1
+  %74 = icmp eq i64 %73, 89
+  br i1 %74, label %54, label %55
+
+75:                                               ; preds = %5
+  %76 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %6, i64 1, i32 2, i32 0, i32 0, i32 0, i32 0, i32 0
+  %77 = bitcast %"struct.base::internal::ThreadCache::Bucket"* %9 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %77, i8 0, i64 12, i1 false) #13
+  store atomic i8 0, i8* %76 monotonic, align 1
+  %78 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %6, i64 2
+  %79 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %6, i64 2, i32 2, i32 0, i32 0, i32 0, i32 0, i32 0
+  %80 = bitcast %"struct.base::internal::ThreadCache::Bucket"* %78 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %80, i8 0, i64 12, i1 false) #13
+  store atomic i8 0, i8* %79 monotonic, align 1
+  %81 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %6, i64 3
+  %82 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %6, i64 3, i32 2, i32 0, i32 0, i32 0, i32 0, i32 0
+  %83 = bitcast %"struct.base::internal::ThreadCache::Bucket"* %81 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %83, i8 0, i64 12, i1 false) #13
+  store atomic i8 0, i8* %82 monotonic, align 1
+  %84 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %6, i64 4
+  %85 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %6, i64 4, i32 2, i32 0, i32 0, i32 0, i32 0, i32 0
+  %86 = bitcast %"struct.base::internal::ThreadCache::Bucket"* %84 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %86, i8 0, i64 12, i1 false) #13
+  store atomic i8 0, i8* %85 monotonic, align 1
+  %87 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %6, i64 5
+  %88 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %6, i64 5, i32 2, i32 0, i32 0, i32 0, i32 0, i32 0
+  %89 = bitcast %"struct.base::internal::ThreadCache::Bucket"* %87 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %89, i8 0, i64 12, i1 false) #13
+  store atomic i8 0, i8* %88 monotonic, align 1
+  %90 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %6, i64 6
+  %91 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %6, i64 6, i32 2, i32 0, i32 0, i32 0, i32 0, i32 0
+  %92 = bitcast %"struct.base::internal::ThreadCache::Bucket"* %90 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %92, i8 0, i64 12, i1 false) #13
+  store atomic i8 0, i8* %91 monotonic, align 1
+  %93 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %6, i64 7
+  %94 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %6, i64 7, i32 2, i32 0, i32 0, i32 0, i32 0, i32 0
+  %95 = bitcast %"struct.base::internal::ThreadCache::Bucket"* %93 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %95, i8 0, i64 12, i1 false) #13
+  store atomic i8 0, i8* %94 monotonic, align 1
+  %96 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %6, i64 8
+  br label %5
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal11ThreadCacheD2Ev(%"class.base::internal::ThreadCache"*) unnamed_addr #1 align 2 {
+  br label %2
+
+2:                                                ; preds = %14, %1
+  %3 = phi i32 [ 0, %1 ], [ %15, %14 ]
+  %4 = phi i32 [ 1, %1 ], [ %18, %14 ]
+  %5 = load atomic i32, i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0) monotonic, align 8
+  %6 = icmp eq i32 %5, 0
+  br i1 %6, label %7, label %10, !prof !2
+
+7:                                                ; preds = %2
+  %8 = cmpxchg weak i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0, i32 1 acquire monotonic
+  %9 = extractvalue { i32, i1 } %8, 1
+  br i1 %9, label %25, label %10, !prof !3
+
+10:                                               ; preds = %7, %2
+  %11 = icmp sgt i32 %4, 0
+  br i1 %11, label %20, label %14
+
+12:                                               ; preds = %20
+  %13 = add i32 %4, %3
+  br label %14
+
+14:                                               ; preds = %12, %10
+  %15 = phi i32 [ %3, %10 ], [ %13, %12 ]
+  %16 = shl i32 %4, 1
+  %17 = icmp slt i32 %16, 64
+  %18 = select i1 %17, i32 %16, i32 64
+  %19 = icmp slt i32 %15, 1000
+  br i1 %19, label %2, label %24
+
+20:                                               ; preds = %10, %20
+  %21 = phi i32 [ %22, %20 ], [ 0, %10 ]
+  tail call void asm sideeffect "pause", "~{dirflag},~{fpsr},~{flags}"() #13, !srcloc !4
+  %22 = add nuw nsw i32 %21, 1
+  %23 = icmp eq i32 %22, %4
+  br i1 %23, label %12, label %20
+
+24:                                               ; preds = %14
+  tail call void @_ZN4base8internal13SpinningMutex8LockSlowEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %25
+
+25:                                               ; preds = %7, %24
+  %26 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 6
+  %27 = load %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"** %26, align 8
+  %28 = icmp eq %"class.base::internal::ThreadCache"* %27, null
+  br i1 %28, label %35, label %29
+
+29:                                               ; preds = %25
+  %30 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 5
+  %31 = bitcast %"class.base::internal::ThreadCache"** %30 to i64*
+  %32 = load i64, i64* %31, align 8
+  %33 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %27, i64 0, i32 5
+  %34 = bitcast %"class.base::internal::ThreadCache"** %33 to i64*
+  store i64 %32, i64* %34, align 8
+  br label %35
+
+35:                                               ; preds = %29, %25
+  %36 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 5
+  %37 = load %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"** %36, align 8
+  %38 = icmp eq %"class.base::internal::ThreadCache"* %37, null
+  br i1 %38, label %44, label %39
+
+39:                                               ; preds = %35
+  %40 = bitcast %"class.base::internal::ThreadCache"** %26 to i64*
+  %41 = load i64, i64* %40, align 8
+  %42 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %37, i64 0, i32 6
+  %43 = bitcast %"class.base::internal::ThreadCache"** %42 to i64*
+  store i64 %41, i64* %43, align 8
+  br label %44
+
+44:                                               ; preds = %39, %35
+  %45 = load %"class.base::internal::ThreadCache"*, %"class.base::internal::ThreadCache"** getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 1), align 8
+  %46 = icmp eq %"class.base::internal::ThreadCache"* %45, %0
+  br i1 %46, label %47, label %50
+
+47:                                               ; preds = %44
+  %48 = bitcast %"class.base::internal::ThreadCache"** %36 to i64*
+  %49 = load i64, i64* %48, align 8
+  store i64 %49, i64* bitcast (%"class.base::internal::ThreadCache"** getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 1) to i64*), align 8
+  br label %50
+
+50:                                               ; preds = %47, %44
+  %51 = atomicrmw xchg i32* getelementptr inbounds ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }, { { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0), i32 0 release
+  %52 = icmp eq i32 %51, 2
+  br i1 %52, label %53, label %54, !prof !5
+
+53:                                               ; preds = %50
+  tail call void @_ZN4base8internal13SpinningMutex9FutexWakeEv(%"class.base::internal::SpinningMutex"* bitcast ({ { { { { i32 } } } }, %"class.base::internal::ThreadCache"*, %"class.base::TimeDelta", i8 }* @_ZN4base8internal12_GLOBAL__N_110g_instanceE to %"class.base::internal::SpinningMutex"*)) #13
+  br label %54
+
+54:                                               ; preds = %50, %53
+  %55 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 2, i32 0, i32 0, i32 0, i32 0
+  store atomic i8 0, i8* %55 monotonic, align 1
+  %56 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 0
+  %57 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 89
+  %58 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 1
+  br label %59
+
+59:                                               ; preds = %74, %54
+  %60 = phi %"struct.base::internal::ThreadCache::Bucket"* [ %56, %54 ], [ %75, %74 ]
+  %61 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %60, i64 0, i32 1
+  %62 = load i8, i8* %61, align 8
+  %63 = icmp eq i8 %62, 0
+  br i1 %63, label %74, label %64
+
+64:                                               ; preds = %59
+  %65 = zext i8 %62 to i64
+  %66 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %60, i64 0, i32 0
+  %67 = load %"class.base::internal::PartitionFreelistEntry"*, %"class.base::internal::PartitionFreelistEntry"** %66, align 8
+  tail call void @_ZN4base8internal11ThreadCache9FreeAfterEPNS0_22PartitionFreelistEntryE(%"class.base::internal::ThreadCache"* %0, %"class.base::internal::PartitionFreelistEntry"* %67) #13
+  store %"class.base::internal::PartitionFreelistEntry"* null, %"class.base::internal::PartitionFreelistEntry"** %66, align 8
+  store i8 0, i8* %61, align 8
+  %68 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %60, i64 0, i32 3
+  %69 = load i16, i16* %68, align 2
+  %70 = zext i16 %69 to i64
+  %71 = mul nuw nsw i64 %70, %65
+  %72 = load i64, i64* %58, align 8
+  %73 = sub i64 %72, %71
+  store i64 %73, i64* %58, align 8
+  br label %74
+
+74:                                               ; preds = %64, %59
+  %75 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %60, i64 1
+  %76 = icmp eq %"struct.base::internal::ThreadCache::Bucket"* %75, %57
+  br i1 %76, label %77, label %59
+
+77:                                               ; preds = %74
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN4base8internal11ThreadCache6BucketC2Ev(%"struct.base::internal::ThreadCache::Bucket"* nocapture) unnamed_addr #3 align 2 {
+  %2 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %0, i64 0, i32 2, i32 0, i32 0, i32 0, i32 0, i32 0
+  %3 = bitcast %"struct.base::internal::ThreadCache::Bucket"* %0 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %3, i8 0, i64 12, i1 false)
+  store atomic i8 0, i8* %2 monotonic, align 1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal11ThreadCache10FillBucketEm(%"class.base::internal::ThreadCache"* nocapture, i64) local_unnamed_addr #1 align 2 {
+  %3 = alloca i8, align 1
+  %4 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 3, i32 8
+  %5 = load i64, i64* %4, align 8
+  %6 = add i64 %5, 1
+  store i64 %6, i64* %4, align 8
+  %7 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 %1
+  %8 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 %1, i32 2, i32 0, i32 0, i32 0, i32 0, i32 0
+  %9 = load atomic i8, i8* %8 monotonic, align 1
+  %10 = lshr i8 %9, 3
+  %11 = zext i8 %10 to i32
+  %12 = icmp ugt i32 %11, 1
+  %13 = select i1 %12, i32 %11, i32 1
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %3) #13
+  store i8 -86, i8* %3, align 1
+  %14 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 4
+  %15 = load %"struct.base::PartitionRoot"*, %"struct.base::PartitionRoot"** %14, align 8
+  %16 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %15, i64 0, i32 8
+  %17 = getelementptr inbounds %"class.base::internal::MaybeSpinLock", %"class.base::internal::MaybeSpinLock"* %16, i64 0, i32 0
+  %18 = getelementptr inbounds %"class.base::internal::MaybeSpinLock", %"class.base::internal::MaybeSpinLock"* %16, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  br label %19
+
+19:                                               ; preds = %31, %2
+  %20 = phi i32 [ 0, %2 ], [ %32, %31 ]
+  %21 = phi i32 [ 1, %2 ], [ %35, %31 ]
+  %22 = load atomic i32, i32* %18 monotonic, align 4
+  %23 = icmp eq i32 %22, 0
+  br i1 %23, label %24, label %27, !prof !2
+
+24:                                               ; preds = %19
+  %25 = cmpxchg weak i32* %18, i32 0, i32 1 acquire monotonic
+  %26 = extractvalue { i32, i1 } %25, 1
+  br i1 %26, label %42, label %27, !prof !3
+
+27:                                               ; preds = %24, %19
+  %28 = icmp sgt i32 %21, 0
+  br i1 %28, label %37, label %31
+
+29:                                               ; preds = %37
+  %30 = add i32 %21, %20
+  br label %31
+
+31:                                               ; preds = %29, %27
+  %32 = phi i32 [ %20, %27 ], [ %30, %29 ]
+  %33 = shl i32 %21, 1
+  %34 = icmp slt i32 %33, 64
+  %35 = select i1 %34, i32 %33, i32 64
+  %36 = icmp slt i32 %32, 1000
+  br i1 %36, label %19, label %41
+
+37:                                               ; preds = %27, %37
+  %38 = phi i32 [ %39, %37 ], [ 0, %27 ]
+  tail call void asm sideeffect "pause", "~{dirflag},~{fpsr},~{flags}"() #13, !srcloc !4
+  %39 = add nuw nsw i32 %38, 1
+  %40 = icmp eq i32 %39, %21
+  br i1 %40, label %29, label %37
+
+41:                                               ; preds = %31
+  tail call void @_ZN4base8internal13SpinningMutex8LockSlowEv(%"class.base::internal::SpinningMutex"* %17) #13
+  br label %42
+
+42:                                               ; preds = %24, %41
+  %43 = icmp sgt i32 %13, 0
+  br i1 %43, label %44, label %102
+
+44:                                               ; preds = %42
+  %45 = bitcast %"struct.base::internal::ThreadCache::Bucket"* %7 to i64*
+  %46 = bitcast %"struct.base::internal::ThreadCache::Bucket"* %7 to i8**
+  %47 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 %1, i32 1
+  br label %48
+
+48:                                               ; preds = %44, %88
+  %49 = phi i32 [ 0, %44 ], [ %100, %88 ]
+  %50 = phi i64 [ 0, %44 ], [ %90, %88 ]
+  %51 = load %"struct.base::PartitionRoot"*, %"struct.base::PartitionRoot"** %14, align 8
+  %52 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %51, i64 0, i32 10, i64 %1
+  %53 = getelementptr inbounds %"struct.base::internal::PartitionBucket", %"struct.base::internal::PartitionBucket"* %52, i64 0, i32 0
+  %54 = load %"struct.base::internal::SlotSpanMetadata"*, %"struct.base::internal::SlotSpanMetadata"** %53, align 8
+  %55 = bitcast %"struct.base::internal::SlotSpanMetadata"* %54 to i8**
+  %56 = load i8*, i8** %55, align 1
+  %57 = icmp eq i8* %56, null
+  br i1 %57, label %82, label %58, !prof !5
+
+58:                                               ; preds = %48
+  %59 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %54, i64 0, i32 0
+  store i8 0, i8* %3, align 1
+  %60 = bitcast i8* %56 to %"struct.base::internal::EncodedPartitionFreelistEntry"**
+  %61 = load %"struct.base::internal::EncodedPartitionFreelistEntry"*, %"struct.base::internal::EncodedPartitionFreelistEntry"** %60, align 8
+  %62 = icmp eq %"struct.base::internal::EncodedPartitionFreelistEntry"* %61, null
+  %63 = ptrtoint %"struct.base::internal::EncodedPartitionFreelistEntry"* %61 to i64
+  br i1 %62, label %64, label %66
+
+64:                                               ; preds = %58
+  %65 = call i64 @llvm.bswap.i64(i64 %63) #13
+  br label %76
+
+66:                                               ; preds = %58
+  %67 = xor i64 %63, -1
+  %68 = getelementptr inbounds i8, i8* %56, i64 8
+  %69 = bitcast i8* %68 to i64*
+  %70 = load i64, i64* %69, align 8
+  %71 = icmp eq i64 %70, %67
+  br i1 %71, label %73, label %72, !prof !3
+
+72:                                               ; preds = %66
+  call fastcc void @_ZN4base8internal12_GLOBAL__N_126FreelistCorruptionDetectedEv() #15
+  unreachable
+
+73:                                               ; preds = %66
+  %74 = call i64 @llvm.bswap.i64(i64 %63) #13
+  %75 = inttoptr i64 %74 to i8*
+  call void @llvm.prefetch(i8* nonnull %75, i32 0, i32 3, i32 1) #13
+  br label %76
+
+76:                                               ; preds = %73, %64
+  %77 = phi i64 [ %65, %64 ], [ %74, %73 ]
+  %78 = inttoptr i64 %77 to %"class.base::internal::PartitionFreelistEntry"*
+  store %"class.base::internal::PartitionFreelistEntry"* %78, %"class.base::internal::PartitionFreelistEntry"** %59, align 1
+  %79 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %54, i64 0, i32 3
+  %80 = load i16, i16* %79, align 1
+  %81 = add i16 %80, 1
+  store i16 %81, i16* %79, align 1
+  br label %88
+
+82:                                               ; preds = %48
+  %83 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %51, i64 0, i32 10, i64 %1, i32 3
+  %84 = load i32, i32* %83, align 8
+  %85 = zext i32 %84 to i64
+  %86 = call i8* @_ZN4base8internal15PartitionBucketILb1EE13SlowPathAllocEPNS_13PartitionRootILb1EEEimmPb(%"struct.base::internal::PartitionBucket"* %52, %"struct.base::PartitionRoot"* %51, i32 9, i64 %85, i64 16384, i8* nonnull %3) #13
+  %87 = icmp eq i8* %86, null
+  br i1 %87, label %102, label %88, !prof !5
+
+88:                                               ; preds = %82, %76
+  %89 = phi i8* [ %56, %76 ], [ %86, %82 ]
+  %90 = add nuw nsw i64 %50, 1
+  %91 = load i64, i64* %45, align 8
+  %92 = call i64 @llvm.bswap.i64(i64 %91) #13
+  %93 = inttoptr i64 %92 to %"struct.base::internal::EncodedPartitionFreelistEntry"*
+  %94 = bitcast i8* %89 to %"struct.base::internal::EncodedPartitionFreelistEntry"**
+  store %"struct.base::internal::EncodedPartitionFreelistEntry"* %93, %"struct.base::internal::EncodedPartitionFreelistEntry"** %94, align 8
+  %95 = xor i64 %92, -1
+  %96 = getelementptr inbounds i8, i8* %89, i64 8
+  %97 = bitcast i8* %96 to i64*
+  store i64 %95, i64* %97, align 8
+  store i8* %89, i8** %46, align 8
+  %98 = load i8, i8* %47, align 8
+  %99 = add i8 %98, 1
+  store i8 %99, i8* %47, align 8
+  %100 = add nuw nsw i32 %49, 1
+  %101 = icmp ult i32 %100, %13
+  br i1 %101, label %48, label %102
+
+102:                                              ; preds = %88, %82, %42
+  %103 = phi i64 [ 0, %42 ], [ %50, %82 ], [ %90, %88 ]
+  %104 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 %1, i32 3
+  %105 = load i16, i16* %104, align 2
+  %106 = zext i16 %105 to i64
+  %107 = mul i64 %103, %106
+  %108 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 1
+  %109 = load i64, i64* %108, align 8
+  %110 = add i64 %107, %109
+  store i64 %110, i64* %108, align 8
+  %111 = atomicrmw xchg i32* %18, i32 0 release
+  %112 = icmp eq i32 %111, 2
+  br i1 %112, label %113, label %114, !prof !5
+
+113:                                              ; preds = %102
+  call void @_ZN4base8internal13SpinningMutex9FutexWakeEv(%"class.base::internal::SpinningMutex"* %17) #13
+  br label %114
+
+114:                                              ; preds = %102, %113
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %3) #13
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal11ThreadCache11ClearBucketERNS1_6BucketEm(%"class.base::internal::ThreadCache"* nocapture, %"struct.base::internal::ThreadCache::Bucket"* nocapture dereferenceable(16), i64) local_unnamed_addr #1 align 2 {
+  %4 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %1, i64 0, i32 1
+  %5 = load i8, i8* %4, align 8
+  %6 = icmp ne i8 %5, 0
+  %7 = zext i8 %5 to i64
+  %8 = icmp ugt i64 %7, %2
+  %9 = and i1 %6, %8
+  br i1 %9, label %10, label %53
+
+10:                                               ; preds = %3
+  %11 = icmp eq i64 %2, 0
+  %12 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %1, i64 0, i32 0
+  %13 = load %"class.base::internal::PartitionFreelistEntry"*, %"class.base::internal::PartitionFreelistEntry"** %12, align 8
+  br i1 %11, label %14, label %15
+
+14:                                               ; preds = %10
+  tail call void @_ZN4base8internal11ThreadCache9FreeAfterEPNS0_22PartitionFreelistEntryE(%"class.base::internal::ThreadCache"* %0, %"class.base::internal::PartitionFreelistEntry"* %13)
+  store %"class.base::internal::PartitionFreelistEntry"* null, %"class.base::internal::PartitionFreelistEntry"** %12, align 8
+  br label %42
+
+15:                                               ; preds = %10, %33
+  %16 = phi i64 [ %36, %33 ], [ 1, %10 ]
+  %17 = phi %"class.base::internal::PartitionFreelistEntry"* [ %35, %33 ], [ %13, %10 ]
+  %18 = getelementptr inbounds %"class.base::internal::PartitionFreelistEntry", %"class.base::internal::PartitionFreelistEntry"* %17, i64 0, i32 0
+  %19 = load %"struct.base::internal::EncodedPartitionFreelistEntry"*, %"struct.base::internal::EncodedPartitionFreelistEntry"** %18, align 8
+  %20 = icmp eq %"struct.base::internal::EncodedPartitionFreelistEntry"* %19, null
+  %21 = ptrtoint %"struct.base::internal::EncodedPartitionFreelistEntry"* %19 to i64
+  br i1 %20, label %22, label %24
+
+22:                                               ; preds = %15
+  %23 = tail call i64 @llvm.bswap.i64(i64 %21) #13
+  br label %33
+
+24:                                               ; preds = %15
+  %25 = xor i64 %21, -1
+  %26 = getelementptr inbounds %"class.base::internal::PartitionFreelistEntry", %"class.base::internal::PartitionFreelistEntry"* %17, i64 0, i32 1
+  %27 = load i64, i64* %26, align 8
+  %28 = icmp eq i64 %27, %25
+  br i1 %28, label %30, label %29, !prof !3
+
+29:                                               ; preds = %24
+  tail call fastcc void @_ZN4base8internal12_GLOBAL__N_126FreelistCorruptionDetectedEv() #15
+  unreachable
+
+30:                                               ; preds = %24
+  %31 = tail call i64 @llvm.bswap.i64(i64 %21) #13
+  %32 = inttoptr i64 %31 to i8*
+  tail call void @llvm.prefetch(i8* nonnull %32, i32 0, i32 3, i32 1) #13
+  br label %33
+
+33:                                               ; preds = %22, %30
+  %34 = phi i64 [ %23, %22 ], [ %31, %30 ]
+  %35 = inttoptr i64 %34 to %"class.base::internal::PartitionFreelistEntry"*
+  %36 = add i64 %16, 1
+  %37 = icmp eq i64 %16, %2
+  br i1 %37, label %38, label %15
+
+38:                                               ; preds = %33
+  %39 = getelementptr inbounds %"class.base::internal::PartitionFreelistEntry", %"class.base::internal::PartitionFreelistEntry"* %17, i64 0, i32 0
+  %40 = inttoptr i64 %34 to %"class.base::internal::PartitionFreelistEntry"*
+  tail call void @_ZN4base8internal11ThreadCache9FreeAfterEPNS0_22PartitionFreelistEntryE(%"class.base::internal::ThreadCache"* %0, %"class.base::internal::PartitionFreelistEntry"* %40)
+  store %"struct.base::internal::EncodedPartitionFreelistEntry"* null, %"struct.base::internal::EncodedPartitionFreelistEntry"** %39, align 8
+  %41 = getelementptr inbounds %"class.base::internal::PartitionFreelistEntry", %"class.base::internal::PartitionFreelistEntry"* %17, i64 0, i32 1
+  store i64 -1, i64* %41, align 8
+  br label %42
+
+42:                                               ; preds = %38, %14
+  %43 = trunc i64 %2 to i8
+  store i8 %43, i8* %4, align 8
+  %44 = and i64 %2, 255
+  %45 = sub nsw i64 %7, %44
+  %46 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %1, i64 0, i32 3
+  %47 = load i16, i16* %46, align 2
+  %48 = zext i16 %47 to i64
+  %49 = mul nsw i64 %45, %48
+  %50 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 1
+  %51 = load i64, i64* %50, align 8
+  %52 = sub i64 %51, %49
+  store i64 %52, i64* %50, align 8
+  br label %53
+
+53:                                               ; preds = %3, %42
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal11ThreadCache9FreeAfterEPNS0_22PartitionFreelistEntryE(%"class.base::internal::ThreadCache"* nocapture readonly, %"class.base::internal::PartitionFreelistEntry"*) local_unnamed_addr #1 align 2 {
+  %3 = alloca %"struct.base::internal::DeferredUnmap", align 8
+  %4 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 4
+  %5 = load %"struct.base::PartitionRoot"*, %"struct.base::PartitionRoot"** %4, align 8
+  %6 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %5, i64 0, i32 8
+  %7 = getelementptr inbounds %"class.base::internal::MaybeSpinLock", %"class.base::internal::MaybeSpinLock"* %6, i64 0, i32 0
+  %8 = getelementptr inbounds %"class.base::internal::MaybeSpinLock", %"class.base::internal::MaybeSpinLock"* %6, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  br label %9
+
+9:                                                ; preds = %21, %2
+  %10 = phi i32 [ 0, %2 ], [ %22, %21 ]
+  %11 = phi i32 [ 1, %2 ], [ %25, %21 ]
+  %12 = load atomic i32, i32* %8 monotonic, align 4
+  %13 = icmp eq i32 %12, 0
+  br i1 %13, label %14, label %17, !prof !2
+
+14:                                               ; preds = %9
+  %15 = cmpxchg weak i32* %8, i32 0, i32 1 acquire monotonic
+  %16 = extractvalue { i32, i1 } %15, 1
+  br i1 %16, label %32, label %17, !prof !3
+
+17:                                               ; preds = %14, %9
+  %18 = icmp sgt i32 %11, 0
+  br i1 %18, label %27, label %21
+
+19:                                               ; preds = %27
+  %20 = add i32 %11, %10
+  br label %21
+
+21:                                               ; preds = %19, %17
+  %22 = phi i32 [ %10, %17 ], [ %20, %19 ]
+  %23 = shl i32 %11, 1
+  %24 = icmp slt i32 %23, 64
+  %25 = select i1 %24, i32 %23, i32 64
+  %26 = icmp slt i32 %22, 1000
+  br i1 %26, label %9, label %31
+
+27:                                               ; preds = %17, %27
+  %28 = phi i32 [ %29, %27 ], [ 0, %17 ]
+  tail call void asm sideeffect "pause", "~{dirflag},~{fpsr},~{flags}"() #13, !srcloc !4
+  %29 = add nuw nsw i32 %28, 1
+  %30 = icmp eq i32 %29, %11
+  br i1 %30, label %19, label %27
+
+31:                                               ; preds = %21
+  tail call void @_ZN4base8internal13SpinningMutex8LockSlowEv(%"class.base::internal::SpinningMutex"* %7) #13
+  br label %32
+
+32:                                               ; preds = %14, %31
+  %33 = icmp eq %"class.base::internal::PartitionFreelistEntry"* %1, null
+  br i1 %33, label %102, label %34
+
+34:                                               ; preds = %32
+  %35 = bitcast %"struct.base::internal::DeferredUnmap"* %3 to i8*
+  %36 = getelementptr inbounds %"struct.base::internal::DeferredUnmap", %"struct.base::internal::DeferredUnmap"* %3, i64 0, i32 0
+  %37 = getelementptr inbounds %"struct.base::internal::DeferredUnmap", %"struct.base::internal::DeferredUnmap"* %3, i64 0, i32 1
+  br label %38
+
+38:                                               ; preds = %34, %100
+  %39 = phi %"class.base::internal::PartitionFreelistEntry"* [ %1, %34 ], [ %58, %100 ]
+  %40 = bitcast %"class.base::internal::PartitionFreelistEntry"* %39 to i8*
+  %41 = getelementptr inbounds %"class.base::internal::PartitionFreelistEntry", %"class.base::internal::PartitionFreelistEntry"* %39, i64 0, i32 0
+  %42 = load %"struct.base::internal::EncodedPartitionFreelistEntry"*, %"struct.base::internal::EncodedPartitionFreelistEntry"** %41, align 8
+  %43 = icmp eq %"struct.base::internal::EncodedPartitionFreelistEntry"* %42, null
+  %44 = ptrtoint %"struct.base::internal::EncodedPartitionFreelistEntry"* %42 to i64
+  br i1 %43, label %45, label %47
+
+45:                                               ; preds = %38
+  %46 = call i64 @llvm.bswap.i64(i64 %44) #13
+  br label %56
+
+47:                                               ; preds = %38
+  %48 = xor i64 %44, -1
+  %49 = getelementptr inbounds %"class.base::internal::PartitionFreelistEntry", %"class.base::internal::PartitionFreelistEntry"* %39, i64 0, i32 1
+  %50 = load i64, i64* %49, align 8
+  %51 = icmp eq i64 %50, %48
+  br i1 %51, label %53, label %52, !prof !3
+
+52:                                               ; preds = %47
+  call fastcc void @_ZN4base8internal12_GLOBAL__N_126FreelistCorruptionDetectedEv() #15
+  unreachable
+
+53:                                               ; preds = %47
+  %54 = call i64 @llvm.bswap.i64(i64 %44) #13
+  %55 = inttoptr i64 %54 to i8*
+  call void @llvm.prefetch(i8* nonnull %55, i32 0, i32 3, i32 1) #13
+  br label %56
+
+56:                                               ; preds = %45, %53
+  %57 = phi i64 [ %46, %45 ], [ %54, %53 ]
+  %58 = inttoptr i64 %57 to %"class.base::internal::PartitionFreelistEntry"*
+  %59 = ptrtoint %"class.base::internal::PartitionFreelistEntry"* %39 to i64
+  %60 = and i64 %59, -2097152
+  %61 = or i64 %60, 4096
+  %62 = inttoptr i64 %61 to i8*
+  %63 = lshr i64 %59, 9
+  %64 = and i64 %63, 4064
+  %65 = getelementptr inbounds i8, i8* %62, i64 %64
+  %66 = bitcast i8* %65 to %"struct.base::internal::PartitionPage"*
+  %67 = getelementptr inbounds i8, i8* %65, i64 30
+  %68 = load i8, i8* %67, align 2
+  %69 = zext i8 %68 to i64
+  %70 = sub nsw i64 0, %69
+  %71 = getelementptr inbounds %"struct.base::internal::PartitionPage", %"struct.base::internal::PartitionPage"* %66, i64 %70, i32 0
+  %72 = bitcast %union.anon* %71 to %"struct.base::internal::SlotSpanMetadata"*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %35) #13
+  %73 = bitcast %union.anon* %71 to i8**
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %35, i8 -86, i64 16, i1 false) #13
+  %74 = load i8*, i8** %73, align 1
+  %75 = icmp eq i8* %74, %40
+  br i1 %75, label %78, label %76, !prof !5
+
+76:                                               ; preds = %56
+  %77 = ptrtoint i8* %74 to i64
+  br label %81
+
+78:                                               ; preds = %56
+  call void @_ZN7logging8RawCheckEPKc(i8* getelementptr inbounds ([105 x i8], [105 x i8]* @.str.11, i64 0, i64 0)) #13
+  %79 = getelementptr inbounds %union.anon, %union.anon* %71, i64 0, i32 0, i32 0
+  %80 = load i64, i64* %79, align 1
+  br label %81
+
+81:                                               ; preds = %78, %76
+  %82 = phi i64 [ %77, %76 ], [ %80, %78 ]
+  %83 = call i64 @llvm.bswap.i64(i64 %82) #13
+  %84 = inttoptr i64 %83 to %"struct.base::internal::EncodedPartitionFreelistEntry"*
+  store %"struct.base::internal::EncodedPartitionFreelistEntry"* %84, %"struct.base::internal::EncodedPartitionFreelistEntry"** %41, align 8
+  %85 = xor i64 %83, -1
+  %86 = getelementptr inbounds %"class.base::internal::PartitionFreelistEntry", %"class.base::internal::PartitionFreelistEntry"* %39, i64 0, i32 1
+  store i64 %85, i64* %86, align 8
+  %87 = bitcast %union.anon* %71 to %"class.base::internal::PartitionFreelistEntry"**
+  store %"class.base::internal::PartitionFreelistEntry"* %39, %"class.base::internal::PartitionFreelistEntry"** %87, align 1
+  %88 = getelementptr inbounds %"struct.base::internal::PartitionPage", %"struct.base::internal::PartitionPage"* %66, i64 %70, i32 0, i32 1, i64 16
+  %89 = bitcast i8* %88 to i16*
+  %90 = load i16, i16* %89, align 1
+  %91 = add i16 %90, -1
+  store i16 %91, i16* %89, align 1
+  %92 = icmp slt i16 %91, 1
+  br i1 %92, label %94, label %93, !prof !5
+
+93:                                               ; preds = %81
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %35, i8 0, i64 16, i1 false) #13
+  br label %100
+
+94:                                               ; preds = %81
+  %95 = call { i8*, i64 } @_ZN4base8internal16SlotSpanMetadataILb1EE12FreeSlowPathEv(%"struct.base::internal::SlotSpanMetadata"* %72) #13
+  %96 = extractvalue { i8*, i64 } %95, 0
+  %97 = extractvalue { i8*, i64 } %95, 1
+  store i8* %96, i8** %36, align 8
+  store i64 %97, i64* %37, align 8
+  %98 = icmp eq i8* %96, null
+  br i1 %98, label %100, label %99, !prof !3
+
+99:                                               ; preds = %94
+  call void @_ZN4base8internal13DeferredUnmap5UnmapEv(%"struct.base::internal::DeferredUnmap"* nonnull %3) #13
+  br label %100
+
+100:                                              ; preds = %93, %94, %99
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %35) #13
+  %101 = icmp eq i64 %57, 0
+  br i1 %101, label %102, label %38
+
+102:                                              ; preds = %100, %32
+  %103 = atomicrmw xchg i32* %8, i32 0 release
+  %104 = icmp eq i32 %103, 2
+  br i1 %104, label %105, label %106, !prof !5
+
+105:                                              ; preds = %102
+  call void @_ZN4base8internal13SpinningMutex9FutexWakeEv(%"class.base::internal::SpinningMutex"* %7) #13
+  br label %106
+
+106:                                              ; preds = %102, %105
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal11ThreadCache15ResetForTestingEv(%"class.base::internal::ThreadCache"*) local_unnamed_addr #1 align 2 {
+  %2 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 3, i32 0
+  %3 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 2, i32 0, i32 0, i32 0, i32 0
+  %4 = bitcast i64* %2 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %4, i8 0, i64 88, i1 false)
+  store atomic i8 0, i8* %3 monotonic, align 1
+  %5 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 0
+  %6 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 89
+  %7 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 1
+  br label %8
+
+8:                                                ; preds = %23, %1
+  %9 = phi %"struct.base::internal::ThreadCache::Bucket"* [ %5, %1 ], [ %24, %23 ]
+  %10 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %9, i64 0, i32 1
+  %11 = load i8, i8* %10, align 8
+  %12 = icmp eq i8 %11, 0
+  br i1 %12, label %23, label %13
+
+13:                                               ; preds = %8
+  %14 = zext i8 %11 to i64
+  %15 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %9, i64 0, i32 0
+  %16 = load %"class.base::internal::PartitionFreelistEntry"*, %"class.base::internal::PartitionFreelistEntry"** %15, align 8
+  tail call void @_ZN4base8internal11ThreadCache9FreeAfterEPNS0_22PartitionFreelistEntryE(%"class.base::internal::ThreadCache"* %0, %"class.base::internal::PartitionFreelistEntry"* %16) #13
+  store %"class.base::internal::PartitionFreelistEntry"* null, %"class.base::internal::PartitionFreelistEntry"** %15, align 8
+  store i8 0, i8* %10, align 8
+  %17 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %9, i64 0, i32 3
+  %18 = load i16, i16* %17, align 2
+  %19 = zext i16 %18 to i64
+  %20 = mul nuw nsw i64 %19, %14
+  %21 = load i64, i64* %7, align 8
+  %22 = sub i64 %21, %20
+  store i64 %22, i64* %7, align 8
+  br label %23
+
+23:                                               ; preds = %13, %8
+  %24 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %9, i64 1
+  %25 = icmp eq %"struct.base::internal::ThreadCache::Bucket"* %24, %6
+  br i1 %25, label %26, label %8
+
+26:                                               ; preds = %23
+  %27 = load i64, i64* %7, align 8
+  %28 = icmp eq i64 %27, 0
+  br i1 %28, label %30, label %29, !prof !3
+
+29:                                               ; preds = %26
+  tail call void @_ZN7logging8RawCheckEPKc(i8* getelementptr inbounds ([97 x i8], [97 x i8]* @.str.9, i64 0, i64 0)) #13
+  br label %30
+
+30:                                               ; preds = %26, %29
+  store atomic i8 0, i8* %3 monotonic, align 1
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden i64 @_ZNK4base8internal11ThreadCache12CachedMemoryEv(%"class.base::internal::ThreadCache"* readonly) local_unnamed_addr #7 align 2 {
+  %2 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 0
+  %3 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 89
+  br label %5
+
+4:                                                ; preds = %5
+  ret i64 %15
+
+5:                                                ; preds = %18, %1
+  %6 = phi i64 [ 0, %1 ], [ %42, %18 ]
+  %7 = phi %"struct.base::internal::ThreadCache::Bucket"* [ %2, %1 ], [ %43, %18 ]
+  %8 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %7, i64 0, i32 1
+  %9 = load i8, i8* %8, align 8
+  %10 = zext i8 %9 to i64
+  %11 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %7, i64 0, i32 3
+  %12 = load i16, i16* %11, align 2
+  %13 = zext i16 %12 to i64
+  %14 = mul nuw nsw i64 %13, %10
+  %15 = add i64 %14, %6
+  %16 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %7, i64 1
+  %17 = icmp eq %"struct.base::internal::ThreadCache::Bucket"* %16, %3
+  br i1 %17, label %4, label %18
+
+18:                                               ; preds = %5
+  %19 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %7, i64 1, i32 1
+  %20 = load i8, i8* %19, align 8
+  %21 = zext i8 %20 to i64
+  %22 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %7, i64 1, i32 3
+  %23 = load i16, i16* %22, align 2
+  %24 = zext i16 %23 to i64
+  %25 = mul nuw nsw i64 %24, %21
+  %26 = add i64 %25, %15
+  %27 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %7, i64 2, i32 1
+  %28 = load i8, i8* %27, align 8
+  %29 = zext i8 %28 to i64
+  %30 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %7, i64 2, i32 3
+  %31 = load i16, i16* %30, align 2
+  %32 = zext i16 %31 to i64
+  %33 = mul nuw nsw i64 %32, %29
+  %34 = add i64 %33, %26
+  %35 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %7, i64 3, i32 1
+  %36 = load i8, i8* %35, align 8
+  %37 = zext i8 %36 to i64
+  %38 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %7, i64 3, i32 3
+  %39 = load i16, i16* %38, align 2
+  %40 = zext i16 %39 to i64
+  %41 = mul nuw nsw i64 %40, %37
+  %42 = add i64 %41, %34
+  %43 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %7, i64 4
+  br label %5
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal11ThreadCache13PurgeInternalEv(%"class.base::internal::ThreadCache"*) local_unnamed_addr #1 align 2 {
+  %2 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 2, i32 0, i32 0, i32 0, i32 0
+  store atomic i8 0, i8* %2 monotonic, align 1
+  %3 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 0
+  %4 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 0, i64 89
+  %5 = getelementptr inbounds %"class.base::internal::ThreadCache", %"class.base::internal::ThreadCache"* %0, i64 0, i32 1
+  br label %7
+
+6:                                                ; preds = %22
+  ret void
+
+7:                                                ; preds = %1, %22
+  %8 = phi %"struct.base::internal::ThreadCache::Bucket"* [ %3, %1 ], [ %23, %22 ]
+  %9 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %8, i64 0, i32 1
+  %10 = load i8, i8* %9, align 8
+  %11 = icmp eq i8 %10, 0
+  br i1 %11, label %22, label %12
+
+12:                                               ; preds = %7
+  %13 = zext i8 %10 to i64
+  %14 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %8, i64 0, i32 0
+  %15 = load %"class.base::internal::PartitionFreelistEntry"*, %"class.base::internal::PartitionFreelistEntry"** %14, align 8
+  tail call void @_ZN4base8internal11ThreadCache9FreeAfterEPNS0_22PartitionFreelistEntryE(%"class.base::internal::ThreadCache"* %0, %"class.base::internal::PartitionFreelistEntry"* %15) #13
+  store %"class.base::internal::PartitionFreelistEntry"* null, %"class.base::internal::PartitionFreelistEntry"** %14, align 8
+  store i8 0, i8* %9, align 8
+  %16 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %8, i64 0, i32 3
+  %17 = load i16, i16* %16, align 2
+  %18 = zext i16 %17 to i64
+  %19 = mul nuw nsw i64 %18, %13
+  %20 = load i64, i64* %5, align 8
+  %21 = sub i64 %20, %19
+  store i64 %21, i64* %5, align 8
+  br label %22
+
+22:                                               ; preds = %7, %12
+  %23 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %8, i64 1
+  %24 = icmp eq %"struct.base::internal::ThreadCache::Bucket"* %23, %4
+  br i1 %24, label %6, label %7
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal11ThreadCache18PurgeCurrentThreadEv() local_unnamed_addr #1 align 2 {
+  %1 = load i32, i32* @_ZN4base8internal18g_thread_cache_keyE, align 4
+  %2 = tail call i8* @pthread_getspecific(i32 %1) #13
+  %3 = bitcast i8* %2 to %"class.base::internal::ThreadCache"*
+  %4 = icmp ugt i8* %2, inttoptr (i64 1 to i8*)
+  br i1 %4, label %5, label %29
+
+5:                                                ; preds = %0
+  %6 = getelementptr inbounds i8, i8* %2, i64 1432
+  store atomic i8 0, i8* %6 monotonic, align 1
+  %7 = bitcast i8* %2 to %"struct.base::internal::ThreadCache::Bucket"*
+  %8 = getelementptr inbounds i8, i8* %2, i64 1424
+  %9 = bitcast i8* %8 to %"struct.base::internal::ThreadCache::Bucket"*
+  %10 = bitcast i8* %8 to i64*
+  br label %11
+
+11:                                               ; preds = %26, %5
+  %12 = phi %"struct.base::internal::ThreadCache::Bucket"* [ %7, %5 ], [ %27, %26 ]
+  %13 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %12, i64 0, i32 1
+  %14 = load i8, i8* %13, align 8
+  %15 = icmp eq i8 %14, 0
+  br i1 %15, label %26, label %16
+
+16:                                               ; preds = %11
+  %17 = zext i8 %14 to i64
+  %18 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %12, i64 0, i32 0
+  %19 = load %"class.base::internal::PartitionFreelistEntry"*, %"class.base::internal::PartitionFreelistEntry"** %18, align 8
+  tail call void @_ZN4base8internal11ThreadCache9FreeAfterEPNS0_22PartitionFreelistEntryE(%"class.base::internal::ThreadCache"* %3, %"class.base::internal::PartitionFreelistEntry"* %19) #13
+  store %"class.base::internal::PartitionFreelistEntry"* null, %"class.base::internal::PartitionFreelistEntry"** %18, align 8
+  store i8 0, i8* %13, align 8
+  %20 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %12, i64 0, i32 3
+  %21 = load i16, i16* %20, align 2
+  %22 = zext i16 %21 to i64
+  %23 = mul nuw nsw i64 %22, %17
+  %24 = load i64, i64* %10, align 8
+  %25 = sub i64 %24, %23
+  store i64 %25, i64* %10, align 8
+  br label %26
+
+26:                                               ; preds = %16, %11
+  %27 = getelementptr inbounds %"struct.base::internal::ThreadCache::Bucket", %"struct.base::internal::ThreadCache::Bucket"* %12, i64 1
+  %28 = icmp eq %"struct.base::internal::ThreadCache::Bucket"* %27, %9
+  br i1 %28, label %29, label %11
+
+29:                                               ; preds = %26, %0
+  ret void
+}
+
+; Function Attrs: nounwind
+declare i8* @pthread_getspecific(i32) local_unnamed_addr #5
+
+declare i32 @_ZN4base14PlatformThread9CurrentIdEv() local_unnamed_addr #4
+
+declare i64 @_ZN4base6subtle28TimeTicksNowIgnoringOverrideEv() local_unnamed_addr #4
+
+declare i64 @_ZN20trace_event_internal37AddTraceEventWithThreadIdAndTimestampEcPKhPKcS3_yyiRKN4base9TimeTicksEPNS4_11trace_event14TraceArgumentsEj(i8 signext, i8*, i8*, i8*, i64, i64, i32, %"class.base::TimeTicks"* dereferenceable(8), %"class.base::trace_event::TraceArguments"*, i32) local_unnamed_addr #4
+
+; Function Attrs: nounwind readnone speculatable
+declare { i64, i1 } @llvm.smul.with.overflow.i64(i64, i64) #8
+
+declare void @_ZN20trace_event_internal24UpdateTraceEventDurationEPKhPKcN4base11trace_event16TraceEventHandleE(i8*, i8*, i64) local_unnamed_addr #4
+
+; Function Attrs: nounwind
+declare i32 @pthread_key_create(i32*, void (i8*)*) local_unnamed_addr #5
+
+; Function Attrs: nounwind
+declare i32 @pthread_setspecific(i32, i8*) local_unnamed_addr #5
+
+; Function Attrs: nounwind readnone speculatable
+declare i64 @llvm.bswap.i64(i64) #8
+
+; Function Attrs: noinline noreturn nounwind ssp uwtable
+define internal fastcc void @_ZN4base8internal12_GLOBAL__N_126FreelistCorruptionDetectedEv() unnamed_addr #9 {
+  tail call void asm sideeffect "int3", "~{dirflag},~{fpsr},~{flags}"() #13, !srcloc !23
+  tail call void asm sideeffect "ud2", "~{dirflag},~{fpsr},~{flags}"() #13, !srcloc !24
+  unreachable
+}
+
+; Function Attrs: inaccessiblemem_or_argmemonly nounwind
+declare void @llvm.prefetch(i8* nocapture readonly, i32 immarg, i32 immarg, i32) #10
+
+declare void @_ZN4base8internal13SpinningMutex8LockSlowEv(%"class.base::internal::SpinningMutex"*) local_unnamed_addr #4
+
+declare void @_ZN4base8internal13SpinningMutex9FutexWakeEv(%"class.base::internal::SpinningMutex"*) local_unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal7InvokerINS0_9BindStateIMNS0_19ThreadCacheRegistryEFvvEJNS0_17UnretainedWrapperIS3_EEEEEFvvEE7RunOnceEPNS0_13BindStateBaseE(%"class.base::internal::BindStateBase"*) #1 comdat align 2 {
+  %2 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1
+  %3 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  %4 = bitcast void (%"class.base::internal::BindStateBase"*)** %3 to i8**
+  %5 = load i8*, i8** %4, align 8
+  %6 = bitcast %"class.base::internal::BindStateBase"* %2 to i64*
+  %7 = load i64, i64* %6, align 8
+  %8 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 1
+  %9 = bitcast void ()** %8 to i64*
+  %10 = load i64, i64* %9, align 8
+  %11 = getelementptr inbounds i8, i8* %5, i64 %10
+  %12 = bitcast i8* %11 to %"class.base::internal::ThreadCacheRegistry"*
+  %13 = and i64 %7, 1
+  %14 = icmp eq i64 %13, 0
+  br i1 %14, label %22, label %15
+
+15:                                               ; preds = %1
+  %16 = bitcast i8* %11 to i8**
+  %17 = load i8*, i8** %16, align 8
+  %18 = add i64 %7, -1
+  %19 = getelementptr i8, i8* %17, i64 %18
+  %20 = bitcast i8* %19 to void (%"class.base::internal::ThreadCacheRegistry"*)**
+  %21 = load void (%"class.base::internal::ThreadCacheRegistry"*)*, void (%"class.base::internal::ThreadCacheRegistry"*)** %20, align 8
+  br label %24
+
+22:                                               ; preds = %1
+  %23 = inttoptr i64 %7 to void (%"class.base::internal::ThreadCacheRegistry"*)*
+  br label %24
+
+24:                                               ; preds = %15, %22
+  %25 = phi void (%"class.base::internal::ThreadCacheRegistry"*)* [ %21, %15 ], [ %23, %22 ]
+  tail call void %25(%"class.base::internal::ThreadCacheRegistry"* %12) #13
+  ret void
+}
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #11
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal9BindStateIMNS0_19ThreadCacheRegistryEFvvEJNS0_17UnretainedWrapperIS2_EEEE7DestroyEPKNS0_13BindStateBaseE(%"class.base::internal::BindStateBase"*) #1 comdat align 2 {
+  %2 = icmp eq %"class.base::internal::BindStateBase"* %0, null
+  br i1 %2, label %5, label %3
+
+3:                                                ; preds = %1
+  %4 = bitcast %"class.base::internal::BindStateBase"* %0 to i8*
+  tail call void @_ZdlPv(i8* %4) #14
+  br label %5
+
+5:                                                ; preds = %3, %1
+  ret void
+}
+
+declare void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"*, void ()*, void (%"class.base::internal::BindStateBase"*)*) unnamed_addr #4
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #12
+
+; Function Attrs: nounwind readnone speculatable
+declare i64 @llvm.ctlz.i64(i64, i1 immarg) #8
+
+declare { i8*, i64 } @_ZN4base8internal16SlotSpanMetadataILb1EE12FreeSlowPathEv(%"struct.base::internal::SlotSpanMetadata"*) local_unnamed_addr #4
+
+declare void @_ZN4base8internal13DeferredUnmap5UnmapEv(%"struct.base::internal::DeferredUnmap"*) local_unnamed_addr #4
+
+declare i8* @_ZN4base8internal15PartitionBucketILb1EE13SlowPathAllocEPNS_13PartitionRootILb1EEEimmPb(%"struct.base::internal::PartitionBucket"*, %"struct.base::PartitionRoot"*, i32, i64, i64, i8*) local_unnamed_addr #4
+
+attributes #0 = { norecurse nounwind readnone ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { nofree norecurse nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nofree norecurse nounwind ssp uwtable writeonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { norecurse nounwind readonly ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { nounwind readnone speculatable }
+attributes #9 = { noinline noreturn nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #10 = { inaccessiblemem_or_argmemonly nounwind }
+attributes #11 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #12 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #13 = { nounwind }
+attributes #14 = { builtin nounwind }
+attributes #15 = { noreturn nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{!"branch_weights", i32 2146410443, i32 1073205}
+!3 = !{!"branch_weights", i32 2000, i32 1}
+!4 = !{i32 -2144559974}
+!5 = !{!"branch_weights", i32 1, i32 2000}
+!6 = !{i8 0, i8 2}
+!7 = !{!8, !10}
+!8 = distinct !{!8, !9, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMNS0_19ThreadCacheRegistryEFvvEJNS0_17UnretainedWrapperIS3_EEEEEDcOT0_DpOT1_: argument 0"}
+!9 = distinct !{!9, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMNS0_19ThreadCacheRegistryEFvvEJNS0_17UnretainedWrapperIS3_EEEEEDcOT0_DpOT1_"}
+!10 = distinct !{!10, !11, !"_ZN4base8BindOnceIMNS_8internal19ThreadCacheRegistryEFvvEJNS1_17UnretainedWrapperIS2_EEEEENS_12OnceCallbackINS1_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOS9_DpOSA_: argument 0"}
+!11 = distinct !{!11, !"_ZN4base8BindOnceIMNS_8internal19ThreadCacheRegistryEFvvEJNS1_17UnretainedWrapperIS2_EEEEENS_12OnceCallbackINS1_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOS9_DpOSA_"}
+!12 = !{!13, !15}
+!13 = distinct !{!13, !14, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMNS0_19ThreadCacheRegistryEFvvEJNS0_17UnretainedWrapperIS3_EEEEEDcOT0_DpOT1_: argument 0"}
+!14 = distinct !{!14, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMNS0_19ThreadCacheRegistryEFvvEJNS0_17UnretainedWrapperIS3_EEEEEDcOT0_DpOT1_"}
+!15 = distinct !{!15, !16, !"_ZN4base8BindOnceIMNS_8internal19ThreadCacheRegistryEFvvEJNS1_17UnretainedWrapperIS2_EEEEENS_12OnceCallbackINS1_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOS9_DpOSA_: argument 0"}
+!16 = distinct !{!16, !"_ZN4base8BindOnceIMNS_8internal19ThreadCacheRegistryEFvvEJNS1_17UnretainedWrapperIS2_EEEEENS_12OnceCallbackINS1_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOS9_DpOSA_"}
+!17 = !{!18, !20}
+!18 = distinct !{!18, !19, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMNS0_19ThreadCacheRegistryEFvvEJNS0_17UnretainedWrapperIS3_EEEEEDcOT0_DpOT1_: argument 0"}
+!19 = distinct !{!19, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMNS0_19ThreadCacheRegistryEFvvEJNS0_17UnretainedWrapperIS3_EEEEEDcOT0_DpOT1_"}
+!20 = distinct !{!20, !21, !"_ZN4base8BindOnceIMNS_8internal19ThreadCacheRegistryEFvvEJNS1_17UnretainedWrapperIS2_EEEEENS_12OnceCallbackINS1_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOS9_DpOSA_: argument 0"}
+!21 = distinct !{!21, !"_ZN4base8BindOnceIMNS_8internal19ThreadCacheRegistryEFvvEJNS1_17UnretainedWrapperIS2_EEEEENS_12OnceCallbackINS1_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOS9_DpOSA_"}
+!22 = !{i64 0, i64 65}
+!23 = !{i32 -2144888506}
+!24 = !{i32 -2144888485}

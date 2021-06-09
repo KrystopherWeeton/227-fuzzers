@@ -1,0 +1,1382 @@
+; ModuleID = '../../base/task/thread_pool/sequence.cc'
+source_filename = "../../base/task/thread_pool/sequence.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.base::internal::Sequence::Transaction" = type { %"class.base::internal::TaskSource::Transaction" }
+%"class.base::internal::TaskSource::Transaction" = type { %"class.base::internal::TaskSource"* }
+%"class.base::internal::TaskSource" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe", %"class.base::TaskTraits", %"struct.std::__1::atomic.1", [4 x i8], %"class.base::internal::CheckedLock", %"class.base::HeapHandle", %"class.base::TaskRunner"*, i32, [4 x i8] }>
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.0" }
+%"struct.std::__1::__atomic_base.0" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"class.base::TaskTraits" = type { %"struct.base::TaskTraitsExtensionStorage", i8, i8, i8, i8, i8, i8 }
+%"struct.base::TaskTraitsExtensionStorage" = type { i8, %"struct.std::__1::array" }
+%"struct.std::__1::array" = type { [8 x i8] }
+%"struct.std::__1::atomic.1" = type { %"struct.std::__1::__atomic_base.2" }
+%"struct.std::__1::__atomic_base.2" = type { %"struct.std::__1::__cxx_atomic_impl.3" }
+%"struct.std::__1::__cxx_atomic_impl.3" = type { %"struct.std::__1::__cxx_atomic_base_impl.4" }
+%"struct.std::__1::__cxx_atomic_base_impl.4" = type { i8 }
+%"class.base::internal::CheckedLock" = type { %"class.base::Lock" }
+%"class.base::Lock" = type { %"class.base::internal::LockImpl" }
+%"class.base::internal::LockImpl" = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%"class.base::HeapHandle" = type { i64 }
+%"class.base::TaskRunner" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe.5", [4 x i8] }>
+%"class.base::RefCountedThreadSafe.5" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::internal::Sequence" = type { %"class.base::internal::TaskSource.base", %"class.base::SequenceToken", %"class.std::__1::queue", %"struct.std::__1::atomic.8", i8, %"class.base::internal::SequenceLocalStorageMap" }
+%"class.base::internal::TaskSource.base" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe", %"class.base::TaskTraits", %"struct.std::__1::atomic.1", [4 x i8], %"class.base::internal::CheckedLock", %"class.base::HeapHandle", %"class.base::TaskRunner"*, i32 }>
+%"class.base::SequenceToken" = type { i32 }
+%"class.std::__1::queue" = type { %"class.base::circular_deque" }
+%"class.base::circular_deque" = type { %"class.base::internal::VectorBuffer", i64, i64 }
+%"class.base::internal::VectorBuffer" = type { %"struct.base::internal::Task"*, i64 }
+%"struct.base::internal::Task" = type { %"struct.base::PendingTask.base", [3 x i8] }
+%"struct.base::PendingTask.base" = type <{ %"class.base::OnceCallback", %"class.base::Location", %"class.base::TimeTicks", %"class.base::TimeTicks", %"struct.std::__1::array.7", i32, [4 x i8], i8*, i32, i8 }>
+%"class.base::OnceCallback" = type { %"class.base::internal::CallbackBase" }
+%"class.base::internal::CallbackBase" = type { %class.scoped_refptr }
+%class.scoped_refptr = type { %"class.base::internal::BindStateBase"* }
+%"class.base::internal::BindStateBase" = type { %"class.base::RefCountedThreadSafe.6", void ()*, void (%"class.base::internal::BindStateBase"*)*, i1 (%"class.base::internal::BindStateBase"*, i32)* }
+%"class.base::RefCountedThreadSafe.6" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::Location" = type { i8*, i8*, i32, i8* }
+%"class.base::TimeTicks" = type { %"class.base::time_internal::TimeBase" }
+%"class.base::time_internal::TimeBase" = type { i64 }
+%"struct.std::__1::array.7" = type { [4 x i8*] }
+%"struct.std::__1::atomic.8" = type { %"struct.std::__1::__atomic_base.9" }
+%"struct.std::__1::__atomic_base.9" = type { %"struct.std::__1::__cxx_atomic_impl.10" }
+%"struct.std::__1::__cxx_atomic_impl.10" = type { %"struct.std::__1::__cxx_atomic_base_impl.11" }
+%"struct.std::__1::__cxx_atomic_base_impl.11" = type { %"class.base::TimeTicks" }
+%"class.base::internal::SequenceLocalStorageMap" = type { %"class.base::flat_map" }
+%"class.base::flat_map" = type { %"class.base::internal::flat_tree" }
+%"class.base::internal::flat_tree" = type { %"class.std::__1::vector" }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"struct.std::__1::pair"*, %"struct.std::__1::pair"*, %"class.std::__1::__compressed_pair" }
+%"struct.std::__1::pair" = type opaque
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"struct.std::__1::pair"* }
+%"class.logging::CheckError" = type { %"class.logging::LogMessage"* }
+%"class.logging::LogMessage" = type { i32 (...)**, i32, %"class.std::__1::basic_ostringstream", i64, i8*, i32, %"class.base::ScopedClearLastErrorBase" }
+%"class.std::__1::basic_ostringstream" = type { %"class.std::__1::basic_ostream.base", %"class.std::__1::basic_stringbuf", %"class.std::__1::basic_ios.base" }
+%"class.std::__1::basic_ostream.base" = type { i32 (...)** }
+%"class.std::__1::basic_stringbuf" = type <{ %"class.std::__1::basic_streambuf", %"class.std::__1::basic_string", i8*, i32, [4 x i8] }>
+%"class.std::__1::basic_streambuf" = type { i32 (...)**, %"class.std::__1::locale", i8*, i8*, i8*, i8*, i8*, i8* }
+%"class.std::__1::locale" = type { %"class.std::__1::locale::__imp"* }
+%"class.std::__1::locale::__imp" = type opaque
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.13" }
+%"class.std::__1::__compressed_pair.13" = type { %"struct.std::__1::__compressed_pair_elem.14" }
+%"struct.std::__1::__compressed_pair_elem.14" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon }
+%union.anon = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.std::__1::basic_ios.base" = type <{ %"class.std::__1::ios_base", %"class.std::__1::basic_ostream"*, i32 }>
+%"class.std::__1::ios_base" = type { i32 (...)**, i32, i64, i64, i32, i32, i8*, i8*, void (i32, %"class.std::__1::ios_base"*, i32)**, i32*, i64, i64, i64*, i64, i64, i8**, i64, i64 }
+%"class.std::__1::basic_ostream" = type { i32 (...)**, %"class.std::__1::basic_ios.base" }
+%"class.base::ScopedClearLastErrorBase" = type { i32 }
+%"struct.base::PendingTask" = type <{ %"class.base::OnceCallback", %"class.base::Location", %"class.base::TimeTicks", %"class.base::TimeTicks", %"struct.std::__1::array.7", i32, [4 x i8], i8*, i32, i8, [3 x i8] }>
+%"class.base::internal::PooledParallelTaskRunner" = type { %"class.base::TaskRunner.base", %"class.base::TaskTraits", %"class.base::internal::PooledTaskRunnerDelegate"*, %"class.base::internal::CheckedLock", %"class.base::internal::flat_tree.18" }
+%"class.base::TaskRunner.base" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe.5" }>
+%"class.base::internal::PooledTaskRunnerDelegate" = type opaque
+%"class.base::internal::flat_tree.18" = type { %"class.std::__1::vector.19" }
+%"class.std::__1::vector.19" = type { %"class.std::__1::__vector_base.20" }
+%"class.std::__1::__vector_base.20" = type { %"class.base::internal::Sequence"**, %"class.base::internal::Sequence"**, %"class.std::__1::__compressed_pair.21" }
+%"class.std::__1::__compressed_pair.21" = type { %"struct.std::__1::__compressed_pair_elem.22" }
+%"struct.std::__1::__compressed_pair_elem.22" = type { %"class.base::internal::Sequence"** }
+%"class.base::internal::TaskSourceSortKey" = type { i8, i8, %"class.base::TimeTicks" }
+%"class.logging::CheckOpResult" = type { i8* }
+
+$_ZN4base14circular_dequeINS_8internal4TaskEE13DestructRangeEmm = comdat any
+
+$_ZN4base8internal12VectorBufferINS0_4TaskEE13DestructRangeIS2_Li0EEEvPS2_S5_ = comdat any
+
+$_ZN4base8internal12VectorBufferINS0_4TaskEEixEm = comdat any
+
+$_ZZN7logging15CheckOpValueStrIPN4base8internal4TaskEEENSt3__19enable_ifIXaasr4base8internal23SupportsOstreamOperatorIRKT_EE5valuentsr3std11is_functionINS5_14remove_pointerIS7_E4typeEEE5valueEPcE4typeES9_ENUlRNS5_13basic_ostreamIcNS5_11char_traitsIcEEEEPKvE_8__invokeESK_SM_ = comdat any
+
+$_ZN4base14circular_dequeINS_8internal4TaskEE25ExpandCapacityIfNecessaryEm = comdat any
+
+$_ZN4base14circular_dequeINS_8internal4TaskEE10MoveBufferERNS1_12VectorBufferIS2_EEmmPS5_PmS8_ = comdat any
+
+$_ZN4base8internal12VectorBufferINS0_4TaskEE9MoveRangeIS2_Li0EEEvPS2_S5_S5_ = comdat any
+
+$_ZNK4base8internal12VectorBufferINS0_4TaskEEixEm = comdat any
+
+$_ZN4base14circular_dequeINS_8internal4TaskEE25ShrinkCapacityIfNecessaryEv = comdat any
+
+@.str = private unnamed_addr constant [40 x i8] c"../../base/task/thread_pool/sequence.cc\00", align 1
+@.str.1 = private unnamed_addr constant [10 x i8] c"task.task\00", align 1
+@.str.2 = private unnamed_addr constant [6 x i8] c"Clear\00", align 1
+@_ZTVN4base8internal8SequenceE = hidden unnamed_addr constant { [11 x i8*] } { [11 x i8*] [i8* null, i8* null, i8* bitcast ({ i32, %"class.base::internal::SequenceLocalStorageMap"* } (%"class.base::internal::Sequence"*)* @_ZN4base8internal8Sequence23GetExecutionEnvironmentEv to i8*), i8* bitcast (i64 (%"class.base::internal::Sequence"*)* @_ZNK4base8internal8Sequence23GetRemainingConcurrencyEv to i8*), i8* bitcast ({ i64, i64 } (%"class.base::internal::Sequence"*, i1)* @_ZNK4base8internal8Sequence10GetSortKeyEb to i8*), i8* bitcast (void (%"class.base::internal::Sequence"*)* @_ZN4base8internal8SequenceD2Ev to i8*), i8* bitcast (void (%"class.base::internal::Sequence"*)* @_ZN4base8internal8SequenceD0Ev to i8*), i8* bitcast (i32 (%"class.base::internal::Sequence"*)* @_ZN4base8internal8Sequence11WillRunTaskEv to i8*), i8* bitcast (void (%"struct.base::internal::Task"*, %"class.base::internal::Sequence"*, %"class.base::internal::TaskSource::Transaction"*)* @_ZN4base8internal8Sequence8TakeTaskEPNS0_10TaskSource11TransactionE to i8*), i8* bitcast (i1 (%"class.base::internal::Sequence"*, %"class.base::internal::TaskSource::Transaction"*)* @_ZN4base8internal8Sequence14DidProcessTaskEPNS0_10TaskSource11TransactionE to i8*), i8* bitcast (void (%"struct.base::internal::Task"*, %"class.base::internal::Sequence"*, %"class.base::internal::TaskSource::Transaction"*)* @_ZN4base8internal8Sequence5ClearEPNS0_10TaskSource11TransactionE to i8*)] }, align 8
+@.str.3 = private unnamed_addr constant [13 x i8] c"begin <= end\00", align 1
+@.str.4 = private unnamed_addr constant [38 x i8] c"../../base/containers/vector_buffer.h\00", align 1
+@.str.5 = private unnamed_addr constant [15 x i8] c"i <= capacity_\00", align 1
+@.str.6 = private unnamed_addr constant [41 x i8] c"!RangesOverlap(from_begin, from_end, to)\00", align 1
+
+@_ZN4base8internal8Sequence11TransactionC1EPS1_ = hidden unnamed_addr alias void (%"class.base::internal::Sequence::Transaction"*, %"class.base::internal::Sequence"*), void (%"class.base::internal::Sequence::Transaction"*, %"class.base::internal::Sequence"*)* @_ZN4base8internal8Sequence11TransactionC2EPS1_
+@_ZN4base8internal8Sequence11TransactionC1EOS2_ = hidden unnamed_addr alias void (%"class.base::internal::Sequence::Transaction"*, %"class.base::internal::Sequence::Transaction"*), void (%"class.base::internal::Sequence::Transaction"*, %"class.base::internal::Sequence::Transaction"*)* @_ZN4base8internal8Sequence11TransactionC2EOS2_
+@_ZN4base8internal8Sequence11TransactionD1Ev = hidden unnamed_addr alias void (%"class.base::internal::Sequence::Transaction"*), void (%"class.base::internal::Sequence::Transaction"*)* @_ZN4base8internal8Sequence11TransactionD2Ev
+@_ZN4base8internal8SequenceC1ERKNS_10TaskTraitsEPNS_10TaskRunnerENS0_23TaskSourceExecutionModeE = hidden unnamed_addr alias void (%"class.base::internal::Sequence"*, %"class.base::TaskTraits"*, %"class.base::TaskRunner"*, i32), void (%"class.base::internal::Sequence"*, %"class.base::TaskTraits"*, %"class.base::TaskRunner"*, i32)* @_ZN4base8internal8SequenceC2ERKNS_10TaskTraitsEPNS_10TaskRunnerENS0_23TaskSourceExecutionModeE
+@_ZN4base8internal8SequenceD1Ev = hidden unnamed_addr alias void (%"class.base::internal::Sequence"*), void (%"class.base::internal::Sequence"*)* @_ZN4base8internal8SequenceD2Ev
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal8Sequence11TransactionC2EPS1_(%"class.base::internal::Sequence::Transaction"*, %"class.base::internal::Sequence"*) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.base::internal::Sequence::Transaction", %"class.base::internal::Sequence::Transaction"* %0, i64 0, i32 0
+  %4 = bitcast %"class.base::internal::Sequence"* %1 to %"class.base::internal::TaskSource"*
+  tail call void @_ZN4base8internal10TaskSource11TransactionC2EPS1_(%"class.base::internal::TaskSource::Transaction"* %3, %"class.base::internal::TaskSource"* %4) #13
+  ret void
+}
+
+declare void @_ZN4base8internal10TaskSource11TransactionC2EPS1_(%"class.base::internal::TaskSource::Transaction"*, %"class.base::internal::TaskSource"*) unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal8Sequence11TransactionC2EOS2_(%"class.base::internal::Sequence::Transaction"*, %"class.base::internal::Sequence::Transaction"* dereferenceable(8)) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.base::internal::Sequence::Transaction", %"class.base::internal::Sequence::Transaction"* %0, i64 0, i32 0
+  %4 = getelementptr inbounds %"class.base::internal::Sequence::Transaction", %"class.base::internal::Sequence::Transaction"* %1, i64 0, i32 0
+  tail call void @_ZN4base8internal10TaskSource11TransactionC2EOS2_(%"class.base::internal::TaskSource::Transaction"* %3, %"class.base::internal::TaskSource::Transaction"* dereferenceable(8) %4) #13
+  ret void
+}
+
+declare void @_ZN4base8internal10TaskSource11TransactionC2EOS2_(%"class.base::internal::TaskSource::Transaction"*, %"class.base::internal::TaskSource::Transaction"* dereferenceable(8)) unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal10TaskSource11TransactionD2Ev(%"class.base::internal::TaskSource::Transaction"*) unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal8Sequence11TransactionD2Ev(%"class.base::internal::Sequence::Transaction"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.base::internal::Sequence::Transaction", %"class.base::internal::Sequence::Transaction"* %0, i64 0, i32 0
+  tail call void @_ZN4base8internal10TaskSource11TransactionD2Ev(%"class.base::internal::TaskSource::Transaction"* %2) #13
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden zeroext i1 @_ZNK4base8internal8Sequence11Transaction12WillPushTaskEv(%"class.base::internal::Sequence::Transaction"* nocapture readonly) local_unnamed_addr #3 align 2 {
+  %2 = bitcast %"class.base::internal::Sequence::Transaction"* %0 to %"class.base::internal::Sequence"**
+  %3 = load %"class.base::internal::Sequence"*, %"class.base::internal::Sequence"** %2, align 8
+  %4 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %3, i64 0, i32 2, i32 0, i32 1
+  %5 = load i64, i64* %4, align 8
+  %6 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %3, i64 0, i32 2, i32 0, i32 2
+  %7 = load i64, i64* %6, align 8
+  %8 = icmp eq i64 %5, %7
+  br i1 %8, label %9, label %13
+
+9:                                                ; preds = %1
+  %10 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %3, i64 0, i32 4
+  %11 = load i8, i8* %10, align 8, !range !2
+  %12 = icmp eq i8 %11, 0
+  br label %13
+
+13:                                               ; preds = %9, %1
+  %14 = phi i1 [ false, %1 ], [ %12, %9 ]
+  ret i1 %14
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal8Sequence11Transaction8PushTaskENS0_4TaskE(%"class.base::internal::Sequence::Transaction"* nocapture readonly, %"struct.base::internal::Task"*) local_unnamed_addr #0 align 2 {
+  %3 = alloca %"class.logging::CheckError", align 8
+  %4 = alloca %"class.base::OnceCallback", align 8
+  %5 = alloca %"class.base::OnceCallback", align 8
+  %6 = bitcast %"struct.base::internal::Task"* %1 to %"struct.base::PendingTask"*
+  %7 = getelementptr inbounds %"struct.base::internal::Task", %"struct.base::internal::Task"* %1, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %8 = load %"class.base::internal::BindStateBase"*, %"class.base::internal::BindStateBase"** %7, align 8
+  %9 = icmp eq %"class.base::internal::BindStateBase"* %8, null
+  br i1 %9, label %10, label %13
+
+10:                                               ; preds = %2
+  %11 = bitcast %"class.logging::CheckError"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %11) #13
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %3, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str, i64 0, i64 0), i32 40, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @.str.1, i64 0, i64 0)) #13
+  %12 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %3) #13
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %3) #13
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %11) #13
+  br label %13
+
+13:                                               ; preds = %2, %10
+  %14 = bitcast %"class.base::internal::Sequence::Transaction"* %0 to %"class.base::internal::Sequence"**
+  %15 = load %"class.base::internal::Sequence"*, %"class.base::internal::Sequence"** %14, align 8
+  %16 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %15, i64 0, i32 2, i32 0, i32 1
+  %17 = load i64, i64* %16, align 8
+  %18 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %15, i64 0, i32 2, i32 0, i32 2
+  %19 = load i64, i64* %18, align 8
+  %20 = icmp eq i64 %17, %19
+  br i1 %20, label %21, label %25
+
+21:                                               ; preds = %13
+  %22 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %15, i64 0, i32 4
+  %23 = load i8, i8* %22, align 8, !range !2
+  %24 = icmp eq i8 %23, 0
+  br label %25
+
+25:                                               ; preds = %13, %21
+  %26 = phi i1 [ false, %13 ], [ %24, %21 ]
+  %27 = bitcast %"class.base::OnceCallback"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %27) #13
+  %28 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %15, i64 0, i32 0, i32 2, i32 2
+  %29 = load i8, i8* %28, align 1
+  %30 = and i8 %29, 127
+  %31 = icmp eq i8 %30, 2
+  %32 = bitcast %"struct.base::internal::Task"* %1 to i64*
+  %33 = load i64, i64* %32, align 8
+  br i1 %31, label %34, label %41
+
+34:                                               ; preds = %25
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %7, align 8
+  %35 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %5, i64 0, i32 0, i32 0, i32 0
+  %36 = bitcast %"class.base::OnceCallback"* %4 to i64*
+  store i64 %33, i64* %36, align 8, !alias.scope !3
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %35, align 8, !noalias !3
+  %37 = getelementptr inbounds %"struct.base::internal::Task", %"struct.base::internal::Task"* %1, i64 0, i32 0, i32 0, i32 0
+  %38 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %4, i64 0, i32 0
+  %39 = call dereferenceable(8) %"class.base::internal::CallbackBase"* @_ZN4base8internal12CallbackBaseaSEOS1_(%"class.base::internal::CallbackBase"* %37, %"class.base::internal::CallbackBase"* nonnull dereferenceable(8) %38) #13
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %38) #13
+  %40 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %5, i64 0, i32 0
+  br label %46
+
+41:                                               ; preds = %25
+  %42 = bitcast %"class.base::OnceCallback"* %4 to i64*
+  store i64 %33, i64* %42, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %7, align 8
+  %43 = getelementptr inbounds %"struct.base::internal::Task", %"struct.base::internal::Task"* %1, i64 0, i32 0, i32 0, i32 0
+  %44 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %4, i64 0, i32 0
+  %45 = call dereferenceable(8) %"class.base::internal::CallbackBase"* @_ZN4base8internal12CallbackBaseaSEOS1_(%"class.base::internal::CallbackBase"* %43, %"class.base::internal::CallbackBase"* nonnull dereferenceable(8) %44) #13
+  br label %46
+
+46:                                               ; preds = %41, %34
+  %47 = phi %"class.base::internal::CallbackBase"* [ %44, %41 ], [ %40, %34 ]
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %47) #13
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %27) #13
+  %48 = load %"class.base::internal::Sequence"*, %"class.base::internal::Sequence"** %14, align 8
+  %49 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %48, i64 0, i32 2, i32 0, i32 1
+  %50 = load i64, i64* %49, align 8
+  %51 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %48, i64 0, i32 2, i32 0, i32 2
+  %52 = load i64, i64* %51, align 8
+  %53 = icmp eq i64 %50, %52
+  br i1 %53, label %54, label %58
+
+54:                                               ; preds = %46
+  %55 = call i64 @_ZNK4base11PendingTask23GetDesiredExecutionTimeEv(%"struct.base::PendingTask"* %6) #13
+  %56 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %48, i64 0, i32 3, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  store atomic i64 %55, i64* %56 monotonic, align 8
+  %57 = load %"class.base::internal::Sequence"*, %"class.base::internal::Sequence"** %14, align 8
+  br label %58
+
+58:                                               ; preds = %54, %46
+  %59 = phi %"class.base::internal::Sequence"* [ %57, %54 ], [ %48, %46 ]
+  %60 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %59, i64 0, i32 2
+  %61 = getelementptr inbounds %"class.std::__1::queue", %"class.std::__1::queue"* %60, i64 0, i32 0
+  call void @_ZN4base14circular_dequeINS_8internal4TaskEE25ExpandCapacityIfNecessaryEm(%"class.base::circular_deque"* %61, i64 1) #13
+  %62 = getelementptr inbounds %"class.std::__1::queue", %"class.std::__1::queue"* %60, i64 0, i32 0, i32 0
+  %63 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %59, i64 0, i32 2, i32 0, i32 2
+  %64 = load i64, i64* %63, align 8
+  %65 = call dereferenceable(112) %"struct.base::internal::Task"* @_ZN4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"* %62, i64 %64) #13
+  call void @_ZN4base8internal4TaskC1EOS1_(%"struct.base::internal::Task"* %65, %"struct.base::internal::Task"* dereferenceable(112) %1) #13
+  %66 = load i64, i64* %63, align 8
+  %67 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %59, i64 0, i32 2, i32 0, i32 0, i32 1
+  %68 = load i64, i64* %67, align 8
+  %69 = add i64 %68, -1
+  %70 = icmp eq i64 %66, %69
+  br i1 %70, label %71, label %72
+
+71:                                               ; preds = %58
+  store i64 0, i64* %63, align 8
+  br label %75
+
+72:                                               ; preds = %58
+  %73 = add i64 %66, 1
+  store i64 %73, i64* %63, align 8
+  %74 = icmp eq i64 %73, 0
+  br i1 %74, label %75, label %76
+
+75:                                               ; preds = %72, %71
+  br label %76
+
+76:                                               ; preds = %72, %75
+  %77 = phi i64 [ %69, %75 ], [ %66, %72 ]
+  %78 = call dereferenceable(112) %"struct.base::internal::Task"* @_ZNK4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"* %62, i64 %77) #13
+  br i1 %26, label %79, label %88
+
+79:                                               ; preds = %76
+  %80 = getelementptr inbounds %"class.base::internal::Sequence::Transaction", %"class.base::internal::Sequence::Transaction"* %0, i64 0, i32 0, i32 0
+  %81 = load %"class.base::internal::TaskSource"*, %"class.base::internal::TaskSource"** %80, align 8
+  %82 = getelementptr inbounds %"class.base::internal::TaskSource", %"class.base::internal::TaskSource"* %81, i64 0, i32 7
+  %83 = load %"class.base::TaskRunner"*, %"class.base::TaskRunner"** %82, align 8
+  %84 = icmp eq %"class.base::TaskRunner"* %83, null
+  br i1 %84, label %88, label %85
+
+85:                                               ; preds = %79
+  %86 = getelementptr inbounds %"class.base::TaskRunner", %"class.base::TaskRunner"* %83, i64 0, i32 1, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %87 = atomicrmw add i32* %86, i32 1 monotonic
+  br label %88
+
+88:                                               ; preds = %79, %85, %76
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #4
+
+declare void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* sret, i8*, i32, i8*) local_unnamed_addr #1
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"*) unnamed_addr #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #4
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"*) unnamed_addr #2
+
+declare i64 @_ZNK4base11PendingTask23GetDesiredExecutionTimeEv(%"struct.base::PendingTask"*) local_unnamed_addr #1
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable writeonly
+define hidden i32 @_ZN4base8internal8Sequence11WillRunTaskEv(%"class.base::internal::Sequence"* nocapture) unnamed_addr #5 align 2 {
+  %2 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 4
+  store i8 1, i8* %2, align 8
+  ret i32 2
+}
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden i64 @_ZNK4base8internal8Sequence23GetRemainingConcurrencyEv(%"class.base::internal::Sequence"* nocapture readnone) unnamed_addr #6 align 2 {
+  ret i64 1
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal8Sequence8TakeTaskEPNS0_10TaskSource11TransactionE(%"struct.base::internal::Task"* noalias sret, %"class.base::internal::Sequence"*, %"class.base::internal::TaskSource::Transaction"* readnone) unnamed_addr #0 align 2 {
+  %4 = icmp eq %"class.base::internal::TaskSource::Transaction"* %2, null
+  %5 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %1, i64 0, i32 0, i32 5
+  %6 = select i1 %4, %"class.base::internal::CheckedLock"* %5, %"class.base::internal::CheckedLock"* null
+  %7 = icmp eq %"class.base::internal::CheckedLock"* %6, null
+  br i1 %7, label %14, label %8
+
+8:                                                ; preds = %3
+  %9 = getelementptr inbounds %"class.base::internal::CheckedLock", %"class.base::internal::CheckedLock"* %6, i64 0, i32 0, i32 0, i32 0
+  %10 = tail call i32 @pthread_mutex_trylock(%union.pthread_mutex_t* %9) #13
+  %11 = icmp eq i32 %10, 0
+  br i1 %11, label %14, label %12, !prof !6
+
+12:                                               ; preds = %8
+  %13 = getelementptr inbounds %"class.base::internal::CheckedLock", %"class.base::internal::CheckedLock"* %6, i64 0, i32 0, i32 0
+  tail call void @_ZN4base8internal8LockImpl24LockInternalWithTrackingEv(%"class.base::internal::LockImpl"* %13) #13
+  br label %14
+
+14:                                               ; preds = %3, %8, %12
+  %15 = bitcast %"struct.base::internal::Task"* %0 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %15, i8 -86, i64 112, i1 false)
+  %16 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %1, i64 0, i32 2
+  %17 = getelementptr inbounds %"class.std::__1::queue", %"class.std::__1::queue"* %16, i64 0, i32 0, i32 0
+  %18 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %1, i64 0, i32 2, i32 0, i32 1
+  %19 = load i64, i64* %18, align 8
+  %20 = tail call dereferenceable(112) %"struct.base::internal::Task"* @_ZN4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"* %17, i64 %19) #13
+  tail call void @_ZN4base8internal4TaskC1EOS1_(%"struct.base::internal::Task"* %0, %"struct.base::internal::Task"* dereferenceable(112) %20) #13
+  %21 = getelementptr inbounds %"class.std::__1::queue", %"class.std::__1::queue"* %16, i64 0, i32 0
+  %22 = load i64, i64* %18, align 8
+  %23 = tail call dereferenceable(112) %"struct.base::internal::Task"* @_ZN4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"* %17, i64 %22) #13
+  %24 = load i64, i64* %18, align 8
+  %25 = add i64 %24, 1
+  %26 = tail call dereferenceable(112) %"struct.base::internal::Task"* @_ZN4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"* %17, i64 %25) #13
+  tail call void @_ZN4base8internal12VectorBufferINS0_4TaskEE13DestructRangeIS2_Li0EEEvPS2_S5_(%"class.base::internal::VectorBuffer"* %17, %"struct.base::internal::Task"* %23, %"struct.base::internal::Task"* %26) #13
+  %27 = load i64, i64* %18, align 8
+  %28 = add i64 %27, 1
+  %29 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %1, i64 0, i32 2, i32 0, i32 0, i32 1
+  %30 = load i64, i64* %29, align 8
+  %31 = icmp eq i64 %28, %30
+  %32 = select i1 %31, i64 0, i64 %28
+  store i64 %32, i64* %18, align 8
+  tail call void @_ZN4base14circular_dequeINS_8internal4TaskEE25ShrinkCapacityIfNecessaryEv(%"class.base::circular_deque"* %21) #13
+  %33 = load i64, i64* %18, align 8
+  %34 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %1, i64 0, i32 2, i32 0, i32 2
+  %35 = load i64, i64* %34, align 8
+  %36 = icmp eq i64 %33, %35
+  br i1 %36, label %42, label %37
+
+37:                                               ; preds = %14
+  %38 = tail call dereferenceable(112) %"struct.base::internal::Task"* @_ZN4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"* %17, i64 %33) #13
+  %39 = getelementptr inbounds %"struct.base::internal::Task", %"struct.base::internal::Task"* %38, i64 0, i32 0, i32 2, i32 0, i32 0
+  %40 = load i64, i64* %39, align 8
+  %41 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %1, i64 0, i32 3, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  store atomic i64 %40, i64* %41 monotonic, align 8
+  br label %42
+
+42:                                               ; preds = %14, %37
+  br i1 %7, label %46, label %43
+
+43:                                               ; preds = %42
+  %44 = getelementptr inbounds %"class.base::internal::CheckedLock", %"class.base::internal::CheckedLock"* %6, i64 0, i32 0, i32 0, i32 0
+  %45 = tail call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %44) #13
+  br label %46
+
+46:                                               ; preds = %42, %43
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #4
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal4TaskC1EOS1_(%"struct.base::internal::Task"*, %"struct.base::internal::Task"* dereferenceable(112)) unnamed_addr #2
+
+; Function Attrs: nounwind
+declare void @_ZN4base11PendingTaskD2Ev(%"struct.base::PendingTask"*) unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN4base8internal8Sequence14DidProcessTaskEPNS0_10TaskSource11TransactionE(%"class.base::internal::Sequence"*, %"class.base::internal::TaskSource::Transaction"* readnone) unnamed_addr #0 align 2 {
+  %3 = icmp eq %"class.base::internal::TaskSource::Transaction"* %1, null
+  %4 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 0, i32 5
+  %5 = select i1 %3, %"class.base::internal::CheckedLock"* %4, %"class.base::internal::CheckedLock"* null
+  %6 = icmp eq %"class.base::internal::CheckedLock"* %5, null
+  br i1 %6, label %13, label %7
+
+7:                                                ; preds = %2
+  %8 = getelementptr inbounds %"class.base::internal::CheckedLock", %"class.base::internal::CheckedLock"* %5, i64 0, i32 0, i32 0, i32 0
+  %9 = tail call i32 @pthread_mutex_trylock(%union.pthread_mutex_t* %8) #13
+  %10 = icmp eq i32 %9, 0
+  br i1 %10, label %13, label %11, !prof !6
+
+11:                                               ; preds = %7
+  %12 = getelementptr inbounds %"class.base::internal::CheckedLock", %"class.base::internal::CheckedLock"* %5, i64 0, i32 0, i32 0
+  tail call void @_ZN4base8internal8LockImpl24LockInternalWithTrackingEv(%"class.base::internal::LockImpl"* %12) #13
+  br label %13
+
+13:                                               ; preds = %2, %7, %11
+  %14 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 4
+  store i8 0, i8* %14, align 8
+  %15 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 2, i32 0, i32 1
+  %16 = load i64, i64* %15, align 8
+  %17 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 2, i32 0, i32 2
+  %18 = load i64, i64* %17, align 8
+  %19 = icmp eq i64 %16, %18
+  br i1 %19, label %20, label %40
+
+20:                                               ; preds = %13
+  %21 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 0, i32 7
+  %22 = load %"class.base::TaskRunner"*, %"class.base::TaskRunner"** %21, align 8
+  %23 = icmp eq %"class.base::TaskRunner"* %22, null
+  br i1 %23, label %40, label %24
+
+24:                                               ; preds = %20
+  %25 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 0, i32 8
+  %26 = load i32, i32* %25, align 8
+  %27 = icmp eq i32 %26, 0
+  br i1 %27, label %28, label %31
+
+28:                                               ; preds = %24
+  %29 = bitcast %"class.base::TaskRunner"* %22 to %"class.base::internal::PooledParallelTaskRunner"*
+  tail call void @_ZN4base8internal24PooledParallelTaskRunner18UnregisterSequenceEPNS0_8SequenceE(%"class.base::internal::PooledParallelTaskRunner"* nonnull %29, %"class.base::internal::Sequence"* %0) #13
+  %30 = load %"class.base::TaskRunner"*, %"class.base::TaskRunner"** %21, align 8
+  br label %31
+
+31:                                               ; preds = %28, %24
+  %32 = phi %"class.base::TaskRunner"* [ %30, %28 ], [ %22, %24 ]
+  %33 = getelementptr inbounds %"class.base::TaskRunner", %"class.base::TaskRunner"* %32, i64 0, i32 1
+  %34 = getelementptr inbounds %"class.base::RefCountedThreadSafe.5", %"class.base::RefCountedThreadSafe.5"* %33, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %35 = atomicrmw sub i32* %34, i32 1 acq_rel
+  %36 = icmp eq i32 %35, 1
+  br i1 %36, label %37, label %40
+
+37:                                               ; preds = %31
+  %38 = getelementptr inbounds %"class.base::RefCountedThreadSafe.5", %"class.base::RefCountedThreadSafe.5"* %33, i64 -2
+  %39 = bitcast %"class.base::RefCountedThreadSafe.5"* %38 to %"class.base::TaskRunner"*
+  tail call void @_ZN4base16TaskRunnerTraits8DestructEPKNS_10TaskRunnerE(%"class.base::TaskRunner"* %39) #13
+  br label %40
+
+40:                                               ; preds = %37, %31, %20, %13
+  %41 = phi i1 [ true, %13 ], [ false, %20 ], [ false, %31 ], [ false, %37 ]
+  br i1 %6, label %45, label %42
+
+42:                                               ; preds = %40
+  %43 = getelementptr inbounds %"class.base::internal::CheckedLock", %"class.base::internal::CheckedLock"* %5, i64 0, i32 0, i32 0, i32 0
+  %44 = tail call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %43) #13
+  br label %45
+
+45:                                               ; preds = %40, %42
+  ret i1 %41
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal8Sequence17ReleaseTaskRunnerEv(%"class.base::internal::Sequence"*) local_unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 0, i32 7
+  %3 = load %"class.base::TaskRunner"*, %"class.base::TaskRunner"** %2, align 8
+  %4 = icmp eq %"class.base::TaskRunner"* %3, null
+  br i1 %4, label %21, label %5
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 0, i32 8
+  %7 = load i32, i32* %6, align 8
+  %8 = icmp eq i32 %7, 0
+  br i1 %8, label %9, label %12
+
+9:                                                ; preds = %5
+  %10 = bitcast %"class.base::TaskRunner"* %3 to %"class.base::internal::PooledParallelTaskRunner"*
+  tail call void @_ZN4base8internal24PooledParallelTaskRunner18UnregisterSequenceEPNS0_8SequenceE(%"class.base::internal::PooledParallelTaskRunner"* nonnull %10, %"class.base::internal::Sequence"* %0) #13
+  %11 = load %"class.base::TaskRunner"*, %"class.base::TaskRunner"** %2, align 8
+  br label %12
+
+12:                                               ; preds = %9, %5
+  %13 = phi %"class.base::TaskRunner"* [ %11, %9 ], [ %3, %5 ]
+  %14 = getelementptr inbounds %"class.base::TaskRunner", %"class.base::TaskRunner"* %13, i64 0, i32 1
+  %15 = getelementptr inbounds %"class.base::RefCountedThreadSafe.5", %"class.base::RefCountedThreadSafe.5"* %14, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %16 = atomicrmw sub i32* %15, i32 1 acq_rel
+  %17 = icmp eq i32 %16, 1
+  br i1 %17, label %18, label %21
+
+18:                                               ; preds = %12
+  %19 = getelementptr inbounds %"class.base::RefCountedThreadSafe.5", %"class.base::RefCountedThreadSafe.5"* %14, i64 -2
+  %20 = bitcast %"class.base::RefCountedThreadSafe.5"* %19 to %"class.base::TaskRunner"*
+  tail call void @_ZN4base16TaskRunnerTraits8DestructEPKNS_10TaskRunnerE(%"class.base::TaskRunner"* %20) #13
+  br label %21
+
+21:                                               ; preds = %18, %12, %1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden { i64, i64 } @_ZNK4base8internal8Sequence10GetSortKeyEb(%"class.base::internal::Sequence"* nocapture readonly, i1 zeroext) unnamed_addr #0 align 2 {
+  %3 = alloca %"class.base::internal::TaskSourceSortKey", align 8
+  %4 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 0, i32 3, i32 0, i32 0, i32 0, i32 0
+  %5 = load atomic i8, i8* %4 monotonic, align 1
+  %6 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 3, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %7 = load atomic i64, i64* %6 monotonic, align 8
+  call void @_ZN4base8internal17TaskSourceSortKeyC1ENS_12TaskPriorityENS_9TimeTicksEh(%"class.base::internal::TaskSourceSortKey"* nonnull %3, i8 zeroext %5, i64 %7, i8 zeroext 0) #13
+  %8 = bitcast %"class.base::internal::TaskSourceSortKey"* %3 to i64*
+  %9 = load i64, i64* %8, align 8
+  %10 = insertvalue { i64, i64 } undef, i64 %9, 0
+  %11 = getelementptr inbounds %"class.base::internal::TaskSourceSortKey", %"class.base::internal::TaskSourceSortKey"* %3, i64 0, i32 2, i32 0, i32 0
+  %12 = load i64, i64* %11, align 8
+  %13 = insertvalue { i64, i64 } %10, i64 %12, 1
+  ret { i64, i64 } %13
+}
+
+declare void @_ZN4base8internal17TaskSourceSortKeyC1ENS_12TaskPriorityENS_9TimeTicksEh(%"class.base::internal::TaskSourceSortKey"*, i8 zeroext, i64, i8 zeroext) unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal8Sequence5ClearEPNS0_10TaskSource11TransactionE(%"struct.base::internal::Task"* noalias sret, %"class.base::internal::Sequence"*, %"class.base::internal::TaskSource::Transaction"* readnone) unnamed_addr #0 align 2 {
+  %4 = alloca %"class.base::Location", align 8
+  %5 = alloca %"class.base::OnceCallback", align 8
+  %6 = icmp eq %"class.base::internal::TaskSource::Transaction"* %2, null
+  %7 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %1, i64 0, i32 0, i32 5
+  %8 = select i1 %6, %"class.base::internal::CheckedLock"* %7, %"class.base::internal::CheckedLock"* null
+  %9 = icmp eq %"class.base::internal::CheckedLock"* %8, null
+  br i1 %9, label %16, label %10
+
+10:                                               ; preds = %3
+  %11 = getelementptr inbounds %"class.base::internal::CheckedLock", %"class.base::internal::CheckedLock"* %8, i64 0, i32 0, i32 0, i32 0
+  %12 = tail call i32 @pthread_mutex_trylock(%union.pthread_mutex_t* %11) #13
+  %13 = icmp eq i32 %12, 0
+  br i1 %13, label %16, label %14, !prof !6
+
+14:                                               ; preds = %10
+  %15 = getelementptr inbounds %"class.base::internal::CheckedLock", %"class.base::internal::CheckedLock"* %8, i64 0, i32 0, i32 0
+  tail call void @_ZN4base8internal8LockImpl24LockInternalWithTrackingEv(%"class.base::internal::LockImpl"* %15) #13
+  br label %16
+
+16:                                               ; preds = %3, %10, %14
+  %17 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %1, i64 0, i32 2
+  %18 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %1, i64 0, i32 2, i32 0, i32 1
+  %19 = load i64, i64* %18, align 8
+  %20 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %1, i64 0, i32 2, i32 0, i32 2
+  %21 = load i64, i64* %20, align 8
+  %22 = icmp eq i64 %19, %21
+  br i1 %22, label %47, label %23
+
+23:                                               ; preds = %16
+  %24 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %1, i64 0, i32 4
+  %25 = load i8, i8* %24, align 8, !range !2
+  %26 = icmp eq i8 %25, 0
+  br i1 %26, label %27, label %47
+
+27:                                               ; preds = %23
+  %28 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %1, i64 0, i32 0, i32 7
+  %29 = load %"class.base::TaskRunner"*, %"class.base::TaskRunner"** %28, align 8
+  %30 = icmp eq %"class.base::TaskRunner"* %29, null
+  br i1 %30, label %47, label %31
+
+31:                                               ; preds = %27
+  %32 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %1, i64 0, i32 0, i32 8
+  %33 = load i32, i32* %32, align 8
+  %34 = icmp eq i32 %33, 0
+  br i1 %34, label %35, label %38
+
+35:                                               ; preds = %31
+  %36 = bitcast %"class.base::TaskRunner"* %29 to %"class.base::internal::PooledParallelTaskRunner"*
+  tail call void @_ZN4base8internal24PooledParallelTaskRunner18UnregisterSequenceEPNS0_8SequenceE(%"class.base::internal::PooledParallelTaskRunner"* nonnull %36, %"class.base::internal::Sequence"* %1) #13
+  %37 = load %"class.base::TaskRunner"*, %"class.base::TaskRunner"** %28, align 8
+  br label %38
+
+38:                                               ; preds = %35, %31
+  %39 = phi %"class.base::TaskRunner"* [ %37, %35 ], [ %29, %31 ]
+  %40 = getelementptr inbounds %"class.base::TaskRunner", %"class.base::TaskRunner"* %39, i64 0, i32 1
+  %41 = getelementptr inbounds %"class.base::RefCountedThreadSafe.5", %"class.base::RefCountedThreadSafe.5"* %40, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %42 = atomicrmw sub i32* %41, i32 1 acq_rel
+  %43 = icmp eq i32 %42, 1
+  br i1 %43, label %44, label %47
+
+44:                                               ; preds = %38
+  %45 = getelementptr inbounds %"class.base::RefCountedThreadSafe.5", %"class.base::RefCountedThreadSafe.5"* %40, i64 -2
+  %46 = bitcast %"class.base::RefCountedThreadSafe.5"* %45 to %"class.base::TaskRunner"*
+  tail call void @_ZN4base16TaskRunnerTraits8DestructEPKNS_10TaskRunnerE(%"class.base::TaskRunner"* %46) #13
+  br label %47
+
+47:                                               ; preds = %44, %38, %27, %23, %16
+  %48 = bitcast %"class.base::Location"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %48) #13
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %4, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @.str.2, i64 0, i64 0), i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str, i64 0, i64 0), i32 121) #13
+  %49 = call i8* @_Znwm(i64 72) #14, !noalias !7
+  %50 = bitcast i8* %49 to %"class.base::internal::BindStateBase"*
+  call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"* nonnull %50, void ()* bitcast (void (%"class.base::internal::BindStateBase"*)* @"_ZN4base8internal7InvokerINS0_9BindStateIZNS0_8Sequence5ClearEPNS0_10TaskSource11TransactionEE3$_0JNSt3__15queueINS0_4TaskENS_14circular_dequeISA_EEEEEEEFvvEE7RunOnceEPNS0_13BindStateBaseE" to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @"_ZN4base8internal9BindStateIZNS0_8Sequence5ClearEPNS0_10TaskSource11TransactionEE3$_0JNSt3__15queueINS0_4TaskENS_14circular_dequeIS9_EEEEEE7DestroyEPKNS0_13BindStateBaseE") #13, !noalias !7
+  %51 = getelementptr inbounds i8, i8* %49, i64 40
+  %52 = bitcast %"class.std::__1::queue"* %17 to <2 x i64>*
+  %53 = load <2 x i64>, <2 x i64>* %52, align 8, !noalias !7
+  %54 = bitcast i8* %51 to <2 x i64>*
+  store <2 x i64> %53, <2 x i64>* %54, align 8, !noalias !7
+  %55 = bitcast %"class.std::__1::queue"* %17 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %55, i8 0, i64 16, i1 false) #13, !noalias !7
+  %56 = getelementptr inbounds i8, i8* %49, i64 56
+  %57 = bitcast i64* %18 to <2 x i64>*
+  %58 = load <2 x i64>, <2 x i64>* %57, align 8, !noalias !7
+  %59 = bitcast i8* %56 to <2 x i64>*
+  store <2 x i64> %58, <2 x i64>* %59, align 8, !noalias !7
+  %60 = bitcast i64* %18 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %60, i8 0, i64 16, i1 false) #13, !noalias !7
+  %61 = bitcast %"class.base::OnceCallback"* %5 to i8**
+  store i8* %49, i8** %61, align 8, !alias.scope !7
+  call void @_ZN4base8internal4TaskC1ERKNS_8LocationENS_12OnceCallbackIFvvEEENS_9TimeTicksENS_9TimeDeltaE(%"struct.base::internal::Task"* %0, %"class.base::Location"* nonnull dereferenceable(32) %4, %"class.base::OnceCallback"* nonnull %5, i64 0, i64 0) #13
+  %62 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %5, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %62) #13
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %48) #13
+  br i1 %9, label %66, label %63
+
+63:                                               ; preds = %47
+  %64 = getelementptr inbounds %"class.base::internal::CheckedLock", %"class.base::internal::CheckedLock"* %8, i64 0, i32 0, i32 0, i32 0
+  %65 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %64) #13
+  br label %66
+
+66:                                               ; preds = %47, %63
+  ret void
+}
+
+declare void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* sret, i8*, i8*, i32) local_unnamed_addr #1
+
+declare void @_ZN4base8internal4TaskC1ERKNS_8LocationENS_12OnceCallbackIFvvEEENS_9TimeTicksENS_9TimeDeltaE(%"struct.base::internal::Task"*, %"class.base::Location"* dereferenceable(32), %"class.base::OnceCallback"*, i64, i64) unnamed_addr #1
+
+declare void @_ZN4base8internal24PooledParallelTaskRunner18UnregisterSequenceEPNS0_8SequenceE(%"class.base::internal::PooledParallelTaskRunner"*, %"class.base::internal::Sequence"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal8SequenceC2ERKNS_10TaskTraitsEPNS_10TaskRunnerENS0_23TaskSourceExecutionModeE(%"class.base::internal::Sequence"*, %"class.base::TaskTraits"* dereferenceable(15), %"class.base::TaskRunner"*, i32) unnamed_addr #0 align 2 {
+  %5 = bitcast %"class.base::internal::Sequence"* %0 to %"class.base::internal::TaskSource"*
+  tail call void @_ZN4base8internal10TaskSourceC2ERKNS_10TaskTraitsEPNS_10TaskRunnerENS0_23TaskSourceExecutionModeE(%"class.base::internal::TaskSource"* %5, %"class.base::TaskTraits"* dereferenceable(15) %1, %"class.base::TaskRunner"* %2, i32 %3) #13
+  %6 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [11 x i8*] }, { [11 x i8*] }* @_ZTVN4base8internal8SequenceE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %6, align 8
+  %7 = tail call i32 @_ZN4base13SequenceToken6CreateEv() #13
+  %8 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 1, i32 0
+  store i32 %7, i32* %8, align 4
+  %9 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 2
+  %10 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 5
+  %11 = bitcast %"class.std::__1::queue"* %9 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %11, i8 0, i64 41, i1 false)
+  tail call void @_ZN4base8internal23SequenceLocalStorageMapC1Ev(%"class.base::internal::SequenceLocalStorageMap"* %10) #13
+  ret void
+}
+
+declare void @_ZN4base8internal10TaskSourceC2ERKNS_10TaskTraitsEPNS_10TaskRunnerENS0_23TaskSourceExecutionModeE(%"class.base::internal::TaskSource"*, %"class.base::TaskTraits"* dereferenceable(15), %"class.base::TaskRunner"*, i32) unnamed_addr #1
+
+declare i32 @_ZN4base13SequenceToken6CreateEv() local_unnamed_addr #1
+
+declare void @_ZN4base8internal23SequenceLocalStorageMapC1Ev(%"class.base::internal::SequenceLocalStorageMap"*) unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal8SequenceD2Ev(%"class.base::internal::Sequence"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [11 x i8*] }, { [11 x i8*] }* @_ZTVN4base8internal8SequenceE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 5
+  tail call void @_ZN4base8internal23SequenceLocalStorageMapD1Ev(%"class.base::internal::SequenceLocalStorageMap"* %3) #13
+  %4 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 2
+  %5 = getelementptr inbounds %"class.std::__1::queue", %"class.std::__1::queue"* %4, i64 0, i32 0
+  %6 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 2, i32 0, i32 1
+  %7 = load i64, i64* %6, align 8
+  %8 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 2, i32 0, i32 2
+  %9 = load i64, i64* %8, align 8
+  tail call void @_ZN4base14circular_dequeINS_8internal4TaskEE13DestructRangeEmm(%"class.base::circular_deque"* %5, i64 %7, i64 %9) #13
+  %10 = bitcast %"class.std::__1::queue"* %4 to i8**
+  %11 = load i8*, i8** %10, align 8
+  tail call void @free(i8* %11) #13
+  %12 = bitcast %"class.base::internal::Sequence"* %0 to %"class.base::internal::TaskSource"*
+  tail call void @_ZN4base8internal10TaskSourceD2Ev(%"class.base::internal::TaskSource"* %12) #13
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal23SequenceLocalStorageMapD1Ev(%"class.base::internal::SequenceLocalStorageMap"*) unnamed_addr #2
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal10TaskSourceD2Ev(%"class.base::internal::TaskSource"*) unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal8SequenceD0Ev(%"class.base::internal::Sequence"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [11 x i8*] }, { [11 x i8*] }* @_ZTVN4base8internal8SequenceE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 5
+  tail call void @_ZN4base8internal23SequenceLocalStorageMapD1Ev(%"class.base::internal::SequenceLocalStorageMap"* %3) #13
+  %4 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 2
+  %5 = getelementptr inbounds %"class.std::__1::queue", %"class.std::__1::queue"* %4, i64 0, i32 0
+  %6 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 2, i32 0, i32 1
+  %7 = load i64, i64* %6, align 8
+  %8 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 2, i32 0, i32 2
+  %9 = load i64, i64* %8, align 8
+  tail call void @_ZN4base14circular_dequeINS_8internal4TaskEE13DestructRangeEmm(%"class.base::circular_deque"* %5, i64 %7, i64 %9) #13
+  %10 = bitcast %"class.std::__1::queue"* %4 to i8**
+  %11 = load i8*, i8** %10, align 8
+  tail call void @free(i8* %11) #13
+  %12 = bitcast %"class.base::internal::Sequence"* %0 to %"class.base::internal::TaskSource"*
+  tail call void @_ZN4base8internal10TaskSourceD2Ev(%"class.base::internal::TaskSource"* %12) #13
+  %13 = bitcast %"class.base::internal::Sequence"* %0 to i8*
+  tail call void @_ZdlPv(i8* %13) #14
+  ret void
+}
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #7
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal8Sequence16BeginTransactionEv(%"class.base::internal::Sequence::Transaction"* noalias sret, %"class.base::internal::Sequence"*) local_unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.base::internal::Sequence::Transaction", %"class.base::internal::Sequence::Transaction"* %0, i64 0, i32 0
+  %4 = bitcast %"class.base::internal::Sequence"* %1 to %"class.base::internal::TaskSource"*
+  tail call void @_ZN4base8internal10TaskSource11TransactionC2EPS1_(%"class.base::internal::TaskSource::Transaction"* %3, %"class.base::internal::TaskSource"* %4) #13
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden { i32, %"class.base::internal::SequenceLocalStorageMap"* } @_ZN4base8internal8Sequence23GetExecutionEnvironmentEv(%"class.base::internal::Sequence"*) unnamed_addr #3 align 2 {
+  %2 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 1, i32 0
+  %3 = load i32, i32* %2, align 4
+  %4 = getelementptr inbounds %"class.base::internal::Sequence", %"class.base::internal::Sequence"* %0, i64 0, i32 5
+  %5 = insertvalue { i32, %"class.base::internal::SequenceLocalStorageMap"* } undef, i32 %3, 0
+  %6 = insertvalue { i32, %"class.base::internal::SequenceLocalStorageMap"* } %5, %"class.base::internal::SequenceLocalStorageMap"* %4, 1
+  ret { i32, %"class.base::internal::SequenceLocalStorageMap"* } %6
+}
+
+; Function Attrs: nounwind
+declare dereferenceable(8) %"class.base::internal::CallbackBase"* @_ZN4base8internal12CallbackBaseaSEOS1_(%"class.base::internal::CallbackBase"*, %"class.base::internal::CallbackBase"* dereferenceable(8)) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base14circular_dequeINS_8internal4TaskEE13DestructRangeEmm(%"class.base::circular_deque"*, i64, i64) local_unnamed_addr #0 comdat align 2 {
+  %4 = icmp eq i64 %2, %1
+  br i1 %4, label %17, label %5
+
+5:                                                ; preds = %3
+  %6 = icmp ugt i64 %2, %1
+  %7 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0
+  %8 = tail call dereferenceable(112) %"struct.base::internal::Task"* @_ZN4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"* %7, i64 %1)
+  br i1 %6, label %14, label %9
+
+9:                                                ; preds = %5
+  %10 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0, i32 1
+  %11 = load i64, i64* %10, align 8
+  %12 = tail call dereferenceable(112) %"struct.base::internal::Task"* @_ZN4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"* %7, i64 %11)
+  tail call void @_ZN4base8internal12VectorBufferINS0_4TaskEE13DestructRangeIS2_Li0EEEvPS2_S5_(%"class.base::internal::VectorBuffer"* %7, %"struct.base::internal::Task"* %8, %"struct.base::internal::Task"* %12)
+  %13 = tail call dereferenceable(112) %"struct.base::internal::Task"* @_ZN4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"* %7, i64 0)
+  br label %14
+
+14:                                               ; preds = %5, %9
+  %15 = phi %"struct.base::internal::Task"* [ %13, %9 ], [ %8, %5 ]
+  %16 = tail call dereferenceable(112) %"struct.base::internal::Task"* @_ZN4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"* %7, i64 %2)
+  tail call void @_ZN4base8internal12VectorBufferINS0_4TaskEE13DestructRangeIS2_Li0EEEvPS2_S5_(%"class.base::internal::VectorBuffer"* %7, %"struct.base::internal::Task"* %15, %"struct.base::internal::Task"* %16)
+  br label %17
+
+17:                                               ; preds = %14, %3
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal12VectorBufferINS0_4TaskEE13DestructRangeIS2_Li0EEEvPS2_S5_(%"class.base::internal::VectorBuffer"*, %"struct.base::internal::Task"*, %"struct.base::internal::Task"*) local_unnamed_addr #0 comdat align 2 {
+  %4 = alloca %"class.logging::CheckOpResult", align 8
+  %5 = alloca %"struct.base::internal::Task"*, align 8
+  %6 = alloca %"struct.base::internal::Task"*, align 8
+  %7 = alloca %"class.logging::CheckOpResult", align 8
+  %8 = alloca %"class.logging::CheckError", align 8
+  store %"struct.base::internal::Task"* %1, %"struct.base::internal::Task"** %5, align 8
+  store %"struct.base::internal::Task"* %2, %"struct.base::internal::Task"** %6, align 8
+  %9 = bitcast %"class.logging::CheckOpResult"* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %9) #13
+  %10 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %7, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %10, align 8
+  %11 = bitcast %"class.logging::CheckOpResult"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %11)
+  %12 = icmp ugt %"struct.base::internal::Task"* %1, %2
+  br i1 %12, label %14, label %13
+
+13:                                               ; preds = %3
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %11)
+  store i8* null, i8** %10, align 8
+  br label %25
+
+14:                                               ; preds = %3
+  %15 = bitcast %"struct.base::internal::Task"** %5 to i8*
+  %16 = call i8* @_ZN7logging14StreamValToStrEPKvPFvRNSt3__113basic_ostreamIcNS2_11char_traitsIcEEEES1_E(i8* nonnull %15, void (%"class.std::__1::basic_ostream"*, i8*)* nonnull @_ZZN7logging15CheckOpValueStrIPN4base8internal4TaskEEENSt3__19enable_ifIXaasr4base8internal23SupportsOstreamOperatorIRKT_EE5valuentsr3std11is_functionINS5_14remove_pointerIS7_E4typeEEE5valueEPcE4typeES9_ENUlRNS5_13basic_ostreamIcNS5_11char_traitsIcEEEEPKvE_8__invokeESK_SM_) #13
+  %17 = bitcast %"struct.base::internal::Task"** %6 to i8*
+  %18 = call i8* @_ZN7logging14StreamValToStrEPKvPFvRNSt3__113basic_ostreamIcNS2_11char_traitsIcEEEES1_E(i8* nonnull %17, void (%"class.std::__1::basic_ostream"*, i8*)* nonnull @_ZZN7logging15CheckOpValueStrIPN4base8internal4TaskEEENSt3__19enable_ifIXaasr4base8internal23SupportsOstreamOperatorIRKT_EE5valuentsr3std11is_functionINS5_14remove_pointerIS7_E4typeEEE5valueEPcE4typeES9_ENUlRNS5_13basic_ostreamIcNS5_11char_traitsIcEEEEPKvE_8__invokeESK_SM_) #13
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %4, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @.str.3, i64 0, i64 0), i8* %16, i8* %18) #13
+  %19 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %4, i64 0, i32 0
+  %20 = load i8*, i8** %19, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %11)
+  store i8* %20, i8** %10, align 8
+  %21 = icmp eq i8* %20, null
+  br i1 %21, label %25, label %22
+
+22:                                               ; preds = %14
+  %23 = bitcast %"class.logging::CheckError"* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %23) #13
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %8, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.4, i64 0, i64 0), i32 110, %"class.logging::CheckOpResult"* nonnull %7) #13
+  %24 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %8) #13
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %8) #13
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %23) #13
+  br label %25
+
+25:                                               ; preds = %13, %14, %22
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %9) #13
+  %26 = load %"struct.base::internal::Task"*, %"struct.base::internal::Task"** %5, align 8
+  %27 = load %"struct.base::internal::Task"*, %"struct.base::internal::Task"** %6, align 8
+  %28 = icmp eq %"struct.base::internal::Task"* %26, %27
+  br i1 %28, label %36, label %29
+
+29:                                               ; preds = %25, %29
+  %30 = phi %"struct.base::internal::Task"* [ %33, %29 ], [ %26, %25 ]
+  %31 = bitcast %"struct.base::internal::Task"* %30 to %"struct.base::PendingTask"*
+  call void @_ZN4base11PendingTaskD2Ev(%"struct.base::PendingTask"* %31) #13
+  %32 = load %"struct.base::internal::Task"*, %"struct.base::internal::Task"** %5, align 8
+  %33 = getelementptr inbounds %"struct.base::internal::Task", %"struct.base::internal::Task"* %32, i64 1
+  store %"struct.base::internal::Task"* %33, %"struct.base::internal::Task"** %5, align 8
+  %34 = load %"struct.base::internal::Task"*, %"struct.base::internal::Task"** %6, align 8
+  %35 = icmp eq %"struct.base::internal::Task"* %33, %34
+  br i1 %35, label %36, label %29
+
+36:                                               ; preds = %29, %25
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden dereferenceable(112) %"struct.base::internal::Task"* @_ZN4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"*, i64) local_unnamed_addr #0 comdat align 2 {
+  %3 = alloca %"class.logging::CheckOpResult", align 8
+  %4 = alloca %"class.logging::CheckOpResult", align 8
+  %5 = alloca %"class.logging::CheckError", align 8
+  %6 = bitcast %"class.logging::CheckOpResult"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %6) #13
+  %7 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %4, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %7, align 8
+  %8 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %0, i64 0, i32 1
+  %9 = load i64, i64* %8, align 8
+  %10 = bitcast %"class.logging::CheckOpResult"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %10)
+  %11 = icmp ult i64 %9, %1
+  br i1 %11, label %13, label %12
+
+12:                                               ; preds = %2
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* null, i8** %7, align 8
+  br label %22
+
+13:                                               ; preds = %2
+  %14 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 %1) #13
+  %15 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 %9) #13
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %3, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.5, i64 0, i64 0), i8* %14, i8* %15) #13
+  %16 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %3, i64 0, i32 0
+  %17 = load i8*, i8** %16, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* %17, i8** %7, align 8
+  %18 = icmp eq i8* %17, null
+  br i1 %18, label %22, label %19
+
+19:                                               ; preds = %13
+  %20 = bitcast %"class.logging::CheckError"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %20) #13
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %5, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.4, i64 0, i64 0), i32 84, %"class.logging::CheckOpResult"* nonnull %4) #13
+  %21 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %5) #13
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %5) #13
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %20) #13
+  br label %22
+
+22:                                               ; preds = %12, %13, %19
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %6) #13
+  %23 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %0, i64 0, i32 0
+  %24 = load %"struct.base::internal::Task"*, %"struct.base::internal::Task"** %23, align 8
+  %25 = getelementptr inbounds %"struct.base::internal::Task", %"struct.base::internal::Task"* %24, i64 %1
+  ret %"struct.base::internal::Task"* %25
+}
+
+declare void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* sret, i8*, i32, %"class.logging::CheckOpResult"*) local_unnamed_addr #1
+
+declare void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"*, i8*, i8*, i8*) unnamed_addr #1
+
+declare i8* @_ZN7logging14StreamValToStrEPKvPFvRNSt3__113basic_ostreamIcNS2_11char_traitsIcEEEES1_E(i8*, void (%"class.std::__1::basic_ostream"*, i8*)*) local_unnamed_addr #1
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden void @_ZZN7logging15CheckOpValueStrIPN4base8internal4TaskEEENSt3__19enable_ifIXaasr4base8internal23SupportsOstreamOperatorIRKT_EE5valuentsr3std11is_functionINS5_14remove_pointerIS7_E4typeEEE5valueEPcE4typeES9_ENUlRNS5_13basic_ostreamIcNS5_11char_traitsIcEEEEPKvE_8__invokeESK_SM_(%"class.std::__1::basic_ostream"* dereferenceable(160), i8*) #8 comdat align 2 {
+  %3 = bitcast i8* %1 to i8**
+  %4 = load i8*, i8** %3, align 8
+  %5 = tail call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEPKv(%"class.std::__1::basic_ostream"* %0, i8* %4) #13
+  ret void
+}
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEPKv(%"class.std::__1::basic_ostream"*, i8*) local_unnamed_addr #1
+
+declare i8* @_ZN7logging15CheckOpValueStrEm(i64) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @free(i8* nocapture) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base14circular_dequeINS_8internal4TaskEE25ExpandCapacityIfNecessaryEm(%"class.base::circular_deque"*, i64) local_unnamed_addr #0 comdat align 2 {
+  %3 = alloca <2 x i64>, align 16
+  %4 = bitcast <2 x i64>* %3 to %"class.base::internal::VectorBuffer"*
+  %5 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 1
+  %6 = load i64, i64* %5, align 8
+  %7 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 2
+  %8 = load i64, i64* %7, align 8
+  %9 = icmp ult i64 %8, %6
+  br i1 %9, label %14, label %10
+
+10:                                               ; preds = %2
+  %11 = sub i64 %8, %6
+  %12 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0, i32 1
+  %13 = load i64, i64* %12, align 8
+  br label %19
+
+14:                                               ; preds = %2
+  %15 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0, i32 1
+  %16 = load i64, i64* %15, align 8
+  %17 = sub i64 %8, %6
+  %18 = add i64 %17, %16
+  br label %19
+
+19:                                               ; preds = %10, %14
+  %20 = phi i64 [ %13, %10 ], [ %16, %14 ]
+  %21 = phi i64 [ %11, %10 ], [ %18, %14 ]
+  %22 = add i64 %21, %1
+  %23 = icmp eq i64 %20, 0
+  %24 = add i64 %20, -1
+  %25 = select i1 %23, i64 0, i64 %24
+  %26 = icmp ult i64 %25, %22
+  br i1 %26, label %27, label %49
+
+27:                                               ; preds = %19
+  %28 = icmp ugt i64 %22, 3
+  %29 = select i1 %28, i64 %22, i64 3
+  %30 = lshr i64 %25, 2
+  %31 = add i64 %30, %25
+  %32 = icmp ult i64 %29, %31
+  %33 = select i1 %32, i64 %31, i64 %29
+  %34 = bitcast <2 x i64>* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %34) #13
+  %35 = add i64 %33, 1
+  %36 = tail call { i64, i1 } @llvm.umul.with.overflow.i64(i64 %35, i64 112) #13
+  %37 = extractvalue { i64, i1 } %36, 1
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %34, i8 -86, i64 16, i1 false) #13
+  br i1 %37, label %38, label %39, !prof !12
+
+38:                                               ; preds = %27
+  tail call void @llvm.trap() #13
+  unreachable
+
+39:                                               ; preds = %27
+  %40 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %4, i64 0, i32 1
+  %41 = extractvalue { i64, i1 } %36, 0
+  %42 = tail call noalias i8* @malloc(i64 %41) #13
+  %43 = bitcast <2 x i64>* %3 to i8**
+  store i8* %42, i8** %43, align 16
+  store i64 %35, i64* %40, align 8
+  %44 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0
+  call void @_ZN4base14circular_dequeINS_8internal4TaskEE10MoveBufferERNS1_12VectorBufferIS2_EEmmPS5_PmS8_(%"class.base::internal::VectorBuffer"* dereferenceable(16) %44, i64 %6, i64 %8, %"class.base::internal::VectorBuffer"* nonnull %4, i64* %5, i64* %7) #13
+  %45 = bitcast %"class.base::circular_deque"* %0 to i8**
+  %46 = load i8*, i8** %45, align 8
+  call void @free(i8* %46) #13
+  %47 = load <2 x i64>, <2 x i64>* %3, align 16
+  %48 = bitcast %"class.base::circular_deque"* %0 to <2 x i64>*
+  store <2 x i64> %47, <2 x i64>* %48, align 8
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %34) #13
+  br label %49
+
+49:                                               ; preds = %19, %39
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base14circular_dequeINS_8internal4TaskEE10MoveBufferERNS1_12VectorBufferIS2_EEmmPS5_PmS8_(%"class.base::internal::VectorBuffer"* dereferenceable(16), i64, i64, %"class.base::internal::VectorBuffer"*, i64*, i64*) local_unnamed_addr #0 comdat align 2 {
+  %7 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %0, i64 0, i32 1
+  %8 = load i64, i64* %7, align 8
+  store i64 0, i64* %4, align 8
+  %9 = icmp ugt i64 %2, %1
+  br i1 %9, label %10, label %16
+
+10:                                               ; preds = %6
+  %11 = tail call dereferenceable(112) %"struct.base::internal::Task"* @_ZN4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"* %0, i64 %1)
+  %12 = tail call dereferenceable(112) %"struct.base::internal::Task"* @_ZN4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"* %0, i64 %2)
+  %13 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %3, i64 0, i32 0
+  %14 = load %"struct.base::internal::Task"*, %"struct.base::internal::Task"** %13, align 8
+  tail call void @_ZN4base8internal12VectorBufferINS0_4TaskEE9MoveRangeIS2_Li0EEEvPS2_S5_S5_(%"struct.base::internal::Task"* %11, %"struct.base::internal::Task"* %12, %"struct.base::internal::Task"* %14)
+  %15 = sub i64 %2, %1
+  br label %28
+
+16:                                               ; preds = %6
+  %17 = icmp ult i64 %2, %1
+  br i1 %17, label %18, label %28
+
+18:                                               ; preds = %16
+  %19 = tail call dereferenceable(112) %"struct.base::internal::Task"* @_ZN4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"* %0, i64 %1)
+  %20 = tail call dereferenceable(112) %"struct.base::internal::Task"* @_ZN4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"* %0, i64 %8)
+  %21 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %3, i64 0, i32 0
+  %22 = load %"struct.base::internal::Task"*, %"struct.base::internal::Task"** %21, align 8
+  tail call void @_ZN4base8internal12VectorBufferINS0_4TaskEE9MoveRangeIS2_Li0EEEvPS2_S5_S5_(%"struct.base::internal::Task"* %19, %"struct.base::internal::Task"* %20, %"struct.base::internal::Task"* %22)
+  %23 = sub i64 %8, %1
+  %24 = tail call dereferenceable(112) %"struct.base::internal::Task"* @_ZN4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"* %0, i64 0)
+  %25 = tail call dereferenceable(112) %"struct.base::internal::Task"* @_ZN4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"* %0, i64 %2)
+  %26 = tail call dereferenceable(112) %"struct.base::internal::Task"* @_ZN4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"* %3, i64 %23)
+  tail call void @_ZN4base8internal12VectorBufferINS0_4TaskEE9MoveRangeIS2_Li0EEEvPS2_S5_S5_(%"struct.base::internal::Task"* %24, %"struct.base::internal::Task"* %25, %"struct.base::internal::Task"* %26)
+  %27 = add i64 %23, %2
+  br label %28
+
+28:                                               ; preds = %16, %18, %10
+  %29 = phi i64 [ %27, %18 ], [ %15, %10 ], [ 0, %16 ]
+  store i64 %29, i64* %5, align 8
+  ret void
+}
+
+; Function Attrs: nofree nounwind
+declare noalias i8* @malloc(i64) local_unnamed_addr #9
+
+; Function Attrs: nounwind readnone speculatable
+declare { i64, i1 } @llvm.umul.with.overflow.i64(i64, i64) #10
+
+; Function Attrs: cold noreturn nounwind
+declare void @llvm.trap() #11
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal12VectorBufferINS0_4TaskEE9MoveRangeIS2_Li0EEEvPS2_S5_S5_(%"struct.base::internal::Task"*, %"struct.base::internal::Task"*, %"struct.base::internal::Task"*) local_unnamed_addr #0 comdat align 2 {
+  %4 = alloca %"class.logging::CheckError", align 8
+  %5 = ptrtoint %"struct.base::internal::Task"* %0 to i64
+  %6 = icmp ult %"struct.base::internal::Task"* %2, %1
+  br i1 %6, label %7, label %23
+
+7:                                                ; preds = %3
+  %8 = ptrtoint %"struct.base::internal::Task"* %2 to i64
+  %9 = ptrtoint %"struct.base::internal::Task"* %1 to i64
+  %10 = tail call { i64, i1 } @llvm.usub.with.overflow.i64(i64 %9, i64 %5) #13
+  %11 = extractvalue { i64, i1 } %10, 1
+  %12 = extractvalue { i64, i1 } %10, 0
+  %13 = tail call { i64, i1 } @llvm.uadd.with.overflow.i64(i64 %8, i64 %12) #13
+  %14 = extractvalue { i64, i1 } %13, 1
+  %15 = or i1 %11, %14
+  br i1 %15, label %16, label %17, !prof !12
+
+16:                                               ; preds = %7
+  tail call void @llvm.trap() #13
+  unreachable
+
+17:                                               ; preds = %7
+  %18 = extractvalue { i64, i1 } %13, 0
+  %19 = icmp ugt i64 %18, %5
+  br i1 %19, label %20, label %23
+
+20:                                               ; preds = %17
+  %21 = bitcast %"class.logging::CheckError"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %21) #13
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %4, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.4, i64 0, i64 0), i32 150, i8* getelementptr inbounds ([41 x i8], [41 x i8]* @.str.6, i64 0, i64 0)) #13
+  %22 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %4) #13
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %4) #13
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %21) #13
+  br label %23
+
+23:                                               ; preds = %3, %17, %20
+  %24 = icmp eq %"struct.base::internal::Task"* %0, %1
+  br i1 %24, label %32, label %25
+
+25:                                               ; preds = %23, %25
+  %26 = phi %"struct.base::internal::Task"* [ %30, %25 ], [ %2, %23 ]
+  %27 = phi %"struct.base::internal::Task"* [ %29, %25 ], [ %0, %23 ]
+  call void @_ZN4base8internal4TaskC1EOS1_(%"struct.base::internal::Task"* %26, %"struct.base::internal::Task"* dereferenceable(112) %27) #13
+  %28 = bitcast %"struct.base::internal::Task"* %27 to %"struct.base::PendingTask"*
+  call void @_ZN4base11PendingTaskD2Ev(%"struct.base::PendingTask"* %28) #13
+  %29 = getelementptr inbounds %"struct.base::internal::Task", %"struct.base::internal::Task"* %27, i64 1
+  %30 = getelementptr inbounds %"struct.base::internal::Task", %"struct.base::internal::Task"* %26, i64 1
+  %31 = icmp eq %"struct.base::internal::Task"* %29, %1
+  br i1 %31, label %32, label %25
+
+32:                                               ; preds = %25, %23
+  ret void
+}
+
+; Function Attrs: nounwind readnone speculatable
+declare { i64, i1 } @llvm.uadd.with.overflow.i64(i64, i64) #10
+
+; Function Attrs: nounwind readnone speculatable
+declare { i64, i1 } @llvm.usub.with.overflow.i64(i64, i64) #10
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden dereferenceable(112) %"struct.base::internal::Task"* @_ZNK4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"*, i64) local_unnamed_addr #0 comdat align 2 {
+  %3 = alloca %"class.logging::CheckOpResult", align 8
+  %4 = alloca %"class.logging::CheckOpResult", align 8
+  %5 = alloca %"class.logging::CheckError", align 8
+  %6 = bitcast %"class.logging::CheckOpResult"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %6) #13
+  %7 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %4, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %7, align 8
+  %8 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %0, i64 0, i32 1
+  %9 = load i64, i64* %8, align 8
+  %10 = bitcast %"class.logging::CheckOpResult"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %10)
+  %11 = icmp ult i64 %9, %1
+  br i1 %11, label %13, label %12
+
+12:                                               ; preds = %2
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* null, i8** %7, align 8
+  br label %22
+
+13:                                               ; preds = %2
+  %14 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 %1) #13
+  %15 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 %9) #13
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %3, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.5, i64 0, i64 0), i8* %14, i8* %15) #13
+  %16 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %3, i64 0, i32 0
+  %17 = load i8*, i8** %16, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* %17, i8** %7, align 8
+  %18 = icmp eq i8* %17, null
+  br i1 %18, label %22, label %19
+
+19:                                               ; preds = %13
+  %20 = bitcast %"class.logging::CheckError"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %20) #13
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %5, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.4, i64 0, i64 0), i32 89, %"class.logging::CheckOpResult"* nonnull %4) #13
+  %21 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %5) #13
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %5) #13
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %20) #13
+  br label %22
+
+22:                                               ; preds = %12, %13, %19
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %6) #13
+  %23 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %0, i64 0, i32 0
+  %24 = load %"struct.base::internal::Task"*, %"struct.base::internal::Task"** %23, align 8
+  %25 = getelementptr inbounds %"struct.base::internal::Task", %"struct.base::internal::Task"* %24, i64 %1
+  ret %"struct.base::internal::Task"* %25
+}
+
+declare void @_ZN4base8internal8LockImpl24LockInternalWithTrackingEv(%"class.base::internal::LockImpl"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare i32 @pthread_mutex_trylock(%union.pthread_mutex_t*) local_unnamed_addr #2
+
+; Function Attrs: nounwind
+declare i32 @pthread_mutex_unlock(%union.pthread_mutex_t*) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base14circular_dequeINS_8internal4TaskEE25ShrinkCapacityIfNecessaryEv(%"class.base::circular_deque"*) local_unnamed_addr #0 comdat align 2 {
+  %2 = alloca <2 x i64>, align 16
+  %3 = bitcast <2 x i64>* %2 to %"class.base::internal::VectorBuffer"*
+  %4 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0, i32 1
+  %5 = load i64, i64* %4, align 8
+  %6 = icmp eq i64 %5, 0
+  %7 = add i64 %5, -1
+  %8 = select i1 %6, i64 0, i64 %7
+  %9 = icmp ult i64 %8, 4
+  br i1 %9, label %43, label %10
+
+10:                                               ; preds = %1
+  %11 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 1
+  %12 = load i64, i64* %11, align 8
+  %13 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 2
+  %14 = load i64, i64* %13, align 8
+  %15 = icmp ult i64 %14, %12
+  %16 = sub i64 %14, %12
+  %17 = select i1 %15, i64 %5, i64 0
+  %18 = add i64 %17, %16
+  %19 = sub i64 %8, %18
+  %20 = icmp ult i64 %19, %18
+  br i1 %20, label %43, label %21
+
+21:                                               ; preds = %10
+  %22 = lshr i64 %18, 2
+  %23 = add i64 %22, %18
+  %24 = icmp ugt i64 %23, 3
+  %25 = select i1 %24, i64 %23, i64 3
+  %26 = icmp ult i64 %25, %8
+  br i1 %26, label %27, label %43
+
+27:                                               ; preds = %21
+  %28 = bitcast <2 x i64>* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %28) #13
+  %29 = add nuw i64 %25, 1
+  %30 = tail call { i64, i1 } @llvm.umul.with.overflow.i64(i64 %29, i64 112) #13
+  %31 = extractvalue { i64, i1 } %30, 1
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %28, i8 -86, i64 16, i1 false) #13
+  br i1 %31, label %32, label %33, !prof !12
+
+32:                                               ; preds = %27
+  tail call void @llvm.trap() #13
+  unreachable
+
+33:                                               ; preds = %27
+  %34 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %3, i64 0, i32 1
+  %35 = extractvalue { i64, i1 } %30, 0
+  %36 = tail call noalias i8* @malloc(i64 %35) #13
+  %37 = bitcast <2 x i64>* %2 to i8**
+  store i8* %36, i8** %37, align 16
+  store i64 %29, i64* %34, align 8
+  %38 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0
+  call void @_ZN4base14circular_dequeINS_8internal4TaskEE10MoveBufferERNS1_12VectorBufferIS2_EEmmPS5_PmS8_(%"class.base::internal::VectorBuffer"* dereferenceable(16) %38, i64 %12, i64 %14, %"class.base::internal::VectorBuffer"* nonnull %3, i64* %11, i64* %13) #13
+  %39 = bitcast %"class.base::circular_deque"* %0 to i8**
+  %40 = load i8*, i8** %39, align 8
+  call void @free(i8* %40) #13
+  %41 = load <2 x i64>, <2 x i64>* %2, align 16
+  %42 = bitcast %"class.base::circular_deque"* %0 to <2 x i64>*
+  store <2 x i64> %41, <2 x i64>* %42, align 8
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %28) #13
+  br label %43
+
+43:                                               ; preds = %10, %33, %21, %1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @"_ZN4base8internal7InvokerINS0_9BindStateIZNS0_8Sequence5ClearEPNS0_10TaskSource11TransactionEE3$_0JNSt3__15queueINS0_4TaskENS_14circular_dequeISA_EEEEEEEFvvEE7RunOnceEPNS0_13BindStateBaseE"(%"class.base::internal::BindStateBase"* nocapture) #0 align 2 {
+  %2 = alloca %"class.std::__1::queue", align 16
+  %3 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 1
+  %4 = bitcast %"class.std::__1::queue"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %4) #13
+  %5 = getelementptr inbounds %"class.std::__1::queue", %"class.std::__1::queue"* %2, i64 0, i32 0, i32 0, i32 1
+  %6 = bitcast void ()** %3 to <2 x i64>*
+  %7 = load <2 x i64>, <2 x i64>* %6, align 8
+  %8 = bitcast %"class.std::__1::queue"* %2 to <2 x i64>*
+  store <2 x i64> %7, <2 x i64>* %8, align 16
+  %9 = bitcast void ()** %3 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %9, i8 0, i64 16, i1 false) #13
+  %10 = getelementptr inbounds %"class.std::__1::queue", %"class.std::__1::queue"* %2, i64 0, i32 0, i32 1
+  %11 = getelementptr inbounds void ()*, void ()** %3, i64 2
+  %12 = bitcast void ()** %11 to i64*
+  %13 = load i64, i64* %12, align 8
+  store i64 %13, i64* %10, align 16
+  %14 = getelementptr inbounds %"class.std::__1::queue", %"class.std::__1::queue"* %2, i64 0, i32 0, i32 2
+  %15 = getelementptr inbounds void ()*, void ()** %3, i64 3
+  %16 = bitcast void ()** %15 to i64*
+  %17 = load i64, i64* %16, align 8
+  store i64 %17, i64* %14, align 8
+  %18 = bitcast void ()** %11 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %18, i8 0, i64 16, i1 false) #13
+  %19 = icmp eq i64 %13, %17
+  br i1 %19, label %37, label %20
+
+20:                                               ; preds = %1
+  %21 = getelementptr inbounds %"class.std::__1::queue", %"class.std::__1::queue"* %2, i64 0, i32 0
+  %22 = getelementptr inbounds %"class.std::__1::queue", %"class.std::__1::queue"* %2, i64 0, i32 0, i32 0
+  br label %23
+
+23:                                               ; preds = %23, %20
+  %24 = phi i64 [ %13, %20 ], [ %34, %23 ]
+  %25 = call dereferenceable(112) %"struct.base::internal::Task"* @_ZN4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"* nonnull %22, i64 %24) #13
+  %26 = load i64, i64* %10, align 16
+  %27 = add i64 %26, 1
+  %28 = call dereferenceable(112) %"struct.base::internal::Task"* @_ZN4base8internal12VectorBufferINS0_4TaskEEixEm(%"class.base::internal::VectorBuffer"* nonnull %22, i64 %27) #13
+  call void @_ZN4base8internal12VectorBufferINS0_4TaskEE13DestructRangeIS2_Li0EEEvPS2_S5_(%"class.base::internal::VectorBuffer"* nonnull %22, %"struct.base::internal::Task"* %25, %"struct.base::internal::Task"* %28) #13
+  %29 = load i64, i64* %10, align 16
+  %30 = add i64 %29, 1
+  %31 = load i64, i64* %5, align 8
+  %32 = icmp eq i64 %30, %31
+  %33 = select i1 %32, i64 0, i64 %30
+  store i64 %33, i64* %10, align 16
+  call void @_ZN4base14circular_dequeINS_8internal4TaskEE25ShrinkCapacityIfNecessaryEv(%"class.base::circular_deque"* nonnull %21) #13
+  %34 = load i64, i64* %10, align 16
+  %35 = load i64, i64* %14, align 8
+  %36 = icmp eq i64 %34, %35
+  br i1 %36, label %37, label %23
+
+37:                                               ; preds = %23, %1
+  %38 = phi i64 [ %13, %1 ], [ %34, %23 ]
+  %39 = getelementptr inbounds %"class.std::__1::queue", %"class.std::__1::queue"* %2, i64 0, i32 0
+  call void @_ZN4base14circular_dequeINS_8internal4TaskEE13DestructRangeEmm(%"class.base::circular_deque"* nonnull %39, i64 %38, i64 %38) #13
+  %40 = bitcast %"class.std::__1::queue"* %2 to i8**
+  %41 = load i8*, i8** %40, align 16
+  call void @free(i8* %41) #13
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %4) #13
+  ret void
+}
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #12
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @"_ZN4base8internal9BindStateIZNS0_8Sequence5ClearEPNS0_10TaskSource11TransactionEE3$_0JNSt3__15queueINS0_4TaskENS_14circular_dequeIS9_EEEEEE7DestroyEPKNS0_13BindStateBaseE"(%"class.base::internal::BindStateBase"*) #0 align 2 {
+  %2 = icmp eq %"class.base::internal::BindStateBase"* %0, null
+  br i1 %2, label %15, label %3
+
+3:                                                ; preds = %1
+  %4 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 1
+  %5 = bitcast void ()** %4 to %"class.base::circular_deque"*
+  %6 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 3
+  %7 = bitcast i1 (%"class.base::internal::BindStateBase"*, i32)** %6 to i64*
+  %8 = load i64, i64* %7, align 8
+  %9 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 2
+  %10 = bitcast %"class.base::internal::BindStateBase"* %9 to i64*
+  %11 = load i64, i64* %10, align 8
+  tail call void @_ZN4base14circular_dequeINS_8internal4TaskEE13DestructRangeEmm(%"class.base::circular_deque"* %5, i64 %8, i64 %11) #13
+  %12 = bitcast void ()** %4 to i8**
+  %13 = load i8*, i8** %12, align 8
+  tail call void @free(i8* %13) #13
+  %14 = bitcast %"class.base::internal::BindStateBase"* %0 to i8*
+  tail call void @_ZdlPv(i8* %14) #14
+  br label %15
+
+15:                                               ; preds = %3, %1
+  ret void
+}
+
+declare void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"*, void ()*, void (%"class.base::internal::BindStateBase"*)*) unnamed_addr #1
+
+declare void @_ZN4base16TaskRunnerTraits8DestructEPKNS_10TaskRunnerE(%"class.base::TaskRunner"*) local_unnamed_addr #1
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { norecurse nounwind readonly ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { argmemonly nounwind }
+attributes #5 = { nofree norecurse nounwind ssp uwtable writeonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { norecurse nounwind readnone ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { inlinehint nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #9 = { nofree nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #10 = { nounwind readnone speculatable }
+attributes #11 = { cold noreturn nounwind }
+attributes #12 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #13 = { nounwind }
+attributes #14 = { builtin nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{i8 0, i8 2}
+!3 = !{!4}
+!4 = distinct !{!4, !5, !"_ZN4base19MakeCriticalClosureERKNS_8LocationENS_12OnceCallbackIFvvEEE: argument 0"}
+!5 = distinct !{!5, !"_ZN4base19MakeCriticalClosureERKNS_8LocationENS_12OnceCallbackIFvvEEE"}
+!6 = !{!"branch_weights", i32 2000, i32 1}
+!7 = !{!8, !10}
+!8 = distinct !{!8, !9, !"_ZN4base8internal8BindImplINS_12OnceCallbackEZNS0_8Sequence5ClearEPNS0_10TaskSource11TransactionEE3$_0JNSt3__15queueINS0_4TaskENS_14circular_dequeISA_EEEEEEEDcOT0_DpOT1_: argument 0"}
+!9 = distinct !{!9, !"_ZN4base8internal8BindImplINS_12OnceCallbackEZNS0_8Sequence5ClearEPNS0_10TaskSource11TransactionEE3$_0JNSt3__15queueINS0_4TaskENS_14circular_dequeISA_EEEEEEEDcOT0_DpOT1_"}
+!10 = distinct !{!10, !11, !"_ZN4base8BindOnceIZNS_8internal8Sequence5ClearEPNS1_10TaskSource11TransactionEE3$_0JNSt3__15queueINS1_4TaskENS_14circular_dequeIS9_EEEEEEENS_12OnceCallbackINS1_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSF_DpOSG_: argument 0"}
+!11 = distinct !{!11, !"_ZN4base8BindOnceIZNS_8internal8Sequence5ClearEPNS1_10TaskSource11TransactionEE3$_0JNSt3__15queueINS1_4TaskENS_14circular_dequeIS9_EEEEEEENS_12OnceCallbackINS1_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSF_DpOSG_"}
+!12 = !{!"branch_weights", i32 1, i32 2000}

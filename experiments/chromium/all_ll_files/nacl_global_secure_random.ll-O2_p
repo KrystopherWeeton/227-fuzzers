@@ -1,0 +1,155 @@
+; ModuleID = '../../native_client/src/shared/platform/nacl_global_secure_random.c'
+source_filename = "../../native_client/src/shared/platform/nacl_global_secure_random.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.NaClMutex = type { %union.pthread_mutex_t, i32 }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%struct.NaClSecureRng = type { %struct.NaClSecureRngIf, [1024 x i8], i32 }
+%struct.NaClSecureRngIf = type { %struct.NaClSecureRngIfVtbl* }
+%struct.NaClSecureRngIfVtbl = type { void (%struct.NaClSecureRngIf*)*, i8 (%struct.NaClSecureRngIf*)*, i32 (%struct.NaClSecureRngIf*)*, void (%struct.NaClSecureRngIf*, i8*, i64)*, i32 (%struct.NaClSecureRngIf*, i32)* }
+
+@nacl_global_rng_mu = internal global %struct.NaClMutex zeroinitializer, align 8
+@nacl_grngp = internal unnamed_addr global %struct.NaClSecureRng* @nacl_global_rng, align 8
+@.str = private unnamed_addr constant [53 x i8] c"Could not construct global random number generator.\0A\00", align 1
+@NaClGenerateRandomPath.alphabet = internal unnamed_addr constant [63 x i8] c"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\00", align 16
+@nacl_global_rng = internal global %struct.NaClSecureRng zeroinitializer, align 8
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClGlobalSecureRngInit() local_unnamed_addr #0 {
+  tail call void @NaClXMutexCtor(%struct.NaClMutex* nonnull @nacl_global_rng_mu) #2
+  %1 = load %struct.NaClSecureRng*, %struct.NaClSecureRng** @nacl_grngp, align 8
+  %2 = tail call i32 @NaClSecureRngCtor(%struct.NaClSecureRng* %1) #2
+  %3 = icmp eq i32 %2, 0
+  br i1 %3, label %4, label %5
+
+4:                                                ; preds = %0
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([53 x i8], [53 x i8]* @.str, i64 0, i64 0)) #2
+  br label %5
+
+5:                                                ; preds = %0, %4
+  ret void
+}
+
+declare void @NaClXMutexCtor(%struct.NaClMutex*) local_unnamed_addr #1
+
+declare i32 @NaClSecureRngCtor(%struct.NaClSecureRng*) local_unnamed_addr #1
+
+declare void @NaClLog(i32, i8*, ...) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClGlobalSecureRngFini() local_unnamed_addr #0 {
+  %1 = load %struct.NaClSecureRng*, %struct.NaClSecureRng** @nacl_grngp, align 8
+  %2 = getelementptr inbounds %struct.NaClSecureRng, %struct.NaClSecureRng* %1, i64 0, i32 0
+  %3 = getelementptr inbounds %struct.NaClSecureRng, %struct.NaClSecureRng* %1, i64 0, i32 0, i32 0
+  %4 = load %struct.NaClSecureRngIfVtbl*, %struct.NaClSecureRngIfVtbl** %3, align 8
+  %5 = getelementptr inbounds %struct.NaClSecureRngIfVtbl, %struct.NaClSecureRngIfVtbl* %4, i64 0, i32 0
+  %6 = load void (%struct.NaClSecureRngIf*)*, void (%struct.NaClSecureRngIf*)** %5, align 8
+  tail call void %6(%struct.NaClSecureRngIf* %2) #2
+  tail call void @NaClMutexDtor(%struct.NaClMutex* nonnull @nacl_global_rng_mu) #2
+  ret void
+}
+
+declare void @NaClMutexDtor(%struct.NaClMutex*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClGlobalSecureRngSwitchRngForTesting(%struct.NaClSecureRng*) local_unnamed_addr #0 {
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @nacl_global_rng_mu) #2
+  store %struct.NaClSecureRng* %0, %struct.NaClSecureRng** @nacl_grngp, align 8
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* nonnull @nacl_global_rng_mu) #2
+  ret void
+}
+
+declare void @NaClXMutexLock(%struct.NaClMutex*) local_unnamed_addr #1
+
+declare void @NaClXMutexUnlock(%struct.NaClMutex*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClGlobalSecureRngUniform(i32) local_unnamed_addr #0 {
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @nacl_global_rng_mu) #2
+  %2 = load %struct.NaClSecureRng*, %struct.NaClSecureRng** @nacl_grngp, align 8
+  %3 = getelementptr inbounds %struct.NaClSecureRng, %struct.NaClSecureRng* %2, i64 0, i32 0
+  %4 = getelementptr inbounds %struct.NaClSecureRng, %struct.NaClSecureRng* %2, i64 0, i32 0, i32 0
+  %5 = load %struct.NaClSecureRngIfVtbl*, %struct.NaClSecureRngIfVtbl** %4, align 8
+  %6 = getelementptr inbounds %struct.NaClSecureRngIfVtbl, %struct.NaClSecureRngIfVtbl* %5, i64 0, i32 4
+  %7 = load i32 (%struct.NaClSecureRngIf*, i32)*, i32 (%struct.NaClSecureRngIf*, i32)** %6, align 8
+  %8 = tail call i32 %7(%struct.NaClSecureRngIf* %3, i32 %0) #2
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* nonnull @nacl_global_rng_mu) #2
+  ret i32 %8
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClGlobalSecureRngUint32() local_unnamed_addr #0 {
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @nacl_global_rng_mu) #2
+  %1 = load %struct.NaClSecureRng*, %struct.NaClSecureRng** @nacl_grngp, align 8
+  %2 = getelementptr inbounds %struct.NaClSecureRng, %struct.NaClSecureRng* %1, i64 0, i32 0
+  %3 = getelementptr inbounds %struct.NaClSecureRng, %struct.NaClSecureRng* %1, i64 0, i32 0, i32 0
+  %4 = load %struct.NaClSecureRngIfVtbl*, %struct.NaClSecureRngIfVtbl** %3, align 8
+  %5 = getelementptr inbounds %struct.NaClSecureRngIfVtbl, %struct.NaClSecureRngIfVtbl* %4, i64 0, i32 2
+  %6 = load i32 (%struct.NaClSecureRngIf*)*, i32 (%struct.NaClSecureRngIf*)** %5, align 8
+  %7 = tail call i32 %6(%struct.NaClSecureRngIf* %2) #2
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* nonnull @nacl_global_rng_mu) #2
+  ret i32 %7
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClGlobalSecureRngGenerateBytes(i8*, i64) local_unnamed_addr #0 {
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @nacl_global_rng_mu) #2
+  %3 = load %struct.NaClSecureRng*, %struct.NaClSecureRng** @nacl_grngp, align 8
+  %4 = getelementptr inbounds %struct.NaClSecureRng, %struct.NaClSecureRng* %3, i64 0, i32 0
+  %5 = getelementptr inbounds %struct.NaClSecureRng, %struct.NaClSecureRng* %3, i64 0, i32 0, i32 0
+  %6 = load %struct.NaClSecureRngIfVtbl*, %struct.NaClSecureRngIfVtbl** %5, align 8
+  %7 = getelementptr inbounds %struct.NaClSecureRngIfVtbl, %struct.NaClSecureRngIfVtbl* %6, i64 0, i32 3
+  %8 = load void (%struct.NaClSecureRngIf*, i8*, i64)*, void (%struct.NaClSecureRngIf*, i8*, i64)** %7, align 8
+  tail call void %8(%struct.NaClSecureRngIf* %4, i8* %0, i64 %1) #2
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* nonnull @nacl_global_rng_mu) #2
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClGenerateRandomPath(i8* nocapture, i32) local_unnamed_addr #0 {
+  %3 = add i32 %1, -1
+  %4 = icmp sgt i32 %3, 0
+  br i1 %4, label %5, label %22
+
+5:                                                ; preds = %2
+  %6 = zext i32 %3 to i64
+  br label %7
+
+7:                                                ; preds = %7, %5
+  %8 = phi i64 [ 0, %5 ], [ %20, %7 ]
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @nacl_global_rng_mu) #2
+  %9 = load %struct.NaClSecureRng*, %struct.NaClSecureRng** @nacl_grngp, align 8
+  %10 = getelementptr inbounds %struct.NaClSecureRng, %struct.NaClSecureRng* %9, i64 0, i32 0
+  %11 = getelementptr inbounds %struct.NaClSecureRng, %struct.NaClSecureRng* %9, i64 0, i32 0, i32 0
+  %12 = load %struct.NaClSecureRngIfVtbl*, %struct.NaClSecureRngIfVtbl** %11, align 8
+  %13 = getelementptr inbounds %struct.NaClSecureRngIfVtbl, %struct.NaClSecureRngIfVtbl* %12, i64 0, i32 4
+  %14 = load i32 (%struct.NaClSecureRngIf*, i32)*, i32 (%struct.NaClSecureRngIf*, i32)** %13, align 8
+  %15 = tail call i32 %14(%struct.NaClSecureRngIf* %10, i32 62) #2
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* nonnull @nacl_global_rng_mu) #2
+  %16 = sext i32 %15 to i64
+  %17 = getelementptr inbounds [63 x i8], [63 x i8]* @NaClGenerateRandomPath.alphabet, i64 0, i64 %16
+  %18 = load i8, i8* %17, align 1
+  %19 = getelementptr inbounds i8, i8* %0, i64 %8
+  store i8 %18, i8* %19, align 1
+  %20 = add nuw nsw i64 %8, 1
+  %21 = icmp eq i64 %20, %6
+  br i1 %21, label %22, label %7
+
+22:                                               ; preds = %7, %2
+  %23 = sext i32 %3 to i64
+  %24 = getelementptr inbounds i8, i8* %0, i64 %23
+  store i8 0, i8* %24, align 1
+  ret void
+}
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}

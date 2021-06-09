@@ -1,0 +1,830 @@
+; ModuleID = '../../third_party/libvpx/source/libvpx/vp9/encoder/vp9_tokenize.c'
+source_filename = "../../third_party/libvpx/source/libvpx/vp9/encoder/vp9_tokenize.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%struct.TOKENVALUE = type { i16, i32 }
+%struct.vp9_extra_bit = type { i8*, i32, i32, i16* }
+%struct.vp9_token = type { i32, i32 }
+%struct.scan_order = type { i16*, i16*, i16* }
+%struct.macroblock = type { [3 x %struct.macroblock_plane], %struct.macroblockd, %struct.MB_MODE_INFO_EXT*, %struct.MB_MODE_INFO_EXT*, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i8, i8, [4 x i32], [4 x i32], i32, [4 x i32], [4 x i32], [4 x i32], [2 x i32*], [2 x i32*], i32**, [4 x i32], [2 x i32*], [2 x i32*], i32**, i32, i32, %struct.MvLimits, [4 x [256 x i8]], [4 x i32], i32, i32, [4 x [2 x [2 x [6 x [2 x [6 x [12 x i32]]]]]]], i32, i32, i32, i32, i32, [12 x i8], [12 x i64], [4 x %struct.mv], [2 x i8], i8, i8, i8, i8, i32, i32, i32, i32, i32, i8, [25 x i8], i8, i8, void (i16*, i32*, i32)*, void (i32*, i8*, i32, i32)*, void (i32*, i16*, i32, i32, i32)*, [8 x i8], [4096 x i8], %struct.scale_factors*, [8 x i8] }
+%struct.macroblock_plane = type { [4096 x i16], i32*, i32*, i16*, %struct.buf_2d, [8 x i8], [8 x i16], i16*, i16*, i16*, i16*, i16*, [2 x i64], [8 x i8] }
+%struct.buf_2d = type { i8*, i32 }
+%struct.macroblockd = type { [3 x %struct.macroblockd_plane], i8, i8, %struct.FRAME_COUNTS*, %struct.TileInfo, i32, %struct.MODE_INFO**, %struct.MODE_INFO*, %struct.MODE_INFO*, i32, i32, [3 x i8]*, i32, i32, i32, i32, %struct.frame_contexts*, [2 x %struct.RefBuffer*], %struct.yv12_buffer_config*, [3 x i8*], [3 x [16 x i8]], i8*, [8 x i8], i32, i32, i32, %struct.vpx_internal_error_info*, i32* }
+%struct.macroblockd_plane = type { i32*, i32, i32, %struct.buf_2d, [2 x %struct.buf_2d], i8*, i8*, [8 x [2 x i16]], i16, i16, i8, i8, i16*, i32* }
+%struct.FRAME_COUNTS = type { [4 x [10 x i32]], [10 x [10 x i32]], [16 x [4 x i32]], [4 x [2 x [2 x [6 x [6 x [4 x i32]]]]]], [4 x [2 x [2 x [6 x [6 x i32]]]]], [4 x [3 x i32]], [7 x [4 x i32]], [4 x [2 x i32]], [5 x [2 x i32]], [5 x [2 x [2 x i32]]], [5 x [2 x i32]], %struct.tx_counts, [3 x [2 x i32]], %struct.nmv_context_counts }
+%struct.tx_counts = type { [2 x [4 x i32]], [2 x [3 x i32]], [2 x [2 x i32]], [4 x i32] }
+%struct.nmv_context_counts = type { [4 x i32], [2 x %struct.nmv_component_counts] }
+%struct.nmv_component_counts = type { [2 x i32], [11 x i32], [2 x i32], [10 x [2 x i32]], [2 x [4 x i32]], [4 x i32], [2 x i32], [2 x i32] }
+%struct.TileInfo = type { i32, i32, i32, i32 }
+%struct.MODE_INFO = type { i8, i8, i8, i8, i8, i8, i8, i8, [2 x i8], [2 x %union.int_mv], [4 x %struct.b_mode_info] }
+%union.int_mv = type { i32 }
+%struct.b_mode_info = type { i8, [2 x %union.int_mv] }
+%struct.frame_contexts = type { [4 x [9 x i8]], [10 x [9 x i8]], [16 x [3 x i8]], [4 x [2 x [2 x [6 x [6 x [3 x i8]]]]]], [4 x [2 x i8]], [7 x [3 x i8]], [4 x i8], [5 x i8], [5 x [2 x i8]], [5 x i8], %struct.tx_probs, [3 x i8], %struct.nmv_context, i32 }
+%struct.tx_probs = type { [2 x [3 x i8]], [2 x [2 x i8]], [2 x [1 x i8]] }
+%struct.nmv_context = type { [3 x i8], [2 x %struct.nmv_component] }
+%struct.nmv_component = type { i8, [10 x i8], [1 x i8], [10 x i8], [2 x [3 x i8]], [3 x i8], i8, i8 }
+%struct.RefBuffer = type { i32, %struct.yv12_buffer_config*, %struct.scale_factors }
+%struct.scale_factors = type { i32, i32, i32, i32, i32 (i32, %struct.scale_factors*)*, i32 (i32, %struct.scale_factors*)*, [2 x [2 x [2 x void (i8*, i64, i8*, i64, [8 x i16]*, i32, i32, i32, i32, i32, i32)*]]], [2 x [2 x [2 x void (i16*, i64, i16*, i64, [8 x i16]*, i32, i32, i32, i32, i32, i32, i32)*]]] }
+%struct.yv12_buffer_config = type { i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i8*, i8*, i8*, i8*, i8*, i64, i32, i64, i32, i32, i32, i32, i32, i32, i32, i32, i32 }
+%struct.vpx_internal_error_info = type { i32, i32, [80 x i8], i32, [1 x %struct.__jmp_buf_tag] }
+%struct.__jmp_buf_tag = type { [8 x i64], i32, %struct.__sigset_t }
+%struct.__sigset_t = type { [16 x i64] }
+%struct.MB_MODE_INFO_EXT = type { [4 x [2 x %union.int_mv]], [4 x i8] }
+%struct.MvLimits = type { i32, i32, i32, i32 }
+%struct.mv = type { i16, i16 }
+%struct.is_skippable_args = type { i16*, i32* }
+%struct.VP9_COMP = type { %struct.FRAME_INFO, [8 x i8], %struct.QUANTS, %struct.ThreadData, %struct.MB_MODE_INFO_EXT*, [8 x i8], [256 x [8 x i16]], [256 x [8 x i16]], %struct.VP9Common, %struct.VP9EncoderConfig, %struct.lookahead_ctx*, %struct.lookahead_entry*, %struct.yv12_buffer_config*, %struct.yv12_buffer_config*, %struct.yv12_buffer_config*, %struct.yv12_buffer_config, %struct.yv12_buffer_config*, %struct.yv12_buffer_config, %struct.yv12_buffer_config*, i8, [50 x %struct.TplDepFrame], [8 x %struct.yv12_buffer_config*], [8 x %struct.EncFrameBuf], %union.pthread_mutex_t, i32, %struct.KMEANS_DATA*, i32, i32, [8 x double], [8 x double], [8 x i32], i32, %struct.TileDataEnc*, i32, i32, [3 x i32], i32, i32, i32, [8 x i32], i32, i32, i32, i32, i32, i32, i32, i32, i32, i64, i64*, i32, i32, double*, %struct.yv12_buffer_config, [4 x [64 x %struct.TOKENEXTRA*]], [4 x [64 x %struct.TOKENLIST*]], i64, %struct.RD_OPT, %struct.CODING_CONTEXT, [2 x i32*], [2 x i32*], [2 x i32*], [2 x i32*], i64, i64, i64, %struct.RATE_CONTROL, double, [8 x [4 x i32]], %struct.vpx_codec_pkt_list*, [25 x %struct.MBGRAPH_FRAME_STATS], i32, i32, i32, %struct.SPEED_FEATURES, i32, i32, i32, i32, i32, i8*, i8*, [8 x i32], %struct.CYCLIC_REFRESH*, %struct.ActiveMap, i32 (%struct.macroblock*, %struct.mv*, %struct.mv*, i32, i32, %struct.vp9_variance_vtable*, i32, i32, i32*, i32*, i32**, i32*, i32*, i8*, i32, i32, i32)*, %struct.scale_factors, i32 (%struct.macroblock*, %struct.search_site_config*, %struct.mv*, %struct.mv*, i32, i32, i32*, %struct.vp9_variance_vtable*, %struct.mv*)*, [13 x %struct.vp9_variance_vtable], i64, i64, i64, i64, %struct.TWO_PASS, i8, %struct.yv12_buffer_config, %struct.ALT_REF_AQ*, i32, i32, i32, i32, i32, i32, %struct.SVC, %struct.diff*, i32, i32, i32, %struct.search_site_config, [10 x i32], [7 x [4 x i32]], [2 x [10 x [10 x i32]]], [10 x [10 x [10 x i32]]], [4 x [3 x i32]], [16 x [4 x i32]], [3 x [2 x [4 x i32]]], %struct.vp9_denoiser, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, %struct.noise_estimate, i8*, [4 x i64], i64, i64, i64, i8, i32, %struct.VPxWorker*, %struct.EncWorkerData*, %struct.VP9LfSyncData, %struct.VP9BitstreamWorkerData*, i32, %struct.Vp9LevelInfo, %struct.MultiThreadHandle, void (%struct.VP9RowMTSyncData*, i32, i32)*, void (%struct.VP9RowMTSyncData*, i32, i32, i32)*, %struct.ARNRFilterData, i32, i32, i8*, i8*, i8*, i8*, i8, i8, i8*, i32, %struct.LevelConstraint, i8*, i8*, i32, %struct.vpx_roi_map, i32, %struct.EXT_RATECTRL, [8 x i8] }
+%struct.FRAME_INFO = type { i32, i32, i32, i32, i32, i32, i32, i32, i32, i32 }
+%struct.QUANTS = type { [256 x [8 x i16]], [256 x [8 x i16]], [256 x [8 x i16]], [256 x [8 x i16]], [256 x [8 x i16]], [256 x [8 x i16]], [256 x [8 x i16]], [256 x [8 x i16]], [256 x [8 x i16]], [256 x [8 x i16]], [256 x [8 x i16]], [256 x [8 x i16]] }
+%struct.ThreadData = type { %struct.macroblock, %struct.RD_COUNTS, %struct.FRAME_COUNTS*, %struct.PICK_MODE_CONTEXT*, %struct.PC_TREE*, %struct.PC_TREE*, [8 x i8] }
+%struct.RD_COUNTS = type { [4 x [2 x [2 x [6 x [6 x [12 x i32]]]]]], [3 x i64], [4 x i64] }
+%struct.PICK_MODE_CONTEXT = type { %struct.MODE_INFO, %struct.MB_MODE_INFO_EXT, i8*, [3 x [3 x i32*]], [3 x [3 x i32*]], [3 x [3 x i32*]], [3 x [3 x i16*]], [3 x [3 x i32*]], [3 x [3 x i32*]], [3 x [3 x i32*]], [3 x [3 x i16*]], i32, i32, i32, i32, i32, [12 x i8], i32, i32, i32, i32, [4 x i64], i32, i64, i64, i32, i32, i32, i8, %union.int_mv, i8, i8, i32, [4 x %struct.mv], i8, i32, i8 }
+%struct.PC_TREE = type { i32, i32, i8, %struct.PICK_MODE_CONTEXT, [2 x %struct.PICK_MODE_CONTEXT], [2 x %struct.PICK_MODE_CONTEXT], %union.anon, %struct.mv }
+%union.anon = type { [4 x %struct.PC_TREE*] }
+%struct.VP9Common = type { %struct.vpx_internal_error_info, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, %struct.yv12_buffer_config*, %struct.RefCntBuffer*, %struct.RefCntBuffer*, [8 x i32], [8 x i32], [3 x %struct.RefBuffer], i32, i32, %struct.yv12_buffer_config, %struct.yv12_buffer_config, i32, i32, i32, i32, i32, i8, i8, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, [8 x [2 x i16]], [8 x [2 x i16]], i32, %struct.MODE_INFO*, %struct.MODE_INFO*, %struct.MODE_INFO*, %struct.MODE_INFO*, i32 (%struct.VP9Common*, i32)*, void (%struct.VP9Common*)*, void (%struct.VP9Common*)*, %struct.MODE_INFO**, %struct.MODE_INFO**, %struct.MODE_INFO**, %struct.MODE_INFO**, i32, i32, i32, [2 x i8*], i8*, i8*, i32, i8, [11 x i8], %struct.loop_filter_info_n, i32, [4 x i32], %struct.loopfilter, %struct.segmentation, i8, [2 x i8], i32, %struct.frame_contexts*, %struct.frame_contexts*, i32, %struct.FRAME_COUNTS, i32, i32, i32, i32, i32, %struct.postproc_state, i32, i32, i32, i32, i32, i32, %struct.BufferPool*, i8*, i8*, i32, i32, [8 x i8] }
+%struct.RefCntBuffer = type { i32, %struct.MV_REF*, i32, i32, i8, i32, i32, %struct.vpx_codec_frame_buffer, %struct.yv12_buffer_config }
+%struct.MV_REF = type { [2 x %union.int_mv], [2 x i8] }
+%struct.vpx_codec_frame_buffer = type { i8*, i64, i8* }
+%struct.loop_filter_info_n = type { [64 x %struct.loop_filter_thresh], [8 x [4 x [2 x i8]]] }
+%struct.loop_filter_thresh = type { [16 x i8], [16 x i8], [16 x i8] }
+%struct.loopfilter = type { i32, i32, i32, i32, i8, i8, [4 x i8], [4 x i8], [2 x i8], [2 x i8], %struct.LOOP_FILTER_MASK*, i32 }
+%struct.LOOP_FILTER_MASK = type { [4 x i64], [4 x i64], i64, [4 x i16], [4 x i16], i16, [64 x i8] }
+%struct.segmentation = type { i8, i8, i8, i8, i8, [7 x i8], [3 x i8], [8 x [4 x i16]], [8 x i32], i32 }
+%struct.postproc_state = type { i32, i32, i32, i32, %struct.MODE_INFO*, %struct.MODE_INFO*, i32, i8*, i8* }
+%struct.BufferPool = type { i8*, i32 (i8*, i64, %struct.vpx_codec_frame_buffer*)*, i32 (i8*, %struct.vpx_codec_frame_buffer*)*, [12 x %struct.RefCntBuffer], %struct.InternalFrameBufferList }
+%struct.InternalFrameBufferList = type { i32, %struct.InternalFrameBuffer* }
+%struct.InternalFrameBuffer = type { i8*, i64, i32 }
+%struct.VP9EncoderConfig = type { i32, i32, i32, i32, i32, double, %struct.vpx_rational, %struct.vpx_rational64, i64, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i64, i64, i64, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, [12 x i32], [5 x i32], [5 x i32], [5 x i32], i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, %struct.vpx_fixed_buf, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32 }
+%struct.vpx_rational = type { i32, i32 }
+%struct.vpx_rational64 = type { i64, i32 }
+%struct.vpx_fixed_buf = type { i8*, i64 }
+%struct.lookahead_ctx = type { i32, i32, i32, i32, i32, %struct.lookahead_entry* }
+%struct.lookahead_entry = type { %struct.yv12_buffer_config, i64, i64, i32, i64 }
+%struct.TplDepFrame = type { i8, %struct.TplDepStats*, i32, i32, i32, i32, i32, i32 }
+%struct.TplDepStats = type { i64, i64, i64, i64, i64, i32, %union.int_mv }
+%struct.EncFrameBuf = type { i32, i32, %struct.yv12_buffer_config }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%struct.KMEANS_DATA = type { double, i32, i32 }
+%struct.TileDataEnc = type { %struct.TileInfo, [13 x [30 x i32]], [13 x [30 x i8]], %struct.FIRSTPASS_DATA, %struct.VP9RowMTSyncData, i32* }
+%struct.FIRSTPASS_DATA = type { double, double, i64, i64, i64, i64, i32, i32, double, double, double, i32, i32, i32, i32, i32, i32, i32, i64, i64, i32, i32 }
+%struct.VP9RowMTSyncData = type { %union.pthread_mutex_t*, %union.pthread_cond_t*, i32*, i32, i32 }
+%union.pthread_cond_t = type { %struct.__pthread_cond_s }
+%struct.__pthread_cond_s = type { %union.anon.0, %union.anon.1, [2 x i32], [2 x i32], i32, i32, [2 x i32] }
+%union.anon.0 = type { i64 }
+%union.anon.1 = type { i64 }
+%struct.TOKENEXTRA = type { i8*, i16, i32 }
+%struct.TOKENLIST = type { %struct.TOKENEXTRA*, %struct.TOKENEXTRA*, i32 }
+%struct.RD_OPT = type { [30 x i32], [6 x i32], [8 x [13 x [30 x i32]]], [4 x [3 x i64]], [4 x [4 x i64]], i32, i32, double }
+%struct.CODING_CONTEXT = type { [4 x i32], [2 x [32767 x i32]], [2 x [32767 x i32]], [3 x i8], i8*, [4 x i8], [2 x i8], %struct.frame_contexts }
+%struct.RATE_CONTROL = type { i32, i32, i32, i32, [2 x i32], i32, i32, i32, i32, i32, [5 x double], i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, [2 x i32], double, double, i64, i64, i64, i64, i32, i32, i32, i32, i32, i32, i32, i64, i64, i64, i32, i32, i64, i64, i64, i32, i32, i32, i32, i32, i32, i32, [2 x i32], [2 x i32], [5 x i32], i32, i32, [25 x i64], i64, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, double, i32, i32, i32, i32, i32, [5 x i32], double, i32, i32, i32, i32 }
+%struct.vpx_codec_pkt_list = type { i32, i32, [1 x %struct.vpx_codec_cx_pkt] }
+%struct.vpx_codec_cx_pkt = type { i32, %union.anon.3 }
+%union.anon.3 = type { %struct.anon.4, [40 x i8] }
+%struct.anon.4 = type { i8*, i64, i64, i64, i32, i32, [5 x i32], [5 x i32], [5 x i8] }
+%struct.MBGRAPH_FRAME_STATS = type { %struct.MBGRAPH_MB_STATS* }
+%struct.MBGRAPH_MB_STATS = type { [4 x %struct.anon.5] }
+%struct.anon.5 = type { i32, %union.anon.6 }
+%union.anon.6 = type { %union.int_mv }
+%struct.SPEED_FEATURES = type { %struct.MV_SPEED_FEATURES, i32, i32, i32, i32, i8, i32, i32, i32, i32, i32, i32, i32, double, i32, i32, i32, double, i32, i32, i32, i32, i32, i32, i32, i8, i32, i32, i8, i8, i32, i32, i8, i8, i8, i32, i32, i32, i32, i32, i32, [4 x %struct.MESH_PATTERN], i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, [4 x i32], [4 x i32], [13 x i32], i32, i32, i32, i32, i32, [13 x i32], i32, i32, i32, i8, i32, i32, i32, i8, i32, i32, i32, %struct.PARTITION_SEARCH_BREAKOUT_THR, %struct.anon.7, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32 }
+%struct.MV_SPEED_FEATURES = type { i32, i32, i32, i32, i32, i32, i32, %struct.ADAPT_SUBPEL_FORCE_STOP, i32 }
+%struct.ADAPT_SUBPEL_FORCE_STOP = type { i32, i32, i32 }
+%struct.MESH_PATTERN = type { i32, i32 }
+%struct.PARTITION_SEARCH_BREAKOUT_THR = type { i64, i32 }
+%struct.anon.7 = type { i32, [3 x float], i32, i32, [4 x i32] }
+%struct.CYCLIC_REFRESH = type { i32, i32, i32, i32, i32, i32, i32, i32, i8*, i8*, i64, i64, i16, double, i32, double, [3 x i32], i32, double, i32, i32, i32 }
+%struct.ActiveMap = type { i32, i32, i8* }
+%struct.vp9_variance_vtable = type { i32 (i8*, i32, i8*, i32)*, i32 (i8*, i32, i8*, i32, i8*)*, i32 (i8*, i32, i8*, i32, i32*)*, i32 (i8*, i32, i32, i32, i8*, i32, i32*)*, i32 (i8*, i32, i32, i32, i8*, i32, i32*, i8*)*, void (i8*, i32, i8**, i32, i32*)*, void (i8*, i32, i8*, i32, i32*)* }
+%struct.TWO_PASS = type { i32, i32, %struct.FIRSTPASS_STATS, %struct.FIRSTPASS_STATS, %struct.FIRSTPASS_STATS*, %struct.FIRSTPASS_STATS*, %struct.FIRSTPASS_STATS*, %struct.FIRST_PASS_INFO, %struct.FIRSTPASS_STATS, i32, i64, double, double, double, double, %struct.FP_MB_FLOAT_STATS*, i32, i64, double, double, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, [6 x i32], %struct.GF_GROUP }
+%struct.FIRST_PASS_INFO = type { %struct.FIRSTPASS_STATS*, i32 }
+%struct.FIRSTPASS_STATS = type { double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, i64 }
+%struct.FP_MB_FLOAT_STATS = type { double, double, double }
+%struct.GF_GROUP = type { i8, [252 x i32], [252 x i32], [252 x i8], [252 x i8], [252 x i8], [252 x i32], [252 x i32], i32, i32, [50 x i32], i32, i32, i32, i32, i32, i32 }
+%struct.ALT_REF_AQ = type opaque
+%struct.SVC = type { i32, i32, i32, i32, i32, i32, %struct.lookahead_entry, i32, [25 x %struct.yv12_buffer_config], %struct.yv12_buffer_config, i32, i32, [12 x %struct.LAYER_CONTEXT], i32, [12 x i32], [12 x i32], [12 x i32], [12 x i32], i32, i32, i32, [2 x %struct.BUFFER_LONGTERM_REF], i32, i32, i32, i32, [5 x i8], [5 x i32], i8*, [12 x i32], [12 x i32], [12 x i32], i32, i32, i32, [12 x i32], [12 x i32], [12 x i32], [12 x i32], [12 x i32], i32, i32, i32, i32, i32, [5 x i32], [5 x i8], [5 x i8], [5 x i8], [5 x i8], [5 x i8], [5 x i8], [5 x i32], [8 x i8], [8 x i8], [5 x i32], i8, i8, i8, [8 x i8], i32, [5 x i32], i32, [5 x i64], i64, i64, [5 x i64], i32, i32, i32, i32 }
+%struct.LAYER_CONTEXT = type { %struct.RATE_CONTROL, i32, i32, double, i32, i32, i32, i32, i32, i32, i32, %struct.TWO_PASS, %struct.vpx_fixed_buf, i32, i32, i32, i32, %struct.lookahead_entry*, i32, i32, i32, i64, i32, i8*, i8*, i8*, i32, i32, i32, i8, i32 }
+%struct.BUFFER_LONGTERM_REF = type { i32, i32 }
+%struct.diff = type { i32, i32, i32 }
+%struct.search_site_config = type { [88 x %struct.mv], [88 x i64], i32, i32 }
+%struct.vp9_denoiser = type { %struct.yv12_buffer_config*, %struct.yv12_buffer_config*, %struct.yv12_buffer_config, i32, i32, i32, i32, i32, i32, i32 }
+%struct.noise_estimate = type { i32, i32, i32, i32, i32, i32, i32, i32, i32 }
+%struct.VPxWorker = type { %struct.VPxWorkerImpl*, i32, i32 (i8*, i8*)*, i8*, i8*, i32 }
+%struct.VPxWorkerImpl = type opaque
+%struct.EncWorkerData = type { %struct.VP9_COMP*, %struct.ThreadData*, i32, i32, [64 x i32] }
+%struct.VP9LfSyncData = type { %union.pthread_mutex_t*, %union.pthread_cond_t*, i32*, i32, i32, %struct.LoopFilterWorkerData*, i32, i32, %union.pthread_mutex_t*, %union.pthread_mutex_t*, %union.pthread_cond_t*, i32*, i32 }
+%struct.LoopFilterWorkerData = type { %struct.yv12_buffer_config*, %struct.VP9Common*, [3 x %struct.macroblockd_plane], i32, i32, i32 }
+%struct.VP9BitstreamWorkerData = type opaque
+%struct.Vp9LevelInfo = type { %struct.Vp9LevelStats, %struct.Vp9LevelSpec }
+%struct.Vp9LevelStats = type { i8, i32, i64, i64, double, %struct.FrameWindowBuffer, i32 }
+%struct.FrameWindowBuffer = type { [128 x %struct.FrameRecord], i8, i8 }
+%struct.FrameRecord = type { i64, i32, i32 }
+%struct.Vp9LevelSpec = type { i32, i64, i32, i32, double, double, double, i8, i32, i8 }
+%struct.MultiThreadHandle = type { i32, i32, i32, [4 x i32], %struct.JobQueue*, i32, [64 x %struct.RowMTInfo], [80 x i32] }
+%struct.JobQueue = type { i8*, %struct.JobNode }
+%struct.JobNode = type { i32, i32, i32 }
+%struct.RowMTInfo = type { %struct.JobQueueHandle, %union.pthread_mutex_t }
+%struct.JobQueueHandle = type { i8*, i32 }
+%struct.ARNRFilterData = type { [25 x %struct.yv12_buffer_config*], i32, i32, i32, %struct.scale_factors }
+%struct.LevelConstraint = type { i8, i8, i32, double }
+%struct.vpx_roi_map = type { i8, i8*, i32, i32, [8 x i32], [8 x i32], [8 x i32], [8 x i32], [4 x i32] }
+%struct.EXT_RATECTRL = type { i32, i8*, %struct.vpx_rc_funcs, %struct.vpx_rc_config, %struct.vpx_rc_firstpass_stats }
+%struct.vpx_rc_funcs = type { i32 (i8*, %struct.vpx_rc_config*, i8**)*, i32 (i8*, %struct.vpx_rc_firstpass_stats*)*, i32 (i8*, %struct.vpx_rc_encodeframe_info*, %struct.vpx_rc_encodeframe_decision*)*, i32 (i8*, %struct.vpx_rc_encodeframe_result*)*, i32 (i8*)*, i8* }
+%struct.vpx_rc_encodeframe_info = type { i32, i32, i32, i32, [3 x i32], [3 x i32] }
+%struct.vpx_rc_encodeframe_decision = type { i32 }
+%struct.vpx_rc_encodeframe_result = type { i64, i64, i64 }
+%struct.vpx_rc_config = type { i32, i32, i32, i32, i32, i32 }
+%struct.vpx_rc_firstpass_stats = type { %struct.vpx_rc_frame_stats*, i32 }
+%struct.vpx_rc_frame_stats = type { double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double }
+%struct.tokenize_b_args = type { %struct.VP9_COMP*, %struct.ThreadData*, %struct.TOKENEXTRA** }
+
+@dct_cat_lt_10_value_tokens = internal constant [133 x %struct.TOKENVALUE] [%struct.TOKENVALUE { i16 9, i32 63 }, %struct.TOKENVALUE { i16 9, i32 61 }, %struct.TOKENVALUE { i16 9, i32 59 }, %struct.TOKENVALUE { i16 9, i32 57 }, %struct.TOKENVALUE { i16 9, i32 55 }, %struct.TOKENVALUE { i16 9, i32 53 }, %struct.TOKENVALUE { i16 9, i32 51 }, %struct.TOKENVALUE { i16 9, i32 49 }, %struct.TOKENVALUE { i16 9, i32 47 }, %struct.TOKENVALUE { i16 9, i32 45 }, %struct.TOKENVALUE { i16 9, i32 43 }, %struct.TOKENVALUE { i16 9, i32 41 }, %struct.TOKENVALUE { i16 9, i32 39 }, %struct.TOKENVALUE { i16 9, i32 37 }, %struct.TOKENVALUE { i16 9, i32 35 }, %struct.TOKENVALUE { i16 9, i32 33 }, %struct.TOKENVALUE { i16 9, i32 31 }, %struct.TOKENVALUE { i16 9, i32 29 }, %struct.TOKENVALUE { i16 9, i32 27 }, %struct.TOKENVALUE { i16 9, i32 25 }, %struct.TOKENVALUE { i16 9, i32 23 }, %struct.TOKENVALUE { i16 9, i32 21 }, %struct.TOKENVALUE { i16 9, i32 19 }, %struct.TOKENVALUE { i16 9, i32 17 }, %struct.TOKENVALUE { i16 9, i32 15 }, %struct.TOKENVALUE { i16 9, i32 13 }, %struct.TOKENVALUE { i16 9, i32 11 }, %struct.TOKENVALUE { i16 9, i32 9 }, %struct.TOKENVALUE { i16 9, i32 7 }, %struct.TOKENVALUE { i16 9, i32 5 }, %struct.TOKENVALUE { i16 9, i32 3 }, %struct.TOKENVALUE { i16 9, i32 1 }, %struct.TOKENVALUE { i16 8, i32 31 }, %struct.TOKENVALUE { i16 8, i32 29 }, %struct.TOKENVALUE { i16 8, i32 27 }, %struct.TOKENVALUE { i16 8, i32 25 }, %struct.TOKENVALUE { i16 8, i32 23 }, %struct.TOKENVALUE { i16 8, i32 21 }, %struct.TOKENVALUE { i16 8, i32 19 }, %struct.TOKENVALUE { i16 8, i32 17 }, %struct.TOKENVALUE { i16 8, i32 15 }, %struct.TOKENVALUE { i16 8, i32 13 }, %struct.TOKENVALUE { i16 8, i32 11 }, %struct.TOKENVALUE { i16 8, i32 9 }, %struct.TOKENVALUE { i16 8, i32 7 }, %struct.TOKENVALUE { i16 8, i32 5 }, %struct.TOKENVALUE { i16 8, i32 3 }, %struct.TOKENVALUE { i16 8, i32 1 }, %struct.TOKENVALUE { i16 7, i32 15 }, %struct.TOKENVALUE { i16 7, i32 13 }, %struct.TOKENVALUE { i16 7, i32 11 }, %struct.TOKENVALUE { i16 7, i32 9 }, %struct.TOKENVALUE { i16 7, i32 7 }, %struct.TOKENVALUE { i16 7, i32 5 }, %struct.TOKENVALUE { i16 7, i32 3 }, %struct.TOKENVALUE { i16 7, i32 1 }, %struct.TOKENVALUE { i16 6, i32 7 }, %struct.TOKENVALUE { i16 6, i32 5 }, %struct.TOKENVALUE { i16 6, i32 3 }, %struct.TOKENVALUE { i16 6, i32 1 }, %struct.TOKENVALUE { i16 5, i32 3 }, %struct.TOKENVALUE { i16 5, i32 1 }, %struct.TOKENVALUE { i16 4, i32 1 }, %struct.TOKENVALUE { i16 3, i32 1 }, %struct.TOKENVALUE { i16 2, i32 1 }, %struct.TOKENVALUE { i16 1, i32 1 }, %struct.TOKENVALUE zeroinitializer, %struct.TOKENVALUE { i16 1, i32 0 }, %struct.TOKENVALUE { i16 2, i32 0 }, %struct.TOKENVALUE { i16 3, i32 0 }, %struct.TOKENVALUE { i16 4, i32 0 }, %struct.TOKENVALUE { i16 5, i32 0 }, %struct.TOKENVALUE { i16 5, i32 2 }, %struct.TOKENVALUE { i16 6, i32 0 }, %struct.TOKENVALUE { i16 6, i32 2 }, %struct.TOKENVALUE { i16 6, i32 4 }, %struct.TOKENVALUE { i16 6, i32 6 }, %struct.TOKENVALUE { i16 7, i32 0 }, %struct.TOKENVALUE { i16 7, i32 2 }, %struct.TOKENVALUE { i16 7, i32 4 }, %struct.TOKENVALUE { i16 7, i32 6 }, %struct.TOKENVALUE { i16 7, i32 8 }, %struct.TOKENVALUE { i16 7, i32 10 }, %struct.TOKENVALUE { i16 7, i32 12 }, %struct.TOKENVALUE { i16 7, i32 14 }, %struct.TOKENVALUE { i16 8, i32 0 }, %struct.TOKENVALUE { i16 8, i32 2 }, %struct.TOKENVALUE { i16 8, i32 4 }, %struct.TOKENVALUE { i16 8, i32 6 }, %struct.TOKENVALUE { i16 8, i32 8 }, %struct.TOKENVALUE { i16 8, i32 10 }, %struct.TOKENVALUE { i16 8, i32 12 }, %struct.TOKENVALUE { i16 8, i32 14 }, %struct.TOKENVALUE { i16 8, i32 16 }, %struct.TOKENVALUE { i16 8, i32 18 }, %struct.TOKENVALUE { i16 8, i32 20 }, %struct.TOKENVALUE { i16 8, i32 22 }, %struct.TOKENVALUE { i16 8, i32 24 }, %struct.TOKENVALUE { i16 8, i32 26 }, %struct.TOKENVALUE { i16 8, i32 28 }, %struct.TOKENVALUE { i16 8, i32 30 }, %struct.TOKENVALUE { i16 9, i32 0 }, %struct.TOKENVALUE { i16 9, i32 2 }, %struct.TOKENVALUE { i16 9, i32 4 }, %struct.TOKENVALUE { i16 9, i32 6 }, %struct.TOKENVALUE { i16 9, i32 8 }, %struct.TOKENVALUE { i16 9, i32 10 }, %struct.TOKENVALUE { i16 9, i32 12 }, %struct.TOKENVALUE { i16 9, i32 14 }, %struct.TOKENVALUE { i16 9, i32 16 }, %struct.TOKENVALUE { i16 9, i32 18 }, %struct.TOKENVALUE { i16 9, i32 20 }, %struct.TOKENVALUE { i16 9, i32 22 }, %struct.TOKENVALUE { i16 9, i32 24 }, %struct.TOKENVALUE { i16 9, i32 26 }, %struct.TOKENVALUE { i16 9, i32 28 }, %struct.TOKENVALUE { i16 9, i32 30 }, %struct.TOKENVALUE { i16 9, i32 32 }, %struct.TOKENVALUE { i16 9, i32 34 }, %struct.TOKENVALUE { i16 9, i32 36 }, %struct.TOKENVALUE { i16 9, i32 38 }, %struct.TOKENVALUE { i16 9, i32 40 }, %struct.TOKENVALUE { i16 9, i32 42 }, %struct.TOKENVALUE { i16 9, i32 44 }, %struct.TOKENVALUE { i16 9, i32 46 }, %struct.TOKENVALUE { i16 9, i32 48 }, %struct.TOKENVALUE { i16 9, i32 50 }, %struct.TOKENVALUE { i16 9, i32 52 }, %struct.TOKENVALUE { i16 9, i32 54 }, %struct.TOKENVALUE { i16 9, i32 56 }, %struct.TOKENVALUE { i16 9, i32 58 }, %struct.TOKENVALUE { i16 9, i32 60 }, %struct.TOKENVALUE { i16 9, i32 62 }], align 16
+@vp9_dct_cat_lt_10_value_tokens = hidden local_unnamed_addr global %struct.TOKENVALUE* bitcast (i16* getelementptr inbounds ([133 x %struct.TOKENVALUE], [133 x %struct.TOKENVALUE]* @dct_cat_lt_10_value_tokens, i64 0, i64 66, i32 0) to %struct.TOKENVALUE*), align 8
+@dct_cat_lt_10_value_cost = internal constant [133 x i32] [i32 3773, i32 3750, i32 3704, i32 3681, i32 3623, i32 3600, i32 3554, i32 3531, i32 3432, i32 3409, i32 3363, i32 3340, i32 3282, i32 3259, i32 3213, i32 3190, i32 3136, i32 3113, i32 3067, i32 3044, i32 2986, i32 2963, i32 2917, i32 2894, i32 2795, i32 2772, i32 2726, i32 2703, i32 2645, i32 2622, i32 2576, i32 2553, i32 3197, i32 3116, i32 3058, i32 2977, i32 2881, i32 2800, i32 2742, i32 2661, i32 2615, i32 2534, i32 2476, i32 2395, i32 2299, i32 2218, i32 2160, i32 2079, i32 2566, i32 2427, i32 2334, i32 2195, i32 2023, i32 1884, i32 1791, i32 1652, i32 1893, i32 1696, i32 1453, i32 1256, i32 1229, i32 864, i32 512, i32 512, i32 512, i32 512, i32 0, i32 512, i32 512, i32 512, i32 512, i32 864, i32 1229, i32 1256, i32 1453, i32 1696, i32 1893, i32 1652, i32 1791, i32 1884, i32 2023, i32 2195, i32 2334, i32 2427, i32 2566, i32 2079, i32 2160, i32 2218, i32 2299, i32 2395, i32 2476, i32 2534, i32 2615, i32 2661, i32 2742, i32 2800, i32 2881, i32 2977, i32 3058, i32 3116, i32 3197, i32 2553, i32 2576, i32 2622, i32 2645, i32 2703, i32 2726, i32 2772, i32 2795, i32 2894, i32 2917, i32 2963, i32 2986, i32 3044, i32 3067, i32 3113, i32 3136, i32 3190, i32 3213, i32 3259, i32 3282, i32 3340, i32 3363, i32 3409, i32 3432, i32 3531, i32 3554, i32 3600, i32 3623, i32 3681, i32 3704, i32 3750, i32 3773], align 16
+@vp9_dct_cat_lt_10_value_cost = hidden local_unnamed_addr global i32* getelementptr inbounds ([133 x i32], [133 x i32]* @dct_cat_lt_10_value_cost, i64 0, i64 66), align 8
+@vp9_coef_tree = hidden local_unnamed_addr constant [22 x i8] c"\F5\02\00\04\FF\06\08\0C\FE\0A\FD\FC\0E\10\FB\FA\12\14\F9\F8\F7\F6", align 16
+@vp9_cat6_low_cost = hidden local_unnamed_addr constant [256 x i16] [i16 3378, i16 3390, i16 3401, i16 3413, i16 3435, i16 3447, i16 3458, i16 3470, i16 3517, i16 3529, i16 3540, i16 3552, i16 3574, i16 3586, i16 3597, i16 3609, i16 3671, i16 3683, i16 3694, i16 3706, i16 3728, i16 3740, i16 3751, i16 3763, i16 3810, i16 3822, i16 3833, i16 3845, i16 3867, i16 3879, i16 3890, i16 3902, i16 3973, i16 3985, i16 3996, i16 4008, i16 4030, i16 4042, i16 4053, i16 4065, i16 4112, i16 4124, i16 4135, i16 4147, i16 4169, i16 4181, i16 4192, i16 4204, i16 4266, i16 4278, i16 4289, i16 4301, i16 4323, i16 4335, i16 4346, i16 4358, i16 4405, i16 4417, i16 4428, i16 4440, i16 4462, i16 4474, i16 4485, i16 4497, i16 4253, i16 4265, i16 4276, i16 4288, i16 4310, i16 4322, i16 4333, i16 4345, i16 4392, i16 4404, i16 4415, i16 4427, i16 4449, i16 4461, i16 4472, i16 4484, i16 4546, i16 4558, i16 4569, i16 4581, i16 4603, i16 4615, i16 4626, i16 4638, i16 4685, i16 4697, i16 4708, i16 4720, i16 4742, i16 4754, i16 4765, i16 4777, i16 4848, i16 4860, i16 4871, i16 4883, i16 4905, i16 4917, i16 4928, i16 4940, i16 4987, i16 4999, i16 5010, i16 5022, i16 5044, i16 5056, i16 5067, i16 5079, i16 5141, i16 5153, i16 5164, i16 5176, i16 5198, i16 5210, i16 5221, i16 5233, i16 5280, i16 5292, i16 5303, i16 5315, i16 5337, i16 5349, i16 5360, i16 5372, i16 4988, i16 5000, i16 5011, i16 5023, i16 5045, i16 5057, i16 5068, i16 5080, i16 5127, i16 5139, i16 5150, i16 5162, i16 5184, i16 5196, i16 5207, i16 5219, i16 5281, i16 5293, i16 5304, i16 5316, i16 5338, i16 5350, i16 5361, i16 5373, i16 5420, i16 5432, i16 5443, i16 5455, i16 5477, i16 5489, i16 5500, i16 5512, i16 5583, i16 5595, i16 5606, i16 5618, i16 5640, i16 5652, i16 5663, i16 5675, i16 5722, i16 5734, i16 5745, i16 5757, i16 5779, i16 5791, i16 5802, i16 5814, i16 5876, i16 5888, i16 5899, i16 5911, i16 5933, i16 5945, i16 5956, i16 5968, i16 6015, i16 6027, i16 6038, i16 6050, i16 6072, i16 6084, i16 6095, i16 6107, i16 5863, i16 5875, i16 5886, i16 5898, i16 5920, i16 5932, i16 5943, i16 5955, i16 6002, i16 6014, i16 6025, i16 6037, i16 6059, i16 6071, i16 6082, i16 6094, i16 6156, i16 6168, i16 6179, i16 6191, i16 6213, i16 6225, i16 6236, i16 6248, i16 6295, i16 6307, i16 6318, i16 6330, i16 6352, i16 6364, i16 6375, i16 6387, i16 6458, i16 6470, i16 6481, i16 6493, i16 6515, i16 6527, i16 6538, i16 6550, i16 6597, i16 6609, i16 6620, i16 6632, i16 6654, i16 6666, i16 6677, i16 6689, i16 6751, i16 6763, i16 6774, i16 6786, i16 6808, i16 6820, i16 6831, i16 6843, i16 6890, i16 6902, i16 6913, i16 6925, i16 6947, i16 6959, i16 6970, i16 6982], align 16
+@vp9_cat6_high_cost = hidden local_unnamed_addr constant [64 x i16] [i16 88, i16 2251, i16 2727, i16 4890, i16 3148, i16 5311, i16 5787, i16 7950, i16 3666, i16 5829, i16 6305, i16 8468, i16 6726, i16 8889, i16 9365, i16 11528, i16 3666, i16 5829, i16 6305, i16 8468, i16 6726, i16 8889, i16 9365, i16 11528, i16 7244, i16 9407, i16 9883, i16 12046, i16 10304, i16 12467, i16 12943, i16 15106, i16 3666, i16 5829, i16 6305, i16 8468, i16 6726, i16 8889, i16 9365, i16 11528, i16 7244, i16 9407, i16 9883, i16 12046, i16 10304, i16 12467, i16 12943, i16 15106, i16 7244, i16 9407, i16 9883, i16 12046, i16 10304, i16 12467, i16 12943, i16 15106, i16 10822, i16 12985, i16 13461, i16 15624, i16 13882, i16 16045, i16 16521, i16 18684], align 16
+@vp9_cat6_high10_high_cost = hidden local_unnamed_addr constant [256 x i16] [i16 94, i16 2257, i16 2733, i16 4896, i16 3154, i16 5317, i16 5793, i16 7956, i16 3672, i16 5835, i16 6311, i16 8474, i16 6732, i16 8895, i16 9371, i16 11534, i16 3672, i16 5835, i16 6311, i16 8474, i16 6732, i16 8895, i16 9371, i16 11534, i16 7250, i16 9413, i16 9889, i16 12052, i16 10310, i16 12473, i16 12949, i16 15112, i16 3672, i16 5835, i16 6311, i16 8474, i16 6732, i16 8895, i16 9371, i16 11534, i16 7250, i16 9413, i16 9889, i16 12052, i16 10310, i16 12473, i16 12949, i16 15112, i16 7250, i16 9413, i16 9889, i16 12052, i16 10310, i16 12473, i16 12949, i16 15112, i16 10828, i16 12991, i16 13467, i16 15630, i16 13888, i16 16051, i16 16527, i16 18690, i16 4187, i16 6350, i16 6826, i16 8989, i16 7247, i16 9410, i16 9886, i16 12049, i16 7765, i16 9928, i16 10404, i16 12567, i16 10825, i16 12988, i16 13464, i16 15627, i16 7765, i16 9928, i16 10404, i16 12567, i16 10825, i16 12988, i16 13464, i16 15627, i16 11343, i16 13506, i16 13982, i16 16145, i16 14403, i16 16566, i16 17042, i16 19205, i16 7765, i16 9928, i16 10404, i16 12567, i16 10825, i16 12988, i16 13464, i16 15627, i16 11343, i16 13506, i16 13982, i16 16145, i16 14403, i16 16566, i16 17042, i16 19205, i16 11343, i16 13506, i16 13982, i16 16145, i16 14403, i16 16566, i16 17042, i16 19205, i16 14921, i16 17084, i16 17560, i16 19723, i16 17981, i16 20144, i16 20620, i16 22783, i16 4187, i16 6350, i16 6826, i16 8989, i16 7247, i16 9410, i16 9886, i16 12049, i16 7765, i16 9928, i16 10404, i16 12567, i16 10825, i16 12988, i16 13464, i16 15627, i16 7765, i16 9928, i16 10404, i16 12567, i16 10825, i16 12988, i16 13464, i16 15627, i16 11343, i16 13506, i16 13982, i16 16145, i16 14403, i16 16566, i16 17042, i16 19205, i16 7765, i16 9928, i16 10404, i16 12567, i16 10825, i16 12988, i16 13464, i16 15627, i16 11343, i16 13506, i16 13982, i16 16145, i16 14403, i16 16566, i16 17042, i16 19205, i16 11343, i16 13506, i16 13982, i16 16145, i16 14403, i16 16566, i16 17042, i16 19205, i16 14921, i16 17084, i16 17560, i16 19723, i16 17981, i16 20144, i16 20620, i16 22783, i16 8280, i16 10443, i16 10919, i16 13082, i16 11340, i16 13503, i16 13979, i16 16142, i16 11858, i16 14021, i16 14497, i16 16660, i16 14918, i16 17081, i16 17557, i16 19720, i16 11858, i16 14021, i16 14497, i16 16660, i16 14918, i16 17081, i16 17557, i16 19720, i16 15436, i16 17599, i16 18075, i16 20238, i16 18496, i16 20659, i16 21135, i16 23298, i16 11858, i16 14021, i16 14497, i16 16660, i16 14918, i16 17081, i16 17557, i16 19720, i16 15436, i16 17599, i16 18075, i16 20238, i16 18496, i16 20659, i16 21135, i16 23298, i16 15436, i16 17599, i16 18075, i16 20238, i16 18496, i16 20659, i16 21135, i16 23298, i16 19014, i16 21177, i16 21653, i16 23816, i16 22074, i16 24237, i16 24713, i16 26876], align 16
+@vp9_cat6_high12_high_cost = hidden local_unnamed_addr constant [1024 x i16] [i16 100, i16 2263, i16 2739, i16 4902, i16 3160, i16 5323, i16 5799, i16 7962, i16 3678, i16 5841, i16 6317, i16 8480, i16 6738, i16 8901, i16 9377, i16 11540, i16 3678, i16 5841, i16 6317, i16 8480, i16 6738, i16 8901, i16 9377, i16 11540, i16 7256, i16 9419, i16 9895, i16 12058, i16 10316, i16 12479, i16 12955, i16 15118, i16 3678, i16 5841, i16 6317, i16 8480, i16 6738, i16 8901, i16 9377, i16 11540, i16 7256, i16 9419, i16 9895, i16 12058, i16 10316, i16 12479, i16 12955, i16 15118, i16 7256, i16 9419, i16 9895, i16 12058, i16 10316, i16 12479, i16 12955, i16 15118, i16 10834, i16 12997, i16 13473, i16 15636, i16 13894, i16 16057, i16 16533, i16 18696, i16 4193, i16 6356, i16 6832, i16 8995, i16 7253, i16 9416, i16 9892, i16 12055, i16 7771, i16 9934, i16 10410, i16 12573, i16 10831, i16 12994, i16 13470, i16 15633, i16 7771, i16 9934, i16 10410, i16 12573, i16 10831, i16 12994, i16 13470, i16 15633, i16 11349, i16 13512, i16 13988, i16 16151, i16 14409, i16 16572, i16 17048, i16 19211, i16 7771, i16 9934, i16 10410, i16 12573, i16 10831, i16 12994, i16 13470, i16 15633, i16 11349, i16 13512, i16 13988, i16 16151, i16 14409, i16 16572, i16 17048, i16 19211, i16 11349, i16 13512, i16 13988, i16 16151, i16 14409, i16 16572, i16 17048, i16 19211, i16 14927, i16 17090, i16 17566, i16 19729, i16 17987, i16 20150, i16 20626, i16 22789, i16 4193, i16 6356, i16 6832, i16 8995, i16 7253, i16 9416, i16 9892, i16 12055, i16 7771, i16 9934, i16 10410, i16 12573, i16 10831, i16 12994, i16 13470, i16 15633, i16 7771, i16 9934, i16 10410, i16 12573, i16 10831, i16 12994, i16 13470, i16 15633, i16 11349, i16 13512, i16 13988, i16 16151, i16 14409, i16 16572, i16 17048, i16 19211, i16 7771, i16 9934, i16 10410, i16 12573, i16 10831, i16 12994, i16 13470, i16 15633, i16 11349, i16 13512, i16 13988, i16 16151, i16 14409, i16 16572, i16 17048, i16 19211, i16 11349, i16 13512, i16 13988, i16 16151, i16 14409, i16 16572, i16 17048, i16 19211, i16 14927, i16 17090, i16 17566, i16 19729, i16 17987, i16 20150, i16 20626, i16 22789, i16 8286, i16 10449, i16 10925, i16 13088, i16 11346, i16 13509, i16 13985, i16 16148, i16 11864, i16 14027, i16 14503, i16 16666, i16 14924, i16 17087, i16 17563, i16 19726, i16 11864, i16 14027, i16 14503, i16 16666, i16 14924, i16 17087, i16 17563, i16 19726, i16 15442, i16 17605, i16 18081, i16 20244, i16 18502, i16 20665, i16 21141, i16 23304, i16 11864, i16 14027, i16 14503, i16 16666, i16 14924, i16 17087, i16 17563, i16 19726, i16 15442, i16 17605, i16 18081, i16 20244, i16 18502, i16 20665, i16 21141, i16 23304, i16 15442, i16 17605, i16 18081, i16 20244, i16 18502, i16 20665, i16 21141, i16 23304, i16 19020, i16 21183, i16 21659, i16 23822, i16 22080, i16 24243, i16 24719, i16 26882, i16 4193, i16 6356, i16 6832, i16 8995, i16 7253, i16 9416, i16 9892, i16 12055, i16 7771, i16 9934, i16 10410, i16 12573, i16 10831, i16 12994, i16 13470, i16 15633, i16 7771, i16 9934, i16 10410, i16 12573, i16 10831, i16 12994, i16 13470, i16 15633, i16 11349, i16 13512, i16 13988, i16 16151, i16 14409, i16 16572, i16 17048, i16 19211, i16 7771, i16 9934, i16 10410, i16 12573, i16 10831, i16 12994, i16 13470, i16 15633, i16 11349, i16 13512, i16 13988, i16 16151, i16 14409, i16 16572, i16 17048, i16 19211, i16 11349, i16 13512, i16 13988, i16 16151, i16 14409, i16 16572, i16 17048, i16 19211, i16 14927, i16 17090, i16 17566, i16 19729, i16 17987, i16 20150, i16 20626, i16 22789, i16 8286, i16 10449, i16 10925, i16 13088, i16 11346, i16 13509, i16 13985, i16 16148, i16 11864, i16 14027, i16 14503, i16 16666, i16 14924, i16 17087, i16 17563, i16 19726, i16 11864, i16 14027, i16 14503, i16 16666, i16 14924, i16 17087, i16 17563, i16 19726, i16 15442, i16 17605, i16 18081, i16 20244, i16 18502, i16 20665, i16 21141, i16 23304, i16 11864, i16 14027, i16 14503, i16 16666, i16 14924, i16 17087, i16 17563, i16 19726, i16 15442, i16 17605, i16 18081, i16 20244, i16 18502, i16 20665, i16 21141, i16 23304, i16 15442, i16 17605, i16 18081, i16 20244, i16 18502, i16 20665, i16 21141, i16 23304, i16 19020, i16 21183, i16 21659, i16 23822, i16 22080, i16 24243, i16 24719, i16 26882, i16 8286, i16 10449, i16 10925, i16 13088, i16 11346, i16 13509, i16 13985, i16 16148, i16 11864, i16 14027, i16 14503, i16 16666, i16 14924, i16 17087, i16 17563, i16 19726, i16 11864, i16 14027, i16 14503, i16 16666, i16 14924, i16 17087, i16 17563, i16 19726, i16 15442, i16 17605, i16 18081, i16 20244, i16 18502, i16 20665, i16 21141, i16 23304, i16 11864, i16 14027, i16 14503, i16 16666, i16 14924, i16 17087, i16 17563, i16 19726, i16 15442, i16 17605, i16 18081, i16 20244, i16 18502, i16 20665, i16 21141, i16 23304, i16 15442, i16 17605, i16 18081, i16 20244, i16 18502, i16 20665, i16 21141, i16 23304, i16 19020, i16 21183, i16 21659, i16 23822, i16 22080, i16 24243, i16 24719, i16 26882, i16 12379, i16 14542, i16 15018, i16 17181, i16 15439, i16 17602, i16 18078, i16 20241, i16 15957, i16 18120, i16 18596, i16 20759, i16 19017, i16 21180, i16 21656, i16 23819, i16 15957, i16 18120, i16 18596, i16 20759, i16 19017, i16 21180, i16 21656, i16 23819, i16 19535, i16 21698, i16 22174, i16 24337, i16 22595, i16 24758, i16 25234, i16 27397, i16 15957, i16 18120, i16 18596, i16 20759, i16 19017, i16 21180, i16 21656, i16 23819, i16 19535, i16 21698, i16 22174, i16 24337, i16 22595, i16 24758, i16 25234, i16 27397, i16 19535, i16 21698, i16 22174, i16 24337, i16 22595, i16 24758, i16 25234, i16 27397, i16 23113, i16 25276, i16 25752, i16 27915, i16 26173, i16 28336, i16 28812, i16 30975, i16 4193, i16 6356, i16 6832, i16 8995, i16 7253, i16 9416, i16 9892, i16 12055, i16 7771, i16 9934, i16 10410, i16 12573, i16 10831, i16 12994, i16 13470, i16 15633, i16 7771, i16 9934, i16 10410, i16 12573, i16 10831, i16 12994, i16 13470, i16 15633, i16 11349, i16 13512, i16 13988, i16 16151, i16 14409, i16 16572, i16 17048, i16 19211, i16 7771, i16 9934, i16 10410, i16 12573, i16 10831, i16 12994, i16 13470, i16 15633, i16 11349, i16 13512, i16 13988, i16 16151, i16 14409, i16 16572, i16 17048, i16 19211, i16 11349, i16 13512, i16 13988, i16 16151, i16 14409, i16 16572, i16 17048, i16 19211, i16 14927, i16 17090, i16 17566, i16 19729, i16 17987, i16 20150, i16 20626, i16 22789, i16 8286, i16 10449, i16 10925, i16 13088, i16 11346, i16 13509, i16 13985, i16 16148, i16 11864, i16 14027, i16 14503, i16 16666, i16 14924, i16 17087, i16 17563, i16 19726, i16 11864, i16 14027, i16 14503, i16 16666, i16 14924, i16 17087, i16 17563, i16 19726, i16 15442, i16 17605, i16 18081, i16 20244, i16 18502, i16 20665, i16 21141, i16 23304, i16 11864, i16 14027, i16 14503, i16 16666, i16 14924, i16 17087, i16 17563, i16 19726, i16 15442, i16 17605, i16 18081, i16 20244, i16 18502, i16 20665, i16 21141, i16 23304, i16 15442, i16 17605, i16 18081, i16 20244, i16 18502, i16 20665, i16 21141, i16 23304, i16 19020, i16 21183, i16 21659, i16 23822, i16 22080, i16 24243, i16 24719, i16 26882, i16 8286, i16 10449, i16 10925, i16 13088, i16 11346, i16 13509, i16 13985, i16 16148, i16 11864, i16 14027, i16 14503, i16 16666, i16 14924, i16 17087, i16 17563, i16 19726, i16 11864, i16 14027, i16 14503, i16 16666, i16 14924, i16 17087, i16 17563, i16 19726, i16 15442, i16 17605, i16 18081, i16 20244, i16 18502, i16 20665, i16 21141, i16 23304, i16 11864, i16 14027, i16 14503, i16 16666, i16 14924, i16 17087, i16 17563, i16 19726, i16 15442, i16 17605, i16 18081, i16 20244, i16 18502, i16 20665, i16 21141, i16 23304, i16 15442, i16 17605, i16 18081, i16 20244, i16 18502, i16 20665, i16 21141, i16 23304, i16 19020, i16 21183, i16 21659, i16 23822, i16 22080, i16 24243, i16 24719, i16 26882, i16 12379, i16 14542, i16 15018, i16 17181, i16 15439, i16 17602, i16 18078, i16 20241, i16 15957, i16 18120, i16 18596, i16 20759, i16 19017, i16 21180, i16 21656, i16 23819, i16 15957, i16 18120, i16 18596, i16 20759, i16 19017, i16 21180, i16 21656, i16 23819, i16 19535, i16 21698, i16 22174, i16 24337, i16 22595, i16 24758, i16 25234, i16 27397, i16 15957, i16 18120, i16 18596, i16 20759, i16 19017, i16 21180, i16 21656, i16 23819, i16 19535, i16 21698, i16 22174, i16 24337, i16 22595, i16 24758, i16 25234, i16 27397, i16 19535, i16 21698, i16 22174, i16 24337, i16 22595, i16 24758, i16 25234, i16 27397, i16 23113, i16 25276, i16 25752, i16 27915, i16 26173, i16 28336, i16 28812, i16 30975, i16 8286, i16 10449, i16 10925, i16 13088, i16 11346, i16 13509, i16 13985, i16 16148, i16 11864, i16 14027, i16 14503, i16 16666, i16 14924, i16 17087, i16 17563, i16 19726, i16 11864, i16 14027, i16 14503, i16 16666, i16 14924, i16 17087, i16 17563, i16 19726, i16 15442, i16 17605, i16 18081, i16 20244, i16 18502, i16 20665, i16 21141, i16 23304, i16 11864, i16 14027, i16 14503, i16 16666, i16 14924, i16 17087, i16 17563, i16 19726, i16 15442, i16 17605, i16 18081, i16 20244, i16 18502, i16 20665, i16 21141, i16 23304, i16 15442, i16 17605, i16 18081, i16 20244, i16 18502, i16 20665, i16 21141, i16 23304, i16 19020, i16 21183, i16 21659, i16 23822, i16 22080, i16 24243, i16 24719, i16 26882, i16 12379, i16 14542, i16 15018, i16 17181, i16 15439, i16 17602, i16 18078, i16 20241, i16 15957, i16 18120, i16 18596, i16 20759, i16 19017, i16 21180, i16 21656, i16 23819, i16 15957, i16 18120, i16 18596, i16 20759, i16 19017, i16 21180, i16 21656, i16 23819, i16 19535, i16 21698, i16 22174, i16 24337, i16 22595, i16 24758, i16 25234, i16 27397, i16 15957, i16 18120, i16 18596, i16 20759, i16 19017, i16 21180, i16 21656, i16 23819, i16 19535, i16 21698, i16 22174, i16 24337, i16 22595, i16 24758, i16 25234, i16 27397, i16 19535, i16 21698, i16 22174, i16 24337, i16 22595, i16 24758, i16 25234, i16 27397, i16 23113, i16 25276, i16 25752, i16 27915, i16 26173, i16 28336, i16 28812, i16 30975, i16 12379, i16 14542, i16 15018, i16 17181, i16 15439, i16 17602, i16 18078, i16 20241, i16 15957, i16 18120, i16 18596, i16 20759, i16 19017, i16 21180, i16 21656, i16 23819, i16 15957, i16 18120, i16 18596, i16 20759, i16 19017, i16 21180, i16 21656, i16 23819, i16 19535, i16 21698, i16 22174, i16 24337, i16 22595, i16 24758, i16 25234, i16 27397, i16 15957, i16 18120, i16 18596, i16 20759, i16 19017, i16 21180, i16 21656, i16 23819, i16 19535, i16 21698, i16 22174, i16 24337, i16 22595, i16 24758, i16 25234, i16 27397, i16 19535, i16 21698, i16 22174, i16 24337, i16 22595, i16 24758, i16 25234, i16 27397, i16 23113, i16 25276, i16 25752, i16 27915, i16 26173, i16 28336, i16 28812, i16 30975, i16 16472, i16 18635, i16 19111, i16 21274, i16 19532, i16 21695, i16 22171, i16 24334, i16 20050, i16 22213, i16 22689, i16 24852, i16 23110, i16 25273, i16 25749, i16 27912, i16 20050, i16 22213, i16 22689, i16 24852, i16 23110, i16 25273, i16 25749, i16 27912, i16 23628, i16 25791, i16 26267, i16 28430, i16 26688, i16 28851, i16 29327, i16 31490, i16 20050, i16 22213, i16 22689, i16 24852, i16 23110, i16 25273, i16 25749, i16 27912, i16 23628, i16 25791, i16 26267, i16 28430, i16 26688, i16 28851, i16 29327, i16 31490, i16 23628, i16 25791, i16 26267, i16 28430, i16 26688, i16 28851, i16 29327, i16 31490, i16 27206, i16 29369, i16 29845, i16 32008, i16 30266, i16 32429, i16 -32631, i16 -30468], align 16
+@zero_cost = internal constant [1 x i16] zeroinitializer, align 2
+@sign_cost = internal constant [1 x i16] [i16 512], align 2
+@vp9_cat1_prob = external constant [1 x i8], align 16
+@cat1_cost = internal constant [2 x i16] [i16 864, i16 1229], align 2
+@vp9_cat2_prob = external constant [2 x i8], align 16
+@cat2_cost = internal constant [4 x i16] [i16 1256, i16 1453, i16 1696, i16 1893], align 2
+@vp9_cat3_prob = external constant [3 x i8], align 16
+@cat3_cost = internal constant [8 x i16] [i16 1652, i16 1791, i16 1884, i16 2023, i16 2195, i16 2334, i16 2427, i16 2566], align 16
+@vp9_cat4_prob = external constant [4 x i8], align 16
+@cat4_cost = internal constant [16 x i16] [i16 2079, i16 2160, i16 2218, i16 2299, i16 2395, i16 2476, i16 2534, i16 2615, i16 2661, i16 2742, i16 2800, i16 2881, i16 2977, i16 3058, i16 3116, i16 3197], align 16
+@vp9_cat5_prob = external constant [5 x i8], align 16
+@cat5_cost = internal constant [32 x i16] [i16 2553, i16 2576, i16 2622, i16 2645, i16 2703, i16 2726, i16 2772, i16 2795, i16 2894, i16 2917, i16 2963, i16 2986, i16 3044, i16 3067, i16 3113, i16 3136, i16 3190, i16 3213, i16 3259, i16 3282, i16 3340, i16 3363, i16 3409, i16 3432, i16 3531, i16 3554, i16 3600, i16 3623, i16 3681, i16 3704, i16 3750, i16 3773], align 16
+@vp9_cat6_prob = external constant [14 x i8], align 16
+@vp9_extra_bits = hidden local_unnamed_addr constant [12 x %struct.vp9_extra_bit] [%struct.vp9_extra_bit { i8* null, i32 0, i32 0, i16* getelementptr inbounds ([1 x i16], [1 x i16]* @zero_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* null, i32 0, i32 1, i16* getelementptr inbounds ([1 x i16], [1 x i16]* @sign_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* null, i32 0, i32 2, i16* getelementptr inbounds ([1 x i16], [1 x i16]* @sign_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* null, i32 0, i32 3, i16* getelementptr inbounds ([1 x i16], [1 x i16]* @sign_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* null, i32 0, i32 4, i16* getelementptr inbounds ([1 x i16], [1 x i16]* @sign_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* getelementptr inbounds ([1 x i8], [1 x i8]* @vp9_cat1_prob, i32 0, i32 0), i32 1, i32 5, i16* getelementptr inbounds ([2 x i16], [2 x i16]* @cat1_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* getelementptr inbounds ([2 x i8], [2 x i8]* @vp9_cat2_prob, i32 0, i32 0), i32 2, i32 7, i16* getelementptr inbounds ([4 x i16], [4 x i16]* @cat2_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* getelementptr inbounds ([3 x i8], [3 x i8]* @vp9_cat3_prob, i32 0, i32 0), i32 3, i32 11, i16* getelementptr inbounds ([8 x i16], [8 x i16]* @cat3_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* getelementptr inbounds ([4 x i8], [4 x i8]* @vp9_cat4_prob, i32 0, i32 0), i32 4, i32 19, i16* getelementptr inbounds ([16 x i16], [16 x i16]* @cat4_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @vp9_cat5_prob, i32 0, i32 0), i32 5, i32 35, i16* getelementptr inbounds ([32 x i16], [32 x i16]* @cat5_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* getelementptr inbounds ([14 x i8], [14 x i8]* @vp9_cat6_prob, i32 0, i32 0), i32 14, i32 67, i16* null }, %struct.vp9_extra_bit { i8* null, i32 0, i32 0, i16* getelementptr inbounds ([1 x i16], [1 x i16]* @zero_cost, i32 0, i32 0) }], align 16
+@vp9_cat6_prob_high12 = external constant [18 x i8], align 16
+@vp9_extra_bits_high10 = hidden local_unnamed_addr constant [12 x %struct.vp9_extra_bit] [%struct.vp9_extra_bit { i8* null, i32 0, i32 0, i16* getelementptr inbounds ([1 x i16], [1 x i16]* @zero_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* null, i32 0, i32 1, i16* getelementptr inbounds ([1 x i16], [1 x i16]* @sign_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* null, i32 0, i32 2, i16* getelementptr inbounds ([1 x i16], [1 x i16]* @sign_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* null, i32 0, i32 3, i16* getelementptr inbounds ([1 x i16], [1 x i16]* @sign_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* null, i32 0, i32 4, i16* getelementptr inbounds ([1 x i16], [1 x i16]* @sign_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* getelementptr inbounds ([1 x i8], [1 x i8]* @vp9_cat1_prob, i32 0, i32 0), i32 1, i32 5, i16* getelementptr inbounds ([2 x i16], [2 x i16]* @cat1_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* getelementptr inbounds ([2 x i8], [2 x i8]* @vp9_cat2_prob, i32 0, i32 0), i32 2, i32 7, i16* getelementptr inbounds ([4 x i16], [4 x i16]* @cat2_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* getelementptr inbounds ([3 x i8], [3 x i8]* @vp9_cat3_prob, i32 0, i32 0), i32 3, i32 11, i16* getelementptr inbounds ([8 x i16], [8 x i16]* @cat3_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* getelementptr inbounds ([4 x i8], [4 x i8]* @vp9_cat4_prob, i32 0, i32 0), i32 4, i32 19, i16* getelementptr inbounds ([16 x i16], [16 x i16]* @cat4_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @vp9_cat5_prob, i32 0, i32 0), i32 5, i32 35, i16* getelementptr inbounds ([32 x i16], [32 x i16]* @cat5_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* getelementptr inbounds ([18 x i8], [18 x i8]* @vp9_cat6_prob_high12, i32 0, i64 2), i32 16, i32 67, i16* null }, %struct.vp9_extra_bit { i8* null, i32 0, i32 0, i16* getelementptr inbounds ([1 x i16], [1 x i16]* @zero_cost, i32 0, i32 0) }], align 16
+@vp9_extra_bits_high12 = hidden local_unnamed_addr constant [12 x %struct.vp9_extra_bit] [%struct.vp9_extra_bit { i8* null, i32 0, i32 0, i16* getelementptr inbounds ([1 x i16], [1 x i16]* @zero_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* null, i32 0, i32 1, i16* getelementptr inbounds ([1 x i16], [1 x i16]* @sign_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* null, i32 0, i32 2, i16* getelementptr inbounds ([1 x i16], [1 x i16]* @sign_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* null, i32 0, i32 3, i16* getelementptr inbounds ([1 x i16], [1 x i16]* @sign_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* null, i32 0, i32 4, i16* getelementptr inbounds ([1 x i16], [1 x i16]* @sign_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* getelementptr inbounds ([1 x i8], [1 x i8]* @vp9_cat1_prob, i32 0, i32 0), i32 1, i32 5, i16* getelementptr inbounds ([2 x i16], [2 x i16]* @cat1_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* getelementptr inbounds ([2 x i8], [2 x i8]* @vp9_cat2_prob, i32 0, i32 0), i32 2, i32 7, i16* getelementptr inbounds ([4 x i16], [4 x i16]* @cat2_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* getelementptr inbounds ([3 x i8], [3 x i8]* @vp9_cat3_prob, i32 0, i32 0), i32 3, i32 11, i16* getelementptr inbounds ([8 x i16], [8 x i16]* @cat3_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* getelementptr inbounds ([4 x i8], [4 x i8]* @vp9_cat4_prob, i32 0, i32 0), i32 4, i32 19, i16* getelementptr inbounds ([16 x i16], [16 x i16]* @cat4_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @vp9_cat5_prob, i32 0, i32 0), i32 5, i32 35, i16* getelementptr inbounds ([32 x i16], [32 x i16]* @cat5_cost, i32 0, i32 0) }, %struct.vp9_extra_bit { i8* getelementptr inbounds ([18 x i8], [18 x i8]* @vp9_cat6_prob_high12, i32 0, i32 0), i32 18, i32 67, i16* null }, %struct.vp9_extra_bit { i8* null, i32 0, i32 0, i16* getelementptr inbounds ([1 x i16], [1 x i16]* @zero_cost, i32 0, i32 0) }], align 16
+@vp9_coef_encodings = hidden local_unnamed_addr constant [12 x %struct.vp9_token] [%struct.vp9_token { i32 2, i32 2 }, %struct.vp9_token { i32 6, i32 3 }, %struct.vp9_token { i32 28, i32 5 }, %struct.vp9_token { i32 58, i32 6 }, %struct.vp9_token { i32 59, i32 6 }, %struct.vp9_token { i32 60, i32 6 }, %struct.vp9_token { i32 61, i32 6 }, %struct.vp9_token { i32 124, i32 7 }, %struct.vp9_token { i32 125, i32 7 }, %struct.vp9_token { i32 126, i32 7 }, %struct.vp9_token { i32 127, i32 7 }, %struct.vp9_token { i32 0, i32 1 }], align 16
+@num_4x4_blocks_wide_lookup = external local_unnamed_addr constant [13 x i8], align 1
+@num_4x4_blocks_high_lookup = external local_unnamed_addr constant [13 x i8], align 1
+@ss_size_lookup = external local_unnamed_addr constant [13 x [2 x [2 x i8]]], align 16
+@vp9_pt_energy_class = external local_unnamed_addr constant [12 x i8], align 16
+@vp9_coefband_trans_4x4 = external local_unnamed_addr constant [16 x i8], align 16
+@vp9_coefband_trans_8x8plus = external local_unnamed_addr constant [1024 x i8], align 16
+@vp9_default_scan_orders = external local_unnamed_addr constant [4 x %struct.scan_order], align 16
+@vp9_scan_orders = external local_unnamed_addr constant [4 x [4 x %struct.scan_order]], align 16
+@intra_mode_to_tx_type_lookup = external local_unnamed_addr constant [10 x i32], align 16
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @vp9_is_skippable_in_plane(%struct.macroblock*, i8 zeroext, i32) local_unnamed_addr #0 {
+  %4 = alloca i32, align 4
+  %5 = alloca %struct.is_skippable_args, align 8
+  %6 = bitcast i32* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %6) #4
+  store i32 1, i32* %4, align 4
+  %7 = bitcast %struct.is_skippable_args* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %7) #4
+  %8 = getelementptr inbounds %struct.is_skippable_args, %struct.is_skippable_args* %5, i64 0, i32 1
+  %9 = sext i32 %2 to i64
+  %10 = getelementptr inbounds %struct.macroblock, %struct.macroblock* %0, i64 0, i32 0, i64 %9, i32 3
+  %11 = bitcast i16** %10 to i64*
+  %12 = load i64, i64* %11, align 16
+  %13 = bitcast %struct.is_skippable_args* %5 to i64*
+  store i64 %12, i64* %13, align 8
+  store i32* %4, i32** %8, align 8
+  %14 = getelementptr inbounds %struct.macroblock, %struct.macroblock* %0, i64 0, i32 1
+  call void @vp9_foreach_transformed_block_in_plane(%struct.macroblockd* %14, i8 zeroext %1, i32 %2, void (i32, i32, i32, i32, i8, i8, i8*)* nonnull @is_skippable, i8* nonnull %7) #4
+  %15 = load i32, i32* %4, align 4
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %7) #4
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %6) #4
+  ret i32 %15
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #1
+
+declare void @vp9_foreach_transformed_block_in_plane(%struct.macroblockd*, i8 zeroext, i32, void (i32, i32, i32, i32, i8, i8, i8*)*, i8*) local_unnamed_addr #2
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define internal void @is_skippable(i32, i32, i32, i32, i8 zeroext, i8 zeroext, i8* nocapture readonly) #3 {
+  %8 = bitcast i8* %6 to i16**
+  %9 = load i16*, i16** %8, align 8
+  %10 = sext i32 %1 to i64
+  %11 = getelementptr inbounds i16, i16* %9, i64 %10
+  %12 = load i16, i16* %11, align 2
+  %13 = icmp eq i16 %12, 0
+  %14 = zext i1 %13 to i32
+  %15 = getelementptr inbounds i8, i8* %6, i64 8
+  %16 = bitcast i8* %15 to i32**
+  %17 = load i32*, i32** %16, align 8
+  %18 = load i32, i32* %17, align 4
+  %19 = and i32 %18, %14
+  store i32 %19, i32* %17, align 4
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @vp9_has_high_freq_in_plane(%struct.macroblock*, i8 zeroext, i32) local_unnamed_addr #0 {
+  %4 = alloca i32, align 4
+  %5 = alloca %struct.is_skippable_args, align 8
+  %6 = bitcast i32* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %6) #4
+  store i32 0, i32* %4, align 4
+  %7 = bitcast %struct.is_skippable_args* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %7) #4
+  %8 = getelementptr inbounds %struct.is_skippable_args, %struct.is_skippable_args* %5, i64 0, i32 1
+  %9 = sext i32 %2 to i64
+  %10 = getelementptr inbounds %struct.macroblock, %struct.macroblock* %0, i64 0, i32 0, i64 %9, i32 3
+  %11 = bitcast i16** %10 to i64*
+  %12 = load i64, i64* %11, align 16
+  %13 = bitcast %struct.is_skippable_args* %5 to i64*
+  store i64 %12, i64* %13, align 8
+  store i32* %4, i32** %8, align 8
+  %14 = getelementptr inbounds %struct.macroblock, %struct.macroblock* %0, i64 0, i32 1
+  call void @vp9_foreach_transformed_block_in_plane(%struct.macroblockd* %14, i8 zeroext %1, i32 %2, void (i32, i32, i32, i32, i8, i8, i8*)* nonnull @has_high_freq_coeff, i8* nonnull %7) #4
+  %15 = load i32, i32* %4, align 4
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %7) #4
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %6) #4
+  ret i32 %15
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define internal void @has_high_freq_coeff(i32, i32, i32, i32, i8 zeroext, i8 zeroext, i8* nocapture readonly) #3 {
+  %8 = icmp eq i8 %5, 0
+  %9 = select i1 %8, i32 3, i32 10
+  %10 = bitcast i8* %6 to i16**
+  %11 = load i16*, i16** %10, align 8
+  %12 = sext i32 %1 to i64
+  %13 = getelementptr inbounds i16, i16* %11, i64 %12
+  %14 = load i16, i16* %13, align 2
+  %15 = zext i16 %14 to i32
+  %16 = icmp ult i32 %9, %15
+  %17 = zext i1 %16 to i32
+  %18 = getelementptr inbounds i8, i8* %6, i64 8
+  %19 = bitcast i8* %18 to i32**
+  %20 = load i32*, i32** %19, align 8
+  %21 = load i32, i32* %20, align 4
+  %22 = or i32 %21, %17
+  store i32 %22, i32* %20, align 4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @vp9_tokenize_sb(%struct.VP9_COMP*, %struct.ThreadData*, %struct.TOKENEXTRA**, i32, i32, i8 zeroext) local_unnamed_addr #0 {
+  %7 = alloca %struct.tokenize_b_args, align 8
+  %8 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %1, i64 0, i32 0, i32 1
+  %9 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %1, i64 0, i32 0, i32 1, i32 6
+  %10 = load %struct.MODE_INFO**, %struct.MODE_INFO*** %9, align 8
+  %11 = load %struct.MODE_INFO*, %struct.MODE_INFO** %10, align 8
+  %12 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %1, i64 0, i32 0, i32 1, i32 8
+  %13 = load %struct.MODE_INFO*, %struct.MODE_INFO** %12, align 8
+  %14 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %1, i64 0, i32 0, i32 1, i32 7
+  %15 = load %struct.MODE_INFO*, %struct.MODE_INFO** %14, align 8
+  %16 = icmp eq %struct.MODE_INFO* %13, null
+  br i1 %16, label %21, label %17
+
+17:                                               ; preds = %6
+  %18 = getelementptr inbounds %struct.MODE_INFO, %struct.MODE_INFO* %13, i64 0, i32 3
+  %19 = load i8, i8* %18, align 1
+  %20 = sext i8 %19 to i32
+  br label %21
+
+21:                                               ; preds = %17, %6
+  %22 = phi i32 [ %20, %17 ], [ 0, %6 ]
+  %23 = icmp eq %struct.MODE_INFO* %15, null
+  br i1 %23, label %28, label %24
+
+24:                                               ; preds = %21
+  %25 = getelementptr inbounds %struct.MODE_INFO, %struct.MODE_INFO* %15, i64 0, i32 3
+  %26 = load i8, i8* %25, align 1
+  %27 = sext i8 %26 to i32
+  br label %28
+
+28:                                               ; preds = %21, %24
+  %29 = phi i32 [ %27, %24 ], [ 0, %21 ]
+  %30 = add nsw i32 %29, %22
+  %31 = bitcast %struct.tokenize_b_args* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %31) #4
+  %32 = getelementptr inbounds %struct.tokenize_b_args, %struct.tokenize_b_args* %7, i64 0, i32 0
+  %33 = getelementptr inbounds %struct.tokenize_b_args, %struct.tokenize_b_args* %7, i64 0, i32 1
+  %34 = getelementptr inbounds %struct.tokenize_b_args, %struct.tokenize_b_args* %7, i64 0, i32 2
+  store %struct.VP9_COMP* %0, %struct.VP9_COMP** %32, align 8
+  store %struct.ThreadData* %1, %struct.ThreadData** %33, align 8
+  store %struct.TOKENEXTRA** %2, %struct.TOKENEXTRA*** %34, align 8
+  %35 = getelementptr inbounds %struct.MODE_INFO, %struct.MODE_INFO* %11, i64 0, i32 3
+  %36 = load i8, i8* %35, align 1
+  %37 = icmp eq i8 %36, 0
+  br i1 %37, label %107, label %38
+
+38:                                               ; preds = %28
+  %39 = or i32 %4, %3
+  %40 = icmp eq i32 %39, 0
+  br i1 %40, label %41, label %48
+
+41:                                               ; preds = %38
+  %42 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %1, i64 0, i32 2
+  %43 = load %struct.FRAME_COUNTS*, %struct.FRAME_COUNTS** %42, align 8
+  %44 = sext i32 %30 to i64
+  %45 = getelementptr inbounds %struct.FRAME_COUNTS, %struct.FRAME_COUNTS* %43, i64 0, i32 12, i64 %44, i64 1
+  %46 = load i32, i32* %45, align 4
+  %47 = add i32 %46, 1
+  store i32 %47, i32* %45, align 4
+  br label %48
+
+48:                                               ; preds = %38, %41
+  %49 = zext i8 %5 to i64
+  %50 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %1, i64 0, i32 0, i32 1, i32 0, i64 0, i32 1
+  %51 = load i32, i32* %50, align 8
+  %52 = sext i32 %51 to i64
+  %53 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %1, i64 0, i32 0, i32 1, i32 0, i64 0, i32 2
+  %54 = load i32, i32* %53, align 4
+  %55 = sext i32 %54 to i64
+  %56 = getelementptr inbounds [13 x [2 x [2 x i8]]], [13 x [2 x [2 x i8]]]* @ss_size_lookup, i64 0, i64 %49, i64 %52, i64 %55
+  %57 = load i8, i8* %56, align 1
+  %58 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %1, i64 0, i32 0, i32 1, i32 0, i64 0, i32 5
+  %59 = load i8*, i8** %58, align 8
+  %60 = zext i8 %57 to i64
+  %61 = getelementptr inbounds [13 x i8], [13 x i8]* @num_4x4_blocks_wide_lookup, i64 0, i64 %60
+  %62 = load i8, i8* %61, align 1
+  %63 = zext i8 %62 to i64
+  tail call void @llvm.memset.p0i8.i64(i8* align 1 %59, i8 0, i64 %63, i1 false) #4
+  %64 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %1, i64 0, i32 0, i32 1, i32 0, i64 0, i32 6
+  %65 = load i8*, i8** %64, align 8
+  %66 = getelementptr inbounds [13 x i8], [13 x i8]* @num_4x4_blocks_high_lookup, i64 0, i64 %60
+  %67 = load i8, i8* %66, align 1
+  %68 = zext i8 %67 to i64
+  tail call void @llvm.memset.p0i8.i64(i8* align 1 %65, i8 0, i64 %68, i1 false) #4
+  %69 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %1, i64 0, i32 0, i32 1, i32 0, i64 1, i32 1
+  %70 = load i32, i32* %69, align 8
+  %71 = sext i32 %70 to i64
+  %72 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %1, i64 0, i32 0, i32 1, i32 0, i64 1, i32 2
+  %73 = load i32, i32* %72, align 4
+  %74 = sext i32 %73 to i64
+  %75 = getelementptr inbounds [13 x [2 x [2 x i8]]], [13 x [2 x [2 x i8]]]* @ss_size_lookup, i64 0, i64 %49, i64 %71, i64 %74
+  %76 = load i8, i8* %75, align 1
+  %77 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %1, i64 0, i32 0, i32 1, i32 0, i64 1, i32 5
+  %78 = load i8*, i8** %77, align 8
+  %79 = zext i8 %76 to i64
+  %80 = getelementptr inbounds [13 x i8], [13 x i8]* @num_4x4_blocks_wide_lookup, i64 0, i64 %79
+  %81 = load i8, i8* %80, align 1
+  %82 = zext i8 %81 to i64
+  tail call void @llvm.memset.p0i8.i64(i8* align 1 %78, i8 0, i64 %82, i1 false) #4
+  %83 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %1, i64 0, i32 0, i32 1, i32 0, i64 1, i32 6
+  %84 = load i8*, i8** %83, align 8
+  %85 = getelementptr inbounds [13 x i8], [13 x i8]* @num_4x4_blocks_high_lookup, i64 0, i64 %79
+  %86 = load i8, i8* %85, align 1
+  %87 = zext i8 %86 to i64
+  tail call void @llvm.memset.p0i8.i64(i8* align 1 %84, i8 0, i64 %87, i1 false) #4
+  %88 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %1, i64 0, i32 0, i32 1, i32 0, i64 2, i32 1
+  %89 = load i32, i32* %88, align 8
+  %90 = sext i32 %89 to i64
+  %91 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %1, i64 0, i32 0, i32 1, i32 0, i64 2, i32 2
+  %92 = load i32, i32* %91, align 4
+  %93 = sext i32 %92 to i64
+  %94 = getelementptr inbounds [13 x [2 x [2 x i8]]], [13 x [2 x [2 x i8]]]* @ss_size_lookup, i64 0, i64 %49, i64 %90, i64 %93
+  %95 = load i8, i8* %94, align 1
+  %96 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %1, i64 0, i32 0, i32 1, i32 0, i64 2, i32 5
+  %97 = load i8*, i8** %96, align 8
+  %98 = zext i8 %95 to i64
+  %99 = getelementptr inbounds [13 x i8], [13 x i8]* @num_4x4_blocks_wide_lookup, i64 0, i64 %98
+  %100 = load i8, i8* %99, align 1
+  %101 = zext i8 %100 to i64
+  tail call void @llvm.memset.p0i8.i64(i8* align 1 %97, i8 0, i64 %101, i1 false) #4
+  %102 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %1, i64 0, i32 0, i32 1, i32 0, i64 2, i32 6
+  %103 = load i8*, i8** %102, align 8
+  %104 = getelementptr inbounds [13 x i8], [13 x i8]* @num_4x4_blocks_high_lookup, i64 0, i64 %98
+  %105 = load i8, i8* %104, align 1
+  %106 = zext i8 %105 to i64
+  tail call void @llvm.memset.p0i8.i64(i8* align 1 %103, i8 0, i64 %106, i1 false) #4
+  br label %117
+
+107:                                              ; preds = %28
+  %108 = icmp eq i32 %3, 0
+  br i1 %108, label %109, label %116
+
+109:                                              ; preds = %107
+  %110 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %1, i64 0, i32 2
+  %111 = load %struct.FRAME_COUNTS*, %struct.FRAME_COUNTS** %110, align 8
+  %112 = sext i32 %30 to i64
+  %113 = getelementptr inbounds %struct.FRAME_COUNTS, %struct.FRAME_COUNTS* %111, i64 0, i32 12, i64 %112, i64 0
+  %114 = load i32, i32* %113, align 4
+  %115 = add i32 %114, 1
+  store i32 %115, i32* %113, align 4
+  call void @vp9_foreach_transformed_block(%struct.macroblockd* %8, i8 zeroext %5, void (i32, i32, i32, i32, i8, i8, i8*)* nonnull @tokenize_b, i8* nonnull %31) #4
+  br label %117
+
+116:                                              ; preds = %107
+  call void @vp9_foreach_transformed_block(%struct.macroblockd* %8, i8 zeroext %5, void (i32, i32, i32, i32, i8, i8, i8*)* nonnull @set_entropy_context_b, i8* nonnull %31) #4
+  br label %117
+
+117:                                              ; preds = %109, %116, %48
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %31) #4
+  ret void
+}
+
+declare void @vp9_foreach_transformed_block(%struct.macroblockd*, i8 zeroext, void (i32, i32, i32, i32, i8, i8, i8*)*, i8*) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @tokenize_b(i32, i32, i32, i32, i8 zeroext, i8 zeroext, i8* nocapture readonly) #0 {
+  %8 = alloca [1024 x i8], align 16
+  %9 = bitcast i8* %6 to %struct.VP9_COMP**
+  %10 = load %struct.VP9_COMP*, %struct.VP9_COMP** %9, align 8
+  %11 = getelementptr inbounds i8, i8* %6, i64 8
+  %12 = bitcast i8* %11 to %struct.ThreadData**
+  %13 = load %struct.ThreadData*, %struct.ThreadData** %12, align 8
+  %14 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %13, i64 0, i32 0, i32 1
+  %15 = getelementptr inbounds i8, i8* %6, i64 16
+  %16 = bitcast i8* %15 to i64**
+  %17 = load i64*, i64** %16, align 8
+  %18 = getelementptr inbounds [1024 x i8], [1024 x i8]* %8, i64 0, i64 0
+  call void @llvm.lifetime.start.p0i8(i64 1024, i8* nonnull %18) #4
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %18, i8 -86, i64 1024, i1 false)
+  %19 = sext i32 %0 to i64
+  %20 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %13, i64 0, i32 0, i32 1, i32 0, i64 %19
+  %21 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %13, i64 0, i32 0, i32 1, i32 6
+  %22 = load %struct.MODE_INFO**, %struct.MODE_INFO*** %21, align 8
+  %23 = load %struct.MODE_INFO*, %struct.MODE_INFO** %22, align 8
+  %24 = load i64, i64* %17, align 8
+  %25 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %13, i64 0, i32 0, i32 0, i64 %19, i32 3
+  %26 = load i16*, i16** %25, align 16
+  %27 = sext i32 %1 to i64
+  %28 = getelementptr inbounds i16, i16* %26, i64 %27
+  %29 = load i16, i16* %28, align 2
+  %30 = zext i16 %29 to i32
+  %31 = icmp sgt i32 %0, 0
+  %32 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %13, i64 0, i32 0, i32 0, i64 %19, i32 1
+  %33 = load i32*, i32** %32, align 16
+  %34 = shl nsw i32 %1, 4
+  %35 = sext i32 %34 to i64
+  %36 = getelementptr inbounds i32, i32* %33, i64 %35
+  %37 = getelementptr inbounds %struct.MODE_INFO, %struct.MODE_INFO* %23, i64 0, i32 8, i64 0
+  %38 = load i8, i8* %37, align 4
+  %39 = icmp sgt i8 %38, 0
+  %40 = zext i8 %5 to i64
+  %41 = zext i1 %31 to i64
+  %42 = zext i1 %39 to i64
+  %43 = getelementptr inbounds %struct.VP9_COMP, %struct.VP9_COMP* %10, i64 0, i32 8, i32 73
+  %44 = load %struct.frame_contexts*, %struct.frame_contexts** %43, align 8
+  %45 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %13, i64 0, i32 2
+  %46 = load %struct.FRAME_COUNTS*, %struct.FRAME_COUNTS** %45, align 8
+  %47 = icmp eq i8 %5, 0
+  %48 = select i1 %47, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @vp9_coefband_trans_4x4, i64 0, i64 0), i8* getelementptr inbounds ([1024 x i8], [1024 x i8]* @vp9_coefband_trans_8x8plus, i64 0, i64 0)
+  %49 = zext i8 %5 to i32
+  %50 = shl nuw nsw i32 %49, 1
+  %51 = shl i32 16, %50
+  %52 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %13, i64 0, i32 0, i32 1, i32 0, i64 %19, i32 5
+  %53 = load i8*, i8** %52, align 8
+  %54 = sext i32 %3 to i64
+  %55 = getelementptr inbounds i8, i8* %53, i64 %54
+  %56 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %13, i64 0, i32 0, i32 1, i32 0, i64 %19, i32 6
+  %57 = load i8*, i8** %56, align 8
+  %58 = sext i32 %2 to i64
+  %59 = getelementptr inbounds i8, i8* %57, i64 %58
+  switch i8 %5, label %86 [
+    i8 0, label %60
+    i8 1, label %65
+    i8 2, label %72
+    i8 3, label %79
+  ]
+
+60:                                               ; preds = %7
+  %61 = load i8, i8* %55, align 1
+  %62 = icmp ne i8 %61, 0
+  %63 = load i8, i8* %59, align 1
+  %64 = icmp ne i8 %63, 0
+  br label %86
+
+65:                                               ; preds = %7
+  %66 = bitcast i8* %55 to i16*
+  %67 = load i16, i16* %66, align 2
+  %68 = icmp ne i16 %67, 0
+  %69 = bitcast i8* %59 to i16*
+  %70 = load i16, i16* %69, align 2
+  %71 = icmp ne i16 %70, 0
+  br label %86
+
+72:                                               ; preds = %7
+  %73 = bitcast i8* %55 to i32*
+  %74 = load i32, i32* %73, align 4
+  %75 = icmp ne i32 %74, 0
+  %76 = bitcast i8* %59 to i32*
+  %77 = load i32, i32* %76, align 4
+  %78 = icmp ne i32 %77, 0
+  br label %86
+
+79:                                               ; preds = %7
+  %80 = bitcast i8* %55 to i64*
+  %81 = load i64, i64* %80, align 8
+  %82 = icmp ne i64 %81, 0
+  %83 = bitcast i8* %59 to i64*
+  %84 = load i64, i64* %83, align 8
+  %85 = icmp ne i64 %84, 0
+  br label %86
+
+86:                                               ; preds = %7, %60, %65, %72, %79
+  %87 = phi i1 [ false, %7 ], [ %82, %79 ], [ %75, %72 ], [ %68, %65 ], [ %62, %60 ]
+  %88 = phi i1 [ false, %7 ], [ %85, %79 ], [ %78, %72 ], [ %71, %65 ], [ %64, %60 ]
+  %89 = zext i1 %87 to i32
+  %90 = zext i1 %88 to i32
+  %91 = add nuw nsw i32 %90, %89
+  %92 = or i1 %31, %39
+  br i1 %92, label %97, label %93
+
+93:                                               ; preds = %86
+  %94 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %13, i64 0, i32 0, i32 1, i32 24
+  %95 = load i32, i32* %94, align 4
+  %96 = icmp eq i32 %95, 0
+  br i1 %96, label %99, label %97
+
+97:                                               ; preds = %86, %93
+  %98 = getelementptr inbounds [4 x %struct.scan_order], [4 x %struct.scan_order]* @vp9_default_scan_orders, i64 0, i64 %40
+  br label %112
+
+99:                                               ; preds = %93
+  %100 = getelementptr inbounds %struct.MODE_INFO, %struct.MODE_INFO* %23, i64 0, i32 0
+  %101 = load i8, i8* %100, align 4
+  %102 = icmp ult i8 %101, 3
+  %103 = getelementptr inbounds %struct.MODE_INFO, %struct.MODE_INFO* %23, i64 0, i32 10, i64 %27, i32 0
+  %104 = getelementptr inbounds %struct.MODE_INFO, %struct.MODE_INFO* %23, i64 0, i32 1
+  %105 = select i1 %102, i8* %103, i8* %104
+  %106 = load i8, i8* %105, align 1
+  %107 = zext i8 %106 to i64
+  %108 = getelementptr inbounds [10 x i32], [10 x i32]* @intra_mode_to_tx_type_lookup, i64 0, i64 %107
+  %109 = load i32, i32* %108, align 4
+  %110 = zext i32 %109 to i64
+  %111 = getelementptr inbounds [4 x [4 x %struct.scan_order]], [4 x [4 x %struct.scan_order]]* @vp9_scan_orders, i64 0, i64 %40, i64 %110
+  br label %112
+
+112:                                              ; preds = %97, %99
+  %113 = phi %struct.scan_order* [ %98, %97 ], [ %111, %99 ]
+  %114 = getelementptr inbounds %struct.scan_order, %struct.scan_order* %113, i64 0, i32 0
+  %115 = load i16*, i16** %114, align 8
+  %116 = getelementptr inbounds %struct.scan_order, %struct.scan_order* %113, i64 0, i32 2
+  %117 = load i16*, i16** %116, align 8
+  %118 = icmp eq i16 %29, 0
+  br i1 %118, label %258, label %119
+
+119:                                              ; preds = %112, %211
+  %120 = phi i32 [ %235, %211 ], [ 0, %112 ]
+  %121 = phi i32 [ %254, %211 ], [ %91, %112 ]
+  %122 = phi i64 [ %224, %211 ], [ %24, %112 ]
+  %123 = inttoptr i64 %122 to %struct.TOKENEXTRA*
+  %124 = sext i32 %120 to i64
+  %125 = getelementptr inbounds i16, i16* %115, i64 %124
+  %126 = load i16, i16* %125, align 2
+  %127 = sext i16 %126 to i64
+  %128 = getelementptr inbounds i32, i32* %36, i64 %127
+  %129 = load i32, i32* %128, align 4
+  %130 = getelementptr inbounds i8, i8* %48, i64 %124
+  %131 = load i8, i8* %130, align 1
+  %132 = zext i8 %131 to i64
+  %133 = sext i32 %121 to i64
+  %134 = getelementptr inbounds %struct.FRAME_COUNTS, %struct.FRAME_COUNTS* %46, i64 0, i32 4, i64 %40, i64 %41, i64 %42, i64 %132, i64 %133
+  %135 = load i32, i32* %134, align 4
+  %136 = add i32 %135, 1
+  store i32 %136, i32* %134, align 4
+  %137 = icmp eq i32 %129, 0
+  br i1 %137, label %138, label %189
+
+138:                                              ; preds = %119, %184
+  %139 = phi i8 [ %186, %184 ], [ %131, %119 ]
+  %140 = phi i64 [ %157, %184 ], [ %124, %119 ]
+  %141 = phi i32 [ %158, %184 ], [ %120, %119 ]
+  %142 = phi i32 [ %177, %184 ], [ %121, %119 ]
+  %143 = phi %struct.TOKENEXTRA* [ %150, %184 ], [ %123, %119 ]
+  %144 = zext i8 %139 to i64
+  %145 = sext i32 %142 to i64
+  %146 = getelementptr inbounds %struct.frame_contexts, %struct.frame_contexts* %44, i64 0, i32 3, i64 %40, i64 %41, i64 %42, i64 %144, i64 %145, i64 0
+  %147 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %13, i64 0, i32 1, i32 0, i64 %40, i64 %41, i64 %42, i64 %144, i64 %145, i64 0
+  %148 = getelementptr inbounds %struct.TOKENEXTRA, %struct.TOKENEXTRA* %143, i64 0, i32 0
+  store i8* %146, i8** %148, align 8
+  %149 = getelementptr inbounds %struct.TOKENEXTRA, %struct.TOKENEXTRA* %143, i64 0, i32 1
+  store i16 0, i16* %149, align 8
+  %150 = getelementptr inbounds %struct.TOKENEXTRA, %struct.TOKENEXTRA* %143, i64 1
+  %151 = load i32, i32* %147, align 4
+  %152 = add i32 %151, 1
+  store i32 %152, i32* %147, align 4
+  %153 = getelementptr inbounds i16, i16* %115, i64 %140
+  %154 = load i16, i16* %153, align 2
+  %155 = sext i16 %154 to i64
+  %156 = getelementptr inbounds [1024 x i8], [1024 x i8]* %8, i64 0, i64 %155
+  store i8 0, i8* %156, align 1
+  %157 = add nsw i64 %140, 1
+  %158 = add nsw i32 %141, 1
+  %159 = shl nsw i32 %158, 1
+  %160 = sext i32 %159 to i64
+  %161 = getelementptr inbounds i16, i16* %117, i64 %160
+  %162 = load i16, i16* %161, align 2
+  %163 = sext i16 %162 to i64
+  %164 = getelementptr inbounds [1024 x i8], [1024 x i8]* %8, i64 0, i64 %163
+  %165 = load i8, i8* %164, align 1
+  %166 = zext i8 %165 to i32
+  %167 = add nuw nsw i32 %166, 1
+  %168 = or i32 %159, 1
+  %169 = sext i32 %168 to i64
+  %170 = getelementptr inbounds i16, i16* %117, i64 %169
+  %171 = load i16, i16* %170, align 2
+  %172 = sext i16 %171 to i64
+  %173 = getelementptr inbounds [1024 x i8], [1024 x i8]* %8, i64 0, i64 %172
+  %174 = load i8, i8* %173, align 1
+  %175 = zext i8 %174 to i32
+  %176 = add nuw nsw i32 %167, %175
+  %177 = lshr i32 %176, 1
+  %178 = getelementptr inbounds i16, i16* %115, i64 %157
+  %179 = load i16, i16* %178, align 2
+  %180 = sext i16 %179 to i64
+  %181 = getelementptr inbounds i32, i32* %36, i64 %180
+  %182 = load i32, i32* %181, align 4
+  %183 = icmp eq i32 %182, 0
+  br i1 %183, label %184, label %187
+
+184:                                              ; preds = %138
+  %185 = getelementptr inbounds i8, i8* %48, i64 %157
+  %186 = load i8, i8* %185, align 1
+  br label %138
+
+187:                                              ; preds = %138
+  %188 = trunc i64 %157 to i32
+  br label %189
+
+189:                                              ; preds = %187, %119
+  %190 = phi %struct.TOKENEXTRA* [ %150, %187 ], [ %123, %119 ]
+  %191 = phi i32 [ %177, %187 ], [ %121, %119 ]
+  %192 = phi i32 [ %188, %187 ], [ %120, %119 ]
+  %193 = phi i32 [ %182, %187 ], [ %129, %119 ]
+  %194 = add i32 %193, 66
+  %195 = icmp ugt i32 %194, 132
+  br i1 %195, label %196, label %204
+
+196:                                              ; preds = %189
+  %197 = icmp sgt i32 %193, 66
+  br i1 %197, label %198, label %201
+
+198:                                              ; preds = %196
+  %199 = shl i32 %193, 1
+  %200 = add nsw i32 %199, -134
+  br label %211
+
+201:                                              ; preds = %196
+  %202 = mul nsw i32 %193, -2
+  %203 = add nsw i32 %202, -133
+  br label %211
+
+204:                                              ; preds = %189
+  %205 = load %struct.TOKENVALUE*, %struct.TOKENVALUE** @vp9_dct_cat_lt_10_value_tokens, align 8
+  %206 = sext i32 %193 to i64
+  %207 = getelementptr inbounds %struct.TOKENVALUE, %struct.TOKENVALUE* %205, i64 %206, i32 0
+  %208 = load i16, i16* %207, align 4
+  %209 = getelementptr inbounds %struct.TOKENVALUE, %struct.TOKENVALUE* %205, i64 %206, i32 1
+  %210 = load i32, i32* %209, align 4
+  br label %211
+
+211:                                              ; preds = %198, %201, %204
+  %212 = phi i16 [ 10, %198 ], [ 10, %201 ], [ %208, %204 ]
+  %213 = phi i32 [ %200, %198 ], [ %203, %201 ], [ %210, %204 ]
+  %214 = sext i32 %192 to i64
+  %215 = getelementptr inbounds i8, i8* %48, i64 %214
+  %216 = load i8, i8* %215, align 1
+  %217 = zext i8 %216 to i64
+  %218 = sext i32 %191 to i64
+  %219 = getelementptr inbounds %struct.frame_contexts, %struct.frame_contexts* %44, i64 0, i32 3, i64 %40, i64 %41, i64 %42, i64 %217, i64 %218, i64 0
+  %220 = getelementptr inbounds %struct.TOKENEXTRA, %struct.TOKENEXTRA* %190, i64 0, i32 0
+  store i8* %219, i8** %220, align 8
+  %221 = getelementptr inbounds %struct.TOKENEXTRA, %struct.TOKENEXTRA* %190, i64 0, i32 1
+  store i16 %212, i16* %221, align 8
+  %222 = getelementptr inbounds %struct.TOKENEXTRA, %struct.TOKENEXTRA* %190, i64 0, i32 2
+  store i32 %213, i32* %222, align 4
+  %223 = getelementptr inbounds %struct.TOKENEXTRA, %struct.TOKENEXTRA* %190, i64 1
+  %224 = ptrtoint %struct.TOKENEXTRA* %223 to i64
+  %225 = sext i16 %212 to i64
+  %226 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %13, i64 0, i32 1, i32 0, i64 %40, i64 %41, i64 %42, i64 %217, i64 %218, i64 %225
+  %227 = load i32, i32* %226, align 4
+  %228 = add i32 %227, 1
+  store i32 %228, i32* %226, align 4
+  %229 = getelementptr inbounds [12 x i8], [12 x i8]* @vp9_pt_energy_class, i64 0, i64 %225
+  %230 = load i8, i8* %229, align 1
+  %231 = getelementptr inbounds i16, i16* %115, i64 %214
+  %232 = load i16, i16* %231, align 2
+  %233 = sext i16 %232 to i64
+  %234 = getelementptr inbounds [1024 x i8], [1024 x i8]* %8, i64 0, i64 %233
+  store i8 %230, i8* %234, align 1
+  %235 = add nsw i32 %192, 1
+  %236 = shl nsw i32 %235, 1
+  %237 = sext i32 %236 to i64
+  %238 = getelementptr inbounds i16, i16* %117, i64 %237
+  %239 = load i16, i16* %238, align 2
+  %240 = sext i16 %239 to i64
+  %241 = getelementptr inbounds [1024 x i8], [1024 x i8]* %8, i64 0, i64 %240
+  %242 = load i8, i8* %241, align 1
+  %243 = zext i8 %242 to i32
+  %244 = add nuw nsw i32 %243, 1
+  %245 = or i32 %236, 1
+  %246 = sext i32 %245 to i64
+  %247 = getelementptr inbounds i16, i16* %117, i64 %246
+  %248 = load i16, i16* %247, align 2
+  %249 = sext i16 %248 to i64
+  %250 = getelementptr inbounds [1024 x i8], [1024 x i8]* %8, i64 0, i64 %249
+  %251 = load i8, i8* %250, align 1
+  %252 = zext i8 %251 to i32
+  %253 = add nuw nsw i32 %244, %252
+  %254 = lshr i32 %253, 1
+  %255 = icmp slt i32 %235, %30
+  br i1 %255, label %119, label %256
+
+256:                                              ; preds = %211
+  %257 = ptrtoint %struct.TOKENEXTRA* %223 to i64
+  br label %258
+
+258:                                              ; preds = %256, %112
+  %259 = phi i64 [ %24, %112 ], [ %257, %256 ]
+  %260 = phi i32 [ %91, %112 ], [ %254, %256 ]
+  %261 = phi i32 [ 0, %112 ], [ %235, %256 ]
+  %262 = icmp slt i32 %261, %51
+  br i1 %262, label %263, label %281
+
+263:                                              ; preds = %258
+  %264 = sext i32 %261 to i64
+  %265 = getelementptr inbounds i8, i8* %48, i64 %264
+  %266 = load i8, i8* %265, align 1
+  %267 = zext i8 %266 to i64
+  %268 = sext i32 %260 to i64
+  %269 = getelementptr inbounds %struct.FRAME_COUNTS, %struct.FRAME_COUNTS* %46, i64 0, i32 4, i64 %40, i64 %41, i64 %42, i64 %267, i64 %268
+  %270 = load i32, i32* %269, align 4
+  %271 = add i32 %270, 1
+  store i32 %271, i32* %269, align 4
+  %272 = getelementptr inbounds %struct.frame_contexts, %struct.frame_contexts* %44, i64 0, i32 3, i64 %40, i64 %41, i64 %42, i64 %267, i64 %268, i64 0
+  %273 = inttoptr i64 %259 to %struct.TOKENEXTRA*
+  %274 = getelementptr inbounds %struct.TOKENEXTRA, %struct.TOKENEXTRA* %273, i64 0, i32 0
+  store i8* %272, i8** %274, align 8
+  %275 = getelementptr inbounds %struct.TOKENEXTRA, %struct.TOKENEXTRA* %273, i64 0, i32 1
+  store i16 11, i16* %275, align 8
+  %276 = getelementptr inbounds %struct.TOKENEXTRA, %struct.TOKENEXTRA* %273, i64 1
+  %277 = ptrtoint %struct.TOKENEXTRA* %276 to i64
+  %278 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %13, i64 0, i32 1, i32 0, i64 %40, i64 %41, i64 %42, i64 %267, i64 %268, i64 11
+  %279 = load i32, i32* %278, align 4
+  %280 = add i32 %279, 1
+  store i32 %280, i32* %278, align 4
+  br label %281
+
+281:                                              ; preds = %263, %258
+  %282 = phi i64 [ %277, %263 ], [ %259, %258 ]
+  store i64 %282, i64* %17, align 8
+  %283 = icmp sgt i32 %261, 0
+  %284 = zext i1 %283 to i32
+  tail call void @vp9_set_contexts(%struct.macroblockd* %14, %struct.macroblockd_plane* %20, i8 zeroext %4, i8 zeroext %5, i32 %284, i32 %3, i32 %2) #4
+  call void @llvm.lifetime.end.p0i8(i64 1024, i8* nonnull %18) #4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @set_entropy_context_b(i32, i32, i32, i32, i8 zeroext, i8 zeroext, i8* nocapture readonly) #0 {
+  %8 = getelementptr inbounds i8, i8* %6, i64 8
+  %9 = bitcast i8* %8 to %struct.ThreadData**
+  %10 = load %struct.ThreadData*, %struct.ThreadData** %9, align 8
+  %11 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %10, i64 0, i32 0, i32 1
+  %12 = sext i32 %0 to i64
+  %13 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %10, i64 0, i32 0, i32 1, i32 0, i64 %12
+  %14 = getelementptr inbounds %struct.ThreadData, %struct.ThreadData* %10, i64 0, i32 0, i32 0, i64 %12, i32 3
+  %15 = load i16*, i16** %14, align 16
+  %16 = sext i32 %1 to i64
+  %17 = getelementptr inbounds i16, i16* %15, i64 %16
+  %18 = load i16, i16* %17, align 2
+  %19 = icmp ne i16 %18, 0
+  %20 = zext i1 %19 to i32
+  tail call void @vp9_set_contexts(%struct.macroblockd* %11, %struct.macroblockd_plane* %13, i8 zeroext %4, i8 zeroext %5, i32 %20, i32 %3, i32 %2) #4
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1
+
+declare void @vp9_set_contexts(%struct.macroblockd*, %struct.macroblockd_plane*, i8 zeroext, i8 zeroext, i32, i32, i32) local_unnamed_addr #2
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { argmemonly nounwind }
+attributes #2 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nofree norecurse nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}

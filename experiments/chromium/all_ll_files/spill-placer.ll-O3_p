@@ -1,0 +1,2275 @@
+; ModuleID = '../../v8/src/compiler/backend/spill-placer.cc'
+source_filename = "../../v8/src/compiler/backend/spill-placer.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.v8::internal::compiler::SpillPlacer" = type <{ %"class.v8::internal::compiler::LiveRangeFinder"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::Zone"*, %"class.v8::internal::compiler::SpillPlacer::Entry"*, i32*, i32, %"class.v8::internal::compiler::RpoNumber", %"class.v8::internal::compiler::RpoNumber", [4 x i8] }>
+%"class.v8::internal::compiler::SpillPlacer::Entry" = type { i64, i64, i64 }
+%"class.v8::internal::compiler::RpoNumber" = type { i32 }
+%"class.v8::internal::compiler::LiveRangeFinder" = type { %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, i32, %"class.v8::internal::compiler::LiveRangeBoundArray"*, %"class.v8::internal::Zone"* }
+%"class.v8::internal::compiler::LiveRangeBoundArray" = type { i64, %"class.v8::internal::compiler::LiveRangeBound"* }
+%"class.v8::internal::compiler::LiveRangeBound" = type <{ %"class.v8::internal::compiler::LiveRange"*, %"class.v8::internal::compiler::LifetimePosition", %"class.v8::internal::compiler::LifetimePosition", i8, [7 x i8] }>
+%"class.v8::internal::compiler::LiveRange" = type <{ i32, i32, %"class.v8::internal::compiler::UseInterval"*, %"class.v8::internal::compiler::UseInterval"*, %"class.v8::internal::compiler::UsePosition"*, %"class.v8::internal::compiler::TopLevelLiveRange"*, %"class.v8::internal::compiler::LiveRange"*, %"class.v8::internal::compiler::UseInterval"*, %"class.v8::internal::compiler::UsePosition"*, %"class.v8::internal::compiler::UsePosition"*, %"class.v8::internal::compiler::LiveRangeBundle"*, %"class.v8::internal::compiler::LifetimePosition", [4 x i8] }>
+%"class.v8::internal::compiler::TopLevelLiveRange" = type { %"class.v8::internal::compiler::LiveRange.base", i32, i32, %union.anon.706, %union.anon.707, i8, i8, i32, %"class.v8::internal::compiler::UsePosition"*, %"class.v8::internal::compiler::LiveRange"* }
+%"class.v8::internal::compiler::LiveRange.base" = type <{ i32, i32, %"class.v8::internal::compiler::UseInterval"*, %"class.v8::internal::compiler::UseInterval"*, %"class.v8::internal::compiler::UsePosition"*, %"class.v8::internal::compiler::TopLevelLiveRange"*, %"class.v8::internal::compiler::LiveRange"*, %"class.v8::internal::compiler::UseInterval"*, %"class.v8::internal::compiler::UsePosition"*, %"class.v8::internal::compiler::UsePosition"*, %"class.v8::internal::compiler::LiveRangeBundle"*, %"class.v8::internal::compiler::LifetimePosition" }>
+%union.anon.706 = type { %"class.v8::internal::compiler::InstructionOperand"* }
+%"class.v8::internal::compiler::InstructionOperand" = type { i64 }
+%union.anon.707 = type { %"struct.v8::internal::compiler::TopLevelLiveRange::SpillMoveInsertionList"* }
+%"struct.v8::internal::compiler::TopLevelLiveRange::SpillMoveInsertionList" = type opaque
+%"class.v8::internal::compiler::UseInterval" = type { %"class.v8::internal::compiler::LifetimePosition", %"class.v8::internal::compiler::LifetimePosition", %"class.v8::internal::compiler::UseInterval"* }
+%"class.v8::internal::compiler::UsePosition" = type { %"class.v8::internal::compiler::InstructionOperand"*, i8*, %"class.v8::internal::compiler::UsePosition"*, %"class.v8::internal::compiler::LifetimePosition", i32 }
+%"class.v8::internal::compiler::LiveRangeBundle" = type { %"class.v8::internal::ZoneSet", %"class.v8::internal::ZoneSet.698", i32, i32 }
+%"class.v8::internal::ZoneSet" = type { %"class.std::__1::set" }
+%"class.std::__1::set" = type { %"class.std::__1::__tree.692" }
+%"class.std::__1::__tree.692" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.693", %"class.std::__1::__compressed_pair.696" }
+%"class.std::__1::__tree_end_node" = type { %"class.std::__1::__tree_node_base"* }
+%"class.std::__1::__tree_node_base" = type <{ %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_end_node"*, i8, [7 x i8] }>
+%"class.std::__1::__compressed_pair.693" = type { %"struct.std::__1::__compressed_pair_elem.583", %"struct.std::__1::__compressed_pair_elem.694" }
+%"struct.std::__1::__compressed_pair_elem.583" = type { %"class.std::__1::__tree_end_node" }
+%"struct.std::__1::__compressed_pair_elem.694" = type { %"class.v8::internal::ZoneAllocator.695" }
+%"class.v8::internal::ZoneAllocator.695" = type { %"class.v8::internal::Zone"* }
+%"class.std::__1::__compressed_pair.696" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"struct.std::__1::__compressed_pair_elem.24" = type { i64 }
+%"class.v8::internal::ZoneSet.698" = type { %"class.std::__1::set.699" }
+%"class.std::__1::set.699" = type { %"class.std::__1::__tree.700" }
+%"class.std::__1::__tree.700" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.701", %"class.std::__1::__compressed_pair.704" }
+%"class.std::__1::__compressed_pair.701" = type { %"struct.std::__1::__compressed_pair_elem.583", %"struct.std::__1::__compressed_pair_elem.702" }
+%"struct.std::__1::__compressed_pair_elem.702" = type { %"class.v8::internal::ZoneAllocator.703" }
+%"class.v8::internal::ZoneAllocator.703" = type { %"class.v8::internal::Zone"* }
+%"class.std::__1::__compressed_pair.704" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.v8::internal::compiler::LifetimePosition" = type { i32 }
+%"class.v8::internal::compiler::TopTierRegisterAllocationData" = type { %"class.v8::internal::compiler::RegisterAllocationData", %"class.v8::internal::Zone"*, %"class.v8::internal::compiler::Frame"*, %"class.v8::internal::compiler::InstructionSequence"*, i8*, %"class.v8::internal::RegisterConfiguration"*, %"class.v8::internal::ZoneMap.673", %"class.v8::internal::ZoneVector.682", %"class.v8::internal::ZoneVector.682", %"class.v8::internal::ZoneVector.689", %"class.v8::internal::ZoneVector.689", %"class.v8::internal::ZoneVector.689", %"class.v8::internal::ZoneVector.689", %"class.v8::internal::ZoneVector.689", %"class.v8::internal::ZoneVector.712", %"class.v8::internal::ZoneVector.719", %"class.v8::internal::BitVector"*, %"class.v8::internal::BitVector"*, %"class.v8::internal::BitVector"*, %"class.v8::internal::BitVector"*, i32, %"class.v8::internal::ZoneVector.726", %"class.v8::internal::ZoneVector.734", %"class.v8::base::Flags", %"class.v8::internal::TickCounter"*, %"class.v8::internal::ZoneMap.748" }
+%"class.v8::internal::compiler::RegisterAllocationData" = type { i32 }
+%"class.v8::internal::compiler::Frame" = type { i32, i32, i32, %"class.v8::internal::AlignedSlotAllocator", %"class.v8::internal::BitVector"*, %"class.v8::internal::BitVector"* }
+%"class.v8::internal::AlignedSlotAllocator" = type { i32, i32, i32, i32 }
+%"class.v8::internal::compiler::InstructionSequence" = type { %"class.v8::internal::Isolate"*, %"class.v8::internal::Zone"*, %"class.v8::internal::ZoneVector"*, %"class.v8::internal::ZoneVector"*, %"class.v8::internal::ZoneMap", %"class.std::__1::map.589", %"class.v8::internal::ZoneVector.598", %"class.v8::internal::ZoneVector.559", %"class.v8::internal::ZoneDeque", i32, %"class.v8::internal::ZoneDeque.630", %"class.v8::internal::ZoneVector.643", i32, %"class.v8::internal::ZoneVector.650", %"class.v8::internal::compiler::InstructionBlock"* }
+%"class.v8::internal::Isolate" = type { %"class.v8::internal::IsolateData", %"class.std::__1::unique_ptr.13", %"class.v8::internal::Heap", %"class.v8::internal::ReadOnlyHeap"*, %"class.std::__1::shared_ptr.332", %"class.std::__1::unique_ptr.333", i32, %"class.v8::internal::Isolate::EntryStackItem"*, i32, %"class.v8::internal::StringStream"*, [13 x i64], %"class.v8::internal::Bootstrapper"*, %"class.v8::internal::RuntimeProfiler"*, %"class.v8::internal::CompilationCache"*, %"class.std::__1::shared_ptr.339", %"class.v8::base::RecursiveMutex", %"class.v8::base::SharedMutex", %"class.v8::base::SharedMutex", %"class.v8::base::SharedMutex", %"class.v8::base::SharedMutex", %"class.v8::base::SharedMutex", %"class.v8::internal::Logger"*, %"class.v8::internal::StubCache"*, %"class.v8::internal::StubCache"*, %"class.v8::internal::Deoptimizer"*, i8, %"class.v8::internal::MaterializedObjectStore"*, i8, i32, i32, %"class.v8::internal::DescriptorLookupCache"*, %"struct.v8::internal::HandleScopeData", %"class.v8::internal::HandleScopeImplementer"*, %"class.v8::internal::UnicodeCache"*, %"class.v8::internal::AccountingAllocator"*, %"class.v8::internal::InnerPointerToCodeCache"*, %"class.v8::internal::GlobalHandles"*, %"class.v8::internal::EternalHandles"*, %"class.v8::internal::ThreadManager"*, %"class.v8::bigint::Processor"*, %"class.v8::internal::RuntimeState", %"class.v8::internal::Builtins", %"class.v8::internal::SetupIsolateDelegate"*, %"class.v8::internal::RegExpStack"*, %"class.std::__1::vector.354", %"class.v8::internal::DateCache"*, %"class.v8::base::RandomNumberGenerator"*, %"class.v8::base::RandomNumberGenerator"*, %"struct.std::__1::atomic.361", {}*, i8*, void (i32, %"class.v8::Promise"*, %"class.v8::Value"*)*, {}*, {}*, %"struct.std::__1::atomic.371", {}*, %"class.v8::base::Mutex", double, %"class.std::__1::basic_string", %"class.std::__1::unordered_map.381", %"struct.std::__1::atomic.56", i8, i8, i8, i8, i8, i8, double, %"class.v8::internal::Debug"*, %"class.v8::internal::HeapProfiler"*, %"class.std::__1::unique_ptr.415", %"class.v8::internal::AstStringConstants"*, %"class.v8::internal::interpreter::Interpreter"*, %"class.v8::internal::compiler::PerIsolateCompilerCache"*, %"class.v8::internal::Zone"*, %"class.v8::internal::CompilerDispatcher"*, %"class.std::__1::queue", void (i8*, i8*)*, void (i8*, i1)*, void (i8*, i32)*, i1 (%"class.v8::Context"*, %"class.v8::String"*)*, { i8, %"class.v8::String"* } (%"class.v8::Context"*, %"class.v8::Value"*)*, { i8, %"class.v8::String"* } (%"class.v8::Context"*, %"class.v8::Value"*, i1)*, i1 (%"class.v8::Context"*, %"class.v8::String"*)*, i1 (%"class.v8::FunctionCallbackInfo"*)*, i1 (%"class.v8::FunctionCallbackInfo"*)*, i1 (%"class.v8::Context"*)*, void (%"class.v8::FunctionCallbackInfo"*)*, %"class.v8::String"* (%"class.v8::Isolate"*, i8*)*, i1 (%"class.v8::Context"*)*, i1 (%"class.v8::Context"*)*, %"class.v8::internal::Relocatable"*, %"class.std::__1::vector.432"*, %"class.v8::internal::Object", i64*, %"class.v8::internal::AddressToIndexHashMap"*, %"class.v8::internal::HeapObjectToIndexHashMap"*, %"class.v8::internal::MicrotaskQueue"*, %"class.v8::internal::CompilationStatistics"*, %"class.v8::internal::CodeTracer"*, i32, void (%"class.v8::PromiseRejectMessage"*)*, %"class.v8::StartupData"*, i32, i32, i32, i64, i8, i8, i32, i8, i32, %"class.v8_inspector::V8Inspector"*, i8, i8, i8, i32, i32, %"class.v8::internal::compiler::NodeObserver"*, i8, [128 x i32], [256 x i32], [251 x i32], [251 x i32], %"class.v8::internal::OptimizingCompileDispatcher"*, %"class.std::__1::unique_ptr.433", i32, i8, i8, i32, i32, %"class.std::__1::vector.439", %"class.std::__1::vector.439", void (%"class.v8::Isolate"*, i32)*, %"class.std::__1::shared_ptr.446", i64, %"class.std::__1::unordered_map.447", i64, %"struct.v8::metrics::LongTaskStats", %"class.std::__1::vector.205", %"class.v8::internal::BuiltinsConstantsTableBuilder"*, i8*, i32, i8*, i32, %"class.v8::ArrayBuffer::Allocator"*, %"class.std::__1::shared_ptr.64", %"class.v8::internal::FutexWaitListNode", %"class.v8::internal::CancelableTaskManager"*, %"class.v8::debug::ConsoleDelegate"*, %"class.v8::debug::AsyncEventDelegate"*, i32, i32, %"class.std::__1::unique_ptr.506", i1 (%"class.v8::Isolate"*)*, i8, %"class.v8::base::Mutex", %"struct.v8::internal::ManagedPtrDestructor"*, i64, i64, %"class.v8::internal::wasm::WasmEngine"*, %"class.std::__1::unique_ptr.512", %"class.v8::internal::EmbeddedFileWriterInterface"*, %"class.v8::Context::BackupIncumbentScope"*, {}*, %"class.v8::base::Mutex", %"class.v8::internal::Isolate::ThreadDataTable", i8, %"class.v8::internal::Isolate"*, %"class.v8::base::Mutex", %"class.v8::internal::Isolate"*, %"class.v8::internal::Isolate"*, %"class.v8::internal::Isolate"*, %"struct.std::__1::atomic.546", %"class.std::__1::vector.550", %"class.std::__1::vector.550", void (i32, %"class.std::__1::basic_string"*)* }
+%"class.v8::internal::IsolateData" = type { [4 x i8*], i64, i64, i64, i64, i64, %"class.v8::internal::StackGuard", %"class.v8::internal::RootsTable", %"class.v8::internal::ExternalReferenceTable", %"class.v8::internal::ThreadLocalTop", [1711 x i64], [1711 x i64], i8, [15 x i8] }
+%"class.v8::internal::StackGuard" = type { %"class.v8::internal::Isolate"*, %"class.v8::internal::StackGuard::ThreadLocal" }
+%"class.v8::internal::StackGuard::ThreadLocal" = type { i64, i64, i64, i64, %"class.v8::internal::InterruptsScope"*, i64 }
+%"class.v8::internal::InterruptsScope" = type { i32 (...)**, %"class.v8::internal::StackGuard"*, i64, i64, i32, %"class.v8::internal::InterruptsScope"* }
+%"class.v8::internal::RootsTable" = type { [669 x i64] }
+%"class.v8::internal::ExternalReferenceTable" = type { [1042 x i64], i32, i32 }
+%"class.v8::internal::ThreadLocalTop" = type { %"class.v8::TryCatch"*, %"class.v8::internal::Isolate"*, %"class.v8::internal::Context", %"struct.std::__1::atomic.8", %"class.v8::internal::Object", %"class.v8::internal::Context", i64, i64, i64, i64, i64, %"class.v8::internal::Object", i8, i8, %"class.v8::internal::Object", i64, i64, i64, %"class.v8::internal::PromiseOnStack"*, %"class.v8::internal::Simulator"*, i64, %"class.v8::internal::ExternalCallbackScope"*, i32, void (%"class.v8::Object"*, i32, %"class.v8::Value"*)*, i64 }
+%"class.v8::TryCatch" = type <{ %"class.v8::internal::Isolate"*, %"class.v8::TryCatch"*, i8*, i8*, i8*, i8, [7 x i8] }>
+%"struct.std::__1::atomic.8" = type { %"struct.std::__1::__atomic_base.9" }
+%"struct.std::__1::__atomic_base.9" = type { %"struct.std::__1::__cxx_atomic_impl.10" }
+%"struct.std::__1::__cxx_atomic_impl.10" = type { %"struct.std::__1::__cxx_atomic_base_impl.11" }
+%"struct.std::__1::__cxx_atomic_base_impl.11" = type { %"class.v8::internal::ThreadId" }
+%"class.v8::internal::ThreadId" = type { i32 }
+%"class.v8::internal::Context" = type { %"class.v8::internal::TorqueGeneratedContext" }
+%"class.v8::internal::TorqueGeneratedContext" = type { %"class.v8::internal::HeapObject" }
+%"class.v8::internal::HeapObject" = type { %"class.v8::internal::Object" }
+%"class.v8::internal::PromiseOnStack" = type { %"class.v8::internal::Handle", %"class.v8::internal::PromiseOnStack"* }
+%"class.v8::internal::Handle" = type { %"class.v8::internal::HandleBase" }
+%"class.v8::internal::HandleBase" = type { i64* }
+%"class.v8::internal::Simulator" = type opaque
+%"class.v8::internal::ExternalCallbackScope" = type opaque
+%"class.v8::Object" = type { i8 }
+%"class.v8::Value" = type { i8 }
+%"class.std::__1::unique_ptr.13" = type { %"class.std::__1::__compressed_pair.14" }
+%"class.std::__1::__compressed_pair.14" = type { %"struct.std::__1::__compressed_pair_elem.15" }
+%"struct.std::__1::__compressed_pair_elem.15" = type { %"class.v8::internal::IsolateAllocator"* }
+%"class.v8::internal::IsolateAllocator" = type { i8*, %"class.v8::PageAllocator"* }
+%"class.v8::PageAllocator" = type { i32 (...)** }
+%"class.v8::internal::Heap" = type { %"class.std::__1::unordered_map", %"struct.std::__1::atomic", %"class.v8::internal::Heap::ExternalMemoryAccounting", %"class.v8::internal::Isolate"*, i64, i64, i64, i64, %"struct.std::__1::atomic", i64, i64, i64, i64, i64, i8, i64, i64, %"struct.std::__1::atomic", i64, i64, %"struct.std::__1::atomic", %"struct.std::__1::atomic.41", %"class.std::__1::vector", i32, %"class.v8::internal::NewSpace"*, %"class.v8::internal::OldSpace"*, %"class.v8::internal::CodeSpace"*, %"class.v8::internal::MapSpace"*, %"class.v8::internal::OldLargeObjectSpace"*, %"class.v8::internal::CodeLargeObjectSpace"*, %"class.v8::internal::NewLargeObjectSpace"*, %"class.v8::internal::ReadOnlySpace"*, %"class.v8::internal::OldSpace"*, %"class.v8::internal::MapSpace"*, %"class.std::__1::unique_ptr.50", %"class.std::__1::unique_ptr.50", [8 x %"class.v8::internal::Space"*], %"class.v8::internal::LocalHeap"*, %"class.v8::internal::ArrayBufferExtension"*, %"class.v8::internal::ArrayBufferExtension"*, i8, i64, %"struct.std::__1::atomic.65", i32, i32, i32, i32, %"class.v8::internal::AllocationObserver"*, %"class.v8::internal::StressScavengeObserver"*, double, i32, i32, i32, i64, i32, [128 x i64], %"struct.std::__1::atomic", i64, i8, %"struct.std::__1::atomic", %"class.v8::internal::Object", %"class.v8::internal::Object", %"class.v8::internal::Object", %"class.std::__1::vector.69", %"class.std::__1::vector.69", i64 ()*, [113 x i32], i64, double, double, i64, i64, double, i32, i32, i32, i32, double, double, double, %"class.std::__1::unique_ptr.76", %"class.std::__1::unique_ptr.82", %"class.v8::internal::MinorMarkCompactCollector"*, %"class.std::__1::unique_ptr.88", %"class.std::__1::unique_ptr.94", %"class.std::__1::unique_ptr.100", %"class.std::__1::unique_ptr.106", %"class.std::__1::unique_ptr.112", %"class.std::__1::unique_ptr.118", %"class.std::__1::unique_ptr.124", %"class.std::__1::unique_ptr.130", %"class.std::__1::unique_ptr.136", %"class.std::__1::unique_ptr.136", %"class.std::__1::unique_ptr.142", %"class.std::__1::unique_ptr.148", %"class.std::__1::unique_ptr.148", %"class.std::__1::unique_ptr.154", %"class.std::__1::unique_ptr.160", %"class.std::__1::shared_ptr.166", %"class.v8::CppHeap"*, %"class.v8::EmbedderRootsHandler"*, %"class.v8::internal::StrongRootsEntry"*, %"class.v8::base::Mutex", i8, i64, i64, i64, i64, %"class.std::__1::unordered_map.167", %"class.std::__1::unique_ptr.193", [512 x i8], i8, i8, i64, i8, i32, i32, %"class.std::__1::unique_ptr.199", i8, %"class.v8::internal::Heap::ExternalStringTable", %"class.v8::base::Mutex", %"class.std::__1::unique_ptr.212", i32, i8, i8, i8, i8, i8, %"class.v8::internal::HeapObject", %"class.v8::base::SharedMutex", %"class.v8::base::Mutex", %"class.std::__1::unordered_set", i8, [7 x i8], %"class.std::__1::unordered_map.241", %"class.std::__1::unordered_map.267", %"class.std::__1::unordered_map.241", %"class.std::__1::unordered_map.291", %"class.std::__1::vector.319", i8, %"class.std::__1::unique_ptr.326", i32, i32 }
+%"class.std::__1::unordered_map" = type { %"class.std::__1::__hash_table" }
+%"class.std::__1::__hash_table" = type <{ %"class.std::__1::unique_ptr.19", %"class.std::__1::__compressed_pair.26", %"class.std::__1::__compressed_pair.31", %"class.std::__1::__compressed_pair.33", [4 x i8] }>
+%"class.std::__1::unique_ptr.19" = type { %"class.std::__1::__compressed_pair.20" }
+%"class.std::__1::__compressed_pair.20" = type { %"struct.std::__1::__compressed_pair_elem.21", %"struct.std::__1::__compressed_pair_elem.22" }
+%"struct.std::__1::__compressed_pair_elem.21" = type { %"struct.std::__1::__hash_node_base"** }
+%"struct.std::__1::__hash_node_base" = type { %"struct.std::__1::__hash_node_base"* }
+%"struct.std::__1::__compressed_pair_elem.22" = type { %"class.std::__1::__bucket_list_deallocator" }
+%"class.std::__1::__bucket_list_deallocator" = type { %"class.std::__1::__compressed_pair.23" }
+%"class.std::__1::__compressed_pair.23" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.26" = type { %"struct.std::__1::__compressed_pair_elem.27" }
+%"struct.std::__1::__compressed_pair_elem.27" = type { %"struct.std::__1::__hash_node_base" }
+%"class.std::__1::__compressed_pair.31" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.33" = type { %"struct.std::__1::__compressed_pair_elem.34" }
+%"struct.std::__1::__compressed_pair_elem.34" = type { float }
+%"class.v8::internal::Heap::ExternalMemoryAccounting" = type { %"struct.std::__1::atomic.36", %"struct.std::__1::atomic.36", %"struct.std::__1::atomic.36" }
+%"struct.std::__1::atomic.36" = type { %"struct.std::__1::__atomic_base.37" }
+%"struct.std::__1::__atomic_base.37" = type { %"struct.std::__1::__atomic_base.38" }
+%"struct.std::__1::__atomic_base.38" = type { %"struct.std::__1::__cxx_atomic_impl.39" }
+%"struct.std::__1::__cxx_atomic_impl.39" = type { %"struct.std::__1::__cxx_atomic_base_impl.40" }
+%"struct.std::__1::__cxx_atomic_base_impl.40" = type { i64 }
+%"struct.std::__1::atomic.41" = type { %"struct.std::__1::__atomic_base.42" }
+%"struct.std::__1::__atomic_base.42" = type { %"struct.std::__1::__cxx_atomic_impl.43" }
+%"struct.std::__1::__cxx_atomic_impl.43" = type { %"struct.std::__1::__cxx_atomic_base_impl.44" }
+%"struct.std::__1::__cxx_atomic_base_impl.44" = type { i32 }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"struct.std::__1::pair"*, %"struct.std::__1::pair"*, %"class.std::__1::__compressed_pair.45" }
+%"struct.std::__1::pair" = type opaque
+%"class.std::__1::__compressed_pair.45" = type { %"struct.std::__1::__compressed_pair_elem.46" }
+%"struct.std::__1::__compressed_pair_elem.46" = type { %"struct.std::__1::pair"* }
+%"class.v8::internal::NewSpace" = type opaque
+%"class.v8::internal::CodeSpace" = type opaque
+%"class.v8::internal::OldLargeObjectSpace" = type opaque
+%"class.v8::internal::CodeLargeObjectSpace" = type opaque
+%"class.v8::internal::NewLargeObjectSpace" = type opaque
+%"class.v8::internal::ReadOnlySpace" = type opaque
+%"class.v8::internal::OldSpace" = type opaque
+%"class.v8::internal::MapSpace" = type opaque
+%"class.std::__1::unique_ptr.50" = type { %"class.std::__1::__compressed_pair.51" }
+%"class.std::__1::__compressed_pair.51" = type { %"struct.std::__1::__compressed_pair_elem.52" }
+%"struct.std::__1::__compressed_pair_elem.52" = type { %"class.v8::internal::ConcurrentAllocator"* }
+%"class.v8::internal::ConcurrentAllocator" = type opaque
+%"class.v8::internal::Space" = type opaque
+%"class.v8::internal::LocalHeap" = type opaque
+%"class.v8::internal::ArrayBufferExtension" = type { %"struct.std::__1::atomic.56", %"struct.std::__1::atomic.60", %"class.std::__1::shared_ptr", %"class.v8::internal::ArrayBufferExtension"*, %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic.60" = type { %"struct.std::__1::__atomic_base.61" }
+%"struct.std::__1::__atomic_base.61" = type { %"struct.std::__1::__cxx_atomic_impl.62" }
+%"struct.std::__1::__cxx_atomic_impl.62" = type { %"struct.std::__1::__cxx_atomic_base_impl.63" }
+%"struct.std::__1::__cxx_atomic_base_impl.63" = type { i8 }
+%"class.std::__1::shared_ptr" = type { %"class.v8::internal::BackingStore"*, %"class.std::__1::__shared_weak_count"* }
+%"class.v8::internal::BackingStore" = type <{ i8*, %"struct.std::__1::atomic", i64, %"union.v8::internal::BackingStore::TypeSpecificData", i16, [6 x i8] }>
+%"union.v8::internal::BackingStore::TypeSpecificData" = type { %"class.std::__1::shared_ptr.64" }
+%"class.std::__1::__shared_weak_count" = type { %"class.std::__1::__shared_count", i64 }
+%"class.std::__1::__shared_count" = type { i32 (...)**, i64 }
+%"struct.std::__1::atomic.65" = type { %"struct.std::__1::__atomic_base.66" }
+%"struct.std::__1::__atomic_base.66" = type { %"struct.std::__1::__cxx_atomic_impl.67" }
+%"struct.std::__1::__cxx_atomic_impl.67" = type { %"struct.std::__1::__cxx_atomic_base_impl.68" }
+%"struct.std::__1::__cxx_atomic_base_impl.68" = type { i32 }
+%"class.v8::internal::AllocationObserver" = type { i32 (...)**, i64 }
+%"class.v8::internal::StressScavengeObserver" = type opaque
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.0" }
+%"struct.std::__1::__atomic_base.0" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i64 }
+%"class.std::__1::vector.69" = type { %"class.std::__1::__vector_base.70" }
+%"class.std::__1::__vector_base.70" = type { %"struct.v8::internal::Heap::GCCallbackTuple"*, %"struct.v8::internal::Heap::GCCallbackTuple"*, %"class.std::__1::__compressed_pair.71" }
+%"struct.v8::internal::Heap::GCCallbackTuple" = type { void (%"class.v8::Isolate"*, i32, i32, i8*)*, i32, i8* }
+%"class.v8::Isolate" = type { i8 }
+%"class.std::__1::__compressed_pair.71" = type { %"struct.std::__1::__compressed_pair_elem.72" }
+%"struct.std::__1::__compressed_pair_elem.72" = type { %"struct.v8::internal::Heap::GCCallbackTuple"* }
+%"class.std::__1::unique_ptr.76" = type { %"class.std::__1::__compressed_pair.77" }
+%"class.std::__1::__compressed_pair.77" = type { %"struct.std::__1::__compressed_pair_elem.78" }
+%"struct.std::__1::__compressed_pair_elem.78" = type { %"class.v8::internal::GCTracer"* }
+%"class.v8::internal::GCTracer" = type opaque
+%"class.std::__1::unique_ptr.82" = type { %"class.std::__1::__compressed_pair.83" }
+%"class.std::__1::__compressed_pair.83" = type { %"struct.std::__1::__compressed_pair_elem.84" }
+%"struct.std::__1::__compressed_pair_elem.84" = type { %"class.v8::internal::MarkCompactCollector"* }
+%"class.v8::internal::MarkCompactCollector" = type opaque
+%"class.v8::internal::MinorMarkCompactCollector" = type opaque
+%"class.std::__1::unique_ptr.88" = type { %"class.std::__1::__compressed_pair.89" }
+%"class.std::__1::__compressed_pair.89" = type { %"struct.std::__1::__compressed_pair_elem.90" }
+%"struct.std::__1::__compressed_pair_elem.90" = type { %"class.v8::internal::ScavengerCollector"* }
+%"class.v8::internal::ScavengerCollector" = type opaque
+%"class.std::__1::unique_ptr.94" = type { %"class.std::__1::__compressed_pair.95" }
+%"class.std::__1::__compressed_pair.95" = type { %"struct.std::__1::__compressed_pair_elem.96" }
+%"struct.std::__1::__compressed_pair_elem.96" = type { %"class.v8::internal::ArrayBufferSweeper"* }
+%"class.v8::internal::ArrayBufferSweeper" = type opaque
+%"class.std::__1::unique_ptr.100" = type { %"class.std::__1::__compressed_pair.101" }
+%"class.std::__1::__compressed_pair.101" = type { %"struct.std::__1::__compressed_pair_elem.102" }
+%"struct.std::__1::__compressed_pair_elem.102" = type { %"class.v8::internal::MemoryAllocator"* }
+%"class.v8::internal::MemoryAllocator" = type opaque
+%"class.std::__1::unique_ptr.106" = type { %"class.std::__1::__compressed_pair.107" }
+%"class.std::__1::__compressed_pair.107" = type { %"struct.std::__1::__compressed_pair_elem.108" }
+%"struct.std::__1::__compressed_pair_elem.108" = type { %"class.v8::internal::IncrementalMarking"* }
+%"class.v8::internal::IncrementalMarking" = type opaque
+%"class.std::__1::unique_ptr.112" = type { %"class.std::__1::__compressed_pair.113" }
+%"class.std::__1::__compressed_pair.113" = type { %"struct.std::__1::__compressed_pair_elem.114" }
+%"struct.std::__1::__compressed_pair_elem.114" = type { %"class.v8::internal::ConcurrentMarking"* }
+%"class.v8::internal::ConcurrentMarking" = type opaque
+%"class.std::__1::unique_ptr.118" = type { %"class.std::__1::__compressed_pair.119" }
+%"class.std::__1::__compressed_pair.119" = type { %"struct.std::__1::__compressed_pair_elem.120" }
+%"struct.std::__1::__compressed_pair_elem.120" = type { %"class.v8::internal::GCIdleTimeHandler"* }
+%"class.v8::internal::GCIdleTimeHandler" = type opaque
+%"class.std::__1::unique_ptr.124" = type { %"class.std::__1::__compressed_pair.125" }
+%"class.std::__1::__compressed_pair.125" = type { %"struct.std::__1::__compressed_pair_elem.126" }
+%"struct.std::__1::__compressed_pair_elem.126" = type { %"class.v8::internal::MemoryMeasurement"* }
+%"class.v8::internal::MemoryMeasurement" = type opaque
+%"class.std::__1::unique_ptr.130" = type { %"class.std::__1::__compressed_pair.131" }
+%"class.std::__1::__compressed_pair.131" = type { %"struct.std::__1::__compressed_pair_elem.132" }
+%"struct.std::__1::__compressed_pair_elem.132" = type { %"class.v8::internal::MemoryReducer"* }
+%"class.v8::internal::MemoryReducer" = type opaque
+%"class.std::__1::unique_ptr.136" = type { %"class.std::__1::__compressed_pair.137" }
+%"class.std::__1::__compressed_pair.137" = type { %"struct.std::__1::__compressed_pair_elem.138" }
+%"struct.std::__1::__compressed_pair_elem.138" = type { %"class.v8::internal::ObjectStats"* }
+%"class.v8::internal::ObjectStats" = type opaque
+%"class.std::__1::unique_ptr.142" = type { %"class.std::__1::__compressed_pair.143" }
+%"class.std::__1::__compressed_pair.143" = type { %"struct.std::__1::__compressed_pair_elem.144" }
+%"struct.std::__1::__compressed_pair_elem.144" = type { %"class.v8::internal::ScavengeJob"* }
+%"class.v8::internal::ScavengeJob" = type opaque
+%"class.std::__1::unique_ptr.148" = type { %"class.std::__1::__compressed_pair.149" }
+%"class.std::__1::__compressed_pair.149" = type { %"struct.std::__1::__compressed_pair_elem.150" }
+%"struct.std::__1::__compressed_pair_elem.150" = type { %"class.v8::internal::AllocationObserver"* }
+%"class.std::__1::unique_ptr.154" = type { %"class.std::__1::__compressed_pair.155" }
+%"class.std::__1::__compressed_pair.155" = type { %"struct.std::__1::__compressed_pair_elem.156" }
+%"struct.std::__1::__compressed_pair_elem.156" = type { %"class.v8::internal::LocalEmbedderHeapTracer"* }
+%"class.v8::internal::LocalEmbedderHeapTracer" = type opaque
+%"class.std::__1::unique_ptr.160" = type { %"class.std::__1::__compressed_pair.161" }
+%"class.std::__1::__compressed_pair.161" = type { %"struct.std::__1::__compressed_pair_elem.162" }
+%"struct.std::__1::__compressed_pair_elem.162" = type { %"class.v8::internal::MarkingBarrier"* }
+%"class.v8::internal::MarkingBarrier" = type opaque
+%"class.std::__1::shared_ptr.166" = type { %"class.v8::internal::CodeRange"*, %"class.std::__1::__shared_weak_count"* }
+%"class.v8::internal::CodeRange" = type opaque
+%"class.v8::CppHeap" = type opaque
+%"class.v8::EmbedderRootsHandler" = type { i32 (...)** }
+%"class.v8::internal::StrongRootsEntry" = type { %"class.v8::internal::FullObjectSlot", %"class.v8::internal::FullObjectSlot", %"class.v8::internal::StrongRootsEntry"*, %"class.v8::internal::StrongRootsEntry"* }
+%"class.v8::internal::FullObjectSlot" = type { %"class.v8::internal::SlotBase" }
+%"class.v8::internal::SlotBase" = type { i64 }
+%"class.std::__1::unordered_map.167" = type { %"class.std::__1::__hash_table.168" }
+%"class.std::__1::__hash_table.168" = type <{ %"class.std::__1::unique_ptr.169", %"class.std::__1::__compressed_pair.179", %"class.std::__1::__compressed_pair.184", %"class.std::__1::__compressed_pair.187", [4 x i8] }>
+%"class.std::__1::unique_ptr.169" = type { %"class.std::__1::__compressed_pair.170" }
+%"class.std::__1::__compressed_pair.170" = type { %"struct.std::__1::__compressed_pair_elem.171", %"struct.std::__1::__compressed_pair_elem.173" }
+%"struct.std::__1::__compressed_pair_elem.171" = type { %"struct.std::__1::__hash_node_base.172"** }
+%"struct.std::__1::__hash_node_base.172" = type { %"struct.std::__1::__hash_node_base.172"* }
+%"struct.std::__1::__compressed_pair_elem.173" = type { %"class.std::__1::__bucket_list_deallocator.174" }
+%"class.std::__1::__bucket_list_deallocator.174" = type { %"class.std::__1::__compressed_pair.175" }
+%"class.std::__1::__compressed_pair.175" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.179" = type { %"struct.std::__1::__compressed_pair_elem.180" }
+%"struct.std::__1::__compressed_pair_elem.180" = type { %"struct.std::__1::__hash_node_base.172" }
+%"class.std::__1::__compressed_pair.184" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.187" = type { %"struct.std::__1::__compressed_pair_elem.34" }
+%"class.std::__1::unique_ptr.193" = type { %"class.std::__1::__compressed_pair.194" }
+%"class.std::__1::__compressed_pair.194" = type { %"struct.std::__1::__compressed_pair_elem.195" }
+%"struct.std::__1::__compressed_pair_elem.195" = type { %"class.v8::internal::GlobalHandleVector"* }
+%"class.v8::internal::GlobalHandleVector" = type opaque
+%"class.std::__1::unique_ptr.199" = type { %"class.std::__1::__compressed_pair.200" }
+%"class.std::__1::__compressed_pair.200" = type { %"struct.std::__1::__compressed_pair_elem.201" }
+%"struct.std::__1::__compressed_pair_elem.201" = type { %"class.v8::internal::GlobalSafepoint"* }
+%"class.v8::internal::GlobalSafepoint" = type opaque
+%"class.v8::internal::Heap::ExternalStringTable" = type { %"class.v8::internal::Heap"*, %"class.std::__1::vector.205", %"class.std::__1::vector.205" }
+%"class.std::__1::unique_ptr.212" = type { %"class.std::__1::__compressed_pair.213" }
+%"class.std::__1::__compressed_pair.213" = type { %"struct.std::__1::__compressed_pair_elem.214" }
+%"struct.std::__1::__compressed_pair_elem.214" = type { %"class.v8::internal::CollectionBarrier"* }
+%"class.v8::internal::CollectionBarrier" = type opaque
+%"class.std::__1::unordered_set" = type { %"class.std::__1::__hash_table.218" }
+%"class.std::__1::__hash_table.218" = type <{ %"class.std::__1::unique_ptr.219", %"class.std::__1::__compressed_pair.229", %"class.std::__1::__compressed_pair.234", %"class.std::__1::__compressed_pair.236", [4 x i8] }>
+%"class.std::__1::unique_ptr.219" = type { %"class.std::__1::__compressed_pair.220" }
+%"class.std::__1::__compressed_pair.220" = type { %"struct.std::__1::__compressed_pair_elem.221", %"struct.std::__1::__compressed_pair_elem.223" }
+%"struct.std::__1::__compressed_pair_elem.221" = type { %"struct.std::__1::__hash_node_base.222"** }
+%"struct.std::__1::__hash_node_base.222" = type { %"struct.std::__1::__hash_node_base.222"* }
+%"struct.std::__1::__compressed_pair_elem.223" = type { %"class.std::__1::__bucket_list_deallocator.224" }
+%"class.std::__1::__bucket_list_deallocator.224" = type { %"class.std::__1::__compressed_pair.225" }
+%"class.std::__1::__compressed_pair.225" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.229" = type { %"struct.std::__1::__compressed_pair_elem.230" }
+%"struct.std::__1::__compressed_pair_elem.230" = type { %"struct.std::__1::__hash_node_base.222" }
+%"class.std::__1::__compressed_pair.234" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.236" = type { %"struct.std::__1::__compressed_pair_elem.34" }
+%"class.std::__1::unordered_map.267" = type { %"class.std::__1::__hash_table.268" }
+%"class.std::__1::__hash_table.268" = type <{ %"class.std::__1::unique_ptr.269", %"class.std::__1::__compressed_pair.279", %"class.std::__1::__compressed_pair.284", %"class.std::__1::__compressed_pair.287", [4 x i8] }>
+%"class.std::__1::unique_ptr.269" = type { %"class.std::__1::__compressed_pair.270" }
+%"class.std::__1::__compressed_pair.270" = type { %"struct.std::__1::__compressed_pair_elem.271", %"struct.std::__1::__compressed_pair_elem.273" }
+%"struct.std::__1::__compressed_pair_elem.271" = type { %"struct.std::__1::__hash_node_base.272"** }
+%"struct.std::__1::__hash_node_base.272" = type { %"struct.std::__1::__hash_node_base.272"* }
+%"struct.std::__1::__compressed_pair_elem.273" = type { %"class.std::__1::__bucket_list_deallocator.274" }
+%"class.std::__1::__bucket_list_deallocator.274" = type { %"class.std::__1::__compressed_pair.275" }
+%"class.std::__1::__compressed_pair.275" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.279" = type { %"struct.std::__1::__compressed_pair_elem.280" }
+%"struct.std::__1::__compressed_pair_elem.280" = type { %"struct.std::__1::__hash_node_base.272" }
+%"class.std::__1::__compressed_pair.284" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.287" = type { %"struct.std::__1::__compressed_pair_elem.34" }
+%"class.std::__1::unordered_map.241" = type { %"class.std::__1::__hash_table.242" }
+%"class.std::__1::__hash_table.242" = type <{ %"class.std::__1::unique_ptr.243", %"class.std::__1::__compressed_pair.253", %"class.std::__1::__compressed_pair.258", %"class.std::__1::__compressed_pair.261", [4 x i8] }>
+%"class.std::__1::unique_ptr.243" = type { %"class.std::__1::__compressed_pair.244" }
+%"class.std::__1::__compressed_pair.244" = type { %"struct.std::__1::__compressed_pair_elem.245", %"struct.std::__1::__compressed_pair_elem.247" }
+%"struct.std::__1::__compressed_pair_elem.245" = type { %"struct.std::__1::__hash_node_base.246"** }
+%"struct.std::__1::__hash_node_base.246" = type { %"struct.std::__1::__hash_node_base.246"* }
+%"struct.std::__1::__compressed_pair_elem.247" = type { %"class.std::__1::__bucket_list_deallocator.248" }
+%"class.std::__1::__bucket_list_deallocator.248" = type { %"class.std::__1::__compressed_pair.249" }
+%"class.std::__1::__compressed_pair.249" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.253" = type { %"struct.std::__1::__compressed_pair_elem.254" }
+%"struct.std::__1::__compressed_pair_elem.254" = type { %"struct.std::__1::__hash_node_base.246" }
+%"class.std::__1::__compressed_pair.258" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.261" = type { %"struct.std::__1::__compressed_pair_elem.34" }
+%"class.std::__1::unordered_map.291" = type { %"class.std::__1::__hash_table.292" }
+%"class.std::__1::__hash_table.292" = type <{ %"class.std::__1::unique_ptr.293", %"class.std::__1::__compressed_pair.303", %"class.std::__1::__compressed_pair.308", %"class.std::__1::__compressed_pair.313", [4 x i8] }>
+%"class.std::__1::unique_ptr.293" = type { %"class.std::__1::__compressed_pair.294" }
+%"class.std::__1::__compressed_pair.294" = type { %"struct.std::__1::__compressed_pair_elem.295", %"struct.std::__1::__compressed_pair_elem.297" }
+%"struct.std::__1::__compressed_pair_elem.295" = type { %"struct.std::__1::__hash_node_base.296"** }
+%"struct.std::__1::__hash_node_base.296" = type { %"struct.std::__1::__hash_node_base.296"* }
+%"struct.std::__1::__compressed_pair_elem.297" = type { %"class.std::__1::__bucket_list_deallocator.298" }
+%"class.std::__1::__bucket_list_deallocator.298" = type { %"class.std::__1::__compressed_pair.299" }
+%"class.std::__1::__compressed_pair.299" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.303" = type { %"struct.std::__1::__compressed_pair_elem.304" }
+%"struct.std::__1::__compressed_pair_elem.304" = type { %"struct.std::__1::__hash_node_base.296" }
+%"class.std::__1::__compressed_pair.308" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.313" = type { %"struct.std::__1::__compressed_pair_elem.34" }
+%"class.std::__1::vector.319" = type { %"class.std::__1::__vector_base.320" }
+%"class.std::__1::__vector_base.320" = type { %"class.v8::internal::HeapObjectAllocationTracker"**, %"class.v8::internal::HeapObjectAllocationTracker"**, %"class.std::__1::__compressed_pair.321" }
+%"class.v8::internal::HeapObjectAllocationTracker" = type { i32 (...)** }
+%"class.std::__1::__compressed_pair.321" = type { %"struct.std::__1::__compressed_pair_elem.322" }
+%"struct.std::__1::__compressed_pair_elem.322" = type { %"class.v8::internal::HeapObjectAllocationTracker"** }
+%"class.std::__1::unique_ptr.326" = type { %"class.std::__1::__compressed_pair.327" }
+%"class.std::__1::__compressed_pair.327" = type { %"struct.std::__1::__compressed_pair_elem.328" }
+%"struct.std::__1::__compressed_pair_elem.328" = type { %"class.v8::internal::third_party_heap::Heap"* }
+%"class.v8::internal::third_party_heap::Heap" = type opaque
+%"class.v8::internal::ReadOnlyHeap" = type { i32 (...)**, i8, %"class.v8::internal::ReadOnlySpace"*, %"class.std::__1::vector.205" }
+%"class.std::__1::shared_ptr.332" = type { %"class.v8::internal::ReadOnlyArtifacts"*, %"class.std::__1::__shared_weak_count"* }
+%"class.v8::internal::ReadOnlyArtifacts" = type opaque
+%"class.std::__1::unique_ptr.333" = type { %"class.std::__1::__compressed_pair.334" }
+%"class.std::__1::__compressed_pair.334" = type { %"struct.std::__1::__compressed_pair_elem.335" }
+%"struct.std::__1::__compressed_pair_elem.335" = type { %"class.v8::internal::StringTable"* }
+%"class.v8::internal::StringTable" = type opaque
+%"class.v8::internal::Isolate::EntryStackItem" = type { i32, %"class.v8::internal::Isolate::PerIsolateThreadData"*, %"class.v8::internal::Isolate"*, %"class.v8::internal::Isolate::EntryStackItem"* }
+%"class.v8::internal::Isolate::PerIsolateThreadData" = type { %"class.v8::internal::Isolate"*, %"class.v8::internal::ThreadId", i64, %"class.v8::internal::ThreadState"* }
+%"class.v8::internal::ThreadState" = type opaque
+%"class.v8::internal::StringStream" = type opaque
+%"class.v8::internal::Bootstrapper" = type opaque
+%"class.v8::internal::RuntimeProfiler" = type opaque
+%"class.v8::internal::CompilationCache" = type opaque
+%"class.std::__1::shared_ptr.339" = type { %"class.v8::internal::Counters"*, %"class.std::__1::__shared_weak_count"* }
+%"class.v8::internal::Counters" = type opaque
+%"class.v8::base::RecursiveMutex" = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%"class.v8::base::SharedMutex" = type { %union.pthread_rwlock_t }
+%union.pthread_rwlock_t = type { %struct.__pthread_rwlock_arch_t }
+%struct.__pthread_rwlock_arch_t = type { i32, i32, i32, i32, i32, i32, i32, i32, i8, [7 x i8], i64, i32 }
+%"class.v8::internal::Logger" = type opaque
+%"class.v8::internal::StubCache" = type opaque
+%"class.v8::internal::Deoptimizer" = type opaque
+%"class.v8::internal::MaterializedObjectStore" = type opaque
+%"class.v8::internal::DescriptorLookupCache" = type opaque
+%"struct.v8::internal::HandleScopeData" = type { i64*, i64*, i32, i32, %"class.v8::internal::CanonicalHandleScope"* }
+%"class.v8::internal::CanonicalHandleScope" = type { %"class.v8::internal::Isolate"*, %"class.v8::internal::OptimizedCompilationInfo"*, %"class.v8::internal::Zone"*, %"class.v8::internal::RootIndexMap"*, %"class.std::__1::unique_ptr.340", i32, %"class.v8::internal::CanonicalHandleScope"* }
+%"class.v8::internal::OptimizedCompilationInfo" = type opaque
+%"class.v8::internal::RootIndexMap" = type opaque
+%"class.std::__1::unique_ptr.340" = type { %"class.std::__1::__compressed_pair.341" }
+%"class.std::__1::__compressed_pair.341" = type { %"struct.std::__1::__compressed_pair_elem.342" }
+%"struct.std::__1::__compressed_pair_elem.342" = type { %"class.v8::internal::IdentityMap"* }
+%"class.v8::internal::IdentityMap" = type opaque
+%"class.v8::internal::HandleScopeImplementer" = type { %"class.v8::internal::Isolate"*, %"class.v8::internal::DetachableVector", %"class.v8::internal::DetachableVector.346", %"class.v8::internal::DetachableVector.347", %"class.v8::internal::DetachableVector.346", i64*, i64*, %"struct.v8::internal::HandleScopeData" }
+%"class.v8::internal::DetachableVector" = type { %"class.v8::internal::DetachableVectorBase" }
+%"class.v8::internal::DetachableVectorBase" = type { i8*, i64, i64 }
+%"class.v8::internal::DetachableVector.347" = type { %"class.v8::internal::DetachableVectorBase" }
+%"class.v8::internal::DetachableVector.346" = type { %"class.v8::internal::DetachableVectorBase" }
+%"class.v8::internal::UnicodeCache" = type opaque
+%"class.v8::internal::AccountingAllocator" = type { i32 (...)**, %"struct.std::__1::atomic", %"struct.std::__1::atomic", %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr.2" }
+%"class.std::__1::unique_ptr" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"class.v8::internal::VirtualMemory"* }
+%"class.v8::internal::VirtualMemory" = type { %"class.v8::PageAllocator"*, %"class.v8::base::AddressRegion" }
+%"class.v8::base::AddressRegion" = type { i64, i64 }
+%"class.std::__1::unique_ptr.2" = type { %"class.std::__1::__compressed_pair.3" }
+%"class.std::__1::__compressed_pair.3" = type { %"struct.std::__1::__compressed_pair_elem.4" }
+%"struct.std::__1::__compressed_pair_elem.4" = type { %"class.v8::base::BoundedPageAllocator"* }
+%"class.v8::base::BoundedPageAllocator" = type opaque
+%"class.v8::internal::InnerPointerToCodeCache" = type opaque
+%"class.v8::internal::GlobalHandles" = type opaque
+%"class.v8::internal::EternalHandles" = type opaque
+%"class.v8::internal::ThreadManager" = type opaque
+%"class.v8::bigint::Processor" = type opaque
+%"class.v8::internal::RuntimeState" = type { %"class.std::__1::unique_ptr.348" }
+%"class.std::__1::unique_ptr.348" = type { %"class.std::__1::__compressed_pair.349" }
+%"class.std::__1::__compressed_pair.349" = type { %"struct.std::__1::__compressed_pair_elem.350" }
+%"struct.std::__1::__compressed_pair_elem.350" = type { %"struct.v8::internal::Runtime::Function"* }
+%"struct.v8::internal::Runtime::Function" = type { i32, i32, i8*, i64, i8, i8 }
+%"class.v8::internal::Builtins" = type { %"class.v8::internal::Isolate"*, i8, i32 }
+%"class.v8::internal::SetupIsolateDelegate" = type opaque
+%"class.v8::internal::RegExpStack" = type opaque
+%"class.std::__1::vector.354" = type { %"class.std::__1::__vector_base.355" }
+%"class.std::__1::__vector_base.355" = type { i32*, i32*, %"class.std::__1::__compressed_pair.356" }
+%"class.std::__1::__compressed_pair.356" = type { %"struct.std::__1::__compressed_pair_elem.357" }
+%"struct.std::__1::__compressed_pair_elem.357" = type { i32* }
+%"class.v8::internal::DateCache" = type opaque
+%"class.v8::base::RandomNumberGenerator" = type opaque
+%"struct.std::__1::atomic.361" = type { %"struct.std::__1::__atomic_base.362" }
+%"struct.std::__1::__atomic_base.362" = type { %"struct.std::__1::__cxx_atomic_impl.363" }
+%"struct.std::__1::__cxx_atomic_impl.363" = type { %"struct.std::__1::__cxx_atomic_base_impl.364" }
+%"struct.std::__1::__cxx_atomic_base_impl.364" = type { i32 }
+%"class.v8::Promise" = type { i8 }
+%"struct.std::__1::atomic.371" = type { %"struct.std::__1::__atomic_base.372" }
+%"struct.std::__1::__atomic_base.372" = type { %"struct.std::__1::__cxx_atomic_impl.373" }
+%"struct.std::__1::__cxx_atomic_impl.373" = type { %"struct.std::__1::__cxx_atomic_base_impl.374" }
+%"struct.std::__1::__cxx_atomic_base_impl.374" = type { i32 }
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.376" }
+%"class.std::__1::__compressed_pair.376" = type { %"struct.std::__1::__compressed_pair_elem.377" }
+%"struct.std::__1::__compressed_pair_elem.377" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon }
+%union.anon = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.std::__1::unordered_map.381" = type { %"class.std::__1::__hash_table.382" }
+%"class.std::__1::__hash_table.382" = type <{ %"class.std::__1::unique_ptr.383", %"class.std::__1::__compressed_pair.393", %"class.std::__1::__compressed_pair.398", %"class.std::__1::__compressed_pair.401", [4 x i8] }>
+%"class.std::__1::unique_ptr.383" = type { %"class.std::__1::__compressed_pair.384" }
+%"class.std::__1::__compressed_pair.384" = type { %"struct.std::__1::__compressed_pair_elem.385", %"struct.std::__1::__compressed_pair_elem.387" }
+%"struct.std::__1::__compressed_pair_elem.385" = type { %"struct.std::__1::__hash_node_base.386"** }
+%"struct.std::__1::__hash_node_base.386" = type { %"struct.std::__1::__hash_node_base.386"* }
+%"struct.std::__1::__compressed_pair_elem.387" = type { %"class.std::__1::__bucket_list_deallocator.388" }
+%"class.std::__1::__bucket_list_deallocator.388" = type { %"class.std::__1::__compressed_pair.389" }
+%"class.std::__1::__compressed_pair.389" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.393" = type { %"struct.std::__1::__compressed_pair_elem.394" }
+%"struct.std::__1::__compressed_pair_elem.394" = type { %"struct.std::__1::__hash_node_base.386" }
+%"class.std::__1::__compressed_pair.398" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.401" = type { %"struct.std::__1::__compressed_pair_elem.34" }
+%"struct.std::__1::atomic.56" = type { %"struct.std::__1::__atomic_base.57" }
+%"struct.std::__1::__atomic_base.57" = type { %"struct.std::__1::__cxx_atomic_impl.58" }
+%"struct.std::__1::__cxx_atomic_impl.58" = type { %"struct.std::__1::__cxx_atomic_base_impl.59" }
+%"struct.std::__1::__cxx_atomic_base_impl.59" = type { i8 }
+%"class.v8::internal::Debug" = type { %"class.v8::debug::DebugDelegate"*, i8, i8, i8, i8, i8, i8, i8, i8, i8, %"class.v8::internal::DebugInfoListNode"*, %"class.std::__1::unique_ptr.407", %"class.v8::internal::Handle.413", %"class.v8::internal::DebugFeatureTracker", %"class.v8::internal::Debug::ThreadLocal", %"class.v8::internal::Handle.414", %"class.v8::internal::Isolate"* }
+%"class.v8::debug::DebugDelegate" = type { i32 (...)** }
+%"class.v8::internal::DebugInfoListNode" = type { i64*, %"class.v8::internal::DebugInfoListNode"* }
+%"class.std::__1::unique_ptr.407" = type { %"class.std::__1::__compressed_pair.408" }
+%"class.std::__1::__compressed_pair.408" = type { %"struct.std::__1::__compressed_pair_elem.409" }
+%"struct.std::__1::__compressed_pair_elem.409" = type { %"class.v8::internal::Debug::TemporaryObjectsTracker"* }
+%"class.v8::internal::Debug::TemporaryObjectsTracker" = type opaque
+%"class.v8::internal::Handle.413" = type { %"class.v8::internal::HandleBase" }
+%"class.v8::internal::DebugFeatureTracker" = type <{ %"class.v8::internal::Isolate"*, i32, [4 x i8] }>
+%"class.v8::internal::Debug::ThreadLocal" = type <{ i64, i32, i8, [3 x i8], %"class.v8::internal::Object", i8, [3 x i8], i32, i32, i32, %"class.v8::internal::Object", %"class.v8::internal::Object", i32, i8, [3 x i8] }>
+%"class.v8::internal::Handle.414" = type { %"class.v8::internal::HandleBase" }
+%"class.v8::internal::HeapProfiler" = type opaque
+%"class.std::__1::unique_ptr.415" = type { %"class.std::__1::__compressed_pair.416" }
+%"class.std::__1::__compressed_pair.416" = type { %"struct.std::__1::__compressed_pair_elem.417" }
+%"struct.std::__1::__compressed_pair_elem.417" = type { %"class.v8::internal::CodeEventDispatcher"* }
+%"class.v8::internal::CodeEventDispatcher" = type opaque
+%"class.v8::internal::AstStringConstants" = type opaque
+%"class.v8::internal::interpreter::Interpreter" = type opaque
+%"class.v8::internal::compiler::PerIsolateCompilerCache" = type opaque
+%"class.v8::internal::CompilerDispatcher" = type opaque
+%"class.std::__1::queue" = type { %"class.std::__1::deque" }
+%"class.std::__1::deque" = type { %"class.std::__1::__deque_base" }
+%"class.std::__1::__deque_base" = type { %"struct.std::__1::__split_buffer", i64, %"class.std::__1::__compressed_pair.427" }
+%"struct.std::__1::__split_buffer" = type { %"struct.std::__1::pair.421"**, %"struct.std::__1::pair.421"**, %"struct.std::__1::pair.421"**, %"class.std::__1::__compressed_pair.422" }
+%"struct.std::__1::pair.421" = type opaque
+%"class.std::__1::__compressed_pair.422" = type { %"struct.std::__1::__compressed_pair_elem.423" }
+%"struct.std::__1::__compressed_pair_elem.423" = type { %"struct.std::__1::pair.421"** }
+%"class.std::__1::__compressed_pair.427" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.v8::String" = type { i8 }
+%"class.v8::Context" = type { i8 }
+%"class.v8::FunctionCallbackInfo" = type <{ i64*, i64*, i32, [4 x i8] }>
+%"class.v8::internal::Relocatable" = type { i32 (...)**, %"class.v8::internal::Isolate"*, %"class.v8::internal::Relocatable"* }
+%"class.std::__1::vector.432" = type opaque
+%"class.v8::internal::Object" = type { %"class.v8::internal::TaggedImpl" }
+%"class.v8::internal::TaggedImpl" = type { i64 }
+%"class.v8::internal::AddressToIndexHashMap" = type opaque
+%"class.v8::internal::HeapObjectToIndexHashMap" = type opaque
+%"class.v8::internal::MicrotaskQueue" = type opaque
+%"class.v8::internal::CompilationStatistics" = type opaque
+%"class.v8::internal::CodeTracer" = type opaque
+%"class.v8::PromiseRejectMessage" = type { %"class.v8::Local.366", i32, %"class.v8::Local.12" }
+%"class.v8::Local.366" = type { %"class.v8::Promise"* }
+%"class.v8::Local.12" = type { %"class.v8::Value"* }
+%"class.v8::StartupData" = type { i8*, i32 }
+%"class.v8_inspector::V8Inspector" = type opaque
+%"class.v8::internal::compiler::NodeObserver" = type opaque
+%"class.v8::internal::OptimizingCompileDispatcher" = type opaque
+%"class.std::__1::unique_ptr.433" = type { %"class.std::__1::__compressed_pair.434" }
+%"class.std::__1::__compressed_pair.434" = type { %"struct.std::__1::__compressed_pair_elem.435" }
+%"struct.std::__1::__compressed_pair_elem.435" = type { %"class.v8::internal::PersistentHandlesList"* }
+%"class.v8::internal::PersistentHandlesList" = type opaque
+%"class.std::__1::vector.439" = type { %"class.std::__1::__vector_base.440" }
+%"class.std::__1::__vector_base.440" = type { void (%"class.v8::Isolate"*)**, void (%"class.v8::Isolate"*)**, %"class.std::__1::__compressed_pair.441" }
+%"class.std::__1::__compressed_pair.441" = type { %"struct.std::__1::__compressed_pair_elem.442" }
+%"struct.std::__1::__compressed_pair_elem.442" = type { void (%"class.v8::Isolate"*)** }
+%"class.std::__1::shared_ptr.446" = type { %"class.v8::internal::metrics::Recorder"*, %"class.std::__1::__shared_weak_count"* }
+%"class.v8::internal::metrics::Recorder" = type opaque
+%"class.std::__1::unordered_map.447" = type { %"class.std::__1::__hash_table.448" }
+%"class.std::__1::__hash_table.448" = type <{ %"class.std::__1::unique_ptr.449", %"class.std::__1::__compressed_pair.459", %"class.std::__1::__compressed_pair.464", %"class.std::__1::__compressed_pair.469", [4 x i8] }>
+%"class.std::__1::unique_ptr.449" = type { %"class.std::__1::__compressed_pair.450" }
+%"class.std::__1::__compressed_pair.450" = type { %"struct.std::__1::__compressed_pair_elem.451", %"struct.std::__1::__compressed_pair_elem.453" }
+%"struct.std::__1::__compressed_pair_elem.451" = type { %"struct.std::__1::__hash_node_base.452"** }
+%"struct.std::__1::__hash_node_base.452" = type { %"struct.std::__1::__hash_node_base.452"* }
+%"struct.std::__1::__compressed_pair_elem.453" = type { %"class.std::__1::__bucket_list_deallocator.454" }
+%"class.std::__1::__bucket_list_deallocator.454" = type { %"class.std::__1::__compressed_pair.455" }
+%"class.std::__1::__compressed_pair.455" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.459" = type { %"struct.std::__1::__compressed_pair_elem.460" }
+%"struct.std::__1::__compressed_pair_elem.460" = type { %"struct.std::__1::__hash_node_base.452" }
+%"class.std::__1::__compressed_pair.464" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.469" = type { %"struct.std::__1::__compressed_pair_elem.34" }
+%"struct.v8::metrics::LongTaskStats" = type { i64, i64, i64 }
+%"class.std::__1::vector.205" = type { %"class.std::__1::__vector_base.206" }
+%"class.std::__1::__vector_base.206" = type { %"class.v8::internal::Object"*, %"class.v8::internal::Object"*, %"class.std::__1::__compressed_pair.207" }
+%"class.std::__1::__compressed_pair.207" = type { %"struct.std::__1::__compressed_pair_elem.208" }
+%"struct.std::__1::__compressed_pair_elem.208" = type { %"class.v8::internal::Object"* }
+%"class.v8::internal::BuiltinsConstantsTableBuilder" = type opaque
+%"class.v8::ArrayBuffer::Allocator" = type { i32 (...)** }
+%"class.std::__1::shared_ptr.64" = type { %"class.v8::ArrayBuffer::Allocator"*, %"class.std::__1::__shared_weak_count"* }
+%"class.v8::internal::FutexWaitListNode" = type { %"class.v8::internal::Isolate"*, %"class.std::__1::shared_ptr.475", %"class.v8::internal::CancelableTaskManager"*, %"class.v8::base::ConditionVariable", %"class.v8::internal::FutexWaitListNode"*, %"class.v8::internal::FutexWaitListNode"*, %"class.std::__1::weak_ptr", i64, i8*, i8, i8, %"class.v8::Global", %"class.v8::Global.504", %"class.v8::base::TimeTicks", i64 }
+%"class.std::__1::shared_ptr.475" = type { %"class.v8::TaskRunner"*, %"class.std::__1::__shared_weak_count"* }
+%"class.v8::TaskRunner" = type { i32 (...)** }
+%"class.v8::base::ConditionVariable" = type { %union.pthread_cond_t }
+%union.pthread_cond_t = type { %struct.__pthread_cond_s }
+%struct.__pthread_cond_s = type { %union.anon.500, %union.anon.502, [2 x i32], [2 x i32], i32, i32, [2 x i32] }
+%union.anon.500 = type { i64 }
+%union.anon.502 = type { i64 }
+%"class.std::__1::weak_ptr" = type { %"class.v8::internal::BackingStore"*, %"class.std::__1::__shared_weak_count"* }
+%"class.v8::Global" = type { %"class.v8::PersistentBase" }
+%"class.v8::PersistentBase" = type { %"class.v8::Promise"* }
+%"class.v8::Global.504" = type { %"class.v8::PersistentBase.505" }
+%"class.v8::PersistentBase.505" = type { %"class.v8::Context"* }
+%"class.v8::base::TimeTicks" = type { %"class.v8::base::time_internal::TimeBase" }
+%"class.v8::base::time_internal::TimeBase" = type { i64 }
+%"class.v8::internal::CancelableTaskManager" = type <{ i64, %"class.std::__1::unordered_map.476", %"class.v8::base::ConditionVariable", %"class.v8::base::Mutex", i8, [7 x i8] }>
+%"class.std::__1::unordered_map.476" = type { %"class.std::__1::__hash_table.477" }
+%"class.std::__1::__hash_table.477" = type <{ %"class.std::__1::unique_ptr.478", %"class.std::__1::__compressed_pair.488", %"class.std::__1::__compressed_pair.493", %"class.std::__1::__compressed_pair.496", [4 x i8] }>
+%"class.std::__1::unique_ptr.478" = type { %"class.std::__1::__compressed_pair.479" }
+%"class.std::__1::__compressed_pair.479" = type { %"struct.std::__1::__compressed_pair_elem.480", %"struct.std::__1::__compressed_pair_elem.482" }
+%"struct.std::__1::__compressed_pair_elem.480" = type { %"struct.std::__1::__hash_node_base.481"** }
+%"struct.std::__1::__hash_node_base.481" = type { %"struct.std::__1::__hash_node_base.481"* }
+%"struct.std::__1::__compressed_pair_elem.482" = type { %"class.std::__1::__bucket_list_deallocator.483" }
+%"class.std::__1::__bucket_list_deallocator.483" = type { %"class.std::__1::__compressed_pair.484" }
+%"class.std::__1::__compressed_pair.484" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.488" = type { %"struct.std::__1::__compressed_pair_elem.489" }
+%"struct.std::__1::__compressed_pair_elem.489" = type { %"struct.std::__1::__hash_node_base.481" }
+%"class.std::__1::__compressed_pair.493" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.496" = type { %"struct.std::__1::__compressed_pair_elem.34" }
+%"class.v8::debug::ConsoleDelegate" = type { i32 (...)** }
+%"class.v8::debug::AsyncEventDelegate" = type { i32 (...)** }
+%"class.std::__1::unique_ptr.506" = type { %"class.std::__1::__compressed_pair.507" }
+%"class.std::__1::__compressed_pair.507" = type { %"struct.std::__1::__compressed_pair_elem.508" }
+%"struct.std::__1::__compressed_pair_elem.508" = type { %"class.v8::internal::LocalIsolate"* }
+%"class.v8::internal::LocalIsolate" = type opaque
+%"struct.v8::internal::ManagedPtrDestructor" = type opaque
+%"class.v8::internal::wasm::WasmEngine" = type opaque
+%"class.std::__1::unique_ptr.512" = type { %"class.std::__1::__compressed_pair.513" }
+%"class.std::__1::__compressed_pair.513" = type { %"struct.std::__1::__compressed_pair_elem.514" }
+%"struct.std::__1::__compressed_pair_elem.514" = type { %"class.v8::internal::TracingCpuProfilerImpl"* }
+%"class.v8::internal::TracingCpuProfilerImpl" = type opaque
+%"class.v8::internal::EmbeddedFileWriterInterface" = type opaque
+%"class.v8::Context::BackupIncumbentScope" = type { %"class.v8::Local.367", i64, %"class.v8::Context::BackupIncumbentScope"* }
+%"class.v8::Local.367" = type { %"class.v8::Context"* }
+%"class.v8::internal::Isolate::ThreadDataTable" = type { %"class.std::__1::unordered_map.520" }
+%"class.std::__1::unordered_map.520" = type { %"class.std::__1::__hash_table.521" }
+%"class.std::__1::__hash_table.521" = type <{ %"class.std::__1::unique_ptr.522", %"class.std::__1::__compressed_pair.532", %"class.std::__1::__compressed_pair.537", %"class.std::__1::__compressed_pair.540", [4 x i8] }>
+%"class.std::__1::unique_ptr.522" = type { %"class.std::__1::__compressed_pair.523" }
+%"class.std::__1::__compressed_pair.523" = type { %"struct.std::__1::__compressed_pair_elem.524", %"struct.std::__1::__compressed_pair_elem.526" }
+%"struct.std::__1::__compressed_pair_elem.524" = type { %"struct.std::__1::__hash_node_base.525"** }
+%"struct.std::__1::__hash_node_base.525" = type { %"struct.std::__1::__hash_node_base.525"* }
+%"struct.std::__1::__compressed_pair_elem.526" = type { %"class.std::__1::__bucket_list_deallocator.527" }
+%"class.std::__1::__bucket_list_deallocator.527" = type { %"class.std::__1::__compressed_pair.528" }
+%"class.std::__1::__compressed_pair.528" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.532" = type { %"struct.std::__1::__compressed_pair_elem.533" }
+%"struct.std::__1::__compressed_pair_elem.533" = type { %"struct.std::__1::__hash_node_base.525" }
+%"class.std::__1::__compressed_pair.537" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::__compressed_pair.540" = type { %"struct.std::__1::__compressed_pair_elem.34" }
+%"class.v8::base::Mutex" = type { %union.pthread_mutex_t }
+%"struct.std::__1::atomic.546" = type { %"struct.std::__1::__atomic_base.547" }
+%"struct.std::__1::__atomic_base.547" = type { %"struct.std::__1::__cxx_atomic_impl.548" }
+%"struct.std::__1::__cxx_atomic_impl.548" = type { %"struct.std::__1::__cxx_atomic_base_impl.549" }
+%"struct.std::__1::__cxx_atomic_base_impl.549" = type { %"class.std::__1::vector.550"* }
+%"class.std::__1::vector.550" = type { %"class.std::__1::__vector_base.551" }
+%"class.std::__1::__vector_base.551" = type { %"struct.v8::MemoryRange"*, %"struct.v8::MemoryRange"*, %"class.std::__1::__compressed_pair.552" }
+%"struct.v8::MemoryRange" = type { i8*, i64 }
+%"class.std::__1::__compressed_pair.552" = type { %"struct.std::__1::__compressed_pair_elem.553" }
+%"struct.std::__1::__compressed_pair_elem.553" = type { %"struct.v8::MemoryRange"* }
+%"class.v8::internal::ZoneVector" = type { %"class.std::__1::vector.557" }
+%"class.std::__1::vector.557" = type { %"class.std::__1::__vector_base.558" }
+%"class.std::__1::__vector_base.558" = type { %"class.v8::internal::compiler::InstructionBlock"**, %"class.v8::internal::compiler::InstructionBlock"**, %"class.std::__1::__compressed_pair.578" }
+%"class.std::__1::__compressed_pair.578" = type { %"struct.std::__1::__compressed_pair_elem.579", %"struct.std::__1::__compressed_pair_elem.580" }
+%"struct.std::__1::__compressed_pair_elem.579" = type { %"class.v8::internal::compiler::InstructionBlock"** }
+%"struct.std::__1::__compressed_pair_elem.580" = type { %"class.v8::internal::ZoneAllocator.581" }
+%"class.v8::internal::ZoneAllocator.581" = type { %"class.v8::internal::Zone"* }
+%"class.v8::internal::ZoneMap" = type { %"class.std::__1::map" }
+%"class.std::__1::map" = type { %"class.std::__1::__tree" }
+%"class.std::__1::__tree" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.582", %"class.std::__1::__compressed_pair.586" }
+%"class.std::__1::__compressed_pair.582" = type { %"struct.std::__1::__compressed_pair_elem.583", %"struct.std::__1::__compressed_pair_elem.584" }
+%"struct.std::__1::__compressed_pair_elem.584" = type { %"class.v8::internal::ZoneAllocator.585" }
+%"class.v8::internal::ZoneAllocator.585" = type { %"class.v8::internal::Zone"* }
+%"class.std::__1::__compressed_pair.586" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.std::__1::map.589" = type { %"class.std::__1::__tree.590" }
+%"class.std::__1::__tree.590" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.591", %"class.std::__1::__compressed_pair.594" }
+%"class.std::__1::__compressed_pair.591" = type { %"struct.std::__1::__compressed_pair_elem.583", %"struct.std::__1::__compressed_pair_elem.592" }
+%"struct.std::__1::__compressed_pair_elem.592" = type { %"class.v8::internal::ZoneAllocator.593" }
+%"class.v8::internal::ZoneAllocator.593" = type { %"class.v8::internal::Zone"* }
+%"class.std::__1::__compressed_pair.594" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.v8::internal::ZoneVector.598" = type { %"class.std::__1::vector.599" }
+%"class.std::__1::vector.599" = type { %"class.std::__1::__vector_base.600" }
+%"class.std::__1::__vector_base.600" = type { %"class.v8::internal::compiler::Constant"*, %"class.v8::internal::compiler::Constant"*, %"class.std::__1::__compressed_pair.601" }
+%"class.v8::internal::compiler::Constant" = type { i32, i8, i64 }
+%"class.std::__1::__compressed_pair.601" = type { %"struct.std::__1::__compressed_pair_elem.602", %"struct.std::__1::__compressed_pair_elem.603" }
+%"struct.std::__1::__compressed_pair_elem.602" = type { %"class.v8::internal::compiler::Constant"* }
+%"struct.std::__1::__compressed_pair_elem.603" = type { %"class.v8::internal::ZoneAllocator.604" }
+%"class.v8::internal::ZoneAllocator.604" = type { %"class.v8::internal::Zone"* }
+%"class.v8::internal::ZoneVector.559" = type { %"class.std::__1::vector.560" }
+%"class.std::__1::vector.560" = type { %"class.std::__1::__vector_base.561" }
+%"class.std::__1::__vector_base.561" = type { %"class.v8::internal::compiler::RpoNumber"*, %"class.v8::internal::compiler::RpoNumber"*, %"class.std::__1::__compressed_pair.562" }
+%"class.std::__1::__compressed_pair.562" = type { %"struct.std::__1::__compressed_pair_elem.563", %"struct.std::__1::__compressed_pair_elem.564" }
+%"struct.std::__1::__compressed_pair_elem.563" = type { %"class.v8::internal::compiler::RpoNumber"* }
+%"struct.std::__1::__compressed_pair_elem.564" = type { %"class.v8::internal::ZoneAllocator" }
+%"class.v8::internal::ZoneAllocator" = type { %"class.v8::internal::Zone"* }
+%"class.v8::internal::ZoneDeque" = type { %"class.std::__1::deque.605" }
+%"class.std::__1::deque.605" = type { %"class.std::__1::__deque_base.606" }
+%"class.std::__1::__deque_base.606" = type { %"struct.std::__1::__split_buffer.607", i64, %"class.std::__1::__compressed_pair.626" }
+%"struct.std::__1::__split_buffer.607" = type { %"class.v8::internal::compiler::Instruction"***, %"class.v8::internal::compiler::Instruction"***, %"class.v8::internal::compiler::Instruction"***, %"class.std::__1::__compressed_pair.622" }
+%"class.v8::internal::compiler::Instruction" = type { i32, i32, [2 x %"class.v8::internal::compiler::ParallelMove"*], %"class.v8::internal::compiler::ReferenceMap"*, %"class.v8::internal::compiler::InstructionBlock"*, [1 x %"class.v8::internal::compiler::InstructionOperand"] }
+%"class.v8::internal::compiler::ParallelMove" = type { %"class.v8::internal::ZoneVector.608" }
+%"class.v8::internal::ZoneVector.608" = type { %"class.std::__1::vector.609" }
+%"class.std::__1::vector.609" = type { %"class.std::__1::__vector_base.610" }
+%"class.std::__1::__vector_base.610" = type { %"class.v8::internal::compiler::MoveOperands"**, %"class.v8::internal::compiler::MoveOperands"**, %"class.std::__1::__compressed_pair.611" }
+%"class.v8::internal::compiler::MoveOperands" = type { %"class.v8::internal::compiler::InstructionOperand", %"class.v8::internal::compiler::InstructionOperand" }
+%"class.std::__1::__compressed_pair.611" = type { %"struct.std::__1::__compressed_pair_elem.612", %"struct.std::__1::__compressed_pair_elem.613" }
+%"struct.std::__1::__compressed_pair_elem.612" = type { %"class.v8::internal::compiler::MoveOperands"** }
+%"struct.std::__1::__compressed_pair_elem.613" = type { %"class.v8::internal::ZoneAllocator.614" }
+%"class.v8::internal::ZoneAllocator.614" = type { %"class.v8::internal::Zone"* }
+%"class.v8::internal::compiler::ReferenceMap" = type <{ %"class.v8::internal::ZoneVector.615", i32, [4 x i8] }>
+%"class.v8::internal::ZoneVector.615" = type { %"class.std::__1::vector.616" }
+%"class.std::__1::vector.616" = type { %"class.std::__1::__vector_base.617" }
+%"class.std::__1::__vector_base.617" = type { %"class.v8::internal::compiler::InstructionOperand"*, %"class.v8::internal::compiler::InstructionOperand"*, %"class.std::__1::__compressed_pair.618" }
+%"class.std::__1::__compressed_pair.618" = type { %"struct.std::__1::__compressed_pair_elem.619", %"struct.std::__1::__compressed_pair_elem.620" }
+%"struct.std::__1::__compressed_pair_elem.619" = type { %"class.v8::internal::compiler::InstructionOperand"* }
+%"struct.std::__1::__compressed_pair_elem.620" = type { %"class.v8::internal::ZoneAllocator.621" }
+%"class.v8::internal::ZoneAllocator.621" = type { %"class.v8::internal::Zone"* }
+%"class.std::__1::__compressed_pair.622" = type { %"struct.std::__1::__compressed_pair_elem.623", %"struct.std::__1::__compressed_pair_elem.624" }
+%"struct.std::__1::__compressed_pair_elem.623" = type { %"class.v8::internal::compiler::Instruction"*** }
+%"struct.std::__1::__compressed_pair_elem.624" = type { %"class.v8::internal::RecyclingZoneAllocator" }
+%"class.v8::internal::RecyclingZoneAllocator" = type { %"class.v8::internal::ZoneAllocator.625", %"struct.v8::internal::RecyclingZoneAllocator<v8::internal::compiler::Instruction **>::FreeBlock"* }
+%"class.v8::internal::ZoneAllocator.625" = type { %"class.v8::internal::Zone"* }
+%"struct.v8::internal::RecyclingZoneAllocator<v8::internal::compiler::Instruction **>::FreeBlock" = type opaque
+%"class.std::__1::__compressed_pair.626" = type { %"struct.std::__1::__compressed_pair_elem.24", %"struct.std::__1::__compressed_pair_elem.627" }
+%"struct.std::__1::__compressed_pair_elem.627" = type { %"class.v8::internal::RecyclingZoneAllocator.628" }
+%"class.v8::internal::RecyclingZoneAllocator.628" = type { %"class.v8::internal::ZoneAllocator.629", %"struct.v8::internal::RecyclingZoneAllocator<v8::internal::compiler::Instruction *>::FreeBlock"* }
+%"class.v8::internal::ZoneAllocator.629" = type { %"class.v8::internal::Zone"* }
+%"struct.v8::internal::RecyclingZoneAllocator<v8::internal::compiler::Instruction *>::FreeBlock" = type opaque
+%"class.v8::internal::ZoneDeque.630" = type { %"class.std::__1::deque.631" }
+%"class.std::__1::deque.631" = type { %"class.std::__1::__deque_base.632" }
+%"class.std::__1::__deque_base.632" = type { %"struct.std::__1::__split_buffer.633", i64, %"class.std::__1::__compressed_pair.639" }
+%"struct.std::__1::__split_buffer.633" = type { %"class.v8::internal::compiler::ReferenceMap"***, %"class.v8::internal::compiler::ReferenceMap"***, %"class.v8::internal::compiler::ReferenceMap"***, %"class.std::__1::__compressed_pair.634" }
+%"class.std::__1::__compressed_pair.634" = type { %"struct.std::__1::__compressed_pair_elem.635", %"struct.std::__1::__compressed_pair_elem.636" }
+%"struct.std::__1::__compressed_pair_elem.635" = type { %"class.v8::internal::compiler::ReferenceMap"*** }
+%"struct.std::__1::__compressed_pair_elem.636" = type { %"class.v8::internal::RecyclingZoneAllocator.637" }
+%"class.v8::internal::RecyclingZoneAllocator.637" = type { %"class.v8::internal::ZoneAllocator.638", %"struct.v8::internal::RecyclingZoneAllocator<v8::internal::compiler::ReferenceMap **>::FreeBlock"* }
+%"class.v8::internal::ZoneAllocator.638" = type { %"class.v8::internal::Zone"* }
+%"struct.v8::internal::RecyclingZoneAllocator<v8::internal::compiler::ReferenceMap **>::FreeBlock" = type opaque
+%"class.std::__1::__compressed_pair.639" = type { %"struct.std::__1::__compressed_pair_elem.24", %"struct.std::__1::__compressed_pair_elem.640" }
+%"struct.std::__1::__compressed_pair_elem.640" = type { %"class.v8::internal::RecyclingZoneAllocator.641" }
+%"class.v8::internal::RecyclingZoneAllocator.641" = type { %"class.v8::internal::ZoneAllocator.642", %"struct.v8::internal::RecyclingZoneAllocator<v8::internal::compiler::ReferenceMap *>::FreeBlock"* }
+%"class.v8::internal::ZoneAllocator.642" = type { %"class.v8::internal::Zone"* }
+%"struct.v8::internal::RecyclingZoneAllocator<v8::internal::compiler::ReferenceMap *>::FreeBlock" = type opaque
+%"class.v8::internal::ZoneVector.643" = type { %"class.std::__1::vector.644" }
+%"class.std::__1::vector.644" = type { %"class.std::__1::__vector_base.645" }
+%"class.std::__1::__vector_base.645" = type { i8*, i8*, %"class.std::__1::__compressed_pair.646" }
+%"class.std::__1::__compressed_pair.646" = type { %"struct.std::__1::__compressed_pair_elem.647", %"struct.std::__1::__compressed_pair_elem.648" }
+%"struct.std::__1::__compressed_pair_elem.647" = type { i8* }
+%"struct.std::__1::__compressed_pair_elem.648" = type { %"class.v8::internal::ZoneAllocator.649" }
+%"class.v8::internal::ZoneAllocator.649" = type { %"class.v8::internal::Zone"* }
+%"class.v8::internal::ZoneVector.650" = type { %"class.std::__1::vector.651" }
+%"class.std::__1::vector.651" = type { %"class.std::__1::__vector_base.652" }
+%"class.std::__1::__vector_base.652" = type { %"class.v8::internal::compiler::DeoptimizationEntry"*, %"class.v8::internal::compiler::DeoptimizationEntry"*, %"class.std::__1::__compressed_pair.669" }
+%"class.v8::internal::compiler::DeoptimizationEntry" = type { %"class.v8::internal::compiler::FrameStateDescriptor"*, i8, i8, [6 x i8], %"struct.v8::internal::compiler::FeedbackSource" }
+%"class.v8::internal::compiler::FrameStateDescriptor" = type { i32, %"class.v8::internal::BytecodeOffset", %"class.v8::internal::compiler::OutputFrameStateCombine", i64, i64, i64, i64, %"class.v8::internal::compiler::StateValueList", %"class.v8::internal::MaybeHandle", %"class.v8::internal::compiler::FrameStateDescriptor"* }
+%"class.v8::internal::BytecodeOffset" = type { i32 }
+%"class.v8::internal::compiler::OutputFrameStateCombine" = type { i64 }
+%"class.v8::internal::compiler::StateValueList" = type { %"class.v8::internal::ZoneVector.653", %"class.v8::internal::ZoneVector.661" }
+%"class.v8::internal::ZoneVector.653" = type { %"class.std::__1::vector.654" }
+%"class.std::__1::vector.654" = type { %"class.std::__1::__vector_base.655" }
+%"class.std::__1::__vector_base.655" = type { %"class.v8::internal::compiler::StateValueDescriptor"*, %"class.v8::internal::compiler::StateValueDescriptor"*, %"class.std::__1::__compressed_pair.657" }
+%"class.v8::internal::compiler::StateValueDescriptor" = type { i8, %"class.v8::internal::MachineType", %union.anon.656 }
+%"class.v8::internal::MachineType" = type { i8, i8 }
+%union.anon.656 = type { i64 }
+%"class.std::__1::__compressed_pair.657" = type { %"struct.std::__1::__compressed_pair_elem.658", %"struct.std::__1::__compressed_pair_elem.659" }
+%"struct.std::__1::__compressed_pair_elem.658" = type { %"class.v8::internal::compiler::StateValueDescriptor"* }
+%"struct.std::__1::__compressed_pair_elem.659" = type { %"class.v8::internal::ZoneAllocator.660" }
+%"class.v8::internal::ZoneAllocator.660" = type { %"class.v8::internal::Zone"* }
+%"class.v8::internal::ZoneVector.661" = type { %"class.std::__1::vector.662" }
+%"class.std::__1::vector.662" = type { %"class.std::__1::__vector_base.663" }
+%"class.std::__1::__vector_base.663" = type { %"class.v8::internal::compiler::StateValueList"**, %"class.v8::internal::compiler::StateValueList"**, %"class.std::__1::__compressed_pair.664" }
+%"class.std::__1::__compressed_pair.664" = type { %"struct.std::__1::__compressed_pair_elem.665", %"struct.std::__1::__compressed_pair_elem.666" }
+%"struct.std::__1::__compressed_pair_elem.665" = type { %"class.v8::internal::compiler::StateValueList"** }
+%"struct.std::__1::__compressed_pair_elem.666" = type { %"class.v8::internal::ZoneAllocator.667" }
+%"class.v8::internal::ZoneAllocator.667" = type { %"class.v8::internal::Zone"* }
+%"class.v8::internal::MaybeHandle" = type { i64* }
+%"struct.v8::internal::compiler::FeedbackSource" = type <{ %"class.v8::internal::Handle.668", %"class.v8::internal::FeedbackSlot", [4 x i8] }>
+%"class.v8::internal::Handle.668" = type { %"class.v8::internal::HandleBase" }
+%"class.v8::internal::FeedbackSlot" = type { i32 }
+%"class.std::__1::__compressed_pair.669" = type { %"struct.std::__1::__compressed_pair_elem.670", %"struct.std::__1::__compressed_pair_elem.671" }
+%"struct.std::__1::__compressed_pair_elem.670" = type { %"class.v8::internal::compiler::DeoptimizationEntry"* }
+%"struct.std::__1::__compressed_pair_elem.671" = type { %"class.v8::internal::ZoneAllocator.672" }
+%"class.v8::internal::ZoneAllocator.672" = type { %"class.v8::internal::Zone"* }
+%"class.v8::internal::compiler::InstructionBlock" = type <{ %"class.v8::internal::ZoneVector.559", %"class.v8::internal::ZoneVector.559", %"class.v8::internal::ZoneVector.565", %"class.v8::internal::compiler::RpoNumber", %"class.v8::internal::compiler::RpoNumber", %"class.v8::internal::compiler::RpoNumber", %"class.v8::internal::compiler::RpoNumber", %"class.v8::internal::compiler::RpoNumber", i32, i32, i8, i8, i8, i8, i8, i8, i8, [5 x i8] }>
+%"class.v8::internal::ZoneVector.565" = type { %"class.std::__1::vector.566" }
+%"class.std::__1::vector.566" = type { %"class.std::__1::__vector_base.567" }
+%"class.std::__1::__vector_base.567" = type { %"class.v8::internal::compiler::PhiInstruction"**, %"class.v8::internal::compiler::PhiInstruction"**, %"class.std::__1::__compressed_pair.574" }
+%"class.v8::internal::compiler::PhiInstruction" = type { i32, %"class.v8::internal::compiler::InstructionOperand", %"class.v8::internal::ZoneVector.568" }
+%"class.v8::internal::ZoneVector.568" = type { %"class.std::__1::vector.569" }
+%"class.std::__1::vector.569" = type { %"class.std::__1::__vector_base.570" }
+%"class.std::__1::__vector_base.570" = type { i32*, i32*, %"class.std::__1::__compressed_pair.571" }
+%"class.std::__1::__compressed_pair.571" = type { %"struct.std::__1::__compressed_pair_elem.357", %"struct.std::__1::__compressed_pair_elem.572" }
+%"struct.std::__1::__compressed_pair_elem.572" = type { %"class.v8::internal::ZoneAllocator.573" }
+%"class.v8::internal::ZoneAllocator.573" = type { %"class.v8::internal::Zone"* }
+%"class.std::__1::__compressed_pair.574" = type { %"struct.std::__1::__compressed_pair_elem.575", %"struct.std::__1::__compressed_pair_elem.576" }
+%"struct.std::__1::__compressed_pair_elem.575" = type { %"class.v8::internal::compiler::PhiInstruction"** }
+%"struct.std::__1::__compressed_pair_elem.576" = type { %"class.v8::internal::ZoneAllocator.577" }
+%"class.v8::internal::ZoneAllocator.577" = type { %"class.v8::internal::Zone"* }
+%"class.v8::internal::RegisterConfiguration" = type <{ i32 (...)**, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32*, [32 x i32], i32*, [32 x i32], i32, [4 x i8] }>
+%"class.v8::internal::ZoneMap.673" = type { %"class.std::__1::map.674" }
+%"class.std::__1::map.674" = type { %"class.std::__1::__tree.675" }
+%"class.std::__1::__tree.675" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.676", %"class.std::__1::__compressed_pair.679" }
+%"class.std::__1::__compressed_pair.676" = type { %"struct.std::__1::__compressed_pair_elem.583", %"struct.std::__1::__compressed_pair_elem.677" }
+%"struct.std::__1::__compressed_pair_elem.677" = type { %"class.v8::internal::ZoneAllocator.678" }
+%"class.v8::internal::ZoneAllocator.678" = type { %"class.v8::internal::Zone"* }
+%"class.std::__1::__compressed_pair.679" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.v8::internal::ZoneVector.682" = type { %"class.std::__1::vector.683" }
+%"class.std::__1::vector.683" = type { %"class.std::__1::__vector_base.684" }
+%"class.std::__1::__vector_base.684" = type { %"class.v8::internal::BitVector"**, %"class.v8::internal::BitVector"**, %"class.std::__1::__compressed_pair.685" }
+%"class.std::__1::__compressed_pair.685" = type { %"struct.std::__1::__compressed_pair_elem.686", %"struct.std::__1::__compressed_pair_elem.687" }
+%"struct.std::__1::__compressed_pair_elem.686" = type { %"class.v8::internal::BitVector"** }
+%"struct.std::__1::__compressed_pair_elem.687" = type { %"class.v8::internal::ZoneAllocator.688" }
+%"class.v8::internal::ZoneAllocator.688" = type { %"class.v8::internal::Zone"* }
+%"class.v8::internal::ZoneVector.689" = type { %"class.std::__1::vector.690" }
+%"class.std::__1::vector.690" = type { %"class.std::__1::__vector_base.691" }
+%"class.std::__1::__vector_base.691" = type { %"class.v8::internal::compiler::TopLevelLiveRange"**, %"class.v8::internal::compiler::TopLevelLiveRange"**, %"class.std::__1::__compressed_pair.708" }
+%"class.std::__1::__compressed_pair.708" = type { %"struct.std::__1::__compressed_pair_elem.709", %"struct.std::__1::__compressed_pair_elem.710" }
+%"struct.std::__1::__compressed_pair_elem.709" = type { %"class.v8::internal::compiler::TopLevelLiveRange"** }
+%"struct.std::__1::__compressed_pair_elem.710" = type { %"class.v8::internal::ZoneAllocator.711" }
+%"class.v8::internal::ZoneAllocator.711" = type { %"class.v8::internal::Zone"* }
+%"class.v8::internal::ZoneVector.712" = type { %"class.std::__1::vector.713" }
+%"class.std::__1::vector.713" = type { %"class.std::__1::__vector_base.714" }
+%"class.std::__1::__vector_base.714" = type { %"class.v8::internal::compiler::SpillRange"**, %"class.v8::internal::compiler::SpillRange"**, %"class.std::__1::__compressed_pair.715" }
+%"class.v8::internal::compiler::SpillRange" = type <{ %"class.v8::internal::ZoneVector.689", %"class.v8::internal::compiler::UseInterval"*, %"class.v8::internal::compiler::LifetimePosition", i32, i32, [4 x i8] }>
+%"class.std::__1::__compressed_pair.715" = type { %"struct.std::__1::__compressed_pair_elem.716", %"struct.std::__1::__compressed_pair_elem.717" }
+%"struct.std::__1::__compressed_pair_elem.716" = type { %"class.v8::internal::compiler::SpillRange"** }
+%"struct.std::__1::__compressed_pair_elem.717" = type { %"class.v8::internal::ZoneAllocator.718" }
+%"class.v8::internal::ZoneAllocator.718" = type { %"class.v8::internal::Zone"* }
+%"class.v8::internal::ZoneVector.719" = type { %"class.std::__1::vector.720" }
+%"class.std::__1::vector.720" = type { %"class.std::__1::__vector_base.721" }
+%"class.std::__1::__vector_base.721" = type { %"struct.v8::internal::compiler::TopTierRegisterAllocationData::DelayedReference"*, %"struct.v8::internal::compiler::TopTierRegisterAllocationData::DelayedReference"*, %"class.std::__1::__compressed_pair.722" }
+%"struct.v8::internal::compiler::TopTierRegisterAllocationData::DelayedReference" = type { %"class.v8::internal::compiler::ReferenceMap"*, %"class.v8::internal::compiler::InstructionOperand"* }
+%"class.std::__1::__compressed_pair.722" = type { %"struct.std::__1::__compressed_pair_elem.723", %"struct.std::__1::__compressed_pair_elem.724" }
+%"struct.std::__1::__compressed_pair_elem.723" = type { %"struct.v8::internal::compiler::TopTierRegisterAllocationData::DelayedReference"* }
+%"struct.std::__1::__compressed_pair_elem.724" = type { %"class.v8::internal::ZoneAllocator.725" }
+%"class.v8::internal::ZoneAllocator.725" = type { %"class.v8::internal::Zone"* }
+%"class.v8::internal::BitVector" = type { i32, i32, %"union.v8::internal::BitVector::DataStorage" }
+%"union.v8::internal::BitVector::DataStorage" = type { i64* }
+%"class.v8::internal::ZoneVector.726" = type { %"class.std::__1::vector.727" }
+%"class.std::__1::vector.727" = type { %"class.std::__1::__vector_base.728" }
+%"class.std::__1::__vector_base.728" = type { %"struct.std::__1::pair.729"*, %"struct.std::__1::pair.729"*, %"class.std::__1::__compressed_pair.730" }
+%"struct.std::__1::pair.729" = type opaque
+%"class.std::__1::__compressed_pair.730" = type { %"struct.std::__1::__compressed_pair_elem.731", %"struct.std::__1::__compressed_pair_elem.732" }
+%"struct.std::__1::__compressed_pair_elem.731" = type { %"struct.std::__1::pair.729"* }
+%"struct.std::__1::__compressed_pair_elem.732" = type { %"class.v8::internal::ZoneAllocator.733" }
+%"class.v8::internal::ZoneAllocator.733" = type { %"class.v8::internal::Zone"* }
+%"class.v8::internal::ZoneVector.734" = type { %"class.std::__1::vector.735" }
+%"class.std::__1::vector.735" = type { %"class.std::__1::__vector_base.736" }
+%"class.std::__1::__vector_base.736" = type { %"class.v8::internal::ZoneVector.737"*, %"class.v8::internal::ZoneVector.737"*, %"class.std::__1::__compressed_pair.744" }
+%"class.v8::internal::ZoneVector.737" = type { %"class.std::__1::vector.738" }
+%"class.std::__1::vector.738" = type { %"class.std::__1::__vector_base.739" }
+%"class.std::__1::__vector_base.739" = type { %"class.v8::internal::compiler::LiveRange"**, %"class.v8::internal::compiler::LiveRange"**, %"class.std::__1::__compressed_pair.740" }
+%"class.std::__1::__compressed_pair.740" = type { %"struct.std::__1::__compressed_pair_elem.741", %"struct.std::__1::__compressed_pair_elem.742" }
+%"struct.std::__1::__compressed_pair_elem.741" = type { %"class.v8::internal::compiler::LiveRange"** }
+%"struct.std::__1::__compressed_pair_elem.742" = type { %"class.v8::internal::ZoneAllocator.743" }
+%"class.v8::internal::ZoneAllocator.743" = type { %"class.v8::internal::Zone"* }
+%"class.std::__1::__compressed_pair.744" = type { %"struct.std::__1::__compressed_pair_elem.745", %"struct.std::__1::__compressed_pair_elem.746" }
+%"struct.std::__1::__compressed_pair_elem.745" = type { %"class.v8::internal::ZoneVector.737"* }
+%"struct.std::__1::__compressed_pair_elem.746" = type { %"class.v8::internal::ZoneAllocator.747" }
+%"class.v8::internal::ZoneAllocator.747" = type { %"class.v8::internal::Zone"* }
+%"class.v8::base::Flags" = type { i32 }
+%"class.v8::internal::TickCounter" = type opaque
+%"class.v8::internal::ZoneMap.748" = type { %"class.std::__1::map.749" }
+%"class.std::__1::map.749" = type { %"class.std::__1::__tree.750" }
+%"class.std::__1::__tree.750" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.751", %"class.std::__1::__compressed_pair.754" }
+%"class.std::__1::__compressed_pair.751" = type { %"struct.std::__1::__compressed_pair_elem.583", %"struct.std::__1::__compressed_pair_elem.752" }
+%"struct.std::__1::__compressed_pair_elem.752" = type { %"class.v8::internal::ZoneAllocator.753" }
+%"class.v8::internal::ZoneAllocator.753" = type { %"class.v8::internal::Zone"* }
+%"class.std::__1::__compressed_pair.754" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"class.v8::internal::Zone" = type <{ i64, i64, i64, i64, %"class.v8::internal::AccountingAllocator"*, %"class.v8::internal::Segment"*, i8*, i8, i8, [6 x i8] }>
+%"class.v8::internal::Segment" = type { %"class.v8::internal::Zone"*, %"class.v8::internal::Segment"*, i64 }
+%"class.std::__1::__vector_base_common" = type { i8 }
+%"class.v8::internal::compiler::AllocatedOperand" = type { %"class.v8::internal::compiler::LocationOperand" }
+%"class.v8::internal::compiler::LocationOperand" = type { %"class.v8::internal::compiler::InstructionOperand" }
+
+@_ZN2v88internal31FLAG_stress_turbo_late_spillingE = external local_unnamed_addr global i8, align 1
+
+@_ZN2v88internal8compiler11SpillPlacerC1EPNS1_15LiveRangeFinderEPNS1_29TopTierRegisterAllocationDataEPNS0_4ZoneE = hidden unnamed_addr alias void (%"class.v8::internal::compiler::SpillPlacer"*, %"class.v8::internal::compiler::LiveRangeFinder"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::Zone"*), void (%"class.v8::internal::compiler::SpillPlacer"*, %"class.v8::internal::compiler::LiveRangeFinder"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::Zone"*)* @_ZN2v88internal8compiler11SpillPlacerC2EPNS1_15LiveRangeFinderEPNS1_29TopTierRegisterAllocationDataEPNS0_4ZoneE
+@_ZN2v88internal8compiler11SpillPlacerD1Ev = hidden unnamed_addr alias void (%"class.v8::internal::compiler::SpillPlacer"*), void (%"class.v8::internal::compiler::SpillPlacer"*)* @_ZN2v88internal8compiler11SpillPlacerD2Ev
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable writeonly
+define hidden void @_ZN2v88internal8compiler11SpillPlacerC2EPNS1_15LiveRangeFinderEPNS1_29TopTierRegisterAllocationDataEPNS0_4ZoneE(%"class.v8::internal::compiler::SpillPlacer"* nocapture, %"class.v8::internal::compiler::LiveRangeFinder"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::Zone"*) unnamed_addr #0 align 2 {
+  %5 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 0
+  store %"class.v8::internal::compiler::LiveRangeFinder"* %1, %"class.v8::internal::compiler::LiveRangeFinder"** %5, align 8
+  %6 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 1
+  store %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %2, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %6, align 8
+  %7 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 2
+  store %"class.v8::internal::Zone"* %3, %"class.v8::internal::Zone"** %7, align 8
+  %8 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 3
+  %9 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 6, i32 0
+  %10 = bitcast %"class.v8::internal::compiler::SpillPlacer::Entry"** %8 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %10, i8 0, i64 20, i1 false)
+  store i32 -1, i32* %9, align 4
+  %11 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 7, i32 0
+  store i32 -1, i32* %11, align 8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2v88internal8compiler11SpillPlacerD2Ev(%"class.v8::internal::compiler::SpillPlacer"* nocapture readonly) unnamed_addr #1 align 2 {
+  %2 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 5
+  %3 = load i32, i32* %2, align 8
+  %4 = icmp sgt i32 %3, 0
+  br i1 %4, label %5, label %6
+
+5:                                                ; preds = %1
+  tail call void @_ZN2v88internal8compiler11SpillPlacer17FirstBackwardPassEv(%"class.v8::internal::compiler::SpillPlacer"* %0) #7
+  tail call void @_ZN2v88internal8compiler11SpillPlacer11ForwardPassEv(%"class.v8::internal::compiler::SpillPlacer"* %0) #7
+  tail call void @_ZN2v88internal8compiler11SpillPlacer18SecondBackwardPassEv(%"class.v8::internal::compiler::SpillPlacer"* %0) #7
+  br label %6
+
+6:                                                ; preds = %5, %1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2v88internal8compiler11SpillPlacer12CommitSpillsEv(%"class.v8::internal::compiler::SpillPlacer"* nocapture readonly) local_unnamed_addr #1 align 2 {
+  tail call void @_ZN2v88internal8compiler11SpillPlacer17FirstBackwardPassEv(%"class.v8::internal::compiler::SpillPlacer"* %0)
+  tail call void @_ZN2v88internal8compiler11SpillPlacer11ForwardPassEv(%"class.v8::internal::compiler::SpillPlacer"* %0)
+  tail call void @_ZN2v88internal8compiler11SpillPlacer18SecondBackwardPassEv(%"class.v8::internal::compiler::SpillPlacer"* %0)
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2v88internal8compiler11SpillPlacer3AddEPNS1_17TopLevelLiveRangeE(%"class.v8::internal::compiler::SpillPlacer"* nocapture, %"class.v8::internal::compiler::TopLevelLiveRange"*) local_unnamed_addr #1 align 2 {
+  %3 = alloca %"class.v8::internal::compiler::InstructionOperand", align 8
+  %4 = bitcast %"class.v8::internal::compiler::InstructionOperand"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %4) #7
+  %5 = tail call i64 @_ZNK2v88internal8compiler17TopLevelLiveRange20GetSpillRangeOperandEv(%"class.v8::internal::compiler::TopLevelLiveRange"* %1) #7
+  %6 = getelementptr inbounds %"class.v8::internal::compiler::InstructionOperand", %"class.v8::internal::compiler::InstructionOperand"* %3, i64 0, i32 0
+  store i64 %5, i64* %6, align 8
+  %7 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 1
+  %8 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %7, align 8
+  call void @_ZN2v88internal8compiler17TopLevelLiveRange16FilterSpillMovesEPNS1_29TopTierRegisterAllocationDataERKNS1_18InstructionOperandE(%"class.v8::internal::compiler::TopLevelLiveRange"* %1, %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %8, %"class.v8::internal::compiler::InstructionOperand"* nonnull dereferenceable(8) %3) #7
+  %9 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %7, align 8
+  %10 = getelementptr inbounds %"class.v8::internal::compiler::TopTierRegisterAllocationData", %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %9, i64 0, i32 3
+  %11 = load %"class.v8::internal::compiler::InstructionSequence"*, %"class.v8::internal::compiler::InstructionSequence"** %10, align 8
+  %12 = bitcast %"class.v8::internal::compiler::TopLevelLiveRange"* %1 to %"class.v8::internal::compiler::LiveRange"*
+  %13 = getelementptr inbounds %"class.v8::internal::compiler::TopLevelLiveRange", %"class.v8::internal::compiler::TopLevelLiveRange"* %1, i64 0, i32 0, i32 3
+  %14 = load %"class.v8::internal::compiler::UseInterval"*, %"class.v8::internal::compiler::UseInterval"** %13, align 8
+  %15 = getelementptr inbounds %"class.v8::internal::compiler::UseInterval", %"class.v8::internal::compiler::UseInterval"* %14, i64 0, i32 0, i32 0
+  %16 = load i32, i32* %15, align 8
+  %17 = sdiv i32 %16, 4
+  %18 = call %"class.v8::internal::compiler::InstructionBlock"* @_ZNK2v88internal8compiler19InstructionSequence19GetInstructionBlockEi(%"class.v8::internal::compiler::InstructionSequence"* %11, i32 %17) #7
+  %19 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %18, i64 0, i32 4, i32 0
+  %20 = load i32, i32* %19, align 4
+  %21 = getelementptr inbounds %"class.v8::internal::compiler::TopLevelLiveRange", %"class.v8::internal::compiler::TopLevelLiveRange"* %1, i64 0, i32 4, i32 0
+  %22 = load %"struct.v8::internal::compiler::TopLevelLiveRange::SpillMoveInsertionList"*, %"struct.v8::internal::compiler::TopLevelLiveRange::SpillMoveInsertionList"** %21, align 8
+  %23 = icmp eq %"struct.v8::internal::compiler::TopLevelLiveRange::SpillMoveInsertionList"* %22, null
+  br i1 %23, label %39, label %24
+
+24:                                               ; preds = %2
+  %25 = getelementptr inbounds %"class.v8::internal::compiler::TopLevelLiveRange", %"class.v8::internal::compiler::TopLevelLiveRange"* %1, i64 0, i32 0, i32 1
+  %26 = load i32, i32* %25, align 4
+  %27 = and i32 %26, 1
+  %28 = icmp eq i32 %27, 0
+  br i1 %28, label %29, label %39
+
+29:                                               ; preds = %24
+  %30 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %18, i64 0, i32 10
+  %31 = load i8, i8* %30, align 4, !range !2
+  %32 = icmp eq i8 %31, 0
+  br i1 %32, label %33, label %39
+
+33:                                               ; preds = %29
+  %34 = load i8, i8* @_ZN2v88internal31FLAG_stress_turbo_late_spillingE, align 1, !range !2
+  %35 = icmp ne i8 %34, 0
+  %36 = and i32 %26, 24
+  %37 = icmp eq i32 %36, 8
+  %38 = or i1 %35, %37
+  br i1 %38, label %41, label %39
+
+39:                                               ; preds = %33, %29, %24, %2
+  %40 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %7, align 8
+  call void @_ZN2v88internal8compiler17TopLevelLiveRange16CommitSpillMovesEPNS1_29TopTierRegisterAllocationDataERKNS1_18InstructionOperandE(%"class.v8::internal::compiler::TopLevelLiveRange"* %1, %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %40, %"class.v8::internal::compiler::InstructionOperand"* nonnull dereferenceable(8) %3) #7
+  br label %186
+
+41:                                               ; preds = %33
+  %42 = icmp eq %"class.v8::internal::compiler::TopLevelLiveRange"* %1, null
+  br i1 %42, label %137, label %43
+
+43:                                               ; preds = %41
+  %44 = getelementptr inbounds %"class.v8::internal::compiler::InstructionSequence", %"class.v8::internal::compiler::InstructionSequence"* %11, i64 0, i32 2
+  %45 = bitcast %"class.v8::internal::ZoneVector"** %44 to %"class.std::__1::vector.557"**
+  %46 = getelementptr inbounds %"class.v8::internal::compiler::TopLevelLiveRange", %"class.v8::internal::compiler::TopLevelLiveRange"* %1, i64 0, i32 1
+  br label %47
+
+47:                                               ; preds = %43, %133
+  %48 = phi %"class.v8::internal::compiler::LiveRange"* [ %12, %43 ], [ %135, %133 ]
+  %49 = getelementptr inbounds %"class.v8::internal::compiler::LiveRange", %"class.v8::internal::compiler::LiveRange"* %48, i64 0, i32 1
+  %50 = load i32, i32* %49, align 4
+  %51 = and i32 %50, 1
+  %52 = icmp eq i32 %51, 0
+  br i1 %52, label %107, label %53
+
+53:                                               ; preds = %47
+  %54 = getelementptr inbounds %"class.v8::internal::compiler::LiveRange", %"class.v8::internal::compiler::LiveRange"* %48, i64 0, i32 3
+  %55 = load %"class.v8::internal::compiler::UseInterval"*, %"class.v8::internal::compiler::UseInterval"** %54, align 8
+  %56 = icmp eq %"class.v8::internal::compiler::UseInterval"* %55, null
+  br i1 %56, label %133, label %57
+
+57:                                               ; preds = %53, %101
+  %58 = phi %"class.v8::internal::compiler::UseInterval"* [ %103, %101 ], [ %55, %53 ]
+  %59 = getelementptr inbounds %"class.v8::internal::compiler::UseInterval", %"class.v8::internal::compiler::UseInterval"* %58, i64 0, i32 0, i32 0
+  %60 = load i32, i32* %59, align 8
+  %61 = sdiv i32 %60, 4
+  %62 = call %"class.v8::internal::compiler::InstructionBlock"* @_ZNK2v88internal8compiler19InstructionSequence19GetInstructionBlockEi(%"class.v8::internal::compiler::InstructionSequence"* %11, i32 %61) #7
+  %63 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %62, i64 0, i32 4, i32 0
+  %64 = load i32, i32* %63, align 4
+  %65 = icmp eq i32 %64, %20
+  br i1 %65, label %105, label %66
+
+66:                                               ; preds = %57
+  %67 = getelementptr inbounds %"class.v8::internal::compiler::UseInterval", %"class.v8::internal::compiler::UseInterval"* %58, i64 0, i32 1, i32 0
+  %68 = load i32, i32* %67, align 4
+  %69 = sdiv i32 %68, 4
+  %70 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %7, align 8
+  %71 = call zeroext i1 @_ZNK2v88internal8compiler29TopTierRegisterAllocationData15IsBlockBoundaryENS1_16LifetimePositionE(%"class.v8::internal::compiler::TopTierRegisterAllocationData"* %70, i32 %68) #7
+  %72 = zext i1 %71 to i32
+  %73 = sub nsw i32 %69, %72
+  %74 = call %"class.v8::internal::compiler::InstructionBlock"* @_ZNK2v88internal8compiler19InstructionSequence19GetInstructionBlockEi(%"class.v8::internal::compiler::InstructionSequence"* %11, i32 %73) #7
+  %75 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %74, i64 0, i32 4, i32 0
+  %76 = load i32, i32* %75, align 4
+  %77 = icmp sgt i32 %64, %76
+  br i1 %77, label %101, label %78
+
+78:                                               ; preds = %66
+  %79 = sext i32 %64 to i64
+  %80 = sext i32 %76 to i64
+  br label %81
+
+81:                                               ; preds = %78, %94
+  %82 = phi i64 [ %79, %78 ], [ %99, %94 ]
+  %83 = load %"class.std::__1::vector.557"*, %"class.std::__1::vector.557"** %45, align 8
+  %84 = getelementptr inbounds %"class.std::__1::vector.557", %"class.std::__1::vector.557"* %83, i64 0, i32 0, i32 1
+  %85 = bitcast %"class.v8::internal::compiler::InstructionBlock"*** %84 to i64*
+  %86 = load i64, i64* %85, align 8
+  %87 = bitcast %"class.std::__1::vector.557"* %83 to i64*
+  %88 = load i64, i64* %87, align 8
+  %89 = sub i64 %86, %88
+  %90 = ashr exact i64 %89, 3
+  %91 = icmp ugt i64 %90, %82
+  br i1 %91, label %94, label %92
+
+92:                                               ; preds = %81
+  %93 = bitcast %"class.std::__1::vector.557"* %83 to %"class.std::__1::__vector_base_common"*
+  call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_out_of_rangeEv(%"class.std::__1::__vector_base_common"* %93) #8
+  unreachable
+
+94:                                               ; preds = %81
+  %95 = inttoptr i64 %88 to %"class.v8::internal::compiler::InstructionBlock"**
+  %96 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock"*, %"class.v8::internal::compiler::InstructionBlock"** %95, i64 %82
+  %97 = load %"class.v8::internal::compiler::InstructionBlock"*, %"class.v8::internal::compiler::InstructionBlock"** %96, align 8
+  %98 = load i32, i32* %46, align 4
+  call void @_ZN2v88internal8compiler11SpillPlacer16SetSpillRequiredEPNS1_16InstructionBlockEiNS1_9RpoNumberE(%"class.v8::internal::compiler::SpillPlacer"* %0, %"class.v8::internal::compiler::InstructionBlock"* %97, i32 %98, i32 %20)
+  %99 = add nuw nsw i64 %82, 1
+  %100 = icmp slt i64 %82, %80
+  br i1 %100, label %81, label %101
+
+101:                                              ; preds = %94, %66
+  %102 = getelementptr inbounds %"class.v8::internal::compiler::UseInterval", %"class.v8::internal::compiler::UseInterval"* %58, i64 0, i32 2
+  %103 = load %"class.v8::internal::compiler::UseInterval"*, %"class.v8::internal::compiler::UseInterval"** %102, align 8
+  %104 = icmp eq %"class.v8::internal::compiler::UseInterval"* %103, null
+  br i1 %104, label %133, label %57
+
+105:                                              ; preds = %57
+  %106 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %7, align 8
+  call void @_ZN2v88internal8compiler17TopLevelLiveRange16CommitSpillMovesEPNS1_29TopTierRegisterAllocationDataERKNS1_18InstructionOperandE(%"class.v8::internal::compiler::TopLevelLiveRange"* nonnull %1, %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %106, %"class.v8::internal::compiler::InstructionOperand"* nonnull dereferenceable(8) %3) #7
+  br label %186
+
+107:                                              ; preds = %47
+  %108 = getelementptr inbounds %"class.v8::internal::compiler::LiveRange", %"class.v8::internal::compiler::LiveRange"* %48, i64 0, i32 4
+  %109 = load %"class.v8::internal::compiler::UsePosition"*, %"class.v8::internal::compiler::UsePosition"** %108, align 8
+  %110 = icmp eq %"class.v8::internal::compiler::UsePosition"* %109, null
+  br i1 %110, label %133, label %111
+
+111:                                              ; preds = %107, %127
+  %112 = phi %"class.v8::internal::compiler::UsePosition"* [ %129, %127 ], [ %109, %107 ]
+  %113 = getelementptr inbounds %"class.v8::internal::compiler::UsePosition", %"class.v8::internal::compiler::UsePosition"* %112, i64 0, i32 4
+  %114 = load i32, i32* %113, align 4
+  %115 = and i32 %114, 3
+  %116 = icmp eq i32 %115, 3
+  br i1 %116, label %117, label %127
+
+117:                                              ; preds = %111
+  %118 = getelementptr inbounds %"class.v8::internal::compiler::UsePosition", %"class.v8::internal::compiler::UsePosition"* %112, i64 0, i32 3, i32 0
+  %119 = load i32, i32* %118, align 8
+  %120 = sdiv i32 %119, 4
+  %121 = call %"class.v8::internal::compiler::InstructionBlock"* @_ZNK2v88internal8compiler19InstructionSequence19GetInstructionBlockEi(%"class.v8::internal::compiler::InstructionSequence"* %11, i32 %120) #7
+  %122 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %121, i64 0, i32 4, i32 0
+  %123 = load i32, i32* %122, align 4
+  %124 = icmp eq i32 %123, %20
+  br i1 %124, label %131, label %125
+
+125:                                              ; preds = %117
+  %126 = load i32, i32* %46, align 4
+  call void @_ZN2v88internal8compiler11SpillPlacer16SetSpillRequiredEPNS1_16InstructionBlockEiNS1_9RpoNumberE(%"class.v8::internal::compiler::SpillPlacer"* %0, %"class.v8::internal::compiler::InstructionBlock"* %121, i32 %126, i32 %20)
+  br label %127
+
+127:                                              ; preds = %125, %111
+  %128 = getelementptr inbounds %"class.v8::internal::compiler::UsePosition", %"class.v8::internal::compiler::UsePosition"* %112, i64 0, i32 2
+  %129 = load %"class.v8::internal::compiler::UsePosition"*, %"class.v8::internal::compiler::UsePosition"** %128, align 8
+  %130 = icmp eq %"class.v8::internal::compiler::UsePosition"* %129, null
+  br i1 %130, label %133, label %111
+
+131:                                              ; preds = %117
+  %132 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %7, align 8
+  call void @_ZN2v88internal8compiler17TopLevelLiveRange16CommitSpillMovesEPNS1_29TopTierRegisterAllocationDataERKNS1_18InstructionOperandE(%"class.v8::internal::compiler::TopLevelLiveRange"* nonnull %1, %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %132, %"class.v8::internal::compiler::InstructionOperand"* nonnull dereferenceable(8) %3) #7
+  br label %186
+
+133:                                              ; preds = %101, %127, %53, %107
+  %134 = getelementptr inbounds %"class.v8::internal::compiler::LiveRange", %"class.v8::internal::compiler::LiveRange"* %48, i64 0, i32 6
+  %135 = load %"class.v8::internal::compiler::LiveRange"*, %"class.v8::internal::compiler::LiveRange"** %134, align 8
+  %136 = icmp eq %"class.v8::internal::compiler::LiveRange"* %135, null
+  br i1 %136, label %137, label %47
+
+137:                                              ; preds = %133, %41
+  %138 = getelementptr inbounds %"class.v8::internal::compiler::TopLevelLiveRange", %"class.v8::internal::compiler::TopLevelLiveRange"* %1, i64 0, i32 1
+  %139 = load i32, i32* %138, align 4
+  %140 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 5
+  %141 = load i32, i32* %140, align 8
+  %142 = icmp sgt i32 %141, 0
+  br i1 %142, label %143, label %151
+
+143:                                              ; preds = %137
+  %144 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 4
+  %145 = load i32*, i32** %144, align 8
+  %146 = add nsw i32 %141, -1
+  %147 = sext i32 %146 to i64
+  %148 = getelementptr inbounds i32, i32* %145, i64 %147
+  %149 = load i32, i32* %148, align 4
+  %150 = icmp eq i32 %149, %139
+  br i1 %150, label %155, label %151
+
+151:                                              ; preds = %137, %143
+  %152 = load i32, i32* %25, align 4
+  %153 = and i32 %152, 1073741823
+  %154 = or i32 %153, -2147483648
+  store i32 %154, i32* %25, align 4
+  br label %186
+
+155:                                              ; preds = %143
+  %156 = call i32 @_ZN2v88internal8compiler11SpillPlacer29GetOrCreateIndexForLatestVregEi(%"class.v8::internal::compiler::SpillPlacer"* %0, i32 %139) #7
+  %157 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 3
+  %158 = load %"class.v8::internal::compiler::SpillPlacer::Entry"*, %"class.v8::internal::compiler::SpillPlacer::Entry"** %157, align 8
+  %159 = sext i32 %20 to i64
+  %160 = zext i32 %156 to i64
+  %161 = shl i64 1, %160
+  %162 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %158, i64 %159, i32 0
+  %163 = xor i64 %161, -1
+  %164 = bitcast i64* %162 to <2 x i64>*
+  %165 = load <2 x i64>, <2 x i64>* %164, align 8
+  %166 = insertelement <2 x i64> undef, i64 %163, i32 0
+  %167 = shufflevector <2 x i64> %166, <2 x i64> undef, <2 x i32> zeroinitializer
+  %168 = and <2 x i64> %165, %167
+  %169 = bitcast i64* %162 to <2 x i64>*
+  store <2 x i64> %168, <2 x i64>* %169, align 8
+  %170 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %158, i64 %159, i32 2
+  %171 = load i64, i64* %170, align 8
+  %172 = or i64 %171, %161
+  store i64 %172, i64* %170, align 8
+  %173 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 6, i32 0
+  %174 = load i32, i32* %173, align 4
+  %175 = icmp sgt i32 %174, -1
+  br i1 %175, label %178, label %176
+
+176:                                              ; preds = %155
+  store i32 %20, i32* %173, align 4
+  %177 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 7, i32 0
+  store i32 %20, i32* %177, align 8
+  br label %186
+
+178:                                              ; preds = %155
+  %179 = icmp sgt i32 %174, %20
+  br i1 %179, label %180, label %181
+
+180:                                              ; preds = %178
+  store i32 %20, i32* %173, align 4
+  br label %181
+
+181:                                              ; preds = %180, %178
+  %182 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 7, i32 0
+  %183 = load i32, i32* %182, align 4
+  %184 = icmp slt i32 %183, %20
+  br i1 %184, label %185, label %186
+
+185:                                              ; preds = %181
+  store i32 %20, i32* %182, align 8
+  br label %186
+
+186:                                              ; preds = %131, %105, %185, %181, %176, %151, %39
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %4) #7
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+declare i64 @_ZNK2v88internal8compiler17TopLevelLiveRange20GetSpillRangeOperandEv(%"class.v8::internal::compiler::TopLevelLiveRange"*) local_unnamed_addr #3
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+declare void @_ZN2v88internal8compiler17TopLevelLiveRange16FilterSpillMovesEPNS1_29TopTierRegisterAllocationDataERKNS1_18InstructionOperandE(%"class.v8::internal::compiler::TopLevelLiveRange"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::InstructionOperand"* dereferenceable(8)) local_unnamed_addr #3
+
+declare %"class.v8::internal::compiler::InstructionBlock"* @_ZNK2v88internal8compiler19InstructionSequence19GetInstructionBlockEi(%"class.v8::internal::compiler::InstructionSequence"*, i32) local_unnamed_addr #3
+
+declare void @_ZN2v88internal8compiler17TopLevelLiveRange16CommitSpillMovesEPNS1_29TopTierRegisterAllocationDataERKNS1_18InstructionOperandE(%"class.v8::internal::compiler::TopLevelLiveRange"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::InstructionOperand"* dereferenceable(8)) local_unnamed_addr #3
+
+declare zeroext i1 @_ZNK2v88internal8compiler29TopTierRegisterAllocationData15IsBlockBoundaryENS1_16LifetimePositionE(%"class.v8::internal::compiler::TopTierRegisterAllocationData"*, i32) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2v88internal8compiler11SpillPlacer16SetSpillRequiredEPNS1_16InstructionBlockEiNS1_9RpoNumberE(%"class.v8::internal::compiler::SpillPlacer"* nocapture, %"class.v8::internal::compiler::InstructionBlock"* nocapture readonly, i32, i32) local_unnamed_addr #1 align 2 {
+  %5 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %1, i64 0, i32 10
+  %6 = load i8, i8* %5, align 4, !range !2
+  %7 = icmp eq i8 %6, 0
+  br i1 %7, label %8, label %44
+
+8:                                                ; preds = %4
+  %9 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %1, i64 0, i32 5, i32 0
+  %10 = load i32, i32* %9, align 8
+  %11 = icmp sgt i32 %10, -1
+  %12 = icmp sgt i32 %10, %3
+  %13 = and i1 %11, %12
+  br i1 %13, label %14, label %44
+
+14:                                               ; preds = %8
+  %15 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 1
+  %16 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %15, align 8
+  %17 = getelementptr inbounds %"class.v8::internal::compiler::TopTierRegisterAllocationData", %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %16, i64 0, i32 3
+  %18 = load %"class.v8::internal::compiler::InstructionSequence"*, %"class.v8::internal::compiler::InstructionSequence"** %17, align 8
+  %19 = getelementptr inbounds %"class.v8::internal::compiler::InstructionSequence", %"class.v8::internal::compiler::InstructionSequence"* %18, i64 0, i32 2
+  %20 = bitcast %"class.v8::internal::ZoneVector"** %19 to %"class.std::__1::vector.557"**
+  %21 = load %"class.std::__1::vector.557"*, %"class.std::__1::vector.557"** %20, align 8
+  %22 = getelementptr inbounds %"class.std::__1::vector.557", %"class.std::__1::vector.557"* %21, i64 0, i32 0, i32 1
+  %23 = bitcast %"class.v8::internal::compiler::InstructionBlock"*** %22 to i64*
+  %24 = load i64, i64* %23, align 8
+  %25 = bitcast %"class.std::__1::vector.557"* %21 to i64*
+  %26 = load i64, i64* %25, align 8
+  %27 = sub i64 %24, %26
+  %28 = ashr exact i64 %27, 3
+  %29 = inttoptr i64 %26 to %"class.v8::internal::compiler::InstructionBlock"**
+  br label %30
+
+30:                                               ; preds = %14, %36
+  %31 = phi i32 [ %10, %14 ], [ %40, %36 ]
+  %32 = sext i32 %31 to i64
+  %33 = icmp ugt i64 %28, %32
+  br i1 %33, label %36, label %34
+
+34:                                               ; preds = %30
+  %35 = bitcast %"class.std::__1::vector.557"* %21 to %"class.std::__1::__vector_base_common"*
+  tail call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_out_of_rangeEv(%"class.std::__1::__vector_base_common"* %35) #8
+  unreachable
+
+36:                                               ; preds = %30
+  %37 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock"*, %"class.v8::internal::compiler::InstructionBlock"** %29, i64 %32
+  %38 = load %"class.v8::internal::compiler::InstructionBlock"*, %"class.v8::internal::compiler::InstructionBlock"** %37, align 8
+  %39 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %38, i64 0, i32 5, i32 0
+  %40 = load i32, i32* %39, align 8
+  %41 = icmp sgt i32 %40, -1
+  %42 = icmp sgt i32 %40, %3
+  %43 = and i1 %41, %42
+  br i1 %43, label %30, label %44
+
+44:                                               ; preds = %36, %8, %4
+  %45 = phi %"class.v8::internal::compiler::InstructionBlock"* [ %1, %4 ], [ %1, %8 ], [ %38, %36 ]
+  %46 = tail call i32 @_ZN2v88internal8compiler11SpillPlacer29GetOrCreateIndexForLatestVregEi(%"class.v8::internal::compiler::SpillPlacer"* %0, i32 %2)
+  %47 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 3
+  %48 = load %"class.v8::internal::compiler::SpillPlacer::Entry"*, %"class.v8::internal::compiler::SpillPlacer::Entry"** %47, align 8
+  %49 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %45, i64 0, i32 4, i32 0
+  %50 = load i32, i32* %49, align 4
+  %51 = sext i32 %50 to i64
+  %52 = zext i32 %46 to i64
+  %53 = shl i64 1, %52
+  %54 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %48, i64 %51, i32 0
+  %55 = load i64, i64* %54, align 8
+  %56 = or i64 %55, %53
+  store i64 %56, i64* %54, align 8
+  %57 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %48, i64 %51, i32 1
+  %58 = xor i64 %53, -1
+  %59 = bitcast i64* %57 to <2 x i64>*
+  %60 = load <2 x i64>, <2 x i64>* %59, align 8
+  %61 = insertelement <2 x i64> undef, i64 %58, i32 0
+  %62 = shufflevector <2 x i64> %61, <2 x i64> undef, <2 x i32> zeroinitializer
+  %63 = and <2 x i64> %60, %62
+  %64 = bitcast i64* %57 to <2 x i64>*
+  store <2 x i64> %63, <2 x i64>* %64, align 8
+  %65 = load i32, i32* %49, align 4
+  %66 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 6, i32 0
+  %67 = load i32, i32* %66, align 4
+  %68 = icmp sgt i32 %67, -1
+  br i1 %68, label %71, label %69
+
+69:                                               ; preds = %44
+  store i32 %65, i32* %66, align 4
+  %70 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 7, i32 0
+  br label %78
+
+71:                                               ; preds = %44
+  %72 = icmp sgt i32 %67, %65
+  br i1 %72, label %73, label %74
+
+73:                                               ; preds = %71
+  store i32 %65, i32* %66, align 4
+  br label %74
+
+74:                                               ; preds = %73, %71
+  %75 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 7, i32 0
+  %76 = load i32, i32* %75, align 4
+  %77 = icmp slt i32 %76, %65
+  br i1 %77, label %78, label %80
+
+78:                                               ; preds = %74, %69
+  %79 = phi i32* [ %70, %69 ], [ %75, %74 ]
+  store i32 %65, i32* %79, align 8
+  br label %80
+
+80:                                               ; preds = %78, %74
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2v88internal8compiler11SpillPlacer13SetDefinitionENS1_9RpoNumberEi(%"class.v8::internal::compiler::SpillPlacer"* nocapture, i32, i32) local_unnamed_addr #1 align 2 {
+  %4 = tail call i32 @_ZN2v88internal8compiler11SpillPlacer29GetOrCreateIndexForLatestVregEi(%"class.v8::internal::compiler::SpillPlacer"* %0, i32 %2)
+  %5 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 3
+  %6 = load %"class.v8::internal::compiler::SpillPlacer::Entry"*, %"class.v8::internal::compiler::SpillPlacer::Entry"** %5, align 8
+  %7 = sext i32 %1 to i64
+  %8 = zext i32 %4 to i64
+  %9 = shl i64 1, %8
+  %10 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %6, i64 %7, i32 0
+  %11 = xor i64 %9, -1
+  %12 = bitcast i64* %10 to <2 x i64>*
+  %13 = load <2 x i64>, <2 x i64>* %12, align 8
+  %14 = insertelement <2 x i64> undef, i64 %11, i32 0
+  %15 = shufflevector <2 x i64> %14, <2 x i64> undef, <2 x i32> zeroinitializer
+  %16 = and <2 x i64> %13, %15
+  %17 = bitcast i64* %10 to <2 x i64>*
+  store <2 x i64> %16, <2 x i64>* %17, align 8
+  %18 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %6, i64 %7, i32 2
+  %19 = load i64, i64* %18, align 8
+  %20 = or i64 %19, %9
+  store i64 %20, i64* %18, align 8
+  %21 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 6, i32 0
+  %22 = load i32, i32* %21, align 4
+  %23 = icmp sgt i32 %22, -1
+  br i1 %23, label %26, label %24
+
+24:                                               ; preds = %3
+  store i32 %1, i32* %21, align 4
+  %25 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 7, i32 0
+  br label %33
+
+26:                                               ; preds = %3
+  %27 = icmp sgt i32 %22, %1
+  br i1 %27, label %28, label %29
+
+28:                                               ; preds = %26
+  store i32 %1, i32* %21, align 4
+  br label %29
+
+29:                                               ; preds = %28, %26
+  %30 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 7, i32 0
+  %31 = load i32, i32* %30, align 4
+  %32 = icmp slt i32 %31, %1
+  br i1 %32, label %33, label %35
+
+33:                                               ; preds = %29, %24
+  %34 = phi i32* [ %25, %24 ], [ %30, %29 ]
+  store i32 %1, i32* %34, align 8
+  br label %35
+
+35:                                               ; preds = %33, %29
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN2v88internal8compiler11SpillPlacer29GetOrCreateIndexForLatestVregEi(%"class.v8::internal::compiler::SpillPlacer"* nocapture, i32) local_unnamed_addr #1 align 2 {
+  %3 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 5
+  %4 = load i32, i32* %3, align 8
+  %5 = icmp sgt i32 %4, 0
+  %6 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 4
+  %7 = load i32*, i32** %6, align 8
+  br i1 %5, label %8, label %14
+
+8:                                                ; preds = %2
+  %9 = add nsw i32 %4, -1
+  %10 = sext i32 %9 to i64
+  %11 = getelementptr inbounds i32, i32* %7, i64 %10
+  %12 = load i32, i32* %11, align 4
+  %13 = icmp eq i32 %12, %1
+  br i1 %13, label %167, label %14
+
+14:                                               ; preds = %2, %8
+  %15 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 4
+  %16 = icmp eq i32* %7, null
+  br i1 %16, label %17, label %109
+
+17:                                               ; preds = %14
+  %18 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 2
+  %19 = load %"class.v8::internal::Zone"*, %"class.v8::internal::Zone"** %18, align 8
+  %20 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 1
+  %21 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %20, align 8
+  %22 = getelementptr inbounds %"class.v8::internal::compiler::TopTierRegisterAllocationData", %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %21, i64 0, i32 3
+  %23 = load %"class.v8::internal::compiler::InstructionSequence"*, %"class.v8::internal::compiler::InstructionSequence"** %22, align 8
+  %24 = getelementptr inbounds %"class.v8::internal::compiler::InstructionSequence", %"class.v8::internal::compiler::InstructionSequence"* %23, i64 0, i32 2
+  %25 = load %"class.v8::internal::ZoneVector"*, %"class.v8::internal::ZoneVector"** %24, align 8
+  %26 = getelementptr inbounds %"class.v8::internal::ZoneVector", %"class.v8::internal::ZoneVector"* %25, i64 0, i32 0, i32 0, i32 1
+  %27 = bitcast %"class.v8::internal::compiler::InstructionBlock"*** %26 to i64*
+  %28 = load i64, i64* %27, align 8
+  %29 = bitcast %"class.v8::internal::ZoneVector"* %25 to i64*
+  %30 = load i64, i64* %29, align 8
+  %31 = sub i64 %28, %30
+  %32 = ashr exact i64 %31, 3
+  %33 = mul i64 %32, 24
+  %34 = getelementptr inbounds %"class.v8::internal::Zone", %"class.v8::internal::Zone"* %19, i64 0, i32 2
+  %35 = load i64, i64* %34, align 8
+  %36 = getelementptr inbounds %"class.v8::internal::Zone", %"class.v8::internal::Zone"* %19, i64 0, i32 3
+  %37 = load i64, i64* %36, align 8
+  %38 = sub i64 %37, %35
+  %39 = icmp ugt i64 %33, %38
+  br i1 %39, label %40, label %42, !prof !3
+
+40:                                               ; preds = %17
+  %41 = tail call i64 @_ZN2v88internal4Zone9NewExpandEm(%"class.v8::internal::Zone"* %19, i64 %33) #7
+  br label %44
+
+42:                                               ; preds = %17
+  %43 = add i64 %33, %35
+  store i64 %43, i64* %34, align 8
+  br label %44
+
+44:                                               ; preds = %40, %42
+  %45 = phi i64 [ %41, %40 ], [ %35, %42 ]
+  %46 = inttoptr i64 %45 to %"class.v8::internal::compiler::SpillPlacer::Entry"*
+  %47 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 3
+  store %"class.v8::internal::compiler::SpillPlacer::Entry"* %46, %"class.v8::internal::compiler::SpillPlacer::Entry"** %47, align 8
+  %48 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %20, align 8
+  %49 = getelementptr inbounds %"class.v8::internal::compiler::TopTierRegisterAllocationData", %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %48, i64 0, i32 3
+  %50 = load %"class.v8::internal::compiler::InstructionSequence"*, %"class.v8::internal::compiler::InstructionSequence"** %49, align 8
+  %51 = getelementptr inbounds %"class.v8::internal::compiler::InstructionSequence", %"class.v8::internal::compiler::InstructionSequence"* %50, i64 0, i32 2
+  %52 = load %"class.v8::internal::ZoneVector"*, %"class.v8::internal::ZoneVector"** %51, align 8
+  %53 = getelementptr inbounds %"class.v8::internal::ZoneVector", %"class.v8::internal::ZoneVector"* %52, i64 0, i32 0, i32 0, i32 1
+  %54 = bitcast %"class.v8::internal::compiler::InstructionBlock"*** %53 to i64*
+  %55 = load i64, i64* %54, align 8
+  %56 = bitcast %"class.v8::internal::ZoneVector"* %52 to i64*
+  %57 = load i64, i64* %56, align 8
+  %58 = icmp eq i64 %55, %57
+  br i1 %58, label %74, label %59
+
+59:                                               ; preds = %44
+  %60 = inttoptr i64 %45 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %60, i8 0, i64 24, i1 false)
+  %61 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %20, align 8
+  %62 = getelementptr inbounds %"class.v8::internal::compiler::TopTierRegisterAllocationData", %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %61, i64 0, i32 3
+  %63 = load %"class.v8::internal::compiler::InstructionSequence"*, %"class.v8::internal::compiler::InstructionSequence"** %62, align 8
+  %64 = getelementptr inbounds %"class.v8::internal::compiler::InstructionSequence", %"class.v8::internal::compiler::InstructionSequence"* %63, i64 0, i32 2
+  %65 = load %"class.v8::internal::ZoneVector"*, %"class.v8::internal::ZoneVector"** %64, align 8
+  %66 = getelementptr inbounds %"class.v8::internal::ZoneVector", %"class.v8::internal::ZoneVector"* %65, i64 0, i32 0, i32 0, i32 1
+  %67 = bitcast %"class.v8::internal::compiler::InstructionBlock"*** %66 to i64*
+  %68 = load i64, i64* %67, align 8
+  %69 = bitcast %"class.v8::internal::ZoneVector"* %65 to i64*
+  %70 = load i64, i64* %69, align 8
+  %71 = sub i64 %68, %70
+  %72 = ashr exact i64 %71, 3
+  %73 = icmp ugt i64 %72, 1
+  br i1 %73, label %90, label %74
+
+74:                                               ; preds = %90, %59, %44
+  %75 = load %"class.v8::internal::Zone"*, %"class.v8::internal::Zone"** %18, align 8
+  %76 = getelementptr inbounds %"class.v8::internal::Zone", %"class.v8::internal::Zone"* %75, i64 0, i32 2
+  %77 = load i64, i64* %76, align 8
+  %78 = getelementptr inbounds %"class.v8::internal::Zone", %"class.v8::internal::Zone"* %75, i64 0, i32 3
+  %79 = load i64, i64* %78, align 8
+  %80 = sub i64 %79, %77
+  %81 = icmp ult i64 %80, 256
+  br i1 %81, label %82, label %84, !prof !3
+
+82:                                               ; preds = %74
+  %83 = tail call i64 @_ZN2v88internal4Zone9NewExpandEm(%"class.v8::internal::Zone"* %75, i64 256) #7
+  br label %86
+
+84:                                               ; preds = %74
+  %85 = add i64 %77, 256
+  store i64 %85, i64* %76, align 8
+  br label %86
+
+86:                                               ; preds = %82, %84
+  %87 = phi i64 [ %83, %82 ], [ %77, %84 ]
+  %88 = inttoptr i64 %87 to i32*
+  store i32* %88, i32** %15, align 8
+  %89 = load i32, i32* %3, align 8
+  br label %109
+
+90:                                               ; preds = %59, %90
+  %91 = phi i64 [ %94, %90 ], [ 1, %59 ]
+  %92 = load %"class.v8::internal::compiler::SpillPlacer::Entry"*, %"class.v8::internal::compiler::SpillPlacer::Entry"** %47, align 8
+  %93 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %92, i64 %91
+  %94 = add nuw i64 %91, 1
+  %95 = bitcast %"class.v8::internal::compiler::SpillPlacer::Entry"* %93 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %95, i8 0, i64 24, i1 false)
+  %96 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %20, align 8
+  %97 = getelementptr inbounds %"class.v8::internal::compiler::TopTierRegisterAllocationData", %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %96, i64 0, i32 3
+  %98 = load %"class.v8::internal::compiler::InstructionSequence"*, %"class.v8::internal::compiler::InstructionSequence"** %97, align 8
+  %99 = getelementptr inbounds %"class.v8::internal::compiler::InstructionSequence", %"class.v8::internal::compiler::InstructionSequence"* %98, i64 0, i32 2
+  %100 = load %"class.v8::internal::ZoneVector"*, %"class.v8::internal::ZoneVector"** %99, align 8
+  %101 = getelementptr inbounds %"class.v8::internal::ZoneVector", %"class.v8::internal::ZoneVector"* %100, i64 0, i32 0, i32 0, i32 1
+  %102 = bitcast %"class.v8::internal::compiler::InstructionBlock"*** %101 to i64*
+  %103 = load i64, i64* %102, align 8
+  %104 = bitcast %"class.v8::internal::ZoneVector"* %100 to i64*
+  %105 = load i64, i64* %104, align 8
+  %106 = sub i64 %103, %105
+  %107 = ashr exact i64 %106, 3
+  %108 = icmp ult i64 %94, %107
+  br i1 %108, label %90, label %74
+
+109:                                              ; preds = %86, %14
+  %110 = phi i32* [ %88, %86 ], [ %7, %14 ]
+  %111 = phi i32 [ %89, %86 ], [ %4, %14 ]
+  %112 = icmp eq i32 %111, 64
+  br i1 %112, label %113, label %160
+
+113:                                              ; preds = %109
+  tail call void @_ZN2v88internal8compiler11SpillPlacer17FirstBackwardPassEv(%"class.v8::internal::compiler::SpillPlacer"* %0) #7
+  tail call void @_ZN2v88internal8compiler11SpillPlacer11ForwardPassEv(%"class.v8::internal::compiler::SpillPlacer"* %0) #7
+  tail call void @_ZN2v88internal8compiler11SpillPlacer18SecondBackwardPassEv(%"class.v8::internal::compiler::SpillPlacer"* %0) #7
+  store i32 0, i32* %3, align 8
+  %114 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 1
+  %115 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %114, align 8
+  %116 = getelementptr inbounds %"class.v8::internal::compiler::TopTierRegisterAllocationData", %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %115, i64 0, i32 3
+  %117 = load %"class.v8::internal::compiler::InstructionSequence"*, %"class.v8::internal::compiler::InstructionSequence"** %116, align 8
+  %118 = getelementptr inbounds %"class.v8::internal::compiler::InstructionSequence", %"class.v8::internal::compiler::InstructionSequence"* %117, i64 0, i32 2
+  %119 = bitcast %"class.v8::internal::ZoneVector"** %118 to %"class.std::__1::vector.557"**
+  %120 = load %"class.std::__1::vector.557"*, %"class.std::__1::vector.557"** %119, align 8
+  %121 = getelementptr inbounds %"class.std::__1::vector.557", %"class.std::__1::vector.557"* %120, i64 0, i32 0, i32 1
+  %122 = bitcast %"class.v8::internal::compiler::InstructionBlock"*** %121 to i64*
+  %123 = load i64, i64* %122, align 8
+  %124 = bitcast %"class.std::__1::vector.557"* %120 to i64*
+  %125 = load i64, i64* %124, align 8
+  %126 = sub i64 %123, %125
+  %127 = lshr exact i64 %126, 3
+  %128 = trunc i64 %127 to i32
+  %129 = icmp sgt i32 %128, 0
+  br i1 %129, label %130, label %155
+
+130:                                              ; preds = %113
+  %131 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 3
+  br label %132
+
+132:                                              ; preds = %132, %130
+  %133 = phi i64 [ 0, %130 ], [ %136, %132 ]
+  %134 = load %"class.v8::internal::compiler::SpillPlacer::Entry"*, %"class.v8::internal::compiler::SpillPlacer::Entry"** %131, align 8
+  %135 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %134, i64 %133
+  %136 = add nuw nsw i64 %133, 1
+  %137 = bitcast %"class.v8::internal::compiler::SpillPlacer::Entry"* %135 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %137, i8 0, i64 24, i1 false) #7
+  %138 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %114, align 8
+  %139 = getelementptr inbounds %"class.v8::internal::compiler::TopTierRegisterAllocationData", %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %138, i64 0, i32 3
+  %140 = load %"class.v8::internal::compiler::InstructionSequence"*, %"class.v8::internal::compiler::InstructionSequence"** %139, align 8
+  %141 = getelementptr inbounds %"class.v8::internal::compiler::InstructionSequence", %"class.v8::internal::compiler::InstructionSequence"* %140, i64 0, i32 2
+  %142 = bitcast %"class.v8::internal::ZoneVector"** %141 to %"class.std::__1::vector.557"**
+  %143 = load %"class.std::__1::vector.557"*, %"class.std::__1::vector.557"** %142, align 8
+  %144 = getelementptr inbounds %"class.std::__1::vector.557", %"class.std::__1::vector.557"* %143, i64 0, i32 0, i32 1
+  %145 = bitcast %"class.v8::internal::compiler::InstructionBlock"*** %144 to i64*
+  %146 = load i64, i64* %145, align 8
+  %147 = bitcast %"class.std::__1::vector.557"* %143 to i64*
+  %148 = load i64, i64* %147, align 8
+  %149 = sub i64 %146, %148
+  %150 = shl i64 %149, 29
+  %151 = ashr i64 %150, 32
+  %152 = icmp slt i64 %136, %151
+  br i1 %152, label %132, label %153
+
+153:                                              ; preds = %132
+  %154 = load i32, i32* %3, align 8
+  br label %155
+
+155:                                              ; preds = %153, %113
+  %156 = phi i32 [ %154, %153 ], [ 0, %113 ]
+  %157 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 6, i32 0
+  store i32 -1, i32* %157, align 4
+  %158 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 7, i32 0
+  store i32 -1, i32* %158, align 8
+  %159 = load i32*, i32** %15, align 8
+  br label %160
+
+160:                                              ; preds = %155, %109
+  %161 = phi i32 [ %156, %155 ], [ %111, %109 ]
+  %162 = phi i32* [ %159, %155 ], [ %110, %109 ]
+  %163 = sext i32 %161 to i64
+  %164 = getelementptr inbounds i32, i32* %162, i64 %163
+  store i32 %1, i32* %164, align 4
+  %165 = load i32, i32* %3, align 8
+  %166 = add nsw i32 %165, 1
+  store i32 %166, i32* %3, align 8
+  br label %167
+
+167:                                              ; preds = %160, %8
+  %168 = phi i32 [ %165, %160 ], [ %9, %8 ]
+  ret i32 %168
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2v88internal8compiler11SpillPlacer9ClearDataEv(%"class.v8::internal::compiler::SpillPlacer"* nocapture) local_unnamed_addr #1 align 2 {
+  %2 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 5
+  store i32 0, i32* %2, align 8
+  %3 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 1
+  %4 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %3, align 8
+  %5 = getelementptr inbounds %"class.v8::internal::compiler::TopTierRegisterAllocationData", %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %4, i64 0, i32 3
+  %6 = load %"class.v8::internal::compiler::InstructionSequence"*, %"class.v8::internal::compiler::InstructionSequence"** %5, align 8
+  %7 = getelementptr inbounds %"class.v8::internal::compiler::InstructionSequence", %"class.v8::internal::compiler::InstructionSequence"* %6, i64 0, i32 2
+  %8 = bitcast %"class.v8::internal::ZoneVector"** %7 to %"class.std::__1::vector.557"**
+  %9 = load %"class.std::__1::vector.557"*, %"class.std::__1::vector.557"** %8, align 8
+  %10 = getelementptr inbounds %"class.std::__1::vector.557", %"class.std::__1::vector.557"* %9, i64 0, i32 0, i32 1
+  %11 = bitcast %"class.v8::internal::compiler::InstructionBlock"*** %10 to i64*
+  %12 = load i64, i64* %11, align 8
+  %13 = bitcast %"class.std::__1::vector.557"* %9 to i64*
+  %14 = load i64, i64* %13, align 8
+  %15 = sub i64 %12, %14
+  %16 = lshr exact i64 %15, 3
+  %17 = trunc i64 %16 to i32
+  %18 = icmp sgt i32 %17, 0
+  br i1 %18, label %19, label %21
+
+19:                                               ; preds = %1
+  %20 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 3
+  br label %24
+
+21:                                               ; preds = %24, %1
+  %22 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 6, i32 0
+  store i32 -1, i32* %22, align 4
+  %23 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 7, i32 0
+  store i32 -1, i32* %23, align 8
+  ret void
+
+24:                                               ; preds = %19, %24
+  %25 = phi i64 [ 0, %19 ], [ %28, %24 ]
+  %26 = load %"class.v8::internal::compiler::SpillPlacer::Entry"*, %"class.v8::internal::compiler::SpillPlacer::Entry"** %20, align 8
+  %27 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %26, i64 %25
+  %28 = add nuw nsw i64 %25, 1
+  %29 = bitcast %"class.v8::internal::compiler::SpillPlacer::Entry"* %27 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %29, i8 0, i64 24, i1 false)
+  %30 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %3, align 8
+  %31 = getelementptr inbounds %"class.v8::internal::compiler::TopTierRegisterAllocationData", %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %30, i64 0, i32 3
+  %32 = load %"class.v8::internal::compiler::InstructionSequence"*, %"class.v8::internal::compiler::InstructionSequence"** %31, align 8
+  %33 = getelementptr inbounds %"class.v8::internal::compiler::InstructionSequence", %"class.v8::internal::compiler::InstructionSequence"* %32, i64 0, i32 2
+  %34 = bitcast %"class.v8::internal::ZoneVector"** %33 to %"class.std::__1::vector.557"**
+  %35 = load %"class.std::__1::vector.557"*, %"class.std::__1::vector.557"** %34, align 8
+  %36 = getelementptr inbounds %"class.std::__1::vector.557", %"class.std::__1::vector.557"* %35, i64 0, i32 0, i32 1
+  %37 = bitcast %"class.v8::internal::compiler::InstructionBlock"*** %36 to i64*
+  %38 = load i64, i64* %37, align 8
+  %39 = bitcast %"class.std::__1::vector.557"* %35 to i64*
+  %40 = load i64, i64* %39, align 8
+  %41 = sub i64 %38, %40
+  %42 = shl i64 %41, 29
+  %43 = ashr i64 %42, 32
+  %44 = icmp slt i64 %28, %43
+  br i1 %44, label %24, label %21
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2v88internal8compiler11SpillPlacer17FirstBackwardPassEv(%"class.v8::internal::compiler::SpillPlacer"* nocapture readonly) local_unnamed_addr #1 align 2 {
+  %2 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 7, i32 0
+  %3 = load i32, i32* %2, align 4
+  %4 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 6, i32 0
+  %5 = load i32, i32* %4, align 4
+  %6 = icmp slt i32 %3, %5
+  br i1 %6, label %15, label %7
+
+7:                                                ; preds = %1
+  %8 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 1
+  %9 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %8, align 8
+  %10 = getelementptr inbounds %"class.v8::internal::compiler::TopTierRegisterAllocationData", %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %9, i64 0, i32 3
+  %11 = load %"class.v8::internal::compiler::InstructionSequence"*, %"class.v8::internal::compiler::InstructionSequence"** %10, align 8
+  %12 = getelementptr inbounds %"class.v8::internal::compiler::InstructionSequence", %"class.v8::internal::compiler::InstructionSequence"* %11, i64 0, i32 2
+  %13 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 3
+  %14 = sext i32 %3 to i64
+  br label %16
+
+15:                                               ; preds = %33, %1
+  ret void
+
+16:                                               ; preds = %33, %7
+  %17 = phi i64 [ %61, %33 ], [ %14, %7 ]
+  %18 = load %"class.v8::internal::ZoneVector"*, %"class.v8::internal::ZoneVector"** %12, align 8
+  %19 = getelementptr inbounds %"class.v8::internal::ZoneVector", %"class.v8::internal::ZoneVector"* %18, i64 0, i32 0, i32 0, i32 0
+  %20 = load %"class.v8::internal::compiler::InstructionBlock"**, %"class.v8::internal::compiler::InstructionBlock"*** %19, align 8
+  %21 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock"*, %"class.v8::internal::compiler::InstructionBlock"** %20, i64 %17
+  %22 = load %"class.v8::internal::compiler::InstructionBlock"*, %"class.v8::internal::compiler::InstructionBlock"** %21, align 8
+  %23 = load %"class.v8::internal::compiler::SpillPlacer::Entry"*, %"class.v8::internal::compiler::SpillPlacer::Entry"** %13, align 8
+  %24 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %22, i64 0, i32 0, i32 0, i32 0, i32 0
+  %25 = load %"class.v8::internal::compiler::RpoNumber"*, %"class.v8::internal::compiler::RpoNumber"** %24, align 8
+  %26 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %22, i64 0, i32 0, i32 0, i32 0, i32 1
+  %27 = load %"class.v8::internal::compiler::RpoNumber"*, %"class.v8::internal::compiler::RpoNumber"** %26, align 8
+  %28 = icmp eq %"class.v8::internal::compiler::RpoNumber"* %25, %27
+  %29 = ptrtoint %"class.v8::internal::compiler::InstructionBlock"** %20 to i64
+  br i1 %28, label %33, label %30
+
+30:                                               ; preds = %16
+  %31 = getelementptr inbounds %"class.v8::internal::ZoneVector", %"class.v8::internal::ZoneVector"* %18, i64 0, i32 0, i32 0, i32 1
+  %32 = bitcast %"class.v8::internal::compiler::InstructionBlock"*** %31 to i64*
+  br label %65
+
+33:                                               ; preds = %106, %16
+  %34 = phi i64 [ 0, %16 ], [ %107, %106 ]
+  %35 = phi i64 [ 0, %16 ], [ %108, %106 ]
+  %36 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %23, i64 %17, i32 0
+  %37 = load i64, i64* %36, align 8
+  %38 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %23, i64 %17, i32 1
+  %39 = load i64, i64* %38, align 8
+  %40 = or i64 %39, %37
+  %41 = xor i64 %40, -1
+  %42 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %23, i64 %17, i32 2
+  %43 = load i64, i64* %42, align 8
+  %44 = and i64 %43, %41
+  %45 = xor i64 %39, -1
+  %46 = and i64 %37, %45
+  %47 = xor i64 %43, -1
+  %48 = and i64 %46, %47
+  %49 = or i64 %44, %48
+  %50 = xor i64 %49, -1
+  %51 = and i64 %34, %50
+  %52 = and i64 %35, %50
+  %53 = or i64 %51, %37
+  %54 = or i64 %51, %39
+  %55 = xor i64 %51, -1
+  %56 = and i64 %43, %55
+  %57 = xor i64 %52, -1
+  %58 = and i64 %53, %57
+  store i64 %58, i64* %36, align 8
+  %59 = or i64 %54, %52
+  store i64 %59, i64* %38, align 8
+  %60 = and i64 %56, %57
+  store i64 %60, i64* %42, align 8
+  %61 = add i64 %17, -1
+  %62 = load i32, i32* %4, align 4
+  %63 = sext i32 %62 to i64
+  %64 = icmp sgt i64 %17, %63
+  br i1 %64, label %16, label %15
+
+65:                                               ; preds = %30, %106
+  %66 = phi i64 [ %108, %106 ], [ 0, %30 ]
+  %67 = phi i64 [ %107, %106 ], [ 0, %30 ]
+  %68 = phi %"class.v8::internal::compiler::RpoNumber"* [ %109, %106 ], [ %25, %30 ]
+  %69 = getelementptr inbounds %"class.v8::internal::compiler::RpoNumber", %"class.v8::internal::compiler::RpoNumber"* %68, i64 0, i32 0
+  %70 = load i32, i32* %69, align 4
+  %71 = sext i32 %70 to i64
+  %72 = icmp slt i64 %17, %71
+  br i1 %72, label %73, label %106
+
+73:                                               ; preds = %65
+  %74 = load i64, i64* %32, align 8
+  %75 = sub i64 %74, %29
+  %76 = ashr exact i64 %75, 3
+  %77 = icmp ugt i64 %76, %71
+  br i1 %77, label %80, label %78
+
+78:                                               ; preds = %73
+  %79 = bitcast %"class.v8::internal::ZoneVector"* %18 to %"class.std::__1::__vector_base_common"*
+  tail call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_out_of_rangeEv(%"class.std::__1::__vector_base_common"* %79) #8
+  unreachable
+
+80:                                               ; preds = %73
+  %81 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock"*, %"class.v8::internal::compiler::InstructionBlock"** %20, i64 %71
+  %82 = load %"class.v8::internal::compiler::InstructionBlock"*, %"class.v8::internal::compiler::InstructionBlock"** %81, align 8
+  %83 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %82, i64 0, i32 10
+  %84 = load i8, i8* %83, align 4, !range !2
+  %85 = icmp ne i8 %84, 0
+  %86 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %23, i64 %71, i32 0
+  %87 = load i64, i64* %86, align 8
+  %88 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %23, i64 %71, i32 1
+  %89 = load i64, i64* %88, align 8
+  %90 = xor i64 %89, -1
+  %91 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %23, i64 %71, i32 2
+  %92 = load i64, i64* %91, align 8
+  %93 = xor i64 %92, -1
+  %94 = and i64 %87, %93
+  %95 = and i64 %94, %90
+  %96 = select i1 %85, i64 %95, i64 0
+  %97 = select i1 %85, i64 0, i64 %95
+  %98 = and i64 %89, %93
+  %99 = and i64 %98, %87
+  %100 = or i64 %99, %67
+  %101 = or i64 %100, %96
+  %102 = xor i64 %87, -1
+  %103 = and i64 %98, %102
+  %104 = or i64 %103, %66
+  %105 = or i64 %104, %97
+  br label %106
+
+106:                                              ; preds = %65, %80
+  %107 = phi i64 [ %101, %80 ], [ %67, %65 ]
+  %108 = phi i64 [ %105, %80 ], [ %66, %65 ]
+  %109 = getelementptr inbounds %"class.v8::internal::compiler::RpoNumber", %"class.v8::internal::compiler::RpoNumber"* %68, i64 1
+  %110 = icmp eq %"class.v8::internal::compiler::RpoNumber"* %109, %27
+  br i1 %110, label %33, label %65
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2v88internal8compiler11SpillPlacer11ForwardPassEv(%"class.v8::internal::compiler::SpillPlacer"* nocapture readonly) local_unnamed_addr #1 align 2 {
+  %2 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 6, i32 0
+  %3 = load i32, i32* %2, align 4
+  %4 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 7, i32 0
+  %5 = load i32, i32* %4, align 4
+  %6 = icmp sgt i32 %3, %5
+  br i1 %6, label %15, label %7
+
+7:                                                ; preds = %1
+  %8 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 1
+  %9 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %8, align 8
+  %10 = getelementptr inbounds %"class.v8::internal::compiler::TopTierRegisterAllocationData", %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %9, i64 0, i32 3
+  %11 = load %"class.v8::internal::compiler::InstructionSequence"*, %"class.v8::internal::compiler::InstructionSequence"** %10, align 8
+  %12 = getelementptr inbounds %"class.v8::internal::compiler::InstructionSequence", %"class.v8::internal::compiler::InstructionSequence"* %11, i64 0, i32 2
+  %13 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 3
+  %14 = sext i32 %3 to i64
+  br label %16
+
+15:                                               ; preds = %99, %1
+  ret void
+
+16:                                               ; preds = %99, %7
+  %17 = phi i32 [ %100, %99 ], [ %5, %7 ]
+  %18 = phi i64 [ %101, %99 ], [ %14, %7 ]
+  %19 = load %"class.v8::internal::ZoneVector"*, %"class.v8::internal::ZoneVector"** %12, align 8
+  %20 = getelementptr inbounds %"class.v8::internal::ZoneVector", %"class.v8::internal::ZoneVector"* %19, i64 0, i32 0, i32 0, i32 0
+  %21 = load %"class.v8::internal::compiler::InstructionBlock"**, %"class.v8::internal::compiler::InstructionBlock"*** %20, align 8
+  %22 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock"*, %"class.v8::internal::compiler::InstructionBlock"** %21, i64 %18
+  %23 = load %"class.v8::internal::compiler::InstructionBlock"*, %"class.v8::internal::compiler::InstructionBlock"** %22, align 8
+  %24 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %23, i64 0, i32 10
+  %25 = load i8, i8* %24, align 4, !range !2
+  %26 = icmp eq i8 %25, 0
+  %27 = ptrtoint %"class.v8::internal::compiler::InstructionBlock"** %21 to i64
+  br i1 %26, label %28, label %99
+
+28:                                               ; preds = %16
+  %29 = load %"class.v8::internal::compiler::SpillPlacer::Entry"*, %"class.v8::internal::compiler::SpillPlacer::Entry"** %13, align 8
+  %30 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %23, i64 0, i32 1, i32 0, i32 0, i32 0
+  %31 = load %"class.v8::internal::compiler::RpoNumber"*, %"class.v8::internal::compiler::RpoNumber"** %30, align 8
+  %32 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %23, i64 0, i32 1, i32 0, i32 0, i32 1
+  %33 = load %"class.v8::internal::compiler::RpoNumber"*, %"class.v8::internal::compiler::RpoNumber"** %32, align 8
+  %34 = icmp eq %"class.v8::internal::compiler::RpoNumber"* %31, %33
+  br i1 %34, label %38, label %35
+
+35:                                               ; preds = %28
+  %36 = getelementptr inbounds %"class.v8::internal::ZoneVector", %"class.v8::internal::ZoneVector"* %19, i64 0, i32 0, i32 0, i32 1
+  %37 = bitcast %"class.v8::internal::compiler::InstructionBlock"*** %36 to i64*
+  br label %60
+
+38:                                               ; preds = %94, %28
+  %39 = phi i64 [ -1, %28 ], [ %95, %94 ]
+  %40 = phi i64 [ 0, %28 ], [ %96, %94 ]
+  %41 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %29, i64 %18, i32 0
+  %42 = load i64, i64* %41, align 8
+  %43 = xor i64 %42, -1
+  %44 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %29, i64 %18, i32 1
+  %45 = load i64, i64* %44, align 8
+  %46 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %29, i64 %18, i32 2
+  %47 = load i64, i64* %46, align 8
+  %48 = xor i64 %47, -1
+  %49 = and i64 %45, %48
+  %50 = and i64 %49, %43
+  %51 = and i64 %40, %39
+  %52 = and i64 %51, %49
+  %53 = or i64 %52, %42
+  %54 = xor i64 %52, %45
+  %55 = and i64 %50, %40
+  %56 = or i64 %53, %55
+  store i64 %56, i64* %41, align 8
+  %57 = xor i64 %55, -1
+  %58 = and i64 %54, %57
+  store i64 %58, i64* %44, align 8
+  %59 = load i32, i32* %4, align 4
+  br label %99
+
+60:                                               ; preds = %35, %94
+  %61 = phi i64 [ %96, %94 ], [ 0, %35 ]
+  %62 = phi i64 [ %95, %94 ], [ -1, %35 ]
+  %63 = phi %"class.v8::internal::compiler::RpoNumber"* [ %97, %94 ], [ %31, %35 ]
+  %64 = getelementptr inbounds %"class.v8::internal::compiler::RpoNumber", %"class.v8::internal::compiler::RpoNumber"* %63, i64 0, i32 0
+  %65 = load i32, i32* %64, align 4
+  %66 = sext i32 %65 to i64
+  %67 = icmp sgt i64 %18, %66
+  br i1 %67, label %68, label %94
+
+68:                                               ; preds = %60
+  %69 = load i64, i64* %37, align 8
+  %70 = sub i64 %69, %27
+  %71 = ashr exact i64 %70, 3
+  %72 = icmp ugt i64 %71, %66
+  br i1 %72, label %75, label %73
+
+73:                                               ; preds = %68
+  %74 = bitcast %"class.v8::internal::ZoneVector"* %19 to %"class.std::__1::__vector_base_common"*
+  tail call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_out_of_rangeEv(%"class.std::__1::__vector_base_common"* %74) #8
+  unreachable
+
+75:                                               ; preds = %68
+  %76 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock"*, %"class.v8::internal::compiler::InstructionBlock"** %21, i64 %66
+  %77 = load %"class.v8::internal::compiler::InstructionBlock"*, %"class.v8::internal::compiler::InstructionBlock"** %76, align 8
+  %78 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %77, i64 0, i32 10
+  %79 = load i8, i8* %78, align 4, !range !2
+  %80 = icmp eq i8 %79, 0
+  br i1 %80, label %81, label %94
+
+81:                                               ; preds = %75
+  %82 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %29, i64 %66, i32 0
+  %83 = load i64, i64* %82, align 8
+  %84 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %29, i64 %66, i32 1
+  %85 = load i64, i64* %84, align 8
+  %86 = xor i64 %85, -1
+  %87 = and i64 %83, %86
+  %88 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %29, i64 %66, i32 2
+  %89 = load i64, i64* %88, align 8
+  %90 = xor i64 %89, -1
+  %91 = and i64 %87, %90
+  %92 = or i64 %91, %61
+  %93 = and i64 %91, %62
+  br label %94
+
+94:                                               ; preds = %75, %60, %81
+  %95 = phi i64 [ %62, %60 ], [ %93, %81 ], [ %62, %75 ]
+  %96 = phi i64 [ %61, %60 ], [ %92, %81 ], [ %61, %75 ]
+  %97 = getelementptr inbounds %"class.v8::internal::compiler::RpoNumber", %"class.v8::internal::compiler::RpoNumber"* %63, i64 1
+  %98 = icmp eq %"class.v8::internal::compiler::RpoNumber"* %97, %33
+  br i1 %98, label %38, label %60
+
+99:                                               ; preds = %16, %38
+  %100 = phi i32 [ %17, %16 ], [ %59, %38 ]
+  %101 = add nsw i64 %18, 1
+  %102 = sext i32 %100 to i64
+  %103 = icmp slt i64 %18, %102
+  br i1 %103, label %16, label %15
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2v88internal8compiler11SpillPlacer18SecondBackwardPassEv(%"class.v8::internal::compiler::SpillPlacer"* nocapture readonly) local_unnamed_addr #1 align 2 {
+  %2 = alloca %"class.v8::internal::compiler::InstructionOperand", align 8
+  %3 = alloca %"class.v8::internal::compiler::AllocatedOperand", align 8
+  %4 = alloca %"class.v8::internal::compiler::AllocatedOperand", align 8
+  %5 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 1
+  %6 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 7, i32 0
+  %7 = load i32, i32* %6, align 4
+  %8 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 6, i32 0
+  %9 = load i32, i32* %8, align 4
+  %10 = icmp slt i32 %7, %9
+  br i1 %10, label %29, label %11
+
+11:                                               ; preds = %1
+  %12 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %5, align 8
+  %13 = getelementptr inbounds %"class.v8::internal::compiler::TopTierRegisterAllocationData", %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %12, i64 0, i32 3
+  %14 = load %"class.v8::internal::compiler::InstructionSequence"*, %"class.v8::internal::compiler::InstructionSequence"** %13, align 8
+  %15 = getelementptr inbounds %"class.v8::internal::compiler::InstructionSequence", %"class.v8::internal::compiler::InstructionSequence"* %14, i64 0, i32 2
+  %16 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 3
+  %17 = bitcast %"class.v8::internal::ZoneVector"** %15 to %"class.std::__1::vector.557"**
+  %18 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 4
+  %19 = bitcast %"class.v8::internal::compiler::AllocatedOperand"* %4 to i8*
+  %20 = getelementptr inbounds %"class.v8::internal::compiler::AllocatedOperand", %"class.v8::internal::compiler::AllocatedOperand"* %4, i64 0, i32 0, i32 0, i32 0
+  %21 = getelementptr inbounds %"class.v8::internal::compiler::AllocatedOperand", %"class.v8::internal::compiler::AllocatedOperand"* %4, i64 0, i32 0, i32 0
+  %22 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 0
+  %23 = bitcast %"class.v8::internal::compiler::InstructionOperand"* %2 to i8*
+  %24 = getelementptr inbounds %"class.v8::internal::compiler::InstructionOperand", %"class.v8::internal::compiler::InstructionOperand"* %2, i64 0, i32 0
+  %25 = bitcast %"class.v8::internal::compiler::AllocatedOperand"* %3 to i8*
+  %26 = getelementptr inbounds %"class.v8::internal::compiler::AllocatedOperand", %"class.v8::internal::compiler::AllocatedOperand"* %3, i64 0, i32 0, i32 0, i32 0
+  %27 = getelementptr inbounds %"class.v8::internal::compiler::AllocatedOperand", %"class.v8::internal::compiler::AllocatedOperand"* %3, i64 0, i32 0, i32 0
+  %28 = sext i32 %7 to i64
+  br label %30
+
+29:                                               ; preds = %158, %1
+  ret void
+
+30:                                               ; preds = %158, %11
+  %31 = phi i64 [ %159, %158 ], [ %28, %11 ]
+  %32 = load %"class.v8::internal::ZoneVector"*, %"class.v8::internal::ZoneVector"** %15, align 8
+  %33 = getelementptr inbounds %"class.v8::internal::ZoneVector", %"class.v8::internal::ZoneVector"* %32, i64 0, i32 0, i32 0, i32 0
+  %34 = load %"class.v8::internal::compiler::InstructionBlock"**, %"class.v8::internal::compiler::InstructionBlock"*** %33, align 8
+  %35 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock"*, %"class.v8::internal::compiler::InstructionBlock"** %34, i64 %31
+  %36 = load %"class.v8::internal::compiler::InstructionBlock"*, %"class.v8::internal::compiler::InstructionBlock"** %35, align 8
+  %37 = load %"class.v8::internal::compiler::SpillPlacer::Entry"*, %"class.v8::internal::compiler::SpillPlacer::Entry"** %16, align 8
+  %38 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %36, i64 0, i32 0, i32 0, i32 0, i32 0
+  %39 = load %"class.v8::internal::compiler::RpoNumber"*, %"class.v8::internal::compiler::RpoNumber"** %38, align 8
+  %40 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %36, i64 0, i32 0, i32 0, i32 0, i32 1
+  %41 = load %"class.v8::internal::compiler::RpoNumber"*, %"class.v8::internal::compiler::RpoNumber"** %40, align 8
+  %42 = icmp eq %"class.v8::internal::compiler::RpoNumber"* %39, %41
+  %43 = ptrtoint %"class.v8::internal::compiler::InstructionBlock"** %34 to i64
+  br i1 %42, label %47, label %44
+
+44:                                               ; preds = %30
+  %45 = getelementptr inbounds %"class.v8::internal::ZoneVector", %"class.v8::internal::ZoneVector"* %32, i64 0, i32 0, i32 0, i32 1
+  %46 = bitcast %"class.v8::internal::compiler::InstructionBlock"*** %45 to i64*
+  br label %63
+
+47:                                               ; preds = %100, %30
+  %48 = phi i64 [ -1, %30 ], [ %101, %100 ]
+  %49 = phi i64 [ 0, %30 ], [ %102, %100 ]
+  %50 = phi i64 [ 0, %30 ], [ %103, %100 ]
+  %51 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %37, i64 %31, i32 0
+  %52 = load i64, i64* %51, align 8
+  %53 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %37, i64 %31, i32 1
+  %54 = load i64, i64* %53, align 8
+  %55 = or i64 %54, %52
+  %56 = xor i64 %55, -1
+  %57 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %37, i64 %31, i32 2
+  %58 = load i64, i64* %57, align 8
+  %59 = and i64 %58, %56
+  %60 = and i64 %50, %48
+  %61 = and i64 %60, %59
+  %62 = icmp eq i64 %61, 0
+  br i1 %62, label %106, label %114
+
+63:                                               ; preds = %44, %100
+  %64 = phi i64 [ %103, %100 ], [ 0, %44 ]
+  %65 = phi i64 [ %102, %100 ], [ 0, %44 ]
+  %66 = phi i64 [ %101, %100 ], [ -1, %44 ]
+  %67 = phi %"class.v8::internal::compiler::RpoNumber"* [ %104, %100 ], [ %39, %44 ]
+  %68 = getelementptr inbounds %"class.v8::internal::compiler::RpoNumber", %"class.v8::internal::compiler::RpoNumber"* %67, i64 0, i32 0
+  %69 = load i32, i32* %68, align 4
+  %70 = sext i32 %69 to i64
+  %71 = icmp slt i64 %31, %70
+  br i1 %71, label %72, label %100
+
+72:                                               ; preds = %63
+  %73 = load i64, i64* %46, align 8
+  %74 = sub i64 %73, %43
+  %75 = ashr exact i64 %74, 3
+  %76 = icmp ugt i64 %75, %70
+  br i1 %76, label %79, label %77
+
+77:                                               ; preds = %72
+  %78 = bitcast %"class.v8::internal::ZoneVector"* %32 to %"class.std::__1::__vector_base_common"*
+  call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_out_of_rangeEv(%"class.std::__1::__vector_base_common"* %78) #8
+  unreachable
+
+79:                                               ; preds = %72
+  %80 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock"*, %"class.v8::internal::compiler::InstructionBlock"** %34, i64 %70
+  %81 = load %"class.v8::internal::compiler::InstructionBlock"*, %"class.v8::internal::compiler::InstructionBlock"** %80, align 8
+  %82 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %81, i64 0, i32 10
+  %83 = load i8, i8* %82, align 4, !range !2
+  %84 = icmp eq i8 %83, 0
+  %85 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %37, i64 %70, i32 0
+  %86 = load i64, i64* %85, align 8
+  %87 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %37, i64 %70, i32 1
+  %88 = load i64, i64* %87, align 8
+  %89 = xor i64 %88, -1
+  %90 = and i64 %86, %89
+  %91 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %37, i64 %70, i32 2
+  %92 = load i64, i64* %91, align 8
+  %93 = xor i64 %92, -1
+  %94 = and i64 %90, %93
+  br i1 %84, label %97, label %95
+
+95:                                               ; preds = %79
+  %96 = or i64 %94, %65
+  br label %100
+
+97:                                               ; preds = %79
+  %98 = or i64 %94, %64
+  %99 = and i64 %94, %66
+  br label %100
+
+100:                                              ; preds = %63, %95, %97
+  %101 = phi i64 [ %66, %63 ], [ %66, %95 ], [ %99, %97 ]
+  %102 = phi i64 [ %65, %63 ], [ %96, %95 ], [ %65, %97 ]
+  %103 = phi i64 [ %64, %63 ], [ %64, %95 ], [ %98, %97 ]
+  %104 = getelementptr inbounds %"class.v8::internal::compiler::RpoNumber", %"class.v8::internal::compiler::RpoNumber"* %67, i64 1
+  %105 = icmp eq %"class.v8::internal::compiler::RpoNumber"* %104, %41
+  br i1 %105, label %47, label %63
+
+106:                                              ; preds = %114, %47
+  %107 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %36, i64 0, i32 10
+  %108 = load i8, i8* %107, align 4, !range !2
+  %109 = icmp eq i8 %108, 0
+  %110 = load i64, i64* %51, align 8
+  br i1 %109, label %111, label %132
+
+111:                                              ; preds = %106
+  %112 = bitcast i64* %53 to <2 x i64>*
+  %113 = load <2 x i64>, <2 x i64>* %112, align 8
+  br label %141
+
+114:                                              ; preds = %47, %114
+  %115 = phi i64 [ %130, %114 ], [ %61, %47 ]
+  %116 = call i64 @llvm.cttz.i64(i64 %115, i1 true) #7, !range !4
+  %117 = load i32*, i32** %18, align 8
+  %118 = getelementptr inbounds i32, i32* %117, i64 %116
+  %119 = load i32, i32* %118, align 4
+  %120 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %5, align 8
+  %121 = sext i32 %119 to i64
+  %122 = getelementptr inbounds %"class.v8::internal::compiler::TopTierRegisterAllocationData", %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %120, i64 0, i32 9, i32 0, i32 0, i32 0
+  %123 = load %"class.v8::internal::compiler::TopLevelLiveRange"**, %"class.v8::internal::compiler::TopLevelLiveRange"*** %122, align 8
+  %124 = getelementptr inbounds %"class.v8::internal::compiler::TopLevelLiveRange"*, %"class.v8::internal::compiler::TopLevelLiveRange"** %123, i64 %121
+  %125 = load %"class.v8::internal::compiler::TopLevelLiveRange"*, %"class.v8::internal::compiler::TopLevelLiveRange"** %124, align 8
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %19) #7
+  %126 = call i64 @_ZNK2v88internal8compiler17TopLevelLiveRange20GetSpillRangeOperandEv(%"class.v8::internal::compiler::TopLevelLiveRange"* %125) #7
+  store i64 %126, i64* %20, align 8
+  call void @_ZN2v88internal8compiler17TopLevelLiveRange16CommitSpillMovesEPNS1_29TopTierRegisterAllocationDataERKNS1_18InstructionOperandE(%"class.v8::internal::compiler::TopLevelLiveRange"* %125, %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %120, %"class.v8::internal::compiler::InstructionOperand"* nonnull dereferenceable(8) %21) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %19) #7
+  %127 = call i64 @llvm.cttz.i64(i64 %115, i1 false) #7, !range !4
+  %128 = shl i64 1, %127
+  %129 = xor i64 %128, -1
+  %130 = and i64 %115, %129
+  %131 = icmp eq i64 %130, 0
+  br i1 %131, label %106, label %114
+
+132:                                              ; preds = %106
+  %133 = or i64 %110, %49
+  store i64 %133, i64* %51, align 8
+  %134 = xor i64 %49, -1
+  %135 = bitcast i64* %53 to <2 x i64>*
+  %136 = load <2 x i64>, <2 x i64>* %135, align 8
+  %137 = insertelement <2 x i64> undef, i64 %134, i32 0
+  %138 = shufflevector <2 x i64> %137, <2 x i64> undef, <2 x i32> zeroinitializer
+  %139 = and <2 x i64> %136, %138
+  %140 = bitcast i64* %53 to <2 x i64>*
+  store <2 x i64> %139, <2 x i64>* %140, align 8
+  br label %141
+
+141:                                              ; preds = %111, %132
+  %142 = phi i64 [ %110, %111 ], [ %133, %132 ]
+  %143 = phi <2 x i64> [ %113, %111 ], [ %139, %132 ]
+  %144 = xor i64 %59, -1
+  %145 = and i64 %60, %144
+  %146 = or i64 %142, %145
+  store i64 %146, i64* %51, align 8
+  %147 = xor i64 %145, -1
+  %148 = insertelement <2 x i64> undef, i64 %147, i32 0
+  %149 = shufflevector <2 x i64> %148, <2 x i64> undef, <2 x i32> zeroinitializer
+  %150 = and <2 x i64> %143, %149
+  %151 = bitcast i64* %53 to <2 x i64>*
+  store <2 x i64> %150, <2 x i64>* %151, align 8
+  %152 = load %"class.v8::internal::compiler::RpoNumber"*, %"class.v8::internal::compiler::RpoNumber"** %38, align 8
+  %153 = load %"class.v8::internal::compiler::RpoNumber"*, %"class.v8::internal::compiler::RpoNumber"** %40, align 8
+  %154 = icmp eq %"class.v8::internal::compiler::RpoNumber"* %152, %153
+  br i1 %154, label %158, label %155
+
+155:                                              ; preds = %141
+  %156 = xor i64 %61, -1
+  %157 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %36, i64 0, i32 9
+  br label %163
+
+158:                                              ; preds = %243, %141
+  %159 = add i64 %31, -1
+  %160 = load i32, i32* %8, align 4
+  %161 = sext i32 %160 to i64
+  %162 = icmp sgt i64 %31, %161
+  br i1 %162, label %30, label %29
+
+163:                                              ; preds = %155, %243
+  %164 = phi %"class.v8::internal::compiler::RpoNumber"* [ %152, %155 ], [ %244, %243 ]
+  %165 = getelementptr inbounds %"class.v8::internal::compiler::RpoNumber", %"class.v8::internal::compiler::RpoNumber"* %164, i64 0, i32 0
+  %166 = load i32, i32* %165, align 4
+  %167 = sext i32 %166 to i64
+  %168 = icmp slt i64 %31, %167
+  br i1 %168, label %169, label %243
+
+169:                                              ; preds = %163
+  %170 = load %"class.std::__1::vector.557"*, %"class.std::__1::vector.557"** %17, align 8
+  %171 = getelementptr inbounds %"class.std::__1::vector.557", %"class.std::__1::vector.557"* %170, i64 0, i32 0, i32 1
+  %172 = bitcast %"class.v8::internal::compiler::InstructionBlock"*** %171 to i64*
+  %173 = load i64, i64* %172, align 8
+  %174 = bitcast %"class.std::__1::vector.557"* %170 to i64*
+  %175 = load i64, i64* %174, align 8
+  %176 = sub i64 %173, %175
+  %177 = ashr exact i64 %176, 3
+  %178 = icmp ugt i64 %177, %167
+  br i1 %178, label %181, label %179
+
+179:                                              ; preds = %169
+  %180 = bitcast %"class.std::__1::vector.557"* %170 to %"class.std::__1::__vector_base_common"*
+  call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_out_of_rangeEv(%"class.std::__1::__vector_base_common"* %180) #8
+  unreachable
+
+181:                                              ; preds = %169
+  %182 = inttoptr i64 %175 to %"class.v8::internal::compiler::InstructionBlock"**
+  %183 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock"*, %"class.v8::internal::compiler::InstructionBlock"** %182, i64 %167
+  %184 = load %"class.v8::internal::compiler::InstructionBlock"*, %"class.v8::internal::compiler::InstructionBlock"** %183, align 8
+  %185 = load %"class.v8::internal::compiler::SpillPlacer::Entry"*, %"class.v8::internal::compiler::SpillPlacer::Entry"** %16, align 8
+  %186 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %185, i64 %167, i32 0
+  %187 = load i64, i64* %186, align 8
+  %188 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %185, i64 %167, i32 1
+  %189 = load i64, i64* %188, align 8
+  %190 = xor i64 %189, -1
+  %191 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer::Entry", %"class.v8::internal::compiler::SpillPlacer::Entry"* %185, i64 %167, i32 2
+  %192 = load i64, i64* %191, align 8
+  %193 = xor i64 %192, -1
+  %194 = load i64, i64* %51, align 8
+  %195 = load i64, i64* %53, align 8
+  %196 = load i64, i64* %57, align 8
+  %197 = xor i64 %194, -1
+  %198 = or i64 %195, %197
+  %199 = or i64 %198, %196
+  %200 = and i64 %187, %156
+  %201 = and i64 %200, %190
+  %202 = and i64 %201, %193
+  %203 = and i64 %202, %199
+  %204 = icmp eq i64 %203, 0
+  br i1 %204, label %243, label %205
+
+205:                                              ; preds = %181
+  %206 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %184, i64 0, i32 8
+  %207 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %184, i64 0, i32 14
+  br label %208
+
+208:                                              ; preds = %205, %208
+  %209 = phi i64 [ %203, %205 ], [ %241, %208 ]
+  %210 = call i64 @llvm.cttz.i64(i64 %209, i1 true) #7, !range !4
+  %211 = load i32*, i32** %18, align 8
+  %212 = getelementptr inbounds i32, i32* %211, i64 %210
+  %213 = load i32, i32* %212, align 4
+  %214 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %5, align 8
+  %215 = sext i32 %213 to i64
+  %216 = getelementptr inbounds %"class.v8::internal::compiler::TopTierRegisterAllocationData", %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %214, i64 0, i32 9, i32 0, i32 0, i32 0
+  %217 = load %"class.v8::internal::compiler::TopLevelLiveRange"**, %"class.v8::internal::compiler::TopLevelLiveRange"*** %216, align 8
+  %218 = getelementptr inbounds %"class.v8::internal::compiler::TopLevelLiveRange"*, %"class.v8::internal::compiler::TopLevelLiveRange"** %217, i64 %215
+  %219 = load %"class.v8::internal::compiler::TopLevelLiveRange"*, %"class.v8::internal::compiler::TopLevelLiveRange"** %218, align 8
+  %220 = load %"class.v8::internal::compiler::LiveRangeFinder"*, %"class.v8::internal::compiler::LiveRangeFinder"** %22, align 8
+  %221 = call %"class.v8::internal::compiler::LiveRangeBoundArray"* @_ZN2v88internal8compiler15LiveRangeFinder8ArrayForEi(%"class.v8::internal::compiler::LiveRangeFinder"* %220, i32 %213) #7
+  %222 = load i32, i32* %157, align 8
+  %223 = shl i32 %222, 2
+  %224 = add i32 %223, -4
+  %225 = or i32 %224, 2
+  %226 = call %"class.v8::internal::compiler::LiveRangeBound"* @_ZNK2v88internal8compiler19LiveRangeBoundArray4FindENS1_16LifetimePositionE(%"class.v8::internal::compiler::LiveRangeBoundArray"* %221, i32 %225) #7
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %23) #7
+  %227 = getelementptr inbounds %"class.v8::internal::compiler::LiveRangeBound", %"class.v8::internal::compiler::LiveRangeBound"* %226, i64 0, i32 0
+  %228 = load %"class.v8::internal::compiler::LiveRange"*, %"class.v8::internal::compiler::LiveRange"** %227, align 8
+  %229 = call i64 @_ZNK2v88internal8compiler9LiveRange18GetAssignedOperandEv(%"class.v8::internal::compiler::LiveRange"* %228) #7
+  store i64 %229, i64* %24, align 8
+  %230 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %5, align 8
+  %231 = load i32, i32* %206, align 4
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %25) #7
+  %232 = call i64 @_ZNK2v88internal8compiler17TopLevelLiveRange20GetSpillRangeOperandEv(%"class.v8::internal::compiler::TopLevelLiveRange"* %219) #7
+  store i64 %232, i64* %26, align 8
+  %233 = call %"class.v8::internal::compiler::MoveOperands"* @_ZN2v88internal8compiler29TopTierRegisterAllocationData10AddGapMoveEiNS1_11Instruction11GapPositionERKNS1_18InstructionOperandES7_(%"class.v8::internal::compiler::TopTierRegisterAllocationData"* %230, i32 %231, i32 0, %"class.v8::internal::compiler::InstructionOperand"* nonnull dereferenceable(8) %2, %"class.v8::internal::compiler::InstructionOperand"* nonnull dereferenceable(8) %27) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %25) #7
+  store i8 1, i8* %207, align 8
+  %234 = getelementptr inbounds %"class.v8::internal::compiler::TopLevelLiveRange", %"class.v8::internal::compiler::TopLevelLiveRange"* %219, i64 0, i32 0, i32 1
+  %235 = load i32, i32* %234, align 4
+  %236 = and i32 %235, 1073741823
+  %237 = or i32 %236, -2147483648
+  store i32 %237, i32* %234, align 4
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %23) #7
+  %238 = call i64 @llvm.cttz.i64(i64 %209, i1 false) #7, !range !4
+  %239 = shl i64 1, %238
+  %240 = xor i64 %239, -1
+  %241 = and i64 %209, %240
+  %242 = icmp eq i64 %241, 0
+  br i1 %242, label %243, label %208
+
+243:                                              ; preds = %208, %181, %163
+  %244 = getelementptr inbounds %"class.v8::internal::compiler::RpoNumber", %"class.v8::internal::compiler::RpoNumber"* %164, i64 1
+  %245 = icmp eq %"class.v8::internal::compiler::RpoNumber"* %244, %153
+  br i1 %245, label %158, label %163
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN2v88internal8compiler11SpillPlacer21ExpandBoundsToIncludeENS1_9RpoNumberE(%"class.v8::internal::compiler::SpillPlacer"* nocapture, i32) local_unnamed_addr #4 align 2 {
+  %3 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 6, i32 0
+  %4 = load i32, i32* %3, align 4
+  %5 = icmp sgt i32 %4, -1
+  br i1 %5, label %8, label %6
+
+6:                                                ; preds = %2
+  store i32 %1, i32* %3, align 4
+  %7 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 7, i32 0
+  br label %15
+
+8:                                                ; preds = %2
+  %9 = icmp sgt i32 %4, %1
+  br i1 %9, label %10, label %11
+
+10:                                               ; preds = %8
+  store i32 %1, i32* %3, align 4
+  br label %11
+
+11:                                               ; preds = %10, %8
+  %12 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 7, i32 0
+  %13 = load i32, i32* %12, align 4
+  %14 = icmp slt i32 %13, %1
+  br i1 %14, label %15, label %17
+
+15:                                               ; preds = %11, %6
+  %16 = phi i32* [ %7, %6 ], [ %12, %11 ]
+  store i32 %1, i32* %16, align 8
+  br label %17
+
+17:                                               ; preds = %15, %11
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2v88internal8compiler11SpillPlacer11CommitSpillEiPNS1_16InstructionBlockES4_(%"class.v8::internal::compiler::SpillPlacer"* nocapture readonly, i32, %"class.v8::internal::compiler::InstructionBlock"* nocapture readonly, %"class.v8::internal::compiler::InstructionBlock"* nocapture) local_unnamed_addr #1 align 2 {
+  %5 = alloca %"class.v8::internal::compiler::InstructionOperand", align 8
+  %6 = alloca %"class.v8::internal::compiler::AllocatedOperand", align 8
+  %7 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 1
+  %8 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %7, align 8
+  %9 = sext i32 %1 to i64
+  %10 = getelementptr inbounds %"class.v8::internal::compiler::TopTierRegisterAllocationData", %"class.v8::internal::compiler::TopTierRegisterAllocationData"* %8, i64 0, i32 9, i32 0, i32 0, i32 0
+  %11 = load %"class.v8::internal::compiler::TopLevelLiveRange"**, %"class.v8::internal::compiler::TopLevelLiveRange"*** %10, align 8
+  %12 = getelementptr inbounds %"class.v8::internal::compiler::TopLevelLiveRange"*, %"class.v8::internal::compiler::TopLevelLiveRange"** %11, i64 %9
+  %13 = load %"class.v8::internal::compiler::TopLevelLiveRange"*, %"class.v8::internal::compiler::TopLevelLiveRange"** %12, align 8
+  %14 = getelementptr inbounds %"class.v8::internal::compiler::SpillPlacer", %"class.v8::internal::compiler::SpillPlacer"* %0, i64 0, i32 0
+  %15 = load %"class.v8::internal::compiler::LiveRangeFinder"*, %"class.v8::internal::compiler::LiveRangeFinder"** %14, align 8
+  %16 = tail call %"class.v8::internal::compiler::LiveRangeBoundArray"* @_ZN2v88internal8compiler15LiveRangeFinder8ArrayForEi(%"class.v8::internal::compiler::LiveRangeFinder"* %15, i32 %1) #7
+  %17 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %2, i64 0, i32 9
+  %18 = load i32, i32* %17, align 8
+  %19 = shl i32 %18, 2
+  %20 = add i32 %19, -4
+  %21 = or i32 %20, 2
+  %22 = tail call %"class.v8::internal::compiler::LiveRangeBound"* @_ZNK2v88internal8compiler19LiveRangeBoundArray4FindENS1_16LifetimePositionE(%"class.v8::internal::compiler::LiveRangeBoundArray"* %16, i32 %21) #7
+  %23 = bitcast %"class.v8::internal::compiler::InstructionOperand"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %23) #7
+  %24 = getelementptr inbounds %"class.v8::internal::compiler::LiveRangeBound", %"class.v8::internal::compiler::LiveRangeBound"* %22, i64 0, i32 0
+  %25 = load %"class.v8::internal::compiler::LiveRange"*, %"class.v8::internal::compiler::LiveRange"** %24, align 8
+  %26 = tail call i64 @_ZNK2v88internal8compiler9LiveRange18GetAssignedOperandEv(%"class.v8::internal::compiler::LiveRange"* %25) #7
+  %27 = getelementptr inbounds %"class.v8::internal::compiler::InstructionOperand", %"class.v8::internal::compiler::InstructionOperand"* %5, i64 0, i32 0
+  store i64 %26, i64* %27, align 8
+  %28 = load %"class.v8::internal::compiler::TopTierRegisterAllocationData"*, %"class.v8::internal::compiler::TopTierRegisterAllocationData"** %7, align 8
+  %29 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %3, i64 0, i32 8
+  %30 = load i32, i32* %29, align 4
+  %31 = bitcast %"class.v8::internal::compiler::AllocatedOperand"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %31) #7
+  %32 = tail call i64 @_ZNK2v88internal8compiler17TopLevelLiveRange20GetSpillRangeOperandEv(%"class.v8::internal::compiler::TopLevelLiveRange"* %13) #7
+  %33 = getelementptr inbounds %"class.v8::internal::compiler::AllocatedOperand", %"class.v8::internal::compiler::AllocatedOperand"* %6, i64 0, i32 0, i32 0, i32 0
+  store i64 %32, i64* %33, align 8
+  %34 = getelementptr inbounds %"class.v8::internal::compiler::AllocatedOperand", %"class.v8::internal::compiler::AllocatedOperand"* %6, i64 0, i32 0, i32 0
+  %35 = call %"class.v8::internal::compiler::MoveOperands"* @_ZN2v88internal8compiler29TopTierRegisterAllocationData10AddGapMoveEiNS1_11Instruction11GapPositionERKNS1_18InstructionOperandES7_(%"class.v8::internal::compiler::TopTierRegisterAllocationData"* %28, i32 %30, i32 0, %"class.v8::internal::compiler::InstructionOperand"* nonnull dereferenceable(8) %5, %"class.v8::internal::compiler::InstructionOperand"* nonnull dereferenceable(8) %34) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %31) #7
+  %36 = getelementptr inbounds %"class.v8::internal::compiler::InstructionBlock", %"class.v8::internal::compiler::InstructionBlock"* %3, i64 0, i32 14
+  store i8 1, i8* %36, align 8
+  %37 = getelementptr inbounds %"class.v8::internal::compiler::TopLevelLiveRange", %"class.v8::internal::compiler::TopLevelLiveRange"* %13, i64 0, i32 0, i32 1
+  %38 = load i32, i32* %37, align 4
+  %39 = and i32 %38, 1073741823
+  %40 = or i32 %39, -2147483648
+  store i32 %40, i32* %37, align 4
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %23) #7
+  ret void
+}
+
+declare %"class.v8::internal::compiler::LiveRangeBoundArray"* @_ZN2v88internal8compiler15LiveRangeFinder8ArrayForEi(%"class.v8::internal::compiler::LiveRangeFinder"*, i32) local_unnamed_addr #3
+
+declare %"class.v8::internal::compiler::LiveRangeBound"* @_ZNK2v88internal8compiler19LiveRangeBoundArray4FindENS1_16LifetimePositionE(%"class.v8::internal::compiler::LiveRangeBoundArray"*, i32) local_unnamed_addr #3
+
+declare i64 @_ZNK2v88internal8compiler9LiveRange18GetAssignedOperandEv(%"class.v8::internal::compiler::LiveRange"*) local_unnamed_addr #3
+
+declare %"class.v8::internal::compiler::MoveOperands"* @_ZN2v88internal8compiler29TopTierRegisterAllocationData10AddGapMoveEiNS1_11Instruction11GapPositionERKNS1_18InstructionOperandES7_(%"class.v8::internal::compiler::TopTierRegisterAllocationData"*, i32, i32, %"class.v8::internal::compiler::InstructionOperand"* dereferenceable(8), %"class.v8::internal::compiler::InstructionOperand"* dereferenceable(8)) local_unnamed_addr #3
+
+; Function Attrs: noreturn
+declare void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_out_of_rangeEv(%"class.std::__1::__vector_base_common"*) local_unnamed_addr #5
+
+declare i64 @_ZN2v88internal4Zone9NewExpandEm(%"class.v8::internal::Zone"*, i64) local_unnamed_addr #3
+
+; Function Attrs: nounwind readnone speculatable
+declare i64 @llvm.cttz.i64(i64, i1 immarg) #6
+
+attributes #0 = { nofree norecurse nounwind ssp uwtable writeonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nofree norecurse nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { noreturn "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nounwind readnone speculatable }
+attributes #7 = { nounwind }
+attributes #8 = { noreturn nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{i8 0, i8 2}
+!3 = !{!"branch_weights", i32 1, i32 2000}
+!4 = !{i64 0, i64 65}

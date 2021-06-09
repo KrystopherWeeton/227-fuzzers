@@ -1,0 +1,1946 @@
+; ModuleID = '../../gpu/command_buffer/client/raster_implementation_gles.cc'
+source_filename = "../../gpu/command_buffer/client/raster_implementation_gles.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.gpu::raster::RasterImplementationGLES" = type { %"class.gpu::raster::RasterInterface", %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::ContextSupport"*, %"class.std::__1::unique_ptr", %"class.base::WeakPtrFactory" }
+%"class.gpu::raster::RasterInterface" = type { %"class.gpu::InterfaceBase" }
+%"class.gpu::InterfaceBase" = type { i32 (...)** }
+%"class.std::__1::unique_ptr" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"class.gpu::GLHelper"* }
+%"class.gpu::GLHelper" = type <{ %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::ContextSupport"*, %"class.std::__1::unique_ptr.0", %"class.std::__1::unique_ptr.4", %"class.std::__1::unique_ptr.10", %"class.std::__1::unique_ptr.10", i32, [4 x i8] }>
+%"class.std::__1::unique_ptr.0" = type { %"class.std::__1::__compressed_pair.1" }
+%"class.std::__1::__compressed_pair.1" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"struct.std::__1::__compressed_pair_elem.2" = type { %"class.gpu::GLHelper::CopyTextureToImpl"* }
+%"class.gpu::GLHelper::CopyTextureToImpl" = type opaque
+%"class.std::__1::unique_ptr.4" = type { %"class.std::__1::__compressed_pair.5" }
+%"class.std::__1::__compressed_pair.5" = type { %"struct.std::__1::__compressed_pair_elem.6" }
+%"struct.std::__1::__compressed_pair_elem.6" = type { %"class.gpu::GLHelperScaling"* }
+%"class.gpu::GLHelperScaling" = type opaque
+%"class.std::__1::unique_ptr.10" = type { %"class.std::__1::__compressed_pair.11" }
+%"class.std::__1::__compressed_pair.11" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"struct.std::__1::__compressed_pair_elem.12" = type { %"class.gpu::ReadbackYUVInterface"* }
+%"class.gpu::ReadbackYUVInterface" = type { i32 (...)** }
+%"class.base::WeakPtrFactory" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.base::internal::WeakPtrFactoryBase" = type { %"class.base::internal::WeakReferenceOwner", i64 }
+%"class.base::internal::WeakReferenceOwner" = type { %class.scoped_refptr }
+%class.scoped_refptr = type { %"class.base::internal::WeakReference::Flag"* }
+%"class.base::internal::WeakReference::Flag" = type <{ %"class.base::RefCountedThreadSafe", %"class.base::AtomicFlag", [3 x i8] }>
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.19" }
+%"struct.std::__1::__atomic_base.19" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"class.base::AtomicFlag" = type { %"struct.std::__1::atomic.20" }
+%"struct.std::__1::atomic.20" = type { %"struct.std::__1::__atomic_base.21" }
+%"struct.std::__1::__atomic_base.21" = type { %"struct.std::__1::__atomic_base.22" }
+%"struct.std::__1::__atomic_base.22" = type { %"struct.std::__1::__cxx_atomic_impl.23" }
+%"struct.std::__1::__cxx_atomic_impl.23" = type { %"struct.std::__1::__cxx_atomic_base_impl.24" }
+%"struct.std::__1::__cxx_atomic_base_impl.24" = type { i8 }
+%"class.gpu::gles2::GLES2Interface" = type { %"class.gpu::InterfaceBase" }
+%"class.gpu::ContextSupport" = type { i32 (...)** }
+%"struct.gpu::Mailbox" = type { [16 x i8] }
+%struct.SkImageInfo = type { %class.SkColorInfo, %struct.SkISize }
+%class.SkColorInfo = type { %class.sk_sp, i32, i32 }
+%class.sk_sp = type { %class.SkColorSpace* }
+%class.SkColorSpace = type <{ %class.SkNVRefCnt, i32, i32, %struct.skcms_TransferFunction, %struct.skcms_Matrix3x3, %struct.skcms_TransferFunction, %struct.skcms_Matrix3x3, %class.SkOnce, [3 x i8] }>
+%class.SkNVRefCnt = type { %"struct.std::__1::atomic" }
+%struct.skcms_TransferFunction = type { float, float, float, float, float, float, float }
+%struct.skcms_Matrix3x3 = type { [3 x [3 x float]] }
+%class.SkOnce = type { %"struct.std::__1::atomic.20" }
+%struct.SkISize = type { i32, i32 }
+%"class.gfx::ColorSpace" = type { i8, i8, i8, i8, [9 x float], [7 x float] }
+%"class.cc::DisplayItemList" = type <{ %"class.base::RefCountedThreadSafe.25", [4 x i8], %"class.cc::RTree", %"class.cc::DiscardableImageMap", %"class.cc::PaintOpBuffer", %"class.std::__1::vector.92", %"class.std::__1::vector.99", %"class.std::__1::vector.106", i32, [4 x i8] }>
+%"class.base::RefCountedThreadSafe.25" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.cc::RTree" = type <{ i64, %"struct.cc::RTree<unsigned long>::Branch", %"class.std::__1::vector", i8, [7 x i8] }>
+%"struct.cc::RTree<unsigned long>::Branch" = type { %"struct.cc::RTree<unsigned long>::Node"*, i64, %"class.gfx::Rect" }
+%"struct.cc::RTree<unsigned long>::Node" = type opaque
+%"class.gfx::Rect" = type { %"class.gfx::Point", %"class.gfx::Size" }
+%"class.gfx::Point" = type { i32, i32 }
+%"class.gfx::Size" = type { i32, i32 }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"struct.cc::RTree<unsigned long>::Node"*, %"struct.cc::RTree<unsigned long>::Node"*, %"class.std::__1::__compressed_pair.26" }
+%"class.std::__1::__compressed_pair.26" = type { %"struct.std::__1::__compressed_pair_elem.27" }
+%"struct.std::__1::__compressed_pair_elem.27" = type { %"struct.cc::RTree<unsigned long>::Node"* }
+%"class.cc::DiscardableImageMap" = type { %"class.base::flat_map", %"class.std::__1::vector.36", %"class.base::flat_map.50", i8, i8, [6 x i8], %"class.cc::RTree.60", %"class.std::__1::vector.84" }
+%"class.base::flat_map" = type { %"class.base::internal::flat_tree" }
+%"class.base::internal::flat_tree" = type { %"class.std::__1::vector.29" }
+%"class.std::__1::vector.29" = type { %"class.std::__1::__vector_base.30" }
+%"class.std::__1::__vector_base.30" = type { %"struct.std::__1::pair"*, %"struct.std::__1::pair"*, %"class.std::__1::__compressed_pair.31" }
+%"struct.std::__1::pair" = type opaque
+%"class.std::__1::__compressed_pair.31" = type { %"struct.std::__1::__compressed_pair_elem.32" }
+%"struct.std::__1::__compressed_pair_elem.32" = type { %"struct.std::__1::pair"* }
+%"class.std::__1::vector.36" = type { %"class.std::__1::__vector_base.37" }
+%"class.std::__1::__vector_base.37" = type { %"struct.cc::DiscardableImageMap::AnimatedImageMetadata"*, %"struct.cc::DiscardableImageMap::AnimatedImageMetadata"*, %"class.std::__1::__compressed_pair.45" }
+%"struct.cc::DiscardableImageMap::AnimatedImageMetadata" = type { i32, i32, %"class.std::__1::vector.38", i32, i32 }
+%"class.std::__1::vector.38" = type { %"class.std::__1::__vector_base.39" }
+%"class.std::__1::__vector_base.39" = type { %"struct.cc::FrameMetadata"*, %"struct.cc::FrameMetadata"*, %"class.std::__1::__compressed_pair.40" }
+%"struct.cc::FrameMetadata" = type { i8, %"class.base::TimeDelta" }
+%"class.base::TimeDelta" = type { i64 }
+%"class.std::__1::__compressed_pair.40" = type { %"struct.std::__1::__compressed_pair_elem.41" }
+%"struct.std::__1::__compressed_pair_elem.41" = type { %"struct.cc::FrameMetadata"* }
+%"class.std::__1::__compressed_pair.45" = type { %"struct.std::__1::__compressed_pair_elem.46" }
+%"struct.std::__1::__compressed_pair_elem.46" = type { %"struct.cc::DiscardableImageMap::AnimatedImageMetadata"* }
+%"class.base::flat_map.50" = type { %"class.base::internal::flat_tree.51" }
+%"class.base::internal::flat_tree.51" = type { %"class.std::__1::vector.52" }
+%"class.std::__1::vector.52" = type { %"class.std::__1::__vector_base.53" }
+%"class.std::__1::__vector_base.53" = type { %"struct.std::__1::pair.54"*, %"struct.std::__1::pair.54"*, %"class.std::__1::__compressed_pair.55" }
+%"struct.std::__1::pair.54" = type { i32, i32 }
+%"class.std::__1::__compressed_pair.55" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"struct.std::__1::__compressed_pair_elem.56" = type { %"struct.std::__1::pair.54"* }
+%"class.cc::RTree.60" = type <{ i64, %"struct.cc::RTree<cc::DrawImage>::Branch", %"class.std::__1::vector.76", i8, [7 x i8] }>
+%"struct.cc::RTree<cc::DrawImage>::Branch" = type { %"struct.cc::RTree<cc::DrawImage>::Node"*, %"class.cc::DrawImage", %"class.gfx::Rect" }
+%"struct.cc::RTree<cc::DrawImage>::Node" = type opaque
+%"class.cc::DrawImage" = type <{ %"class.cc::PaintImage", i8, [3 x i8], %struct.SkIRect, i32, %struct.SkSize, i8, [7 x i8], %"class.absl::optional", %"class.absl::optional.71", float, [4 x i8] }>
+%"class.cc::PaintImage" = type { %class.sk_sp.61, %class.sk_sp.62, %"class.gfx::Rect", i32, %class.sk_sp.67, %class.sk_sp.68, i32, i32, i32, i32, i8, i8, i32, i32, %class.sk_sp.61, %class.scoped_refptr.69 }
+%class.sk_sp.62 = type { %"class.cc::PaintOpBuffer"* }
+%class.sk_sp.67 = type { %"class.cc::PaintImageGenerator"* }
+%"class.cc::PaintImageGenerator" = type opaque
+%class.sk_sp.68 = type { %"class.cc::TextureBacking"* }
+%"class.cc::TextureBacking" = type opaque
+%class.sk_sp.61 = type { %class.SkImage* }
+%class.SkImage = type <{ %class.SkRefCnt.base, [4 x i8], %struct.SkImageInfo, i32, [4 x i8] }>
+%class.SkRefCnt.base = type { %class.SkRefCntBase.base }
+%class.SkRefCntBase.base = type <{ i32 (...)**, %"struct.std::__1::atomic" }>
+%class.scoped_refptr.69 = type { %"class.cc::PaintWorkletInput"* }
+%"class.cc::PaintWorkletInput" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe.70", [4 x i8] }>
+%"class.base::RefCountedThreadSafe.70" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%struct.SkIRect = type { i32, i32, i32, i32 }
+%struct.SkSize = type { float, float }
+%"class.absl::optional" = type { %"class.absl::optional_internal::optional_data" }
+%"class.absl::optional_internal::optional_data" = type { %"class.absl::optional_internal::optional_data_base" }
+%"class.absl::optional_internal::optional_data_base" = type { %"class.absl::optional_internal::optional_data_dtor_base" }
+%"class.absl::optional_internal::optional_data_dtor_base" = type { i8, %union.anon }
+%union.anon = type { i64 }
+%"class.absl::optional.71" = type { %"class.absl::optional_internal::optional_data.72" }
+%"class.absl::optional_internal::optional_data.72" = type { %"class.absl::optional_internal::optional_data_base.73" }
+%"class.absl::optional_internal::optional_data_base.73" = type { %"class.absl::optional_internal::optional_data_dtor_base.74" }
+%"class.absl::optional_internal::optional_data_dtor_base.74" = type { i8, %union.anon.75 }
+%union.anon.75 = type { %"class.gfx::ColorSpace" }
+%"class.std::__1::vector.76" = type { %"class.std::__1::__vector_base.77" }
+%"class.std::__1::__vector_base.77" = type { %"struct.cc::RTree<cc::DrawImage>::Node"*, %"struct.cc::RTree<cc::DrawImage>::Node"*, %"class.std::__1::__compressed_pair.78" }
+%"class.std::__1::__compressed_pair.78" = type { %"struct.std::__1::__compressed_pair_elem.79" }
+%"struct.std::__1::__compressed_pair_elem.79" = type { %"struct.cc::RTree<cc::DrawImage>::Node"* }
+%"class.std::__1::vector.84" = type { %"class.std::__1::__vector_base.85" }
+%"class.std::__1::__vector_base.85" = type { %"struct.std::__1::pair.86"*, %"struct.std::__1::pair.86"*, %"class.std::__1::__compressed_pair.87" }
+%"struct.std::__1::pair.86" = type opaque
+%"class.std::__1::__compressed_pair.87" = type { %"struct.std::__1::__compressed_pair_elem.88" }
+%"struct.std::__1::__compressed_pair_elem.88" = type { %"struct.std::__1::pair.86"* }
+%"class.cc::PaintOpBuffer" = type <{ %class.SkRefCnt.base, [4 x i8], %"class.std::__1::unique_ptr.63", i64, i64, i64, i64, i64, i32, i8, [3 x i8] }>
+%"class.std::__1::unique_ptr.63" = type { %"class.std::__1::__compressed_pair.64" }
+%"class.std::__1::__compressed_pair.64" = type { %"struct.std::__1::__compressed_pair_elem.65" }
+%"struct.std::__1::__compressed_pair_elem.65" = type { i8* }
+%"class.std::__1::vector.92" = type { %"class.std::__1::__vector_base.93" }
+%"class.std::__1::__vector_base.93" = type { %"class.gfx::Rect"*, %"class.gfx::Rect"*, %"class.std::__1::__compressed_pair.94" }
+%"class.std::__1::__compressed_pair.94" = type { %"struct.std::__1::__compressed_pair_elem.95" }
+%"struct.std::__1::__compressed_pair_elem.95" = type { %"class.gfx::Rect"* }
+%"class.std::__1::vector.99" = type { %"class.std::__1::__vector_base.100" }
+%"class.std::__1::__vector_base.100" = type { i64*, i64*, %"class.std::__1::__compressed_pair.101" }
+%"class.std::__1::__compressed_pair.101" = type { %"struct.std::__1::__compressed_pair_elem.102" }
+%"struct.std::__1::__compressed_pair_elem.102" = type { i64* }
+%"class.std::__1::vector.106" = type { %"class.std::__1::__vector_base.107" }
+%"class.std::__1::__vector_base.107" = type { %"struct.cc::DisplayItemList::PairedBeginInfo"*, %"struct.cc::DisplayItemList::PairedBeginInfo"*, %"class.std::__1::__compressed_pair.108" }
+%"struct.cc::DisplayItemList::PairedBeginInfo" = type { i64, i64 }
+%"class.std::__1::__compressed_pair.108" = type { %"struct.std::__1::__compressed_pair_elem.109" }
+%"struct.std::__1::__compressed_pair_elem.109" = type { %"struct.cc::DisplayItemList::PairedBeginInfo"* }
+%"class.cc::ImageProvider" = type { i32 (...)** }
+%"class.gfx::Vector2dF" = type { float, float }
+%"struct.gpu::SyncToken" = type { i8, i8, %"class.util::IdType", i64 }
+%"class.util::IdType" = type { %"class.base::StrongAlias" }
+%"class.base::StrongAlias" = type { i64 }
+%"class.base::OnceCallback" = type { %"class.base::internal::CallbackBase" }
+%"class.base::internal::CallbackBase" = type { %class.scoped_refptr.113 }
+%class.scoped_refptr.113 = type { %"class.base::internal::BindStateBase"* }
+%"class.base::internal::BindStateBase" = type { %"class.base::RefCountedThreadSafe.114", void ()*, void (%"class.base::internal::BindStateBase"*)*, i1 (%"class.base::internal::BindStateBase"*, i32)* }
+%"class.base::RefCountedThreadSafe.114" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::internal::WeakReference" = type { %class.scoped_refptr.116 }
+%class.scoped_refptr.116 = type { %"class.base::internal::WeakReference::Flag"* }
+%"class.base::OnceCallback.115" = type { %"class.base::internal::CallbackBase" }
+%"class.base::WeakPtr" = type { %"class.base::internal::WeakPtrBase" }
+%"class.base::internal::WeakPtrBase" = type { %"class.base::internal::WeakReference", i64 }
+%"class.base::OnceCallback.117" = type { %"class.base::internal::CallbackBase" }
+%"class.logging::CheckError" = type { %"class.logging::LogMessage"* }
+%"class.logging::LogMessage" = type { i32 (...)**, i32, %"class.std::__1::basic_ostringstream", i64, i8*, i32, %"class.base::ScopedClearLastErrorBase" }
+%"class.std::__1::basic_ostringstream" = type { %"class.std::__1::basic_ostream.base", %"class.std::__1::basic_stringbuf", %"class.std::__1::basic_ios.base" }
+%"class.std::__1::basic_ostream.base" = type { i32 (...)** }
+%"class.std::__1::basic_stringbuf" = type <{ %"class.std::__1::basic_streambuf", %"class.std::__1::basic_string", i8*, i32, [4 x i8] }>
+%"class.std::__1::basic_streambuf" = type { i32 (...)**, %"class.std::__1::locale", i8*, i8*, i8*, i8*, i8*, i8* }
+%"class.std::__1::locale" = type { %"class.std::__1::locale::__imp"* }
+%"class.std::__1::locale::__imp" = type opaque
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.121" }
+%"class.std::__1::__compressed_pair.121" = type { %"struct.std::__1::__compressed_pair_elem.122" }
+%"struct.std::__1::__compressed_pair_elem.122" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon.123 }
+%union.anon.123 = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.std::__1::basic_ios.base" = type <{ %"class.std::__1::ios_base", %"class.std::__1::basic_ostream"*, i32 }>
+%"class.std::__1::ios_base" = type { i32 (...)**, i32, i64, i64, i32, i32, i8*, i8*, void (i32, %"class.std::__1::ios_base"*, i32)**, i32*, i64, i64, i64*, i64, i64, i8**, i64, i64 }
+%"class.std::__1::basic_ostream" = type { i32 (...)**, %"class.std::__1::basic_ios.base" }
+%"class.base::ScopedClearLastErrorBase" = type { i32 }
+
+$_ZN4base8internal7InvokerINS0_9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFv15GrSurfaceOriginbEEES7_bEJNS_7WeakPtrIS5_EEjS9_S7_EEEFvbEE7RunOnceEPNS0_13BindStateBaseEb = comdat any
+
+$_ZN4base8internal13FunctorTraitsIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFv15GrSurfaceOriginbEEES6_bEvE6InvokeISA_NS_7WeakPtrIS4_EEJjS8_S6_bEEEvT_OT0_DpOT1_ = comdat any
+
+$_ZN4base8internal9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFv15GrSurfaceOriginbEEES6_bEJNS_7WeakPtrIS4_EEjS8_S6_EE7DestroyEPKNS0_13BindStateBaseE = comdat any
+
+$_ZN4base8internal23QueryCancellationTraitsINS0_9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFv15GrSurfaceOriginbEEES7_bEJNS_7WeakPtrIS5_EEjS9_S7_EEEEEbPKNS0_13BindStateBaseENSF_21CancellationQueryModeE = comdat any
+
+$_ZN4base8internal7InvokerINS0_9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEEEJNS_7WeakPtrIS5_EEjS8_EEES7_E7RunOnceEPNS0_13BindStateBaseE = comdat any
+
+$_ZN4base8internal13FunctorTraitsIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEEEvE6InvokeIS9_NS_7WeakPtrIS4_EEJjS7_EEEvT_OT0_DpOT1_ = comdat any
+
+$_ZN4base8internal9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEEEJNS_7WeakPtrIS4_EEjS7_EE7DestroyEPKNS0_13BindStateBaseE = comdat any
+
+$_ZN4base8internal23QueryCancellationTraitsINS0_9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEEEJNS_7WeakPtrIS5_EEjS8_EEEEEbPKNS0_13BindStateBaseENSE_21CancellationQueryModeE = comdat any
+
+$_ZN4base8internal7InvokerINS0_9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEENS6_IFvbEEEbEJNS_7WeakPtrIS5_EEjS8_SA_EEES9_E7RunOnceEPNS0_13BindStateBaseEb = comdat any
+
+$_ZN4base8internal13FunctorTraitsIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEENS5_IFvbEEEbEvE6InvokeISB_NS_7WeakPtrIS4_EEJjS7_S9_bEEEvT_OT0_DpOT1_ = comdat any
+
+$_ZN4base8internal9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEENS5_IFvbEEEbEJNS_7WeakPtrIS4_EEjS7_S9_EE7DestroyEPKNS0_13BindStateBaseE = comdat any
+
+$_ZN4base8internal23QueryCancellationTraitsINS0_9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEENS6_IFvbEEEbEJNS_7WeakPtrIS5_EEjS8_SA_EEEEEbPKNS0_13BindStateBaseENSG_21CancellationQueryModeE = comdat any
+
+@_ZTVN3gpu6raster24RasterImplementationGLESE = hidden unnamed_addr constant { [44 x i8*] } { [44 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i8*)* @_ZN3gpu6raster24RasterImplementationGLES20GenSyncTokenCHROMIUMEPa to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i8*)* @_ZN3gpu6raster24RasterImplementationGLES30GenUnverifiedSyncTokenCHROMIUMEPa to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i8**, i32)* @_ZN3gpu6raster24RasterImplementationGLES24VerifySyncTokensCHROMIUMEPPai to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i8*)* @_ZN3gpu6raster24RasterImplementationGLES21WaitSyncTokenCHROMIUMEPKa to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*)* @_ZN3gpu6raster24RasterImplementationGLES20ShallowFlushCHROMIUMEv to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*)* @_ZN3gpu6raster24RasterImplementationGLESD2Ev to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*)* @_ZN3gpu6raster24RasterImplementationGLESD0Ev to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*, %"struct.gpu::Mailbox"*, i32, i32, i32, i32, i32, i32, i32, i8, i8)* @_ZN3gpu6raster24RasterImplementationGLES14CopySubTextureERKNS_7MailboxES4_jiiiiiihh to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*, i32, i32, i32, i32, %struct.SkImageInfo*, i8*)* @_ZN3gpu6raster24RasterImplementationGLES11WritePixelsERKNS_7MailboxEiijjRK11SkImageInfoPKv to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*, i32, i32, i32, %"struct.gpu::Mailbox"*)* @_ZN3gpu6raster24RasterImplementationGLES25ConvertYUVAMailboxesToRGBERKNS_7MailboxE15SkYUVColorSpaceN10SkYUVAInfo11PlaneConfigENS6_11SubsamplingEPS3_ to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i8, i32, i8, %"class.gfx::ColorSpace"*, i8*)* @_ZN3gpu6raster24RasterImplementationGLES19BeginRasterCHROMIUMEjhjhRKN3gfx10ColorSpaceEPKa to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, %"class.cc::DisplayItemList"*, %"class.cc::ImageProvider"*, %"class.gfx::Size"*, %"class.gfx::Rect"*, %"class.gfx::Rect"*, %"class.gfx::Vector2dF"*, %"class.gfx::Vector2dF"*, i1, i64*)* @_ZN3gpu6raster24RasterImplementationGLES14RasterCHROMIUMEPKN2cc15DisplayItemListEPNS2_13ImageProviderERKN3gfx4SizeERKNS8_4RectESE_RKNS8_9Vector2dFESH_bPm to i8*), i8* bitcast (void (%"struct.gpu::SyncToken"*, %"class.gpu::raster::RasterImplementationGLES"*, i64, i8*, %"class.gfx::Size"*, i32, %"class.gfx::ColorSpace"*, i1)* @_ZN3gpu6raster24RasterImplementationGLES19ScheduleImageDecodeEN4base4spanIKhLm18446744073709551615EEERKN3gfx4SizeEjRKNS6_10ColorSpaceEb to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*, i32, i32, %struct.SkImageInfo*, i32, i8*, %"class.base::OnceCallback"*)* @_ZN3gpu6raster24RasterImplementationGLES23ReadbackARGBPixelsAsyncERKNS_7MailboxEj15GrSurfaceOriginRK11SkImageInfojPhN4base12OnceCallbackIFvS5_bEEE to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*, i32, %"class.gfx::Size"*, %"class.gfx::Rect"*, i1, i32, i8*, i32, i8*, i32, i8*, %"class.gfx::Point"*, %"class.base::OnceCallback.117"*, %"class.base::OnceCallback.115"*)* @_ZN3gpu6raster24RasterImplementationGLES22ReadbackYUVPixelsAsyncERKNS_7MailboxEjRKN3gfx4SizeERKNS5_4RectEbiPhiSC_iSC_RKNS5_5PointEN4base12OnceCallbackIFvvEEENSH_IFvbEEE to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*, %struct.SkImageInfo*, i32, i32, i32, i8*)* @_ZN3gpu6raster24RasterImplementationGLES19ReadbackImagePixelsERKNS_7MailboxERK11SkImageInfojiiPv to i8*), i8* bitcast (i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)* @_ZN3gpu6raster24RasterImplementationGLES28CreateAndConsumeForGpuRasterERKNS_7MailboxE to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i32)* @_ZN3gpu6raster24RasterImplementationGLES22DeleteGpuRasterTextureEj to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*)* @_ZN3gpu6raster24RasterImplementationGLES14BeginGpuRasterEv to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*)* @_ZN3gpu6raster24RasterImplementationGLES12EndGpuRasterEv to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)* @_ZN3gpu6raster24RasterImplementationGLES36BeginSharedImageAccessDirectCHROMIUMEjj to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i32)* @_ZN3gpu6raster24RasterImplementationGLES34EndSharedImageAccessDirectCHROMIUMEj to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i32)* @_ZN3gpu6raster24RasterImplementationGLES36InitializeDiscardableTextureCHROMIUMEj to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i32)* @_ZN3gpu6raster24RasterImplementationGLES32UnlockDiscardableTextureCHROMIUMEj to i8*), i8* bitcast (i1 (%"class.gpu::raster::RasterImplementationGLES"*, i32)* @_ZN3gpu6raster24RasterImplementationGLES30LockDiscardableTextureCHROMIUMEj to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*)* @_ZN3gpu6raster24RasterImplementationGLES6FinishEv to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*)* @_ZN3gpu6raster24RasterImplementationGLES5FlushEv to i8*), i8* bitcast (i32 (%"class.gpu::raster::RasterImplementationGLES"*)* @_ZN3gpu6raster24RasterImplementationGLES8GetErrorEv to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*)* @_ZN3gpu6raster24RasterImplementationGLES23OrderingBarrierCHROMIUMEv to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32*)* @_ZN3gpu6raster24RasterImplementationGLES13GenQueriesEXTEiPj to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32*)* @_ZN3gpu6raster24RasterImplementationGLES16DeleteQueriesEXTEiPKj to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)* @_ZN3gpu6raster24RasterImplementationGLES15QueryCounterEXTEjj to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)* @_ZN3gpu6raster24RasterImplementationGLES13BeginQueryEXTEjj to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i32)* @_ZN3gpu6raster24RasterImplementationGLES11EndQueryEXTEj to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32, i32*)* @_ZN3gpu6raster24RasterImplementationGLES20GetQueryObjectuivEXTEjjPj to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32, i64*)* @_ZN3gpu6raster24RasterImplementationGLES22GetQueryObjectui64vEXTEjjPm to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)* @_ZN3gpu6raster24RasterImplementationGLES19LoseContextCHROMIUMEjj to i8*), i8* bitcast (i32 (%"class.gpu::raster::RasterImplementationGLES"*)* @_ZN3gpu6raster24RasterImplementationGLES25GetGraphicsResetStatusKHREv to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*)* @_ZN3gpu6raster24RasterImplementationGLES17EndRasterCHROMIUMEv to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i8*, i8*)* @_ZN3gpu6raster24RasterImplementationGLES18TraceBeginCHROMIUMEPKcS3_ to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*)* @_ZN3gpu6raster24RasterImplementationGLES16TraceEndCHROMIUMEv to i8*), i8* bitcast (void (%"class.gpu::raster::RasterImplementationGLES"*, i8*)* @_ZN3gpu6raster24RasterImplementationGLES20SetActiveURLCHROMIUMEPKc to i8*)] }, align 8
+@.str = private unnamed_addr constant [15 x i8] c"BeginGpuRaster\00", align 1
+@.str.1 = private unnamed_addr constant [17 x i8] c"GpuRasterization\00", align 1
+@.str.2 = private unnamed_addr constant [29 x i8] c"../../base/memory/weak_ptr.h\00", align 1
+@.str.3 = private unnamed_addr constant [15 x i8] c"ref_.IsValid()\00", align 1
+
+@_ZN3gpu6raster24RasterImplementationGLESC1EPNS_5gles214GLES2InterfaceEPNS_14ContextSupportE = hidden unnamed_addr alias void (%"class.gpu::raster::RasterImplementationGLES"*, %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::ContextSupport"*), void (%"class.gpu::raster::RasterImplementationGLES"*, %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::ContextSupport"*)* @_ZN3gpu6raster24RasterImplementationGLESC2EPNS_5gles214GLES2InterfaceEPNS_14ContextSupportE
+@_ZN3gpu6raster24RasterImplementationGLESD1Ev = hidden unnamed_addr alias void (%"class.gpu::raster::RasterImplementationGLES"*), void (%"class.gpu::raster::RasterImplementationGLES"*)* @_ZN3gpu6raster24RasterImplementationGLESD2Ev
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLESC2EPNS_5gles214GLES2InterfaceEPNS_14ContextSupportE(%"class.gpu::raster::RasterImplementationGLES"*, %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::ContextSupport"*) unnamed_addr #0 align 2 {
+  %4 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [44 x i8*] }, { [44 x i8*] }* @_ZTVN3gpu6raster24RasterImplementationGLESE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %4, align 8
+  %5 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  store %"class.gpu::gles2::GLES2Interface"* %1, %"class.gpu::gles2::GLES2Interface"** %5, align 8
+  %6 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 2
+  store %"class.gpu::ContextSupport"* %2, %"class.gpu::ContextSupport"** %6, align 8
+  %7 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 3
+  %8 = bitcast %"class.std::__1::unique_ptr"* %7 to i64*
+  store i64 0, i64* %8, align 8
+  %9 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 4, i32 0
+  %10 = ptrtoint %"class.gpu::raster::RasterImplementationGLES"* %0 to i64
+  tail call void @_ZN4base8internal18WeakPtrFactoryBaseC2Em(%"class.base::internal::WeakPtrFactoryBase"* %9, i64 %10) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLESD2Ev(%"class.gpu::raster::RasterImplementationGLES"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [44 x i8*] }, { [44 x i8*] }* @_ZTVN3gpu6raster24RasterImplementationGLESE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 4, i32 0
+  tail call void @_ZN4base8internal18WeakPtrFactoryBaseD2Ev(%"class.base::internal::WeakPtrFactoryBase"* %3) #7
+  %4 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 3, i32 0, i32 0, i32 0
+  %5 = load %"class.gpu::GLHelper"*, %"class.gpu::GLHelper"** %4, align 8
+  store %"class.gpu::GLHelper"* null, %"class.gpu::GLHelper"** %4, align 8
+  %6 = icmp eq %"class.gpu::GLHelper"* %5, null
+  br i1 %6, label %9, label %7
+
+7:                                                ; preds = %1
+  tail call void @_ZN3gpu8GLHelperD1Ev(%"class.gpu::GLHelper"* nonnull %5) #7
+  %8 = bitcast %"class.gpu::GLHelper"* %5 to i8*
+  tail call void @_ZdlPv(i8* %8) #8
+  br label %9
+
+9:                                                ; preds = %1, %7
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal18WeakPtrFactoryBaseD2Ev(%"class.base::internal::WeakPtrFactoryBase"*) unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLESD0Ev(%"class.gpu::raster::RasterImplementationGLES"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [44 x i8*] }, { [44 x i8*] }* @_ZTVN3gpu6raster24RasterImplementationGLESE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 4, i32 0
+  tail call void @_ZN4base8internal18WeakPtrFactoryBaseD2Ev(%"class.base::internal::WeakPtrFactoryBase"* %3) #7
+  %4 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 3, i32 0, i32 0, i32 0
+  %5 = load %"class.gpu::GLHelper"*, %"class.gpu::GLHelper"** %4, align 8
+  store %"class.gpu::GLHelper"* null, %"class.gpu::GLHelper"** %4, align 8
+  %6 = icmp eq %"class.gpu::GLHelper"* %5, null
+  br i1 %6, label %9, label %7
+
+7:                                                ; preds = %1
+  tail call void @_ZN3gpu8GLHelperD1Ev(%"class.gpu::GLHelper"* nonnull %5) #7
+  %8 = bitcast %"class.gpu::GLHelper"* %5 to i8*
+  tail call void @_ZdlPv(i8* %8) #8
+  br label %9
+
+9:                                                ; preds = %1, %7
+  %10 = bitcast %"class.gpu::raster::RasterImplementationGLES"* %0 to i8*
+  tail call void @_ZdlPv(i8* %10) #8
+  ret void
+}
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES6FinishEv(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %3 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %2, align 8
+  %4 = bitcast %"class.gpu::gles2::GLES2Interface"* %3 to void (%"class.gpu::gles2::GLES2Interface"*)***
+  %5 = load void (%"class.gpu::gles2::GLES2Interface"*)**, void (%"class.gpu::gles2::GLES2Interface"*)*** %4, align 8
+  %6 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*)*, void (%"class.gpu::gles2::GLES2Interface"*)** %5, i64 71
+  %7 = load void (%"class.gpu::gles2::GLES2Interface"*)*, void (%"class.gpu::gles2::GLES2Interface"*)** %6, align 8
+  tail call void %7(%"class.gpu::gles2::GLES2Interface"* %3) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES5FlushEv(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %3 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %2, align 8
+  %4 = bitcast %"class.gpu::gles2::GLES2Interface"* %3 to void (%"class.gpu::gles2::GLES2Interface"*)***
+  %5 = load void (%"class.gpu::gles2::GLES2Interface"*)**, void (%"class.gpu::gles2::GLES2Interface"*)*** %4, align 8
+  %6 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*)*, void (%"class.gpu::gles2::GLES2Interface"*)** %5, i64 72
+  %7 = load void (%"class.gpu::gles2::GLES2Interface"*)*, void (%"class.gpu::gles2::GLES2Interface"*)** %6, align 8
+  tail call void %7(%"class.gpu::gles2::GLES2Interface"* %3) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES20ShallowFlushCHROMIUMEv(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %3 = bitcast %"class.gpu::gles2::GLES2Interface"** %2 to %"class.gpu::InterfaceBase"**
+  %4 = load %"class.gpu::InterfaceBase"*, %"class.gpu::InterfaceBase"** %3, align 8
+  %5 = bitcast %"class.gpu::InterfaceBase"* %4 to void (%"class.gpu::InterfaceBase"*)***
+  %6 = load void (%"class.gpu::InterfaceBase"*)**, void (%"class.gpu::InterfaceBase"*)*** %5, align 8
+  %7 = getelementptr inbounds void (%"class.gpu::InterfaceBase"*)*, void (%"class.gpu::InterfaceBase"*)** %6, i64 4
+  %8 = load void (%"class.gpu::InterfaceBase"*)*, void (%"class.gpu::InterfaceBase"*)** %7, align 8
+  tail call void %8(%"class.gpu::InterfaceBase"* %4) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES23OrderingBarrierCHROMIUMEv(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %3 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %2, align 8
+  %4 = bitcast %"class.gpu::gles2::GLES2Interface"* %3 to void (%"class.gpu::gles2::GLES2Interface"*)***
+  %5 = load void (%"class.gpu::gles2::GLES2Interface"*)**, void (%"class.gpu::gles2::GLES2Interface"*)*** %4, align 8
+  %6 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*)*, void (%"class.gpu::gles2::GLES2Interface"*)** %5, i64 162
+  %7 = load void (%"class.gpu::gles2::GLES2Interface"*)*, void (%"class.gpu::gles2::GLES2Interface"*)** %6, align 8
+  tail call void %7(%"class.gpu::gles2::GLES2Interface"* %3) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3gpu6raster24RasterImplementationGLES8GetErrorEv(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %3 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %2, align 8
+  %4 = bitcast %"class.gpu::gles2::GLES2Interface"* %3 to i32 (%"class.gpu::gles2::GLES2Interface"*)***
+  %5 = load i32 (%"class.gpu::gles2::GLES2Interface"*)**, i32 (%"class.gpu::gles2::GLES2Interface"*)*** %4, align 8
+  %6 = getelementptr inbounds i32 (%"class.gpu::gles2::GLES2Interface"*)*, i32 (%"class.gpu::gles2::GLES2Interface"*)** %5, i64 95
+  %7 = load i32 (%"class.gpu::gles2::GLES2Interface"*)*, i32 (%"class.gpu::gles2::GLES2Interface"*)** %6, align 8
+  %8 = tail call i32 %7(%"class.gpu::gles2::GLES2Interface"* %3) #7
+  ret i32 %8
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3gpu6raster24RasterImplementationGLES25GetGraphicsResetStatusKHREv(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %3 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %2, align 8
+  %4 = bitcast %"class.gpu::gles2::GLES2Interface"* %3 to i32 (%"class.gpu::gles2::GLES2Interface"*)***
+  %5 = load i32 (%"class.gpu::gles2::GLES2Interface"*)**, i32 (%"class.gpu::gles2::GLES2Interface"*)*** %4, align 8
+  %6 = getelementptr inbounds i32 (%"class.gpu::gles2::GLES2Interface"*)*, i32 (%"class.gpu::gles2::GLES2Interface"*)** %5, i64 332
+  %7 = load i32 (%"class.gpu::gles2::GLES2Interface"*)*, i32 (%"class.gpu::gles2::GLES2Interface"*)** %6, align 8
+  %8 = tail call i32 %7(%"class.gpu::gles2::GLES2Interface"* %3) #7
+  ret i32 %8
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES19LoseContextCHROMIUMEjj(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i32, i32) unnamed_addr #0 align 2 {
+  %4 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %5 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %4, align 8
+  %6 = bitcast %"class.gpu::gles2::GLES2Interface"* %5 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)***
+  %7 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*** %6, align 8
+  %8 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %7, i64 317
+  %9 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %8, align 8
+  tail call void %9(%"class.gpu::gles2::GLES2Interface"* %5, i32 %1, i32 %2) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES13GenQueriesEXTEiPj(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i32, i32*) unnamed_addr #0 align 2 {
+  %4 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %5 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %4, align 8
+  %6 = bitcast %"class.gpu::gles2::GLES2Interface"* %5 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)***
+  %7 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*** %6, align 8
+  %8 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)** %7, i64 243
+  %9 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)** %8, align 8
+  tail call void %9(%"class.gpu::gles2::GLES2Interface"* %5, i32 %1, i32* %2) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES16DeleteQueriesEXTEiPKj(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i32, i32*) unnamed_addr #0 align 2 {
+  %4 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %5 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %4, align 8
+  %6 = bitcast %"class.gpu::gles2::GLES2Interface"* %5 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)***
+  %7 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*** %6, align 8
+  %8 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)** %7, i64 244
+  %9 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)** %8, align 8
+  tail call void %9(%"class.gpu::gles2::GLES2Interface"* %5, i32 %1, i32* %2) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES13BeginQueryEXTEjj(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i32, i32) unnamed_addr #0 align 2 {
+  %4 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %5 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %4, align 8
+  %6 = bitcast %"class.gpu::gles2::GLES2Interface"* %5 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)***
+  %7 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*** %6, align 8
+  %8 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %7, i64 247
+  %9 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %8, align 8
+  tail call void %9(%"class.gpu::gles2::GLES2Interface"* %5, i32 %1, i32 %2) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES11EndQueryEXTEj(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i32) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %4 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %3, align 8
+  %5 = bitcast %"class.gpu::gles2::GLES2Interface"* %4 to void (%"class.gpu::gles2::GLES2Interface"*, i32)***
+  %6 = load void (%"class.gpu::gles2::GLES2Interface"*, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32)*** %5, align 8
+  %7 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32)** %6, i64 249
+  %8 = load void (%"class.gpu::gles2::GLES2Interface"*, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32)** %7, align 8
+  tail call void %8(%"class.gpu::gles2::GLES2Interface"* %4, i32 %1) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES15QueryCounterEXTEjj(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i32, i32) unnamed_addr #0 align 2 {
+  %4 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %5 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %4, align 8
+  %6 = bitcast %"class.gpu::gles2::GLES2Interface"* %5 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)***
+  %7 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*** %6, align 8
+  %8 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %7, i64 245
+  %9 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %8, align 8
+  tail call void %9(%"class.gpu::gles2::GLES2Interface"* %5, i32 %1, i32 %2) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES20GetQueryObjectuivEXTEjjPj(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i32, i32, i32*) unnamed_addr #0 align 2 {
+  %5 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %6 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %5, align 8
+  %7 = bitcast %"class.gpu::gles2::GLES2Interface"* %6 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32*)***
+  %8 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32*)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32*)*** %7, align 8
+  %9 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32*)** %8, i64 253
+  %10 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32*)** %9, align 8
+  tail call void %10(%"class.gpu::gles2::GLES2Interface"* %6, i32 %1, i32 %2, i32* %3) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES22GetQueryObjectui64vEXTEjjPm(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i32, i32, i64*) unnamed_addr #0 align 2 {
+  %5 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %6 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %5, align 8
+  %7 = bitcast %"class.gpu::gles2::GLES2Interface"* %6 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i64*)***
+  %8 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i64*)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i64*)*** %7, align 8
+  %9 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i64*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i64*)** %8, i64 255
+  %10 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i64*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i64*)** %9, align 8
+  tail call void %10(%"class.gpu::gles2::GLES2Interface"* %6, i32 %1, i32 %2, i64* %3) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES14CopySubTextureERKNS_7MailboxES4_jiiiiiihh(%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"* dereferenceable(16), %"struct.gpu::Mailbox"* dereferenceable(16), i32, i32, i32, i32, i32, i32, i32, i8 zeroext, i8 zeroext) unnamed_addr #0 align 2 {
+  %13 = alloca [2 x i32], align 4
+  %14 = bitcast [2 x i32]* %13 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %14) #7
+  %15 = getelementptr inbounds [2 x i32], [2 x i32]* %13, i64 0, i64 0
+  %16 = getelementptr inbounds [2 x i32], [2 x i32]* %13, i64 0, i64 1
+  %17 = bitcast %"class.gpu::raster::RasterImplementationGLES"* %0 to i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)***
+  %18 = load i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)**, i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)*** %17, align 8
+  %19 = getelementptr inbounds i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)*, i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)** %18, i64 16
+  %20 = load i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)*, i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)** %19, align 8
+  %21 = tail call i32 %20(%"class.gpu::raster::RasterImplementationGLES"* %0, %"struct.gpu::Mailbox"* dereferenceable(16) %1) #7
+  store i32 %21, i32* %15, align 4
+  %22 = load i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)**, i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)*** %17, align 8
+  %23 = getelementptr inbounds i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)*, i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)** %22, i64 16
+  %24 = load i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)*, i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)** %23, align 8
+  %25 = tail call i32 %24(%"class.gpu::raster::RasterImplementationGLES"* %0, %"struct.gpu::Mailbox"* dereferenceable(16) %2) #7
+  store i32 %25, i32* %16, align 4
+  %26 = bitcast %"class.gpu::raster::RasterImplementationGLES"* %0 to void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)***
+  %27 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)**, void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)*** %26, align 8
+  %28 = getelementptr inbounds void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)** %27, i64 20
+  %29 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)** %28, align 8
+  tail call void %29(%"class.gpu::raster::RasterImplementationGLES"* %0, i32 %21, i32 35574) #7
+  %30 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)**, void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)*** %26, align 8
+  %31 = getelementptr inbounds void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)** %30, i64 20
+  %32 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)** %31, align 8
+  tail call void %32(%"class.gpu::raster::RasterImplementationGLES"* %0, i32 %25, i32 35575) #7
+  %33 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %34 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %33, align 8
+  %35 = bitcast %"class.gpu::gles2::GLES2Interface"* %34 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i8, i8, i8)***
+  %36 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i8, i8, i8)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i8, i8, i8)*** %35, align 8
+  %37 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i8, i8, i8)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i8, i8, i8)** %36, i64 302
+  %38 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i8, i8, i8)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i8, i8, i8)** %37, align 8
+  tail call void %38(%"class.gpu::gles2::GLES2Interface"* %34, i32 %21, i32 0, i32 %3, i32 %25, i32 0, i32 %4, i32 %5, i32 %6, i32 %7, i32 %8, i32 %9, i8 zeroext %10, i8 zeroext %11, i8 zeroext 0) #7
+  %39 = bitcast %"class.gpu::raster::RasterImplementationGLES"* %0 to void (%"class.gpu::raster::RasterImplementationGLES"*, i32)***
+  %40 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32)**, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*** %39, align 8
+  %41 = getelementptr inbounds void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)** %40, i64 21
+  %42 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)** %41, align 8
+  tail call void %42(%"class.gpu::raster::RasterImplementationGLES"* %0, i32 %21) #7
+  %43 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32)**, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*** %39, align 8
+  %44 = getelementptr inbounds void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)** %43, i64 21
+  %45 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)** %44, align 8
+  tail call void %45(%"class.gpu::raster::RasterImplementationGLES"* %0, i32 %25) #7
+  %46 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %33, align 8
+  %47 = bitcast %"class.gpu::gles2::GLES2Interface"* %46 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)***
+  %48 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*** %47, align 8
+  %49 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)** %48, i64 57
+  %50 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)** %49, align 8
+  call void %50(%"class.gpu::gles2::GLES2Interface"* %46, i32 2, i32* nonnull %15) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %14) #7
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #3
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES11WritePixelsERKNS_7MailboxEiijjRK11SkImageInfoPKv(%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"* dereferenceable(16), i32, i32, i32, i32, %struct.SkImageInfo* dereferenceable(24), i8*) unnamed_addr #0 align 2 {
+  %9 = alloca i32, align 4
+  %10 = bitcast %"class.gpu::raster::RasterImplementationGLES"* %0 to i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)***
+  %11 = load i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)**, i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)*** %10, align 8
+  %12 = getelementptr inbounds i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)*, i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)** %11, i64 16
+  %13 = load i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)*, i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)** %12, align 8
+  %14 = tail call i32 %13(%"class.gpu::raster::RasterImplementationGLES"* %0, %"struct.gpu::Mailbox"* dereferenceable(16) %1) #7
+  %15 = bitcast %"class.gpu::raster::RasterImplementationGLES"* %0 to void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)***
+  %16 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)**, void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)*** %15, align 8
+  %17 = getelementptr inbounds void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)** %16, i64 20
+  %18 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)** %17, align 8
+  tail call void %18(%"class.gpu::raster::RasterImplementationGLES"* %0, i32 %14, i32 35575) #7
+  %19 = bitcast i32* %9 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %19) #7
+  store i32 0, i32* %9, align 4
+  %20 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %21 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %20, align 8
+  %22 = bitcast %"class.gpu::gles2::GLES2Interface"* %21 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)***
+  %23 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*** %22, align 8
+  %24 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)** %23, i64 102
+  %25 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)** %24, align 8
+  call void %25(%"class.gpu::gles2::GLES2Interface"* %21, i32 3317, i32* nonnull %9) #7
+  %26 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %20, align 8
+  %27 = bitcast %"class.gpu::gles2::GLES2Interface"* %26 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)***
+  %28 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*** %27, align 8
+  %29 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %28, i64 146
+  %30 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %29, align 8
+  call void %30(%"class.gpu::gles2::GLES2Interface"* %26, i32 3317, i32 1) #7
+  %31 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %20, align 8
+  %32 = getelementptr inbounds %struct.SkImageInfo, %struct.SkImageInfo* %6, i64 0, i32 0
+  %33 = call i32 @_ZNK11SkColorInfo13bytesPerPixelEv(%class.SkColorInfo* %32) #7
+  %34 = udiv i32 %5, %33
+  %35 = bitcast %"class.gpu::gles2::GLES2Interface"* %31 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)***
+  %36 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*** %35, align 8
+  %37 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %36, i64 146
+  %38 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %37, align 8
+  call void %38(%"class.gpu::gles2::GLES2Interface"* %31, i32 3314, i32 %34) #7
+  %39 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %20, align 8
+  %40 = bitcast %"class.gpu::gles2::GLES2Interface"* %39 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)***
+  %41 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*** %40, align 8
+  %42 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %41, i64 18
+  %43 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %42, align 8
+  call void %43(%"class.gpu::gles2::GLES2Interface"* %39, i32 %4, i32 %14) #7
+  %44 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %20, align 8
+  %45 = getelementptr inbounds %struct.SkImageInfo, %struct.SkImageInfo* %6, i64 0, i32 1, i32 0
+  %46 = load i32, i32* %45, align 4
+  %47 = getelementptr inbounds %struct.SkImageInfo, %struct.SkImageInfo* %6, i64 0, i32 1, i32 1
+  %48 = load i32, i32* %47, align 4
+  %49 = getelementptr inbounds %struct.SkImageInfo, %struct.SkImageInfo* %6, i64 0, i32 0, i32 1
+  %50 = load i32, i32* %49, align 8
+  switch i32 %50, label %54 [
+    i32 4, label %55
+    i32 6, label %51
+    i32 15, label %52
+    i32 11, label %53
+  ]
+
+51:                                               ; preds = %8
+  br label %55
+
+52:                                               ; preds = %8
+  br label %55
+
+53:                                               ; preds = %8
+  br label %55
+
+54:                                               ; preds = %8
+  br label %55
+
+55:                                               ; preds = %53, %52, %51, %8, %54
+  %56 = phi i32 [ 0, %54 ], [ 6408, %8 ], [ 32993, %51 ], [ 33319, %52 ], [ 6409, %53 ]
+  %57 = phi i32 [ 0, %54 ], [ 5121, %8 ], [ 5121, %51 ], [ 5121, %52 ], [ 5121, %53 ]
+  %58 = bitcast %"class.gpu::gles2::GLES2Interface"* %44 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i8*)***
+  %59 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i8*)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i8*)*** %58, align 8
+  %60 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i8*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i8*)** %59, i64 182
+  %61 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i8*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i8*)** %60, align 8
+  call void %61(%"class.gpu::gles2::GLES2Interface"* %44, i32 %4, i32 0, i32 %2, i32 %3, i32 %46, i32 %48, i32 %56, i32 %57, i8* %7) #7
+  %62 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %20, align 8
+  %63 = bitcast %"class.gpu::gles2::GLES2Interface"* %62 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)***
+  %64 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*** %63, align 8
+  %65 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %64, i64 18
+  %66 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %65, align 8
+  call void %66(%"class.gpu::gles2::GLES2Interface"* %62, i32 %4, i32 0) #7
+  %67 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %20, align 8
+  %68 = bitcast %"class.gpu::gles2::GLES2Interface"* %67 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)***
+  %69 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*** %68, align 8
+  %70 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %69, i64 146
+  %71 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %70, align 8
+  call void %71(%"class.gpu::gles2::GLES2Interface"* %67, i32 3314, i32 0) #7
+  %72 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %20, align 8
+  %73 = load i32, i32* %9, align 4
+  %74 = bitcast %"class.gpu::gles2::GLES2Interface"* %72 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)***
+  %75 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*** %74, align 8
+  %76 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %75, i64 146
+  %77 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %76, align 8
+  call void %77(%"class.gpu::gles2::GLES2Interface"* %72, i32 3317, i32 %73) #7
+  %78 = bitcast %"class.gpu::raster::RasterImplementationGLES"* %0 to void (%"class.gpu::raster::RasterImplementationGLES"*, i32)***
+  %79 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32)**, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*** %78, align 8
+  %80 = getelementptr inbounds void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)** %79, i64 21
+  %81 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)** %80, align 8
+  call void %81(%"class.gpu::raster::RasterImplementationGLES"* %0, i32 %14) #7
+  %82 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32)**, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*** %78, align 8
+  %83 = getelementptr inbounds void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)** %82, i64 17
+  %84 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)** %83, align 8
+  call void %84(%"class.gpu::raster::RasterImplementationGLES"* %0, i32 %14) #7
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %19) #7
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES25ConvertYUVAMailboxesToRGBERKNS_7MailboxE15SkYUVColorSpaceN10SkYUVAInfo11PlaneConfigENS6_11SubsamplingEPS3_(%"class.gpu::raster::RasterImplementationGLES"* nocapture, %"struct.gpu::Mailbox"* nocapture dereferenceable(16), i32, i32, i32, %"struct.gpu::Mailbox"* nocapture) unnamed_addr #4 align 2 {
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES19BeginRasterCHROMIUMEjhjhRKN3gfx10ColorSpaceEPKa(%"class.gpu::raster::RasterImplementationGLES"* nocapture, i32, i8 zeroext, i32, i8 zeroext, %"class.gfx::ColorSpace"* nocapture dereferenceable(68), i8* nocapture) unnamed_addr #4 align 2 {
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES14RasterCHROMIUMEPKN2cc15DisplayItemListEPNS2_13ImageProviderERKN3gfx4SizeERKNS8_4RectESE_RKNS8_9Vector2dFESH_bPm(%"class.gpu::raster::RasterImplementationGLES"* nocapture, %"class.cc::DisplayItemList"* nocapture, %"class.cc::ImageProvider"* nocapture, %"class.gfx::Size"* nocapture dereferenceable(8), %"class.gfx::Rect"* nocapture dereferenceable(16), %"class.gfx::Rect"* nocapture dereferenceable(16), %"class.gfx::Vector2dF"* nocapture dereferenceable(8), %"class.gfx::Vector2dF"* nocapture dereferenceable(8), i1 zeroext, i64* nocapture) unnamed_addr #4 align 2 {
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES20SetActiveURLCHROMIUMEPKc(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i8*) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %4 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %3, align 8
+  %5 = bitcast %"class.gpu::gles2::GLES2Interface"* %4 to void (%"class.gpu::gles2::GLES2Interface"*, i8*)***
+  %6 = load void (%"class.gpu::gles2::GLES2Interface"*, i8*)**, void (%"class.gpu::gles2::GLES2Interface"*, i8*)*** %5, align 8
+  %7 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i8*)*, void (%"class.gpu::gles2::GLES2Interface"*, i8*)** %6, i64 329
+  %8 = load void (%"class.gpu::gles2::GLES2Interface"*, i8*)*, void (%"class.gpu::gles2::GLES2Interface"*, i8*)** %7, align 8
+  tail call void %8(%"class.gpu::gles2::GLES2Interface"* %4, i8* %1) #7
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES17EndRasterCHROMIUMEv(%"class.gpu::raster::RasterImplementationGLES"* nocapture) unnamed_addr #4 align 2 {
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES19ScheduleImageDecodeEN4base4spanIKhLm18446744073709551615EEERKN3gfx4SizeEjRKNS6_10ColorSpaceEb(%"struct.gpu::SyncToken"* noalias sret, %"class.gpu::raster::RasterImplementationGLES"* nocapture readnone, i64, i8* nocapture readnone, %"class.gfx::Size"* nocapture readnone dereferenceable(8), i32, %"class.gfx::ColorSpace"* nocapture readnone dereferenceable(68), i1 zeroext) unnamed_addr #0 align 2 {
+  tail call void @_ZN3gpu9SyncTokenC1Ev(%"struct.gpu::SyncToken"* %0) #7
+  ret void
+}
+
+declare void @_ZN3gpu9SyncTokenC1Ev(%"struct.gpu::SyncToken"*) unnamed_addr #5
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES23ReadbackARGBPixelsAsyncERKNS_7MailboxEj15GrSurfaceOriginRK11SkImageInfojPhN4base12OnceCallbackIFvS5_bEEE(%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"* dereferenceable(16), i32, i32, %struct.SkImageInfo* nocapture readonly dereferenceable(24), i32, i8*, %"class.base::OnceCallback"* nocapture) unnamed_addr #0 align 2 {
+  %9 = alloca %"class.base::internal::WeakReference", align 8
+  %10 = alloca %"class.gfx::Size", align 4
+  %11 = alloca %"class.base::OnceCallback.115", align 8
+  %12 = alloca %"class.base::WeakPtr", align 8
+  %13 = getelementptr inbounds %struct.SkImageInfo, %struct.SkImageInfo* %4, i64 0, i32 0, i32 1
+  %14 = load i32, i32* %13, align 8
+  %15 = icmp eq i32 %14, 4
+  %16 = select i1 %15, i32 6408, i32 32993
+  %17 = bitcast %"class.gfx::Size"* %10 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %17) #7
+  %18 = getelementptr inbounds %"class.gfx::Size", %"class.gfx::Size"* %10, i64 0, i32 0
+  %19 = getelementptr inbounds %"class.gfx::Size", %"class.gfx::Size"* %10, i64 0, i32 1
+  %20 = getelementptr inbounds %struct.SkImageInfo, %struct.SkImageInfo* %4, i64 0, i32 1, i32 0
+  %21 = load i32, i32* %20, align 4
+  %22 = getelementptr inbounds %struct.SkImageInfo, %struct.SkImageInfo* %4, i64 0, i32 1, i32 1
+  %23 = load i32, i32* %22, align 4
+  %24 = icmp sgt i32 %21, 0
+  %25 = select i1 %24, i32 %21, i32 0
+  store i32 %25, i32* %18, align 4
+  %26 = icmp sgt i32 %23, 0
+  %27 = select i1 %26, i32 %23, i32 0
+  store i32 %27, i32* %19, align 4
+  %28 = bitcast %"class.gpu::raster::RasterImplementationGLES"* %0 to i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)***
+  %29 = load i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)**, i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)*** %28, align 8
+  %30 = getelementptr inbounds i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)*, i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)** %29, i64 16
+  %31 = load i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)*, i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)** %30, align 8
+  %32 = tail call i32 %31(%"class.gpu::raster::RasterImplementationGLES"* %0, %"struct.gpu::Mailbox"* dereferenceable(16) %1) #7
+  %33 = bitcast %"class.gpu::raster::RasterImplementationGLES"* %0 to void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)***
+  %34 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)**, void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)*** %33, align 8
+  %35 = getelementptr inbounds void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)** %34, i64 20
+  %36 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)** %35, align 8
+  tail call void %36(%"class.gpu::raster::RasterImplementationGLES"* %0, i32 %32, i32 35574) #7
+  %37 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 3
+  %38 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %37, i64 0, i32 0, i32 0, i32 0
+  %39 = load %"class.gpu::GLHelper"*, %"class.gpu::GLHelper"** %38, align 8
+  %40 = icmp eq %"class.gpu::GLHelper"* %39, null
+  br i1 %40, label %41, label %55
+
+41:                                               ; preds = %8
+  %42 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %43 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 2
+  %44 = tail call i8* @_Znwm(i64 56) #8
+  %45 = bitcast i8* %44 to %"class.gpu::GLHelper"*
+  %46 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %42, align 8
+  %47 = load %"class.gpu::ContextSupport"*, %"class.gpu::ContextSupport"** %43, align 8
+  tail call void @_ZN3gpu8GLHelperC1EPNS_5gles214GLES2InterfaceEPNS_14ContextSupportE(%"class.gpu::GLHelper"* nonnull %45, %"class.gpu::gles2::GLES2Interface"* %46, %"class.gpu::ContextSupport"* %47) #7
+  %48 = ptrtoint i8* %44 to i64
+  %49 = load %"class.gpu::GLHelper"*, %"class.gpu::GLHelper"** %38, align 8
+  %50 = bitcast %"class.std::__1::unique_ptr"* %37 to i64*
+  store i64 %48, i64* %50, align 8
+  %51 = icmp eq %"class.gpu::GLHelper"* %49, null
+  br i1 %51, label %55, label %52
+
+52:                                               ; preds = %41
+  tail call void @_ZN3gpu8GLHelperD1Ev(%"class.gpu::GLHelper"* nonnull %49) #7
+  %53 = bitcast %"class.gpu::GLHelper"* %49 to i8*
+  tail call void @_ZdlPv(i8* %53) #8
+  %54 = load %"class.gpu::GLHelper"*, %"class.gpu::GLHelper"** %38, align 8
+  br label %55
+
+55:                                               ; preds = %8, %41, %52
+  %56 = phi %"class.gpu::GLHelper"* [ %39, %8 ], [ %45, %41 ], [ %54, %52 ]
+  %57 = bitcast %"class.base::WeakPtr"* %12 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %57) #7
+  %58 = bitcast %"class.base::internal::WeakReference"* %9 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %58) #7, !noalias !2
+  %59 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 4, i32 0, i32 0
+  call void @_ZNK4base8internal18WeakReferenceOwner6GetRefEv(%"class.base::internal::WeakReference"* nonnull sret %9, %"class.base::internal::WeakReferenceOwner"* %59) #7, !noalias !2
+  %60 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 4, i32 0, i32 1
+  %61 = load i64, i64* %60, align 8, !noalias !2
+  %62 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %12, i64 0, i32 0
+  call void @_ZN4base8internal11WeakPtrBaseC2ERKNS0_13WeakReferenceEm(%"class.base::internal::WeakPtrBase"* nonnull %62, %"class.base::internal::WeakReference"* nonnull dereferenceable(8) %9, i64 %61) #7
+  call void @_ZN4base8internal13WeakReferenceD1Ev(%"class.base::internal::WeakReference"* nonnull %9) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %58) #7, !noalias !2
+  %63 = call i8* @_Znwm(i64 88) #8, !noalias !5
+  %64 = bitcast i8* %63 to %"class.base::internal::BindStateBase"*
+  call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_EPFbS5_NS1_21CancellationQueryModeEE(%"class.base::internal::BindStateBase"* nonnull %64, void ()* bitcast (void (%"class.base::internal::BindStateBase"*, i1)* @_ZN4base8internal7InvokerINS0_9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFv15GrSurfaceOriginbEEES7_bEJNS_7WeakPtrIS5_EEjS9_S7_EEEFvbEE7RunOnceEPNS0_13BindStateBaseEb to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @_ZN4base8internal9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFv15GrSurfaceOriginbEEES6_bEJNS_7WeakPtrIS4_EEjS8_S6_EE7DestroyEPKNS0_13BindStateBaseE, i1 (%"class.base::internal::BindStateBase"*, i32)* nonnull @_ZN4base8internal23QueryCancellationTraitsINS0_9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFv15GrSurfaceOriginbEEES7_bEJNS_7WeakPtrIS5_EEjS9_S7_EEEEEbPKNS0_13BindStateBaseENSF_21CancellationQueryModeE) #7, !noalias !5
+  %65 = getelementptr inbounds i8, i8* %63, i64 32
+  %66 = bitcast i8* %65 to <2 x i64>*
+  store <2 x i64> <i64 ptrtoint (void (%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback"*, i32, i1)* @_ZN3gpu6raster24RasterImplementationGLES21OnReadARGBPixelsAsyncEjN4base12OnceCallbackIFv15GrSurfaceOriginbEEES4_b to i64), i64 0>, <2 x i64>* %66, align 8, !noalias !5
+  %67 = getelementptr inbounds i8, i8* %63, i64 48
+  %68 = bitcast i8* %67 to %"class.base::internal::WeakReference"*
+  %69 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %12, i64 0, i32 0, i32 0
+  call void @_ZN4base8internal13WeakReferenceC1EOS1_(%"class.base::internal::WeakReference"* %68, %"class.base::internal::WeakReference"* nonnull dereferenceable(8) %69) #7, !noalias !5
+  %70 = getelementptr inbounds i8, i8* %63, i64 56
+  %71 = bitcast i8* %70 to i64*
+  %72 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %12, i64 0, i32 0, i32 1
+  %73 = load i64, i64* %72, align 8, !noalias !5
+  store i64 %73, i64* %71, align 8, !noalias !5
+  %74 = getelementptr inbounds i8, i8* %63, i64 64
+  %75 = bitcast i8* %74 to i32*
+  store i32 %32, i32* %75, align 4, !noalias !5
+  %76 = getelementptr inbounds i8, i8* %63, i64 72
+  %77 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %7, i64 0, i32 0, i32 0, i32 0
+  %78 = bitcast %"class.base::OnceCallback"* %7 to i64*
+  %79 = load i64, i64* %78, align 8, !noalias !5
+  %80 = bitcast i8* %76 to i64*
+  store i64 %79, i64* %80, align 8, !noalias !5
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %77, align 8, !noalias !5
+  %81 = getelementptr inbounds i8, i8* %63, i64 80
+  %82 = bitcast i8* %81 to i32*
+  store i32 %3, i32* %82, align 4, !noalias !5
+  %83 = bitcast %"class.base::OnceCallback.115"* %11 to i8**
+  store i8* %63, i8** %83, align 8, !alias.scope !5
+  call void @_ZN3gpu8GLHelper20ReadbackTextureAsyncEjjRKN3gfx4SizeEPhjN4base12OnceCallbackIFvbEEE(%"class.gpu::GLHelper"* %56, i32 %32, i32 %2, %"class.gfx::Size"* nonnull dereferenceable(8) %10, i8* %6, i32 %16, %"class.base::OnceCallback.115"* nonnull %11) #7
+  %84 = getelementptr inbounds %"class.base::OnceCallback.115", %"class.base::OnceCallback.115"* %11, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %84) #7
+  call void @_ZN4base8internal11WeakPtrBaseD2Ev(%"class.base::internal::WeakPtrBase"* nonnull %62) #7
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %57) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %17) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden %"class.gpu::GLHelper"* @_ZN3gpu6raster24RasterImplementationGLES11GetGLHelperEv(%"class.gpu::raster::RasterImplementationGLES"* nocapture) local_unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 3
+  %3 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %2, i64 0, i32 0, i32 0, i32 0
+  %4 = load %"class.gpu::GLHelper"*, %"class.gpu::GLHelper"** %3, align 8
+  %5 = icmp eq %"class.gpu::GLHelper"* %4, null
+  br i1 %5, label %6, label %21
+
+6:                                                ; preds = %1
+  %7 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %8 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 2
+  %9 = tail call i8* @_Znwm(i64 56) #8
+  %10 = bitcast i8* %9 to %"class.gpu::GLHelper"*
+  %11 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %7, align 8
+  %12 = load %"class.gpu::ContextSupport"*, %"class.gpu::ContextSupport"** %8, align 8
+  tail call void @_ZN3gpu8GLHelperC1EPNS_5gles214GLES2InterfaceEPNS_14ContextSupportE(%"class.gpu::GLHelper"* nonnull %10, %"class.gpu::gles2::GLES2Interface"* %11, %"class.gpu::ContextSupport"* %12) #7
+  %13 = ptrtoint i8* %9 to i64
+  %14 = load %"class.gpu::GLHelper"*, %"class.gpu::GLHelper"** %3, align 8
+  %15 = bitcast %"class.std::__1::unique_ptr"* %2 to i64*
+  store i64 %13, i64* %15, align 8
+  %16 = icmp eq %"class.gpu::GLHelper"* %14, null
+  %17 = bitcast i8* %9 to %"class.gpu::GLHelper"*
+  br i1 %16, label %21, label %18
+
+18:                                               ; preds = %6
+  tail call void @_ZN3gpu8GLHelperD1Ev(%"class.gpu::GLHelper"* nonnull %14) #7
+  %19 = bitcast %"class.gpu::GLHelper"* %14 to i8*
+  tail call void @_ZdlPv(i8* %19) #8
+  %20 = load %"class.gpu::GLHelper"*, %"class.gpu::GLHelper"** %3, align 8
+  br label %21
+
+21:                                               ; preds = %1, %6, %18
+  %22 = phi %"class.gpu::GLHelper"* [ %4, %1 ], [ %17, %6 ], [ %20, %18 ]
+  ret %"class.gpu::GLHelper"* %22
+}
+
+declare void @_ZN3gpu8GLHelper20ReadbackTextureAsyncEjjRKN3gfx4SizeEPhjN4base12OnceCallbackIFvbEEE(%"class.gpu::GLHelper"*, i32, i32, %"class.gfx::Size"* dereferenceable(8), i8*, i32, %"class.base::OnceCallback.115"*) local_unnamed_addr #5
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES21OnReadARGBPixelsAsyncEjN4base12OnceCallbackIFv15GrSurfaceOriginbEEES4_b(%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback"* nocapture, i32, i1 zeroext) #0 align 2 {
+  %6 = alloca %"class.base::OnceCallback", align 8
+  %7 = bitcast %"class.gpu::raster::RasterImplementationGLES"* %0 to void (%"class.gpu::raster::RasterImplementationGLES"*, i32)***
+  %8 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32)**, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*** %7, align 8
+  %9 = getelementptr inbounds void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)** %8, i64 21
+  %10 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)** %9, align 8
+  tail call void %10(%"class.gpu::raster::RasterImplementationGLES"* %0, i32 %1) #7
+  %11 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32)**, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*** %7, align 8
+  %12 = getelementptr inbounds void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)** %11, i64 17
+  %13 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)** %12, align 8
+  tail call void %13(%"class.gpu::raster::RasterImplementationGLES"* %0, i32 %1) #7
+  %14 = bitcast %"class.base::OnceCallback"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %14) #7
+  %15 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %2, i64 0, i32 0, i32 0, i32 0
+  %16 = bitcast %"class.base::OnceCallback"* %2 to i64*
+  %17 = load i64, i64* %16, align 8
+  %18 = bitcast %"class.base::OnceCallback"* %6 to i64*
+  store i64 %17, i64* %18, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %15, align 8
+  %19 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %6, i64 0, i32 0
+  %20 = inttoptr i64 %17 to %"class.base::internal::BindStateBase"*
+  %21 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %20, i64 0, i32 1
+  %22 = bitcast void ()** %21 to void (%"class.base::internal::BindStateBase"*, i32, i1)**
+  %23 = load void (%"class.base::internal::BindStateBase"*, i32, i1)*, void (%"class.base::internal::BindStateBase"*, i32, i1)** %22, align 8
+  tail call void %23(%"class.base::internal::BindStateBase"* %20, i32 %3, i1 zeroext %4) #7
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %19) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %14) #7
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal11WeakPtrBaseD2Ev(%"class.base::internal::WeakPtrBase"*) unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES22ReadbackYUVPixelsAsyncERKNS_7MailboxEjRKN3gfx4SizeERKNS5_4RectEbiPhiSC_iSC_RKNS5_5PointEN4base12OnceCallbackIFvvEEENSH_IFvbEEE(%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"* dereferenceable(16), i32, %"class.gfx::Size"* dereferenceable(8), %"class.gfx::Rect"* nocapture readnone dereferenceable(16), i1 zeroext, i32, i8*, i32, i8*, i32, i8*, %"class.gfx::Point"* dereferenceable(8), %"class.base::OnceCallback.117"* nocapture, %"class.base::OnceCallback.115"* nocapture) unnamed_addr #0 align 2 {
+  %16 = alloca %"class.base::internal::WeakReference", align 8
+  %17 = alloca %"class.base::OnceCallback.117", align 8
+  %18 = alloca %"class.base::internal::WeakReference", align 8
+  %19 = alloca %"class.base::OnceCallback.117", align 8
+  %20 = alloca %"class.base::WeakPtr", align 8
+  %21 = alloca i32, align 4
+  %22 = alloca %"class.gfx::Rect", align 4
+  %23 = alloca %"class.base::OnceCallback.115", align 8
+  %24 = alloca %"class.base::WeakPtr", align 8
+  %25 = bitcast %"class.gpu::raster::RasterImplementationGLES"* %0 to i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)***
+  %26 = load i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)**, i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)*** %25, align 8
+  %27 = getelementptr inbounds i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)*, i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)** %26, i64 16
+  %28 = load i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)*, i32 (%"class.gpu::raster::RasterImplementationGLES"*, %"struct.gpu::Mailbox"*)** %27, align 8
+  %29 = tail call i32 %28(%"class.gpu::raster::RasterImplementationGLES"* %0, %"struct.gpu::Mailbox"* dereferenceable(16) %1) #7
+  %30 = bitcast %"class.gpu::raster::RasterImplementationGLES"* %0 to void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)***
+  %31 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)**, void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)*** %30, align 8
+  %32 = getelementptr inbounds void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)** %31, i64 20
+  %33 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32, i32)** %32, align 8
+  tail call void %33(%"class.gpu::raster::RasterImplementationGLES"* %0, i32 %29, i32 35574) #7
+  %34 = bitcast %"class.base::OnceCallback.117"* %19 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %34) #7
+  %35 = getelementptr inbounds %"class.base::OnceCallback.117", %"class.base::OnceCallback.117"* %19, i64 0, i32 0, i32 0, i32 0
+  %36 = bitcast %"class.base::WeakPtr"* %20 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %36) #7
+  %37 = bitcast %"class.base::internal::WeakReference"* %18 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %37) #7, !noalias !10
+  %38 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 4, i32 0, i32 0
+  call void @_ZNK4base8internal18WeakReferenceOwner6GetRefEv(%"class.base::internal::WeakReference"* nonnull sret %18, %"class.base::internal::WeakReferenceOwner"* %38) #7, !noalias !10
+  %39 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 4, i32 0, i32 1
+  %40 = load i64, i64* %39, align 8, !noalias !10
+  %41 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %20, i64 0, i32 0
+  call void @_ZN4base8internal11WeakPtrBaseC2ERKNS0_13WeakReferenceEm(%"class.base::internal::WeakPtrBase"* nonnull %41, %"class.base::internal::WeakReference"* nonnull dereferenceable(8) %18, i64 %40) #7
+  call void @_ZN4base8internal13WeakReferenceD1Ev(%"class.base::internal::WeakReference"* nonnull %18) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %37) #7, !noalias !10
+  %42 = call i8* @_Znwm(i64 80) #8, !noalias !13
+  %43 = bitcast i8* %42 to %"class.base::internal::BindStateBase"*
+  call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_EPFbS5_NS1_21CancellationQueryModeEE(%"class.base::internal::BindStateBase"* nonnull %43, void ()* bitcast (void (%"class.base::internal::BindStateBase"*)* @_ZN4base8internal7InvokerINS0_9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEEEJNS_7WeakPtrIS5_EEjS8_EEES7_E7RunOnceEPNS0_13BindStateBaseE to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @_ZN4base8internal9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEEEJNS_7WeakPtrIS4_EEjS7_EE7DestroyEPKNS0_13BindStateBaseE, i1 (%"class.base::internal::BindStateBase"*, i32)* nonnull @_ZN4base8internal23QueryCancellationTraitsINS0_9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEEEJNS_7WeakPtrIS5_EEjS8_EEEEEbPKNS0_13BindStateBaseENSE_21CancellationQueryModeE) #7, !noalias !13
+  %44 = getelementptr inbounds i8, i8* %42, i64 32
+  %45 = bitcast i8* %44 to <2 x i64>*
+  store <2 x i64> <i64 ptrtoint (void (%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback.117"*)* @_ZN3gpu6raster24RasterImplementationGLES16OnReleaseMailboxEjN4base12OnceCallbackIFvvEEE to i64), i64 0>, <2 x i64>* %45, align 8, !noalias !13
+  %46 = getelementptr inbounds i8, i8* %42, i64 48
+  %47 = bitcast i8* %46 to %"class.base::internal::WeakReference"*
+  %48 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %20, i64 0, i32 0, i32 0
+  call void @_ZN4base8internal13WeakReferenceC1EOS1_(%"class.base::internal::WeakReference"* %47, %"class.base::internal::WeakReference"* nonnull dereferenceable(8) %48) #7, !noalias !13
+  %49 = getelementptr inbounds i8, i8* %42, i64 56
+  %50 = bitcast i8* %49 to i64*
+  %51 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %20, i64 0, i32 0, i32 1
+  %52 = load i64, i64* %51, align 8, !noalias !13
+  store i64 %52, i64* %50, align 8, !noalias !13
+  %53 = getelementptr inbounds i8, i8* %42, i64 64
+  %54 = bitcast i8* %53 to i32*
+  store i32 %29, i32* %54, align 4, !noalias !13
+  %55 = getelementptr inbounds i8, i8* %42, i64 72
+  %56 = getelementptr inbounds %"class.base::OnceCallback.117", %"class.base::OnceCallback.117"* %13, i64 0, i32 0, i32 0, i32 0
+  %57 = bitcast %"class.base::OnceCallback.117"* %13 to i64*
+  %58 = load i64, i64* %57, align 8, !noalias !13
+  %59 = bitcast i8* %55 to i64*
+  store i64 %58, i64* %59, align 8, !noalias !13
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %56, align 8, !noalias !13
+  %60 = bitcast %"class.base::OnceCallback.117"* %19 to i8**
+  store i8* %42, i8** %60, align 8, !alias.scope !13
+  call void @_ZN4base8internal11WeakPtrBaseD2Ev(%"class.base::internal::WeakPtrBase"* nonnull %41) #7
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %36) #7
+  %61 = bitcast i32* %21 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %61) #7
+  store i32 0, i32* %21, align 4
+  %62 = icmp eq i32 %2, 3553
+  br i1 %62, label %121, label %63
+
+63:                                               ; preds = %15
+  %64 = getelementptr inbounds %"class.gfx::Size", %"class.gfx::Size"* %3, i64 0, i32 0
+  %65 = load i32, i32* %64, align 4
+  %66 = getelementptr inbounds %"class.gfx::Size", %"class.gfx::Size"* %3, i64 0, i32 1
+  %67 = load i32, i32* %66, align 4
+  %68 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %69 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %68, align 8
+  %70 = bitcast %"class.gpu::gles2::GLES2Interface"* %69 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)***
+  %71 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*** %70, align 8
+  %72 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)** %71, i64 82
+  %73 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)** %72, align 8
+  call void %73(%"class.gpu::gles2::GLES2Interface"* %69, i32 1, i32* nonnull %21) #7
+  %74 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %68, align 8
+  %75 = load i32, i32* %21, align 4
+  %76 = bitcast %"class.gpu::gles2::GLES2Interface"* %74 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)***
+  %77 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*** %76, align 8
+  %78 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %77, i64 18
+  %79 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %78, align 8
+  call void %79(%"class.gpu::gles2::GLES2Interface"* %74, i32 3553, i32 %75) #7
+  %80 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %68, align 8
+  %81 = bitcast %"class.gpu::gles2::GLES2Interface"* %80 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)***
+  %82 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)*** %81, align 8
+  %83 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)** %82, i64 179
+  %84 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)** %83, align 8
+  call void %84(%"class.gpu::gles2::GLES2Interface"* %80, i32 3553, i32 10240, i32 9728) #7
+  %85 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %68, align 8
+  %86 = bitcast %"class.gpu::gles2::GLES2Interface"* %85 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)***
+  %87 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)*** %86, align 8
+  %88 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)** %87, i64 179
+  %89 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)** %88, align 8
+  call void %89(%"class.gpu::gles2::GLES2Interface"* %85, i32 3553, i32 10241, i32 9728) #7
+  %90 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %68, align 8
+  %91 = bitcast %"class.gpu::gles2::GLES2Interface"* %90 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)***
+  %92 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)*** %91, align 8
+  %93 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)** %92, i64 179
+  %94 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)** %93, align 8
+  call void %94(%"class.gpu::gles2::GLES2Interface"* %90, i32 3553, i32 10242, i32 33071) #7
+  %95 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %68, align 8
+  %96 = bitcast %"class.gpu::gles2::GLES2Interface"* %95 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)***
+  %97 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)*** %96, align 8
+  %98 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)** %97, i64 179
+  %99 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32)** %98, align 8
+  call void %99(%"class.gpu::gles2::GLES2Interface"* %95, i32 3553, i32 10243, i32 33071) #7
+  %100 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %68, align 8
+  %101 = bitcast %"class.gpu::gles2::GLES2Interface"* %100 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i8*)***
+  %102 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i8*)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i8*)*** %101, align 8
+  %103 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i8*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i8*)** %102, i64 175
+  %104 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i8*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i32, i8*)** %103, align 8
+  call void %104(%"class.gpu::gles2::GLES2Interface"* %100, i32 3553, i32 0, i32 6408, i32 %65, i32 %67, i32 0, i32 6408, i32 5121, i8* null) #7
+  %105 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %68, align 8
+  %106 = load i32, i32* %21, align 4
+  %107 = bitcast %"class.gpu::gles2::GLES2Interface"* %105 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i8, i8, i8)***
+  %108 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i8, i8, i8)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i8, i8, i8)*** %107, align 8
+  %109 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i8, i8, i8)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i8, i8, i8)** %108, i64 301
+  %110 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i8, i8, i8)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32, i32, i32, i32, i32, i32, i8, i8, i8)** %109, align 8
+  call void %110(%"class.gpu::gles2::GLES2Interface"* %105, i32 %29, i32 0, i32 3553, i32 %106, i32 0, i32 6408, i32 5121, i8 zeroext 0, i8 zeroext 0, i8 zeroext 0) #7
+  %111 = load i32, i32* %21, align 4
+  %112 = bitcast %"class.base::OnceCallback.117"* %17 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %112) #7
+  %113 = bitcast %"class.base::OnceCallback.117"* %19 to i64*
+  %114 = load i64, i64* %113, align 8
+  %115 = bitcast %"class.base::OnceCallback.117"* %17 to i64*
+  store i64 %114, i64* %115, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %35, align 8
+  %116 = getelementptr inbounds %"class.base::OnceCallback.117", %"class.base::OnceCallback.117"* %17, i64 0, i32 0
+  %117 = inttoptr i64 %114 to %"class.base::internal::BindStateBase"*
+  %118 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %117, i64 0, i32 1
+  %119 = bitcast void ()** %118 to void (%"class.base::internal::BindStateBase"*)**
+  %120 = load void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %119, align 8
+  call void %120(%"class.base::internal::BindStateBase"* %117) #7
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %116) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %112) #7
+  br label %121
+
+121:                                              ; preds = %15, %63
+  %122 = phi i32 [ %111, %63 ], [ %29, %15 ]
+  %123 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 3
+  %124 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %123, i64 0, i32 0, i32 0, i32 0
+  %125 = load %"class.gpu::GLHelper"*, %"class.gpu::GLHelper"** %124, align 8
+  %126 = icmp eq %"class.gpu::GLHelper"* %125, null
+  br i1 %126, label %127, label %141
+
+127:                                              ; preds = %121
+  %128 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %129 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 2
+  %130 = call i8* @_Znwm(i64 56) #8
+  %131 = bitcast i8* %130 to %"class.gpu::GLHelper"*
+  %132 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %128, align 8
+  %133 = load %"class.gpu::ContextSupport"*, %"class.gpu::ContextSupport"** %129, align 8
+  call void @_ZN3gpu8GLHelperC1EPNS_5gles214GLES2InterfaceEPNS_14ContextSupportE(%"class.gpu::GLHelper"* nonnull %131, %"class.gpu::gles2::GLES2Interface"* %132, %"class.gpu::ContextSupport"* %133) #7
+  %134 = ptrtoint i8* %130 to i64
+  %135 = load %"class.gpu::GLHelper"*, %"class.gpu::GLHelper"** %124, align 8
+  %136 = bitcast %"class.std::__1::unique_ptr"* %123 to i64*
+  store i64 %134, i64* %136, align 8
+  %137 = icmp eq %"class.gpu::GLHelper"* %135, null
+  br i1 %137, label %141, label %138
+
+138:                                              ; preds = %127
+  call void @_ZN3gpu8GLHelperD1Ev(%"class.gpu::GLHelper"* nonnull %135) #7
+  %139 = bitcast %"class.gpu::GLHelper"* %135 to i8*
+  call void @_ZdlPv(i8* %139) #8
+  %140 = load %"class.gpu::GLHelper"*, %"class.gpu::GLHelper"** %124, align 8
+  br label %141
+
+141:                                              ; preds = %121, %127, %138
+  %142 = phi %"class.gpu::GLHelper"* [ %125, %121 ], [ %131, %127 ], [ %140, %138 ]
+  %143 = call %"class.gpu::ReadbackYUVInterface"* @_ZN3gpu8GLHelper22GetReadbackPipelineYUVEb(%"class.gpu::GLHelper"* %142, i1 zeroext %5) #7
+  %144 = bitcast %"class.gfx::Rect"* %22 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %144) #7
+  %145 = getelementptr inbounds %"class.gfx::Rect", %"class.gfx::Rect"* %22, i64 0, i32 0, i32 0
+  store i32 0, i32* %145, align 4
+  %146 = getelementptr inbounds %"class.gfx::Rect", %"class.gfx::Rect"* %22, i64 0, i32 0, i32 1
+  store i32 0, i32* %146, align 4
+  %147 = getelementptr inbounds %"class.gfx::Rect", %"class.gfx::Rect"* %22, i64 0, i32 1
+  %148 = bitcast %"class.gfx::Size"* %3 to i64*
+  %149 = bitcast %"class.gfx::Size"* %147 to i64*
+  %150 = load i64, i64* %148, align 4
+  store i64 %150, i64* %149, align 4
+  %151 = bitcast %"class.base::WeakPtr"* %24 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %151) #7
+  %152 = bitcast %"class.base::internal::WeakReference"* %16 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %152) #7, !noalias !18
+  call void @_ZNK4base8internal18WeakReferenceOwner6GetRefEv(%"class.base::internal::WeakReference"* nonnull sret %16, %"class.base::internal::WeakReferenceOwner"* %38) #7, !noalias !18
+  %153 = load i64, i64* %39, align 8, !noalias !18
+  %154 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %24, i64 0, i32 0
+  call void @_ZN4base8internal11WeakPtrBaseC2ERKNS0_13WeakReferenceEm(%"class.base::internal::WeakPtrBase"* nonnull %154, %"class.base::internal::WeakReference"* nonnull dereferenceable(8) %16, i64 %153) #7
+  call void @_ZN4base8internal13WeakReferenceD1Ev(%"class.base::internal::WeakReference"* nonnull %16) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %152) #7, !noalias !18
+  %155 = call i8* @_Znwm(i64 88) #8, !noalias !21
+  %156 = bitcast i8* %155 to %"class.base::internal::BindStateBase"*
+  call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_EPFbS5_NS1_21CancellationQueryModeEE(%"class.base::internal::BindStateBase"* nonnull %156, void ()* bitcast (void (%"class.base::internal::BindStateBase"*, i1)* @_ZN4base8internal7InvokerINS0_9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEENS6_IFvbEEEbEJNS_7WeakPtrIS5_EEjS8_SA_EEES9_E7RunOnceEPNS0_13BindStateBaseEb to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @_ZN4base8internal9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEENS5_IFvbEEEbEJNS_7WeakPtrIS4_EEjS7_S9_EE7DestroyEPKNS0_13BindStateBaseE, i1 (%"class.base::internal::BindStateBase"*, i32)* nonnull @_ZN4base8internal23QueryCancellationTraitsINS0_9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEENS6_IFvbEEEbEJNS_7WeakPtrIS5_EEjS8_SA_EEEEEbPKNS0_13BindStateBaseENSG_21CancellationQueryModeE) #7, !noalias !21
+  %157 = getelementptr inbounds i8, i8* %155, i64 32
+  %158 = bitcast i8* %157 to <2 x i64>*
+  store <2 x i64> <i64 ptrtoint (void (%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback.117"*, %"class.base::OnceCallback.115"*, i1)* @_ZN3gpu6raster24RasterImplementationGLES20OnReadYUVPixelsAsyncEjN4base12OnceCallbackIFvvEEENS3_IFvbEEEb to i64), i64 0>, <2 x i64>* %158, align 8, !noalias !21
+  %159 = getelementptr inbounds i8, i8* %155, i64 48
+  %160 = bitcast i8* %159 to %"class.base::internal::WeakReference"*
+  %161 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %24, i64 0, i32 0, i32 0
+  call void @_ZN4base8internal13WeakReferenceC1EOS1_(%"class.base::internal::WeakReference"* %160, %"class.base::internal::WeakReference"* nonnull dereferenceable(8) %161) #7, !noalias !21
+  %162 = getelementptr inbounds i8, i8* %155, i64 56
+  %163 = bitcast i8* %162 to i64*
+  %164 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %24, i64 0, i32 0, i32 1
+  %165 = load i64, i64* %164, align 8, !noalias !21
+  store i64 %165, i64* %163, align 8, !noalias !21
+  %166 = getelementptr inbounds i8, i8* %155, i64 64
+  %167 = bitcast i8* %166 to i32*
+  %168 = load i32, i32* %21, align 4, !noalias !21
+  store i32 %168, i32* %167, align 4, !noalias !21
+  %169 = getelementptr inbounds i8, i8* %155, i64 72
+  %170 = bitcast %"class.base::OnceCallback.117"* %19 to i64*
+  %171 = load i64, i64* %170, align 8, !noalias !21
+  %172 = bitcast i8* %169 to i64*
+  store i64 %171, i64* %172, align 8, !noalias !21
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %35, align 8, !noalias !21
+  %173 = getelementptr inbounds i8, i8* %155, i64 80
+  %174 = getelementptr inbounds %"class.base::OnceCallback.115", %"class.base::OnceCallback.115"* %14, i64 0, i32 0, i32 0, i32 0
+  %175 = bitcast %"class.base::OnceCallback.115"* %14 to i64*
+  %176 = load i64, i64* %175, align 8, !noalias !21
+  %177 = bitcast i8* %173 to i64*
+  store i64 %176, i64* %177, align 8, !noalias !21
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %174, align 8, !noalias !21
+  %178 = bitcast %"class.base::OnceCallback.115"* %23 to i8**
+  store i8* %155, i8** %178, align 8, !alias.scope !21
+  %179 = bitcast %"class.gpu::ReadbackYUVInterface"* %143 to void (%"class.gpu::ReadbackYUVInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::Rect"*, i32, i8*, i32, i8*, i32, i8*, %"class.gfx::Point"*, %"class.base::OnceCallback.115"*)***
+  %180 = load void (%"class.gpu::ReadbackYUVInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::Rect"*, i32, i8*, i32, i8*, i32, i8*, %"class.gfx::Point"*, %"class.base::OnceCallback.115"*)**, void (%"class.gpu::ReadbackYUVInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::Rect"*, i32, i8*, i32, i8*, i32, i8*, %"class.gfx::Point"*, %"class.base::OnceCallback.115"*)*** %179, align 8
+  %181 = getelementptr inbounds void (%"class.gpu::ReadbackYUVInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::Rect"*, i32, i8*, i32, i8*, i32, i8*, %"class.gfx::Point"*, %"class.base::OnceCallback.115"*)*, void (%"class.gpu::ReadbackYUVInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::Rect"*, i32, i8*, i32, i8*, i32, i8*, %"class.gfx::Point"*, %"class.base::OnceCallback.115"*)** %180, i64 5
+  %182 = load void (%"class.gpu::ReadbackYUVInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::Rect"*, i32, i8*, i32, i8*, i32, i8*, %"class.gfx::Point"*, %"class.base::OnceCallback.115"*)*, void (%"class.gpu::ReadbackYUVInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::Rect"*, i32, i8*, i32, i8*, i32, i8*, %"class.gfx::Point"*, %"class.base::OnceCallback.115"*)** %181, align 8
+  call void %182(%"class.gpu::ReadbackYUVInterface"* %143, i32 %122, %"class.gfx::Size"* dereferenceable(8) %3, %"class.gfx::Rect"* nonnull dereferenceable(16) %22, i32 %6, i8* %7, i32 %8, i8* %9, i32 %10, i8* %11, %"class.gfx::Point"* dereferenceable(8) %12, %"class.base::OnceCallback.115"* nonnull %23) #7
+  %183 = getelementptr inbounds %"class.base::OnceCallback.115", %"class.base::OnceCallback.115"* %23, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %183) #7
+  call void @_ZN4base8internal11WeakPtrBaseD2Ev(%"class.base::internal::WeakPtrBase"* nonnull %154) #7
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %151) #7
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %144) #7
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %61) #7
+  %184 = getelementptr inbounds %"class.base::OnceCallback.117", %"class.base::OnceCallback.117"* %19, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %184) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %34) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES16OnReleaseMailboxEjN4base12OnceCallbackIFvvEEE(%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback.117"* nocapture) #0 align 2 {
+  %4 = alloca %"class.base::OnceCallback.117", align 8
+  %5 = bitcast %"class.gpu::raster::RasterImplementationGLES"* %0 to void (%"class.gpu::raster::RasterImplementationGLES"*, i32)***
+  %6 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32)**, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*** %5, align 8
+  %7 = getelementptr inbounds void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)** %6, i64 21
+  %8 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)** %7, align 8
+  tail call void %8(%"class.gpu::raster::RasterImplementationGLES"* %0, i32 %1) #7
+  %9 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32)**, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*** %5, align 8
+  %10 = getelementptr inbounds void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)** %9, i64 17
+  %11 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32)** %10, align 8
+  tail call void %11(%"class.gpu::raster::RasterImplementationGLES"* %0, i32 %1) #7
+  %12 = bitcast %"class.base::OnceCallback.117"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %12) #7
+  %13 = getelementptr inbounds %"class.base::OnceCallback.117", %"class.base::OnceCallback.117"* %2, i64 0, i32 0, i32 0, i32 0
+  %14 = bitcast %"class.base::OnceCallback.117"* %2 to i64*
+  %15 = load i64, i64* %14, align 8
+  %16 = bitcast %"class.base::OnceCallback.117"* %4 to i64*
+  store i64 %15, i64* %16, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %13, align 8
+  %17 = getelementptr inbounds %"class.base::OnceCallback.117", %"class.base::OnceCallback.117"* %4, i64 0, i32 0
+  %18 = inttoptr i64 %15 to %"class.base::internal::BindStateBase"*
+  %19 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %18, i64 0, i32 1
+  %20 = bitcast void ()** %19 to void (%"class.base::internal::BindStateBase"*)**
+  %21 = load void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %20, align 8
+  tail call void %21(%"class.base::internal::BindStateBase"* %18) #7
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %17) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %12) #7
+  ret void
+}
+
+declare %"class.gpu::ReadbackYUVInterface"* @_ZN3gpu8GLHelper22GetReadbackPipelineYUVEb(%"class.gpu::GLHelper"*, i1 zeroext) local_unnamed_addr #5
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES20OnReadYUVPixelsAsyncEjN4base12OnceCallbackIFvvEEENS3_IFvbEEEb(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i32, %"class.base::OnceCallback.117"* nocapture, %"class.base::OnceCallback.115"* nocapture, i1 zeroext) #0 align 2 {
+  %6 = alloca %"class.base::OnceCallback.117", align 8
+  %7 = alloca %"class.base::OnceCallback.115", align 8
+  %8 = alloca i32, align 4
+  store i32 %1, i32* %8, align 4
+  %9 = icmp eq i32 %1, 0
+  br i1 %9, label %17, label %10
+
+10:                                               ; preds = %5
+  %11 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %12 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %11, align 8
+  %13 = bitcast %"class.gpu::gles2::GLES2Interface"* %12 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)***
+  %14 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*** %13, align 8
+  %15 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)** %14, i64 57
+  %16 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)** %15, align 8
+  call void %16(%"class.gpu::gles2::GLES2Interface"* %12, i32 1, i32* nonnull %8) #7
+  br label %28
+
+17:                                               ; preds = %5
+  %18 = bitcast %"class.base::OnceCallback.117"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %18) #7
+  %19 = getelementptr inbounds %"class.base::OnceCallback.117", %"class.base::OnceCallback.117"* %2, i64 0, i32 0, i32 0, i32 0
+  %20 = bitcast %"class.base::OnceCallback.117"* %2 to i64*
+  %21 = load i64, i64* %20, align 8
+  %22 = bitcast %"class.base::OnceCallback.117"* %6 to i64*
+  store i64 %21, i64* %22, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %19, align 8
+  %23 = getelementptr inbounds %"class.base::OnceCallback.117", %"class.base::OnceCallback.117"* %6, i64 0, i32 0
+  %24 = inttoptr i64 %21 to %"class.base::internal::BindStateBase"*
+  %25 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %24, i64 0, i32 1
+  %26 = bitcast void ()** %25 to void (%"class.base::internal::BindStateBase"*)**
+  %27 = load void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %26, align 8
+  tail call void %27(%"class.base::internal::BindStateBase"* %24) #7
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %23) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %18) #7
+  br label %28
+
+28:                                               ; preds = %17, %10
+  %29 = bitcast %"class.base::OnceCallback.115"* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %29) #7
+  %30 = getelementptr inbounds %"class.base::OnceCallback.115", %"class.base::OnceCallback.115"* %3, i64 0, i32 0, i32 0, i32 0
+  %31 = bitcast %"class.base::OnceCallback.115"* %3 to i64*
+  %32 = load i64, i64* %31, align 8
+  %33 = bitcast %"class.base::OnceCallback.115"* %7 to i64*
+  store i64 %32, i64* %33, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %30, align 8
+  %34 = getelementptr inbounds %"class.base::OnceCallback.115", %"class.base::OnceCallback.115"* %7, i64 0, i32 0
+  %35 = inttoptr i64 %32 to %"class.base::internal::BindStateBase"*
+  %36 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %35, i64 0, i32 1
+  %37 = bitcast void ()** %36 to void (%"class.base::internal::BindStateBase"*, i1)**
+  %38 = load void (%"class.base::internal::BindStateBase"*, i1)*, void (%"class.base::internal::BindStateBase"*, i1)** %37, align 8
+  call void %38(%"class.base::internal::BindStateBase"* %35, i1 zeroext %4) #7
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %34) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %29) #7
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES19ReadbackImagePixelsERKNS_7MailboxERK11SkImageInfojiiPv(%"class.gpu::raster::RasterImplementationGLES"* nocapture, %"struct.gpu::Mailbox"* nocapture dereferenceable(16), %struct.SkImageInfo* nocapture dereferenceable(24), i32, i32, i32, i8* nocapture) unnamed_addr #4 align 2 {
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3gpu6raster24RasterImplementationGLES28CreateAndConsumeForGpuRasterERKNS_7MailboxE(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, %"struct.gpu::Mailbox"* dereferenceable(16)) unnamed_addr #0 align 2 {
+  %3 = tail call zeroext i1 @_ZNK3gpu7Mailbox13IsSharedImageEv(%"struct.gpu::Mailbox"* %1) #7
+  %4 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %5 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %4, align 8
+  %6 = getelementptr inbounds %"struct.gpu::Mailbox", %"struct.gpu::Mailbox"* %1, i64 0, i32 0, i64 0
+  %7 = bitcast %"class.gpu::gles2::GLES2Interface"* %5 to i32 (%"class.gpu::gles2::GLES2Interface"*, i8*)***
+  %8 = load i32 (%"class.gpu::gles2::GLES2Interface"*, i8*)**, i32 (%"class.gpu::gles2::GLES2Interface"*, i8*)*** %7, align 8
+  br i1 %3, label %9, label %13
+
+9:                                                ; preds = %2
+  %10 = getelementptr inbounds i32 (%"class.gpu::gles2::GLES2Interface"*, i8*)*, i32 (%"class.gpu::gles2::GLES2Interface"*, i8*)** %8, i64 353
+  %11 = load i32 (%"class.gpu::gles2::GLES2Interface"*, i8*)*, i32 (%"class.gpu::gles2::GLES2Interface"*, i8*)** %10, align 8
+  %12 = tail call i32 %11(%"class.gpu::gles2::GLES2Interface"* %5, i8* %6) #7
+  br label %17
+
+13:                                               ; preds = %2
+  %14 = getelementptr inbounds i32 (%"class.gpu::gles2::GLES2Interface"*, i8*)*, i32 (%"class.gpu::gles2::GLES2Interface"*, i8*)** %8, i64 309
+  %15 = load i32 (%"class.gpu::gles2::GLES2Interface"*, i8*)*, i32 (%"class.gpu::gles2::GLES2Interface"*, i8*)** %14, align 8
+  %16 = tail call i32 %15(%"class.gpu::gles2::GLES2Interface"* %5, i8* %6) #7
+  br label %17
+
+17:                                               ; preds = %13, %9
+  %18 = phi i32 [ %12, %9 ], [ %16, %13 ]
+  ret i32 %18
+}
+
+declare zeroext i1 @_ZNK3gpu7Mailbox13IsSharedImageEv(%"struct.gpu::Mailbox"*) local_unnamed_addr #5
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES22DeleteGpuRasterTextureEj(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i32) unnamed_addr #0 align 2 {
+  %3 = alloca i32, align 4
+  store i32 %1, i32* %3, align 4
+  %4 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %5 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %4, align 8
+  %6 = bitcast %"class.gpu::gles2::GLES2Interface"* %5 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)***
+  %7 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*** %6, align 8
+  %8 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)** %7, i64 57
+  %9 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32*)** %8, align 8
+  call void %9(%"class.gpu::gles2::GLES2Interface"* %5, i32 1, i32* nonnull %3) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES14BeginGpuRasterEv(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %3 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %2, align 8
+  %4 = bitcast %"class.gpu::gles2::GLES2Interface"* %3 to void (%"class.gpu::gles2::GLES2Interface"*, i8*, i8*)***
+  %5 = load void (%"class.gpu::gles2::GLES2Interface"*, i8*, i8*)**, void (%"class.gpu::gles2::GLES2Interface"*, i8*, i8*)*** %4, align 8
+  %6 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i8*, i8*)*, void (%"class.gpu::gles2::GLES2Interface"*, i8*, i8*)** %5, i64 314
+  %7 = load void (%"class.gpu::gles2::GLES2Interface"*, i8*, i8*)*, void (%"class.gpu::gles2::GLES2Interface"*, i8*, i8*)** %6, align 8
+  tail call void %7(%"class.gpu::gles2::GLES2Interface"* %3, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([17 x i8], [17 x i8]* @.str.1, i64 0, i64 0)) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES12EndGpuRasterEv(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %3 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %2, align 8
+  %4 = bitcast %"class.gpu::gles2::GLES2Interface"* %3 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)***
+  %5 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*** %4, align 8
+  %6 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %5, i64 146
+  %7 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %6, align 8
+  tail call void %7(%"class.gpu::gles2::GLES2Interface"* %3, i32 3317, i32 4) #7
+  %8 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %2, align 8
+  %9 = bitcast %"class.gpu::gles2::GLES2Interface"* %8 to void (%"class.gpu::gles2::GLES2Interface"*)***
+  %10 = load void (%"class.gpu::gles2::GLES2Interface"*)**, void (%"class.gpu::gles2::GLES2Interface"*)*** %9, align 8
+  %11 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*)*, void (%"class.gpu::gles2::GLES2Interface"*)** %10, i64 315
+  %12 = load void (%"class.gpu::gles2::GLES2Interface"*)*, void (%"class.gpu::gles2::GLES2Interface"*)** %11, align 8
+  tail call void %12(%"class.gpu::gles2::GLES2Interface"* %8) #7
+  %13 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %2, align 8
+  %14 = bitcast %"class.gpu::gles2::GLES2Interface"* %13 to void (%"class.gpu::gles2::GLES2Interface"*, i32)***
+  %15 = load void (%"class.gpu::gles2::GLES2Interface"*, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32)*** %14, align 8
+  %16 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32)** %15, i64 9
+  %17 = load void (%"class.gpu::gles2::GLES2Interface"*, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32)** %16, align 8
+  tail call void %17(%"class.gpu::gles2::GLES2Interface"* %13, i32 33984) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES36BeginSharedImageAccessDirectCHROMIUMEjj(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i32, i32) unnamed_addr #0 align 2 {
+  %4 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %5 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %4, align 8
+  %6 = bitcast %"class.gpu::gles2::GLES2Interface"* %5 to void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)***
+  %7 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*** %6, align 8
+  %8 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %7, i64 355
+  %9 = load void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32, i32)** %8, align 8
+  tail call void %9(%"class.gpu::gles2::GLES2Interface"* %5, i32 %1, i32 %2) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES34EndSharedImageAccessDirectCHROMIUMEj(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i32) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %4 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %3, align 8
+  %5 = bitcast %"class.gpu::gles2::GLES2Interface"* %4 to void (%"class.gpu::gles2::GLES2Interface"*, i32)***
+  %6 = load void (%"class.gpu::gles2::GLES2Interface"*, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32)*** %5, align 8
+  %7 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32)** %6, i64 356
+  %8 = load void (%"class.gpu::gles2::GLES2Interface"*, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32)** %7, align 8
+  tail call void %8(%"class.gpu::gles2::GLES2Interface"* %4, i32 %1) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES36InitializeDiscardableTextureCHROMIUMEj(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i32) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %4 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %3, align 8
+  %5 = bitcast %"class.gpu::gles2::GLES2Interface"* %4 to void (%"class.gpu::gles2::GLES2Interface"*, i32)***
+  %6 = load void (%"class.gpu::gles2::GLES2Interface"*, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32)*** %5, align 8
+  %7 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32)** %6, i64 340
+  %8 = load void (%"class.gpu::gles2::GLES2Interface"*, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32)** %7, align 8
+  tail call void %8(%"class.gpu::gles2::GLES2Interface"* %4, i32 %1) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES32UnlockDiscardableTextureCHROMIUMEj(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i32) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %4 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %3, align 8
+  %5 = bitcast %"class.gpu::gles2::GLES2Interface"* %4 to void (%"class.gpu::gles2::GLES2Interface"*, i32)***
+  %6 = load void (%"class.gpu::gles2::GLES2Interface"*, i32)**, void (%"class.gpu::gles2::GLES2Interface"*, i32)*** %5, align 8
+  %7 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32)** %6, i64 341
+  %8 = load void (%"class.gpu::gles2::GLES2Interface"*, i32)*, void (%"class.gpu::gles2::GLES2Interface"*, i32)** %7, align 8
+  tail call void %8(%"class.gpu::gles2::GLES2Interface"* %4, i32 %1) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN3gpu6raster24RasterImplementationGLES30LockDiscardableTextureCHROMIUMEj(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i32) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %4 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %3, align 8
+  %5 = bitcast %"class.gpu::gles2::GLES2Interface"* %4 to i1 (%"class.gpu::gles2::GLES2Interface"*, i32)***
+  %6 = load i1 (%"class.gpu::gles2::GLES2Interface"*, i32)**, i1 (%"class.gpu::gles2::GLES2Interface"*, i32)*** %5, align 8
+  %7 = getelementptr inbounds i1 (%"class.gpu::gles2::GLES2Interface"*, i32)*, i1 (%"class.gpu::gles2::GLES2Interface"*, i32)** %6, i64 342
+  %8 = load i1 (%"class.gpu::gles2::GLES2Interface"*, i32)*, i1 (%"class.gpu::gles2::GLES2Interface"*, i32)** %7, align 8
+  %9 = tail call zeroext i1 %8(%"class.gpu::gles2::GLES2Interface"* %4, i32 %1) #7
+  ret i1 %9
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES18TraceBeginCHROMIUMEPKcS3_(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i8*, i8*) unnamed_addr #0 align 2 {
+  %4 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %5 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %4, align 8
+  %6 = bitcast %"class.gpu::gles2::GLES2Interface"* %5 to void (%"class.gpu::gles2::GLES2Interface"*, i8*, i8*)***
+  %7 = load void (%"class.gpu::gles2::GLES2Interface"*, i8*, i8*)**, void (%"class.gpu::gles2::GLES2Interface"*, i8*, i8*)*** %6, align 8
+  %8 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*, i8*, i8*)*, void (%"class.gpu::gles2::GLES2Interface"*, i8*, i8*)** %7, i64 314
+  %9 = load void (%"class.gpu::gles2::GLES2Interface"*, i8*, i8*)*, void (%"class.gpu::gles2::GLES2Interface"*, i8*, i8*)** %8, align 8
+  tail call void %9(%"class.gpu::gles2::GLES2Interface"* %5, i8* %1, i8* %2) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES16TraceEndCHROMIUMEv(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %3 = load %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::gles2::GLES2Interface"** %2, align 8
+  %4 = bitcast %"class.gpu::gles2::GLES2Interface"* %3 to void (%"class.gpu::gles2::GLES2Interface"*)***
+  %5 = load void (%"class.gpu::gles2::GLES2Interface"*)**, void (%"class.gpu::gles2::GLES2Interface"*)*** %4, align 8
+  %6 = getelementptr inbounds void (%"class.gpu::gles2::GLES2Interface"*)*, void (%"class.gpu::gles2::GLES2Interface"*)** %5, i64 315
+  %7 = load void (%"class.gpu::gles2::GLES2Interface"*)*, void (%"class.gpu::gles2::GLES2Interface"*)** %6, align 8
+  tail call void %7(%"class.gpu::gles2::GLES2Interface"* %3) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES20GenSyncTokenCHROMIUMEPa(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i8*) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %4 = bitcast %"class.gpu::gles2::GLES2Interface"** %3 to %"class.gpu::InterfaceBase"**
+  %5 = load %"class.gpu::InterfaceBase"*, %"class.gpu::InterfaceBase"** %4, align 8
+  %6 = bitcast %"class.gpu::InterfaceBase"* %5 to void (%"class.gpu::InterfaceBase"*, i8*)***
+  %7 = load void (%"class.gpu::InterfaceBase"*, i8*)**, void (%"class.gpu::InterfaceBase"*, i8*)*** %6, align 8
+  %8 = load void (%"class.gpu::InterfaceBase"*, i8*)*, void (%"class.gpu::InterfaceBase"*, i8*)** %7, align 8
+  tail call void %8(%"class.gpu::InterfaceBase"* %5, i8* %1) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES30GenUnverifiedSyncTokenCHROMIUMEPa(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i8*) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %4 = bitcast %"class.gpu::gles2::GLES2Interface"** %3 to %"class.gpu::InterfaceBase"**
+  %5 = load %"class.gpu::InterfaceBase"*, %"class.gpu::InterfaceBase"** %4, align 8
+  %6 = bitcast %"class.gpu::InterfaceBase"* %5 to void (%"class.gpu::InterfaceBase"*, i8*)***
+  %7 = load void (%"class.gpu::InterfaceBase"*, i8*)**, void (%"class.gpu::InterfaceBase"*, i8*)*** %6, align 8
+  %8 = getelementptr inbounds void (%"class.gpu::InterfaceBase"*, i8*)*, void (%"class.gpu::InterfaceBase"*, i8*)** %7, i64 1
+  %9 = load void (%"class.gpu::InterfaceBase"*, i8*)*, void (%"class.gpu::InterfaceBase"*, i8*)** %8, align 8
+  tail call void %9(%"class.gpu::InterfaceBase"* %5, i8* %1) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES24VerifySyncTokensCHROMIUMEPPai(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i8**, i32) unnamed_addr #0 align 2 {
+  %4 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %5 = bitcast %"class.gpu::gles2::GLES2Interface"** %4 to %"class.gpu::InterfaceBase"**
+  %6 = load %"class.gpu::InterfaceBase"*, %"class.gpu::InterfaceBase"** %5, align 8
+  %7 = bitcast %"class.gpu::InterfaceBase"* %6 to void (%"class.gpu::InterfaceBase"*, i8**, i32)***
+  %8 = load void (%"class.gpu::InterfaceBase"*, i8**, i32)**, void (%"class.gpu::InterfaceBase"*, i8**, i32)*** %7, align 8
+  %9 = getelementptr inbounds void (%"class.gpu::InterfaceBase"*, i8**, i32)*, void (%"class.gpu::InterfaceBase"*, i8**, i32)** %8, i64 2
+  %10 = load void (%"class.gpu::InterfaceBase"*, i8**, i32)*, void (%"class.gpu::InterfaceBase"*, i8**, i32)** %9, align 8
+  tail call void %10(%"class.gpu::InterfaceBase"* %6, i8** %1, i32 %2) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu6raster24RasterImplementationGLES21WaitSyncTokenCHROMIUMEPKa(%"class.gpu::raster::RasterImplementationGLES"* nocapture readonly, i8*) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.gpu::raster::RasterImplementationGLES", %"class.gpu::raster::RasterImplementationGLES"* %0, i64 0, i32 1
+  %4 = bitcast %"class.gpu::gles2::GLES2Interface"** %3 to %"class.gpu::InterfaceBase"**
+  %5 = load %"class.gpu::InterfaceBase"*, %"class.gpu::InterfaceBase"** %4, align 8
+  %6 = bitcast %"class.gpu::InterfaceBase"* %5 to void (%"class.gpu::InterfaceBase"*, i8*)***
+  %7 = load void (%"class.gpu::InterfaceBase"*, i8*)**, void (%"class.gpu::InterfaceBase"*, i8*)*** %6, align 8
+  %8 = getelementptr inbounds void (%"class.gpu::InterfaceBase"*, i8*)*, void (%"class.gpu::InterfaceBase"*, i8*)** %7, i64 3
+  %9 = load void (%"class.gpu::InterfaceBase"*, i8*)*, void (%"class.gpu::InterfaceBase"*, i8*)** %8, align 8
+  tail call void %9(%"class.gpu::InterfaceBase"* %5, i8* %1) #7
+  ret void
+}
+
+declare i32 @_ZNK11SkColorInfo13bytesPerPixelEv(%class.SkColorInfo*) local_unnamed_addr #5
+
+declare void @_ZN4base8internal18WeakPtrFactoryBaseC2Em(%"class.base::internal::WeakPtrFactoryBase"*, i64) unnamed_addr #5
+
+; Function Attrs: nounwind
+declare void @_ZN3gpu8GLHelperD1Ev(%"class.gpu::GLHelper"*) unnamed_addr #1
+
+declare void @_ZNK4base8internal18WeakReferenceOwner6GetRefEv(%"class.base::internal::WeakReference"* sret, %"class.base::internal::WeakReferenceOwner"*) local_unnamed_addr #5
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal13WeakReferenceD1Ev(%"class.base::internal::WeakReference"*) unnamed_addr #1
+
+declare void @_ZN4base8internal11WeakPtrBaseC2ERKNS0_13WeakReferenceEm(%"class.base::internal::WeakPtrBase"*, %"class.base::internal::WeakReference"* dereferenceable(8), i64) unnamed_addr #5
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal7InvokerINS0_9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFv15GrSurfaceOriginbEEES7_bEJNS_7WeakPtrIS5_EEjS9_S7_EEEFvbEE7RunOnceEPNS0_13BindStateBaseEb(%"class.base::internal::BindStateBase"*, i1 zeroext) #0 comdat align 2 {
+  %3 = alloca i8, align 1
+  %4 = zext i1 %1 to i8
+  store i8 %4, i8* %3, align 1
+  %5 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1
+  %6 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  %7 = bitcast void (%"class.base::internal::BindStateBase"*)** %6 to %"class.base::WeakPtr"*
+  %8 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %6, i64 2
+  %9 = bitcast void (%"class.base::internal::BindStateBase"*)** %8 to i32*
+  %10 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %6, i64 3
+  %11 = bitcast void (%"class.base::internal::BindStateBase"*)** %10 to %"class.base::OnceCallback"*
+  %12 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %6, i64 4
+  %13 = bitcast void (%"class.base::internal::BindStateBase"*)** %12 to i32*
+  %14 = bitcast void (%"class.base::internal::BindStateBase"*)** %6 to %"class.base::internal::WeakReference"*
+  %15 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %14) #7
+  br i1 %15, label %16, label %27
+
+16:                                               ; preds = %2
+  %17 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %6, i64 1
+  %18 = bitcast void (%"class.base::internal::BindStateBase"*)** %17 to %"class.gpu::raster::RasterImplementationGLES"**
+  %19 = load %"class.gpu::raster::RasterImplementationGLES"*, %"class.gpu::raster::RasterImplementationGLES"** %18, align 8
+  %20 = icmp eq %"class.gpu::raster::RasterImplementationGLES"* %19, null
+  br i1 %20, label %27, label %21
+
+21:                                               ; preds = %16
+  %22 = bitcast %"class.base::internal::BindStateBase"* %5 to i64*
+  %23 = load i64, i64* %22, align 8
+  %24 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 1
+  %25 = bitcast void ()** %24 to i64*
+  %26 = load i64, i64* %25, align 8
+  call void @_ZN4base8internal13FunctorTraitsIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFv15GrSurfaceOriginbEEES6_bEvE6InvokeISA_NS_7WeakPtrIS4_EEJjS8_S6_bEEEvT_OT0_DpOT1_(i64 %23, i64 %26, %"class.base::WeakPtr"* dereferenceable(16) %7, i32* dereferenceable(4) %9, %"class.base::OnceCallback"* dereferenceable(8) %11, i32* dereferenceable(4) %13, i8* nonnull dereferenceable(1) %3) #7
+  br label %27
+
+27:                                               ; preds = %2, %16, %21
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal13FunctorTraitsIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFv15GrSurfaceOriginbEEES6_bEvE6InvokeISA_NS_7WeakPtrIS4_EEJjS8_S6_bEEEvT_OT0_DpOT1_(i64, i64, %"class.base::WeakPtr"* dereferenceable(16), i32* dereferenceable(4), %"class.base::OnceCallback"* dereferenceable(8), i32* dereferenceable(4), i8* dereferenceable(1)) local_unnamed_addr #0 comdat align 2 {
+  %8 = alloca %"class.logging::CheckError", align 8
+  %9 = alloca %"class.base::OnceCallback", align 8
+  %10 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %2, i64 0, i32 0, i32 0
+  %11 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %10) #7
+  br i1 %11, label %15, label %12
+
+12:                                               ; preds = %7
+  %13 = bitcast %"class.logging::CheckError"* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %13) #7
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %8, i8* getelementptr inbounds ([29 x i8], [29 x i8]* @.str.2, i64 0, i64 0), i32 251, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.3, i64 0, i64 0)) #7
+  %14 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %8) #7
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %8) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %13) #7
+  br label %15
+
+15:                                               ; preds = %12, %7
+  %16 = call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %10) #7
+  %17 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %2, i64 0, i32 0, i32 1
+  %18 = bitcast i64* %17 to i8**
+  %19 = load i8*, i8** %18, align 8
+  %20 = select i1 %16, i8* %19, i8* null
+  %21 = getelementptr inbounds i8, i8* %20, i64 %1
+  %22 = bitcast i8* %21 to %"class.gpu::raster::RasterImplementationGLES"*
+  %23 = and i64 %0, 1
+  %24 = icmp eq i64 %23, 0
+  br i1 %24, label %32, label %25
+
+25:                                               ; preds = %15
+  %26 = bitcast i8* %21 to i8**
+  %27 = load i8*, i8** %26, align 8
+  %28 = add i64 %0, -1
+  %29 = getelementptr i8, i8* %27, i64 %28
+  %30 = bitcast i8* %29 to void (%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback"*, i32, i1)**
+  %31 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback"*, i32, i1)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback"*, i32, i1)** %30, align 8
+  br label %34
+
+32:                                               ; preds = %15
+  %33 = inttoptr i64 %0 to void (%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback"*, i32, i1)*
+  br label %34
+
+34:                                               ; preds = %32, %25
+  %35 = phi void (%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback"*, i32, i1)* [ %31, %25 ], [ %33, %32 ]
+  %36 = load i32, i32* %3, align 4
+  %37 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %4, i64 0, i32 0, i32 0, i32 0
+  %38 = bitcast %"class.base::OnceCallback"* %4 to i64*
+  %39 = load i64, i64* %38, align 8
+  %40 = bitcast %"class.base::OnceCallback"* %9 to i64*
+  store i64 %39, i64* %40, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %37, align 8
+  %41 = load i32, i32* %5, align 4
+  %42 = load i8, i8* %6, align 1, !range !26
+  %43 = icmp ne i8 %42, 0
+  call void %35(%"class.gpu::raster::RasterImplementationGLES"* %22, i32 %36, %"class.base::OnceCallback"* nonnull %9, i32 %41, i1 zeroext %43) #7
+  %44 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %9, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %44) #7
+  ret void
+}
+
+declare zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"*) local_unnamed_addr #5
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"*) unnamed_addr #1
+
+declare void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* sret, i8*, i32, i8*) local_unnamed_addr #5
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"*) local_unnamed_addr #5
+
+; Function Attrs: nounwind
+declare void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"*) unnamed_addr #1
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #6
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFv15GrSurfaceOriginbEEES6_bEJNS_7WeakPtrIS4_EEjS8_S6_EE7DestroyEPKNS0_13BindStateBaseE(%"class.base::internal::BindStateBase"*) #0 comdat align 2 {
+  %2 = icmp eq %"class.base::internal::BindStateBase"* %0, null
+  br i1 %2, label %9, label %3
+
+3:                                                ; preds = %1
+  %4 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 2, i32 1
+  %5 = bitcast void ()** %4 to %"class.base::internal::CallbackBase"*
+  tail call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* %5) #7
+  %6 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  %7 = bitcast void (%"class.base::internal::BindStateBase"*)** %6 to %"class.base::internal::WeakPtrBase"*
+  tail call void @_ZN4base8internal11WeakPtrBaseD2Ev(%"class.base::internal::WeakPtrBase"* %7) #7
+  %8 = bitcast %"class.base::internal::BindStateBase"* %0 to i8*
+  tail call void @_ZdlPv(i8* %8) #8
+  br label %9
+
+9:                                                ; preds = %3, %1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden zeroext i1 @_ZN4base8internal23QueryCancellationTraitsINS0_9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFv15GrSurfaceOriginbEEES7_bEJNS_7WeakPtrIS5_EEjS9_S7_EEEEEbPKNS0_13BindStateBaseENSF_21CancellationQueryModeE(%"class.base::internal::BindStateBase"*, i32) #0 comdat {
+  %3 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  switch i32 %1, label %16 [
+    i32 0, label %4
+    i32 1, label %13
+  ]
+
+4:                                                ; preds = %2
+  %5 = bitcast void (%"class.base::internal::BindStateBase"*)** %3 to %"class.base::internal::WeakReference"*
+  %6 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %5) #7
+  %7 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %3, i64 1
+  %8 = bitcast void (%"class.base::internal::BindStateBase"*)** %7 to %"class.gpu::raster::RasterImplementationGLES"**
+  %9 = load %"class.gpu::raster::RasterImplementationGLES"*, %"class.gpu::raster::RasterImplementationGLES"** %8, align 8
+  %10 = icmp ne %"class.gpu::raster::RasterImplementationGLES"* %9, null
+  %11 = and i1 %6, %10
+  %12 = xor i1 %11, true
+  br label %16
+
+13:                                               ; preds = %2
+  %14 = bitcast void (%"class.base::internal::BindStateBase"*)** %3 to %"class.base::internal::WeakReference"*
+  %15 = tail call zeroext i1 @_ZNK4base8internal13WeakReference10MaybeValidEv(%"class.base::internal::WeakReference"* %14) #7
+  br label %16
+
+16:                                               ; preds = %2, %4, %13
+  %17 = phi i1 [ %15, %13 ], [ %12, %4 ], [ false, %2 ]
+  ret i1 %17
+}
+
+declare void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_EPFbS5_NS1_21CancellationQueryModeEE(%"class.base::internal::BindStateBase"*, void ()*, void (%"class.base::internal::BindStateBase"*)*, i1 (%"class.base::internal::BindStateBase"*, i32)*) unnamed_addr #5
+
+declare zeroext i1 @_ZNK4base8internal13WeakReference10MaybeValidEv(%"class.base::internal::WeakReference"*) local_unnamed_addr #5
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal13WeakReferenceC1EOS1_(%"class.base::internal::WeakReference"*, %"class.base::internal::WeakReference"* dereferenceable(8)) unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal7InvokerINS0_9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEEEJNS_7WeakPtrIS5_EEjS8_EEES7_E7RunOnceEPNS0_13BindStateBaseE(%"class.base::internal::BindStateBase"*) #0 comdat align 2 {
+  %2 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1
+  %3 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  %4 = bitcast void (%"class.base::internal::BindStateBase"*)** %3 to %"class.base::WeakPtr"*
+  %5 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %3, i64 2
+  %6 = bitcast void (%"class.base::internal::BindStateBase"*)** %5 to i32*
+  %7 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %3, i64 3
+  %8 = bitcast void (%"class.base::internal::BindStateBase"*)** %7 to %"class.base::OnceCallback.117"*
+  %9 = bitcast void (%"class.base::internal::BindStateBase"*)** %3 to %"class.base::internal::WeakReference"*
+  %10 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %9) #7
+  br i1 %10, label %11, label %22
+
+11:                                               ; preds = %1
+  %12 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %3, i64 1
+  %13 = bitcast void (%"class.base::internal::BindStateBase"*)** %12 to %"class.gpu::raster::RasterImplementationGLES"**
+  %14 = load %"class.gpu::raster::RasterImplementationGLES"*, %"class.gpu::raster::RasterImplementationGLES"** %13, align 8
+  %15 = icmp eq %"class.gpu::raster::RasterImplementationGLES"* %14, null
+  br i1 %15, label %22, label %16
+
+16:                                               ; preds = %11
+  %17 = bitcast %"class.base::internal::BindStateBase"* %2 to i64*
+  %18 = load i64, i64* %17, align 8
+  %19 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 1
+  %20 = bitcast void ()** %19 to i64*
+  %21 = load i64, i64* %20, align 8
+  tail call void @_ZN4base8internal13FunctorTraitsIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEEEvE6InvokeIS9_NS_7WeakPtrIS4_EEJjS7_EEEvT_OT0_DpOT1_(i64 %18, i64 %21, %"class.base::WeakPtr"* dereferenceable(16) %4, i32* dereferenceable(4) %6, %"class.base::OnceCallback.117"* dereferenceable(8) %8) #7
+  br label %22
+
+22:                                               ; preds = %1, %11, %16
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal13FunctorTraitsIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEEEvE6InvokeIS9_NS_7WeakPtrIS4_EEJjS7_EEEvT_OT0_DpOT1_(i64, i64, %"class.base::WeakPtr"* dereferenceable(16), i32* dereferenceable(4), %"class.base::OnceCallback.117"* dereferenceable(8)) local_unnamed_addr #0 comdat align 2 {
+  %6 = alloca %"class.logging::CheckError", align 8
+  %7 = alloca %"class.base::OnceCallback.117", align 8
+  %8 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %2, i64 0, i32 0, i32 0
+  %9 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %8) #7
+  br i1 %9, label %13, label %10
+
+10:                                               ; preds = %5
+  %11 = bitcast %"class.logging::CheckError"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %11) #7
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %6, i8* getelementptr inbounds ([29 x i8], [29 x i8]* @.str.2, i64 0, i64 0), i32 251, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.3, i64 0, i64 0)) #7
+  %12 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %6) #7
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %6) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %11) #7
+  br label %13
+
+13:                                               ; preds = %10, %5
+  %14 = call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %8) #7
+  %15 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %2, i64 0, i32 0, i32 1
+  %16 = bitcast i64* %15 to i8**
+  %17 = load i8*, i8** %16, align 8
+  %18 = select i1 %14, i8* %17, i8* null
+  %19 = getelementptr inbounds i8, i8* %18, i64 %1
+  %20 = bitcast i8* %19 to %"class.gpu::raster::RasterImplementationGLES"*
+  %21 = and i64 %0, 1
+  %22 = icmp eq i64 %21, 0
+  br i1 %22, label %30, label %23
+
+23:                                               ; preds = %13
+  %24 = bitcast i8* %19 to i8**
+  %25 = load i8*, i8** %24, align 8
+  %26 = add i64 %0, -1
+  %27 = getelementptr i8, i8* %25, i64 %26
+  %28 = bitcast i8* %27 to void (%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback.117"*)**
+  %29 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback.117"*)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback.117"*)** %28, align 8
+  br label %32
+
+30:                                               ; preds = %13
+  %31 = inttoptr i64 %0 to void (%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback.117"*)*
+  br label %32
+
+32:                                               ; preds = %30, %23
+  %33 = phi void (%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback.117"*)* [ %29, %23 ], [ %31, %30 ]
+  %34 = load i32, i32* %3, align 4
+  %35 = getelementptr inbounds %"class.base::OnceCallback.117", %"class.base::OnceCallback.117"* %4, i64 0, i32 0, i32 0, i32 0
+  %36 = bitcast %"class.base::OnceCallback.117"* %4 to i64*
+  %37 = load i64, i64* %36, align 8
+  %38 = bitcast %"class.base::OnceCallback.117"* %7 to i64*
+  store i64 %37, i64* %38, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %35, align 8
+  call void %33(%"class.gpu::raster::RasterImplementationGLES"* %20, i32 %34, %"class.base::OnceCallback.117"* nonnull %7) #7
+  %39 = getelementptr inbounds %"class.base::OnceCallback.117", %"class.base::OnceCallback.117"* %7, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %39) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEEEJNS_7WeakPtrIS4_EEjS7_EE7DestroyEPKNS0_13BindStateBaseE(%"class.base::internal::BindStateBase"*) #0 comdat align 2 {
+  %2 = icmp eq %"class.base::internal::BindStateBase"* %0, null
+  br i1 %2, label %9, label %3
+
+3:                                                ; preds = %1
+  %4 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 2, i32 1
+  %5 = bitcast void ()** %4 to %"class.base::internal::CallbackBase"*
+  tail call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* %5) #7
+  %6 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  %7 = bitcast void (%"class.base::internal::BindStateBase"*)** %6 to %"class.base::internal::WeakPtrBase"*
+  tail call void @_ZN4base8internal11WeakPtrBaseD2Ev(%"class.base::internal::WeakPtrBase"* %7) #7
+  %8 = bitcast %"class.base::internal::BindStateBase"* %0 to i8*
+  tail call void @_ZdlPv(i8* %8) #8
+  br label %9
+
+9:                                                ; preds = %3, %1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden zeroext i1 @_ZN4base8internal23QueryCancellationTraitsINS0_9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEEEJNS_7WeakPtrIS5_EEjS8_EEEEEbPKNS0_13BindStateBaseENSE_21CancellationQueryModeE(%"class.base::internal::BindStateBase"*, i32) #0 comdat {
+  %3 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  switch i32 %1, label %16 [
+    i32 0, label %4
+    i32 1, label %13
+  ]
+
+4:                                                ; preds = %2
+  %5 = bitcast void (%"class.base::internal::BindStateBase"*)** %3 to %"class.base::internal::WeakReference"*
+  %6 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %5) #7
+  %7 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %3, i64 1
+  %8 = bitcast void (%"class.base::internal::BindStateBase"*)** %7 to %"class.gpu::raster::RasterImplementationGLES"**
+  %9 = load %"class.gpu::raster::RasterImplementationGLES"*, %"class.gpu::raster::RasterImplementationGLES"** %8, align 8
+  %10 = icmp ne %"class.gpu::raster::RasterImplementationGLES"* %9, null
+  %11 = and i1 %6, %10
+  %12 = xor i1 %11, true
+  br label %16
+
+13:                                               ; preds = %2
+  %14 = bitcast void (%"class.base::internal::BindStateBase"*)** %3 to %"class.base::internal::WeakReference"*
+  %15 = tail call zeroext i1 @_ZNK4base8internal13WeakReference10MaybeValidEv(%"class.base::internal::WeakReference"* %14) #7
+  br label %16
+
+16:                                               ; preds = %2, %4, %13
+  %17 = phi i1 [ %15, %13 ], [ %12, %4 ], [ false, %2 ]
+  ret i1 %17
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal7InvokerINS0_9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEENS6_IFvbEEEbEJNS_7WeakPtrIS5_EEjS8_SA_EEES9_E7RunOnceEPNS0_13BindStateBaseEb(%"class.base::internal::BindStateBase"*, i1 zeroext) #0 comdat align 2 {
+  %3 = alloca i8, align 1
+  %4 = zext i1 %1 to i8
+  store i8 %4, i8* %3, align 1
+  %5 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1
+  %6 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  %7 = bitcast void (%"class.base::internal::BindStateBase"*)** %6 to %"class.base::WeakPtr"*
+  %8 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %6, i64 2
+  %9 = bitcast void (%"class.base::internal::BindStateBase"*)** %8 to i32*
+  %10 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %6, i64 3
+  %11 = bitcast void (%"class.base::internal::BindStateBase"*)** %10 to %"class.base::OnceCallback.117"*
+  %12 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %6, i64 4
+  %13 = bitcast void (%"class.base::internal::BindStateBase"*)** %12 to %"class.base::OnceCallback.115"*
+  %14 = bitcast void (%"class.base::internal::BindStateBase"*)** %6 to %"class.base::internal::WeakReference"*
+  %15 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %14) #7
+  br i1 %15, label %16, label %27
+
+16:                                               ; preds = %2
+  %17 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %6, i64 1
+  %18 = bitcast void (%"class.base::internal::BindStateBase"*)** %17 to %"class.gpu::raster::RasterImplementationGLES"**
+  %19 = load %"class.gpu::raster::RasterImplementationGLES"*, %"class.gpu::raster::RasterImplementationGLES"** %18, align 8
+  %20 = icmp eq %"class.gpu::raster::RasterImplementationGLES"* %19, null
+  br i1 %20, label %27, label %21
+
+21:                                               ; preds = %16
+  %22 = bitcast %"class.base::internal::BindStateBase"* %5 to i64*
+  %23 = load i64, i64* %22, align 8
+  %24 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 1
+  %25 = bitcast void ()** %24 to i64*
+  %26 = load i64, i64* %25, align 8
+  call void @_ZN4base8internal13FunctorTraitsIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEENS5_IFvbEEEbEvE6InvokeISB_NS_7WeakPtrIS4_EEJjS7_S9_bEEEvT_OT0_DpOT1_(i64 %23, i64 %26, %"class.base::WeakPtr"* dereferenceable(16) %7, i32* dereferenceable(4) %9, %"class.base::OnceCallback.117"* dereferenceable(8) %11, %"class.base::OnceCallback.115"* dereferenceable(8) %13, i8* nonnull dereferenceable(1) %3) #7
+  br label %27
+
+27:                                               ; preds = %2, %16, %21
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal13FunctorTraitsIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEENS5_IFvbEEEbEvE6InvokeISB_NS_7WeakPtrIS4_EEJjS7_S9_bEEEvT_OT0_DpOT1_(i64, i64, %"class.base::WeakPtr"* dereferenceable(16), i32* dereferenceable(4), %"class.base::OnceCallback.117"* dereferenceable(8), %"class.base::OnceCallback.115"* dereferenceable(8), i8* dereferenceable(1)) local_unnamed_addr #0 comdat align 2 {
+  %8 = alloca %"class.logging::CheckError", align 8
+  %9 = alloca %"class.base::OnceCallback.117", align 8
+  %10 = alloca %"class.base::OnceCallback.115", align 8
+  %11 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %2, i64 0, i32 0, i32 0
+  %12 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %11) #7
+  br i1 %12, label %16, label %13
+
+13:                                               ; preds = %7
+  %14 = bitcast %"class.logging::CheckError"* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %14) #7
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %8, i8* getelementptr inbounds ([29 x i8], [29 x i8]* @.str.2, i64 0, i64 0), i32 251, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.3, i64 0, i64 0)) #7
+  %15 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %8) #7
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %8) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %14) #7
+  br label %16
+
+16:                                               ; preds = %13, %7
+  %17 = call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %11) #7
+  %18 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %2, i64 0, i32 0, i32 1
+  %19 = bitcast i64* %18 to i8**
+  %20 = load i8*, i8** %19, align 8
+  %21 = select i1 %17, i8* %20, i8* null
+  %22 = getelementptr inbounds i8, i8* %21, i64 %1
+  %23 = bitcast i8* %22 to %"class.gpu::raster::RasterImplementationGLES"*
+  %24 = and i64 %0, 1
+  %25 = icmp eq i64 %24, 0
+  br i1 %25, label %33, label %26
+
+26:                                               ; preds = %16
+  %27 = bitcast i8* %22 to i8**
+  %28 = load i8*, i8** %27, align 8
+  %29 = add i64 %0, -1
+  %30 = getelementptr i8, i8* %28, i64 %29
+  %31 = bitcast i8* %30 to void (%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback.117"*, %"class.base::OnceCallback.115"*, i1)**
+  %32 = load void (%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback.117"*, %"class.base::OnceCallback.115"*, i1)*, void (%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback.117"*, %"class.base::OnceCallback.115"*, i1)** %31, align 8
+  br label %35
+
+33:                                               ; preds = %16
+  %34 = inttoptr i64 %0 to void (%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback.117"*, %"class.base::OnceCallback.115"*, i1)*
+  br label %35
+
+35:                                               ; preds = %33, %26
+  %36 = phi void (%"class.gpu::raster::RasterImplementationGLES"*, i32, %"class.base::OnceCallback.117"*, %"class.base::OnceCallback.115"*, i1)* [ %32, %26 ], [ %34, %33 ]
+  %37 = load i32, i32* %3, align 4
+  %38 = getelementptr inbounds %"class.base::OnceCallback.117", %"class.base::OnceCallback.117"* %4, i64 0, i32 0, i32 0, i32 0
+  %39 = bitcast %"class.base::OnceCallback.117"* %4 to i64*
+  %40 = load i64, i64* %39, align 8
+  %41 = bitcast %"class.base::OnceCallback.117"* %9 to i64*
+  store i64 %40, i64* %41, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %38, align 8
+  %42 = getelementptr inbounds %"class.base::OnceCallback.115", %"class.base::OnceCallback.115"* %5, i64 0, i32 0, i32 0, i32 0
+  %43 = bitcast %"class.base::OnceCallback.115"* %5 to i64*
+  %44 = load i64, i64* %43, align 8
+  %45 = bitcast %"class.base::OnceCallback.115"* %10 to i64*
+  store i64 %44, i64* %45, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %42, align 8
+  %46 = load i8, i8* %6, align 1, !range !26
+  %47 = icmp ne i8 %46, 0
+  call void %36(%"class.gpu::raster::RasterImplementationGLES"* %23, i32 %37, %"class.base::OnceCallback.117"* nonnull %9, %"class.base::OnceCallback.115"* nonnull %10, i1 zeroext %47) #7
+  %48 = getelementptr inbounds %"class.base::OnceCallback.115", %"class.base::OnceCallback.115"* %10, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %48) #7
+  %49 = getelementptr inbounds %"class.base::OnceCallback.117", %"class.base::OnceCallback.117"* %9, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %49) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEENS5_IFvbEEEbEJNS_7WeakPtrIS4_EEjS7_S9_EE7DestroyEPKNS0_13BindStateBaseE(%"class.base::internal::BindStateBase"*) #0 comdat align 2 {
+  %2 = icmp eq %"class.base::internal::BindStateBase"* %0, null
+  br i1 %2, label %11, label %3
+
+3:                                                ; preds = %1
+  %4 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 2, i32 2
+  %5 = bitcast void (%"class.base::internal::BindStateBase"*)** %4 to %"class.base::internal::CallbackBase"*
+  tail call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* %5) #7
+  %6 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 2, i32 1
+  %7 = bitcast void ()** %6 to %"class.base::internal::CallbackBase"*
+  tail call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* %7) #7
+  %8 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  %9 = bitcast void (%"class.base::internal::BindStateBase"*)** %8 to %"class.base::internal::WeakPtrBase"*
+  tail call void @_ZN4base8internal11WeakPtrBaseD2Ev(%"class.base::internal::WeakPtrBase"* %9) #7
+  %10 = bitcast %"class.base::internal::BindStateBase"* %0 to i8*
+  tail call void @_ZdlPv(i8* %10) #8
+  br label %11
+
+11:                                               ; preds = %3, %1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden zeroext i1 @_ZN4base8internal23QueryCancellationTraitsINS0_9BindStateIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEENS6_IFvbEEEbEJNS_7WeakPtrIS5_EEjS8_SA_EEEEEbPKNS0_13BindStateBaseENSG_21CancellationQueryModeE(%"class.base::internal::BindStateBase"*, i32) #0 comdat {
+  %3 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  switch i32 %1, label %16 [
+    i32 0, label %4
+    i32 1, label %13
+  ]
+
+4:                                                ; preds = %2
+  %5 = bitcast void (%"class.base::internal::BindStateBase"*)** %3 to %"class.base::internal::WeakReference"*
+  %6 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %5) #7
+  %7 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %3, i64 1
+  %8 = bitcast void (%"class.base::internal::BindStateBase"*)** %7 to %"class.gpu::raster::RasterImplementationGLES"**
+  %9 = load %"class.gpu::raster::RasterImplementationGLES"*, %"class.gpu::raster::RasterImplementationGLES"** %8, align 8
+  %10 = icmp ne %"class.gpu::raster::RasterImplementationGLES"* %9, null
+  %11 = and i1 %6, %10
+  %12 = xor i1 %11, true
+  br label %16
+
+13:                                               ; preds = %2
+  %14 = bitcast void (%"class.base::internal::BindStateBase"*)** %3 to %"class.base::internal::WeakReference"*
+  %15 = tail call zeroext i1 @_ZNK4base8internal13WeakReference10MaybeValidEv(%"class.base::internal::WeakReference"* %14) #7
+  br label %16
+
+16:                                               ; preds = %2, %4, %13
+  %17 = phi i1 [ %15, %13 ], [ %12, %4 ], [ false, %2 ]
+  ret i1 %17
+}
+
+declare void @_ZN3gpu8GLHelperC1EPNS_5gles214GLES2InterfaceEPNS_14ContextSupportE(%"class.gpu::GLHelper"*, %"class.gpu::gles2::GLES2Interface"*, %"class.gpu::ContextSupport"*) unnamed_addr #5
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { argmemonly nounwind }
+attributes #4 = { norecurse nounwind readnone ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { nounwind }
+attributes #8 = { builtin nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{!3}
+!3 = distinct !{!3, !4, !"_ZNK4base14WeakPtrFactoryIN3gpu6raster24RasterImplementationGLESEE10GetWeakPtrEv: argument 0"}
+!4 = distinct !{!4, !"_ZNK4base14WeakPtrFactoryIN3gpu6raster24RasterImplementationGLESEE10GetWeakPtrEv"}
+!5 = !{!6, !8}
+!6 = distinct !{!6, !7, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN3gpu6raster24RasterImplementationGLESEFvjNS2_IFv15GrSurfaceOriginbEEES6_bEJNS_7WeakPtrIS5_EERjS8_RS6_EEEDcOT0_DpOT1_: argument 0"}
+!7 = distinct !{!7, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN3gpu6raster24RasterImplementationGLESEFvjNS2_IFv15GrSurfaceOriginbEEES6_bEJNS_7WeakPtrIS5_EERjS8_RS6_EEEDcOT0_DpOT1_"}
+!8 = distinct !{!8, !9, !"_ZN4base8BindOnceIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFv15GrSurfaceOriginbEEES5_bEJNS_7WeakPtrIS3_EERjS7_RS5_EEENS4_INS_8internal14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSG_DpOSH_: argument 0"}
+!9 = distinct !{!9, !"_ZN4base8BindOnceIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFv15GrSurfaceOriginbEEES5_bEJNS_7WeakPtrIS3_EERjS7_RS5_EEENS4_INS_8internal14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSG_DpOSH_"}
+!10 = !{!11}
+!11 = distinct !{!11, !12, !"_ZNK4base14WeakPtrFactoryIN3gpu6raster24RasterImplementationGLESEE10GetWeakPtrEv: argument 0"}
+!12 = distinct !{!12, !"_ZNK4base14WeakPtrFactoryIN3gpu6raster24RasterImplementationGLESEE10GetWeakPtrEv"}
+!13 = !{!14, !16}
+!14 = distinct !{!14, !15, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN3gpu6raster24RasterImplementationGLESEFvjNS2_IFvvEEEEJNS_7WeakPtrIS5_EERjS7_EEEDcOT0_DpOT1_: argument 0"}
+!15 = distinct !{!15, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN3gpu6raster24RasterImplementationGLESEFvjNS2_IFvvEEEEJNS_7WeakPtrIS5_EERjS7_EEEDcOT0_DpOT1_"}
+!16 = distinct !{!16, !17, !"_ZN4base8BindOnceIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEEEJNS_7WeakPtrIS3_EERjS6_EEENS4_INS_8internal14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSE_DpOSF_: argument 0"}
+!17 = distinct !{!17, !"_ZN4base8BindOnceIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEEEJNS_7WeakPtrIS3_EERjS6_EEENS4_INS_8internal14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSE_DpOSF_"}
+!18 = !{!19}
+!19 = distinct !{!19, !20, !"_ZNK4base14WeakPtrFactoryIN3gpu6raster24RasterImplementationGLESEE10GetWeakPtrEv: argument 0"}
+!20 = distinct !{!20, !"_ZNK4base14WeakPtrFactoryIN3gpu6raster24RasterImplementationGLESEE10GetWeakPtrEv"}
+!21 = !{!22, !24}
+!22 = distinct !{!22, !23, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN3gpu6raster24RasterImplementationGLESEFvjNS2_IFvvEEENS2_IFvbEEEbEJNS_7WeakPtrIS5_EERjS7_S9_EEEDcOT0_DpOT1_: argument 0"}
+!23 = distinct !{!23, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN3gpu6raster24RasterImplementationGLESEFvjNS2_IFvvEEENS2_IFvbEEEbEJNS_7WeakPtrIS5_EERjS7_S9_EEEDcOT0_DpOT1_"}
+!24 = distinct !{!24, !25, !"_ZN4base8BindOnceIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEENS4_IFvbEEEbEJNS_7WeakPtrIS3_EERjS6_S8_EEENS4_INS_8internal14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSG_DpOSH_: argument 0"}
+!25 = distinct !{!25, !"_ZN4base8BindOnceIMN3gpu6raster24RasterImplementationGLESEFvjNS_12OnceCallbackIFvvEEENS4_IFvbEEEbEJNS_7WeakPtrIS3_EERjS6_S8_EEENS4_INS_8internal14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSG_DpOSH_"}
+!26 = !{i8 0, i8 2}

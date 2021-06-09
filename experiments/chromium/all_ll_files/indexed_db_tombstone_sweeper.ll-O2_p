@@ -1,0 +1,2792 @@
+; ModuleID = '../../content/browser/indexed_db/indexed_db_tombstone_sweeper.cc'
+source_filename = "../../content/browser/indexed_db/indexed_db_tombstone_sweeper.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.content::IndexedDBTombstoneSweeper" = type { %"class.content::IndexedDBPreCloseTaskQueue::PreCloseTask", i32, i32, i32, i32, i32, %"class.base::TickClock"*, %"class.absl::optional", i8, %"class.leveldb::WriteBatch", %"class.base::TimeDelta", %"class.std::__1::vector"*, %"class.std::__1::unique_ptr", %"struct.content::IndexedDBTombstoneSweeper::SweepState", %"struct.content::IndexedDBTombstoneSweeper::SweepMetrics", %"class.base::WeakPtrFactory" }
+%"class.content::IndexedDBPreCloseTaskQueue::PreCloseTask" = type { i32 (...)**, i8, %"class.leveldb::DB"* }
+%"class.base::TickClock" = type { i32 (...)** }
+%"class.absl::optional" = type { %"class.absl::optional_internal::optional_data" }
+%"class.absl::optional_internal::optional_data" = type { %"class.absl::optional_internal::optional_data_base" }
+%"class.absl::optional_internal::optional_data_base" = type { %"class.absl::optional_internal::optional_data_dtor_base" }
+%"class.absl::optional_internal::optional_data_dtor_base" = type { i8, %union.anon }
+%union.anon = type { %"class.base::TimeTicks" }
+%"class.base::TimeTicks" = type { %"class.base::time_internal::TimeBase" }
+%"class.base::time_internal::TimeBase" = type { i64 }
+%"class.leveldb::WriteBatch" = type { %"class.std::__1::basic_string" }
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon.0 }
+%union.anon.0 = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.base::TimeDelta" = type { i64 }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"struct.blink::IndexedDBDatabaseMetadata"*, %"struct.blink::IndexedDBDatabaseMetadata"*, %"class.std::__1::__compressed_pair.19" }
+%"struct.blink::IndexedDBDatabaseMetadata" = type <{ %"class.std::__1::basic_string.2", i64, i64, i64, %"class.std::__1::map", i8, [7 x i8] }>
+%"class.std::__1::basic_string.2" = type { %"class.std::__1::__compressed_pair.3" }
+%"class.std::__1::__compressed_pair.3" = type { %"struct.std::__1::__compressed_pair_elem.4" }
+%"struct.std::__1::__compressed_pair_elem.4" = type { %"struct.std::__1::basic_string<char16_t, std::__1::char_traits<char16_t>, std::__1::allocator<char16_t> >::__rep" }
+%"struct.std::__1::basic_string<char16_t, std::__1::char_traits<char16_t>, std::__1::allocator<char16_t> >::__rep" = type { %union.anon.5 }
+%union.anon.5 = type { %"struct.std::__1::basic_string<char16_t, std::__1::char_traits<char16_t>, std::__1::allocator<char16_t> >::__long" }
+%"struct.std::__1::basic_string<char16_t, std::__1::char_traits<char16_t>, std::__1::allocator<char16_t> >::__long" = type { i16*, i64, i64 }
+%"class.std::__1::map" = type { %"class.std::__1::__tree" }
+%"class.std::__1::__tree" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.11", %"class.std::__1::__compressed_pair.16" }
+%"class.std::__1::__tree_end_node" = type { %"class.std::__1::__tree_node_base"* }
+%"class.std::__1::__tree_node_base" = type <{ %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_end_node"*, i8, [7 x i8] }>
+%"class.std::__1::__compressed_pair.11" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"struct.std::__1::__compressed_pair_elem.12" = type { %"class.std::__1::__tree_end_node" }
+%"class.std::__1::__compressed_pair.16" = type { %"struct.std::__1::__compressed_pair_elem.17" }
+%"struct.std::__1::__compressed_pair_elem.17" = type { i64 }
+%"class.std::__1::__compressed_pair.19" = type { %"struct.std::__1::__compressed_pair_elem.20" }
+%"struct.std::__1::__compressed_pair_elem.20" = type { %"struct.blink::IndexedDBDatabaseMetadata"* }
+%"class.std::__1::unique_ptr" = type { %"class.std::__1::__compressed_pair.24" }
+%"class.std::__1::__compressed_pair.24" = type { %"struct.std::__1::__compressed_pair_elem.25" }
+%"struct.std::__1::__compressed_pair_elem.25" = type { %"class.leveldb::Iterator"* }
+%"class.leveldb::Iterator" = type { i32 (...)**, %"struct.leveldb::Iterator::CleanupNode" }
+%"struct.leveldb::Iterator::CleanupNode" = type { void (i8*, i8*)*, i8*, i8*, %"struct.leveldb::Iterator::CleanupNode"* }
+%"struct.content::IndexedDBTombstoneSweeper::SweepState" = type { i64, %"class.absl::optional.27", i64, %"class.absl::optional.32", i64, %"class.absl::optional.38", %"class.absl::optional.55" }
+%"class.absl::optional.27" = type { %"class.absl::optional_internal::optional_data.28" }
+%"class.absl::optional_internal::optional_data.28" = type { %"class.absl::optional_internal::optional_data_base.29" }
+%"class.absl::optional_internal::optional_data_base.29" = type { %"class.absl::optional_internal::optional_data_dtor_base.30" }
+%"class.absl::optional_internal::optional_data_dtor_base.30" = type { i8, %union.anon.31 }
+%union.anon.31 = type { %"class.content::WrappingIterator" }
+%"class.content::WrappingIterator" = type { i8, i64, %"class.std::__1::__wrap_iter", %"class.std::__1::vector"* }
+%"class.std::__1::__wrap_iter" = type { %"struct.blink::IndexedDBDatabaseMetadata"* }
+%"class.absl::optional.32" = type { %"class.absl::optional_internal::optional_data.33" }
+%"class.absl::optional_internal::optional_data.33" = type { %"class.absl::optional_internal::optional_data_base.34" }
+%"class.absl::optional_internal::optional_data_base.34" = type { %"class.absl::optional_internal::optional_data_dtor_base.35" }
+%"class.absl::optional_internal::optional_data_dtor_base.35" = type { i8, %union.anon.36 }
+%union.anon.36 = type { %"class.content::WrappingIterator.37" }
+%"class.content::WrappingIterator.37" = type { i8, i64, %"class.std::__1::__map_const_iterator", %"class.std::__1::map"* }
+%"class.std::__1::__map_const_iterator" = type { %"class.std::__1::__tree_const_iterator" }
+%"class.std::__1::__tree_const_iterator" = type { %"class.std::__1::__tree_end_node"* }
+%"class.absl::optional.38" = type { %"class.absl::optional_internal::optional_data.39" }
+%"class.absl::optional_internal::optional_data.39" = type { %"class.absl::optional_internal::optional_data_base.40" }
+%"class.absl::optional_internal::optional_data_base.40" = type { %"class.absl::optional_internal::optional_data_dtor_base.41" }
+%"class.absl::optional_internal::optional_data_dtor_base.41" = type { i8, %union.anon.42 }
+%union.anon.42 = type { %"class.content::WrappingIterator.43" }
+%"class.content::WrappingIterator.43" = type { i8, i64, %"class.std::__1::__map_const_iterator.44", %"class.std::__1::map.46"* }
+%"class.std::__1::__map_const_iterator.44" = type { %"class.std::__1::__tree_const_iterator.45" }
+%"class.std::__1::__tree_const_iterator.45" = type { %"class.std::__1::__tree_end_node"* }
+%"class.std::__1::map.46" = type { %"class.std::__1::__tree.47" }
+%"class.std::__1::__tree.47" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.48", %"class.std::__1::__compressed_pair.52" }
+%"class.std::__1::__compressed_pair.48" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"class.std::__1::__compressed_pair.52" = type { %"struct.std::__1::__compressed_pair_elem.17" }
+%"class.absl::optional.55" = type { %"class.absl::optional_internal::optional_data.56" }
+%"class.absl::optional_internal::optional_data.56" = type { %"class.absl::optional_internal::optional_data_base.57" }
+%"class.absl::optional_internal::optional_data_base.57" = type { %"class.absl::optional_internal::optional_data_dtor_base.58" }
+%"class.absl::optional_internal::optional_data_dtor_base.58" = type { i8, %union.anon.59 }
+%union.anon.59 = type { %"class.content::IndexDataKey" }
+%"class.content::IndexDataKey" = type { i64, i64, i64, %"class.std::__1::basic_string", %"class.std::__1::basic_string", i64 }
+%"struct.content::IndexedDBTombstoneSweeper::SweepMetrics" = type { i32, i32, i32, i32, i64 }
+%"class.base::WeakPtrFactory" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.base::internal::WeakPtrFactoryBase" = type { %"class.base::internal::WeakReferenceOwner", i64 }
+%"class.base::internal::WeakReferenceOwner" = type { %class.scoped_refptr }
+%class.scoped_refptr = type { %"class.base::internal::WeakReference::Flag"* }
+%"class.base::internal::WeakReference::Flag" = type <{ %"class.base::RefCountedThreadSafe", %"class.base::AtomicFlag", [3 x i8] }>
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.64" }
+%"struct.std::__1::__atomic_base.64" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"class.base::AtomicFlag" = type { %"struct.std::__1::atomic.65" }
+%"struct.std::__1::atomic.65" = type { %"struct.std::__1::__atomic_base.66" }
+%"struct.std::__1::__atomic_base.66" = type { %"struct.std::__1::__atomic_base.67" }
+%"struct.std::__1::__atomic_base.67" = type { %"struct.std::__1::__cxx_atomic_impl.68" }
+%"struct.std::__1::__cxx_atomic_impl.68" = type { %"struct.std::__1::__cxx_atomic_base_impl.69" }
+%"struct.std::__1::__cxx_atomic_base_impl.69" = type { i8 }
+%"class.leveldb::DB" = type { i32 (...)** }
+%"class.leveldb::Status" = type { i8* }
+%"class.base::HistogramBase" = type <{ i32 (...)**, i8*, %"struct.std::__1::atomic.87", [4 x i8] }>
+%"struct.std::__1::atomic.87" = type { %"struct.std::__1::__atomic_base.88" }
+%"struct.std::__1::__atomic_base.88" = type { %"struct.std::__1::__atomic_base.89" }
+%"struct.std::__1::__atomic_base.89" = type { %"struct.std::__1::__cxx_atomic_impl.90" }
+%"struct.std::__1::__cxx_atomic_impl.90" = type { %"struct.std::__1::__cxx_atomic_base_impl.91" }
+%"struct.std::__1::__cxx_atomic_base_impl.91" = type { i32 }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short" = type { [23 x i8], %struct.anon }
+%struct.anon = type { i8 }
+%"struct.leveldb::ReadOptions" = type { i8, i8, %"class.leveldb::Snapshot"* }
+%"class.leveldb::Snapshot" = type { i32 (...)** }
+%"class.std::__1::__tree_node" = type { %"class.std::__1::__tree_node_base.base", %"struct.std::__1::__value_type" }
+%"class.std::__1::__tree_node_base.base" = type <{ %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_end_node"*, i8 }>
+%"struct.std::__1::__value_type" = type { %"struct.std::__1::pair" }
+%"struct.std::__1::pair" = type { i64, %"struct.blink::IndexedDBObjectStoreMetadata" }
+%"struct.blink::IndexedDBObjectStoreMetadata" = type { %"class.std::__1::basic_string.2", i64, %"class.blink::IndexedDBKeyPath", i8, i64, %"class.std::__1::map.46" }
+%"class.blink::IndexedDBKeyPath" = type { i32, %"class.std::__1::basic_string.2", %"class.std::__1::vector.70" }
+%"class.std::__1::vector.70" = type { %"class.std::__1::__vector_base.71" }
+%"class.std::__1::__vector_base.71" = type { %"class.std::__1::basic_string.2"*, %"class.std::__1::basic_string.2"*, %"class.std::__1::__compressed_pair.72" }
+%"class.std::__1::__compressed_pair.72" = type { %"struct.std::__1::__compressed_pair_elem.73" }
+%"struct.std::__1::__compressed_pair_elem.73" = type { %"class.std::__1::basic_string.2"* }
+%"class.std::__1::__tree_node.106" = type { %"class.std::__1::__tree_node_base.base", %"struct.std::__1::__value_type.105" }
+%"struct.std::__1::__value_type.105" = type { %"struct.std::__1::pair.92" }
+%"struct.std::__1::pair.92" = type { i64, %"struct.blink::IndexedDBIndexMetadata" }
+%"struct.blink::IndexedDBIndexMetadata" = type <{ %"class.std::__1::basic_string.2", i64, %"class.blink::IndexedDBKeyPath", i8, i8, [6 x i8] }>
+%"class.logging::CheckError" = type { %"class.logging::LogMessage"* }
+%"class.logging::LogMessage" = type { i32 (...)**, i32, %"class.std::__1::basic_ostringstream", i64, i8*, i32, %"class.base::ScopedClearLastErrorBase" }
+%"class.std::__1::basic_ostringstream" = type { %"class.std::__1::basic_ostream.base", %"class.std::__1::basic_stringbuf", %"class.std::__1::basic_ios.base" }
+%"class.std::__1::basic_ostream.base" = type { i32 (...)** }
+%"class.std::__1::basic_stringbuf" = type <{ %"class.std::__1::basic_streambuf", %"class.std::__1::basic_string", i8*, i32, [4 x i8] }>
+%"class.std::__1::basic_streambuf" = type { i32 (...)**, %"class.std::__1::locale", i8*, i8*, i8*, i8*, i8*, i8* }
+%"class.std::__1::locale" = type { %"class.std::__1::locale::__imp"* }
+%"class.std::__1::locale::__imp" = type opaque
+%"class.std::__1::basic_ios.base" = type <{ %"class.std::__1::ios_base", %"class.std::__1::basic_ostream"*, i32 }>
+%"class.std::__1::ios_base" = type { i32 (...)**, i32, i64, i64, i32, i32, i8*, i8*, void (i32, %"class.std::__1::ios_base"*, i32)**, i32*, i64, i64, i64*, i64, i64, i8**, i64, i64 }
+%"class.std::__1::basic_ostream" = type { i32 (...)**, %"class.std::__1::basic_ios.base" }
+%"class.base::ScopedClearLastErrorBase" = type { i32 }
+%"struct.leveldb::WriteOptions" = type { i8 }
+%"class.leveldb::Slice" = type { i8*, i64 }
+%"class.base::BasicStringPiece" = type { i8*, i64 }
+%"class.std::__1::__basic_string_common" = type { i8 }
+
+@_ZTVN7content25IndexedDBTombstoneSweeperE = hidden unnamed_addr constant { [8 x i8*] } { [8 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.content::IndexedDBTombstoneSweeper"*)* @_ZN7content25IndexedDBTombstoneSweeperD2Ev to i8*), i8* bitcast (void (%"class.content::IndexedDBTombstoneSweeper"*)* @_ZN7content25IndexedDBTombstoneSweeperD0Ev to i8*), i8* bitcast (i1 (%"class.content::IndexedDBTombstoneSweeper"*)* @_ZNK7content25IndexedDBTombstoneSweeper16RequiresMetadataEv to i8*), i8* bitcast (void (%"class.content::IndexedDBTombstoneSweeper"*, %"class.std::__1::vector"*)* @_ZN7content25IndexedDBTombstoneSweeper11SetMetadataEPKNSt3__16vectorIN5blink25IndexedDBDatabaseMetadataENS1_9allocatorIS4_EEEE to i8*), i8* bitcast (void (%"class.content::IndexedDBTombstoneSweeper"*, i32)* @_ZN7content25IndexedDBTombstoneSweeper4StopENS_26IndexedDBPreCloseTaskQueue10StopReasonE to i8*), i8* bitcast (i1 (%"class.content::IndexedDBTombstoneSweeper"*)* @_ZN7content25IndexedDBTombstoneSweeper8RunRoundEv to i8*)] }, align 8
+@.str = private unnamed_addr constant [57 x i8] c"WebCore.IndexedDB.TombstoneSweeper.NumDeletedTombstones.\00", align 1
+@.str.1 = private unnamed_addr constant [58 x i8] c"WebCore.IndexedDB.TombstoneSweeper.DeletedTombstonesSize.\00", align 1
+@.str.2 = private unnamed_addr constant [17 x i8] c"ConnectionOpened\00", align 1
+@.str.3 = private unnamed_addr constant [15 x i8] c"TimeoutReached\00", align 1
+@.str.4 = private unnamed_addr constant [11 x i8] c"ForceClose\00", align 1
+@.str.5 = private unnamed_addr constant [14 x i8] c"MaxIterations\00", align 1
+@.str.6 = private unnamed_addr constant [46 x i8] c"WebCore.IndexedDB.TombstoneSweeper.SweepError\00", align 1
+@.str.7 = private unnamed_addr constant [11 x i8] c"SweepError\00", align 1
+@.str.8 = private unnamed_addr constant [9 x i8] c"Complete\00", align 1
+@.str.9 = private unnamed_addr constant [62 x i8] c"WebCore.IndexedDB.TombstoneSweeper.DeletionTotalTime.Complete\00", align 1
+@.str.10 = private unnamed_addr constant [63 x i8] c"WebCore.IndexedDB.TombstoneSweeper.DeletionCommitTime.Complete\00", align 1
+@.str.11 = private unnamed_addr constant [52 x i8] c"WebCore.IndexedDB.TombstoneSweeper.IndexScanPercent\00", align 1
+@.str.12 = private unnamed_addr constant [54 x i8] c"WebCore.IndexedDB.TombstoneSweeper.DeletionWriteError\00", align 1
+@.str.13 = private unnamed_addr constant [23 x i8] c"../../base/time/time.h\00", align 1
+@.str.14 = private unnamed_addr constant [38 x i8] c"!is_inf() || (delta_ == other.delta_)\00", align 1
+
+@_ZN7content25IndexedDBTombstoneSweeperC1EiiPN7leveldb2DBE = hidden unnamed_addr alias void (%"class.content::IndexedDBTombstoneSweeper"*, i32, i32, %"class.leveldb::DB"*), void (%"class.content::IndexedDBTombstoneSweeper"*, i32, i32, %"class.leveldb::DB"*)* @_ZN7content25IndexedDBTombstoneSweeperC2EiiPN7leveldb2DBE
+@_ZN7content25IndexedDBTombstoneSweeperD1Ev = hidden unnamed_addr alias void (%"class.content::IndexedDBTombstoneSweeper"*), void (%"class.content::IndexedDBTombstoneSweeper"*)* @_ZN7content25IndexedDBTombstoneSweeperD2Ev
+@_ZN7content25IndexedDBTombstoneSweeper10SweepStateC1Ev = hidden unnamed_addr alias void (%"struct.content::IndexedDBTombstoneSweeper::SweepState"*), void (%"struct.content::IndexedDBTombstoneSweeper::SweepState"*)* @_ZN7content25IndexedDBTombstoneSweeper10SweepStateC2Ev
+@_ZN7content25IndexedDBTombstoneSweeper10SweepStateD1Ev = hidden unnamed_addr alias void (%"struct.content::IndexedDBTombstoneSweeper::SweepState"*), void (%"struct.content::IndexedDBTombstoneSweeper::SweepState"*)* @_ZN7content25IndexedDBTombstoneSweeper10SweepStateD2Ev
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7content25IndexedDBTombstoneSweeperC2EiiPN7leveldb2DBE(%"class.content::IndexedDBTombstoneSweeper"*, i32, i32, %"class.leveldb::DB"*) unnamed_addr #0 align 2 {
+  %5 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 0
+  tail call void @_ZN7content26IndexedDBPreCloseTaskQueue12PreCloseTaskC2EPN7leveldb2DBE(%"class.content::IndexedDBPreCloseTaskQueue::PreCloseTask"* %5, %"class.leveldb::DB"* %3) #9
+  %6 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [8 x i8*] }, { [8 x i8*] }* @_ZTVN7content25IndexedDBTombstoneSweeperE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %6, align 8
+  %7 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 1
+  store i32 0, i32* %7, align 8
+  %8 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 2
+  store i32 %1, i32* %8, align 4
+  %9 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 3
+  store i32 %2, i32* %9, align 8
+  %10 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 4
+  store i32 0, i32* %10, align 4
+  %11 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 5
+  store i32 0, i32* %11, align 8
+  %12 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 6
+  store %"class.base::TickClock"* null, %"class.base::TickClock"** %12, align 8
+  %13 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 7, i32 0, i32 0, i32 0, i32 0
+  store i8 0, i8* %13, align 8
+  %14 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 8
+  store i8 0, i8* %14, align 8
+  %15 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 9
+  tail call void @_ZN7leveldb10WriteBatchC1Ev(%"class.leveldb::WriteBatch"* %15) #9
+  %16 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 10, i32 0
+  %17 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 0
+  %18 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 1, i32 0, i32 0, i32 0, i32 1, i32 0, i32 0
+  %19 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 3, i32 0, i32 0, i32 0, i32 1, i32 0, i32 0
+  %20 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 5, i32 0, i32 0, i32 0, i32 1, i32 0, i32 0
+  %21 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 6, i32 0, i32 0, i32 0, i32 1
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %18, i8 0, i64 41, i1 false) #9
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %19, i8 0, i64 41, i1 false) #9
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %20, i8 0, i64 33, i1 false) #9
+  %22 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 15, i32 0
+  %23 = ptrtoint %"class.content::IndexedDBTombstoneSweeper"* %0 to i64
+  %24 = bitcast i64* %16 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %24, i8 0, i64 33, i1 false)
+  %25 = bitcast %union.anon.59* %21 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %25, i8 0, i64 104, i1 false)
+  tail call void @_ZN4base8internal18WeakPtrFactoryBaseC2Em(%"class.base::internal::WeakPtrFactoryBase"* %22, i64 %23) #9
+  %26 = tail call i64 @_ZN4base10RandUint64Ev() #9
+  store i64 %26, i64* %17, align 8
+  %27 = tail call i64 @_ZN4base10RandUint64Ev() #9
+  %28 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 2
+  store i64 %27, i64* %28, align 8
+  %29 = tail call i64 @_ZN4base10RandUint64Ev() #9
+  %30 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 4
+  store i64 %29, i64* %30, align 8
+  ret void
+}
+
+declare void @_ZN7content26IndexedDBPreCloseTaskQueue12PreCloseTaskC2EPN7leveldb2DBE(%"class.content::IndexedDBPreCloseTaskQueue::PreCloseTask"*, %"class.leveldb::DB"*) unnamed_addr #1
+
+declare void @_ZN7leveldb10WriteBatchC1Ev(%"class.leveldb::WriteBatch"*) unnamed_addr #1
+
+declare i64 @_ZN4base10RandUint64Ev() local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7content25IndexedDBTombstoneSweeperD2Ev(%"class.content::IndexedDBTombstoneSweeper"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [8 x i8*] }, { [8 x i8*] }* @_ZTVN7content25IndexedDBTombstoneSweeperE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 15, i32 0
+  tail call void @_ZN4base8internal18WeakPtrFactoryBaseD2Ev(%"class.base::internal::WeakPtrFactoryBase"* %3) #9
+  %4 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 6, i32 0, i32 0, i32 0, i32 0
+  %5 = load i8, i8* %4, align 8, !range !2
+  %6 = icmp eq i8 %5, 0
+  br i1 %6, label %9, label %7
+
+7:                                                ; preds = %1
+  %8 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 6, i32 0, i32 0, i32 0, i32 1, i32 0
+  tail call void @_ZN7content12IndexDataKeyD1Ev(%"class.content::IndexDataKey"* %8) #9
+  store i8 0, i8* %4, align 8
+  br label %9
+
+9:                                                ; preds = %7, %1
+  %10 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 5, i32 0, i32 0, i32 0, i32 0
+  %11 = load i8, i8* %10, align 8, !range !2
+  %12 = icmp eq i8 %11, 0
+  br i1 %12, label %14, label %13
+
+13:                                               ; preds = %9
+  store i8 0, i8* %10, align 8
+  br label %14
+
+14:                                               ; preds = %13, %9
+  %15 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 3, i32 0, i32 0, i32 0, i32 0
+  %16 = load i8, i8* %15, align 8, !range !2
+  %17 = icmp eq i8 %16, 0
+  br i1 %17, label %19, label %18
+
+18:                                               ; preds = %14
+  store i8 0, i8* %15, align 8
+  br label %19
+
+19:                                               ; preds = %18, %14
+  %20 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 1, i32 0, i32 0, i32 0, i32 0
+  %21 = load i8, i8* %20, align 8, !range !2
+  %22 = icmp eq i8 %21, 0
+  br i1 %22, label %24, label %23
+
+23:                                               ; preds = %19
+  store i8 0, i8* %20, align 8
+  br label %24
+
+24:                                               ; preds = %19, %23
+  %25 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 12, i32 0, i32 0, i32 0
+  %26 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %25, align 8
+  store %"class.leveldb::Iterator"* null, %"class.leveldb::Iterator"** %25, align 8
+  %27 = icmp eq %"class.leveldb::Iterator"* %26, null
+  br i1 %27, label %33, label %28
+
+28:                                               ; preds = %24
+  %29 = bitcast %"class.leveldb::Iterator"* %26 to void (%"class.leveldb::Iterator"*)***
+  %30 = load void (%"class.leveldb::Iterator"*)**, void (%"class.leveldb::Iterator"*)*** %29, align 8
+  %31 = getelementptr inbounds void (%"class.leveldb::Iterator"*)*, void (%"class.leveldb::Iterator"*)** %30, i64 1
+  %32 = load void (%"class.leveldb::Iterator"*)*, void (%"class.leveldb::Iterator"*)** %31, align 8
+  tail call void %32(%"class.leveldb::Iterator"* nonnull %26) #9
+  br label %33
+
+33:                                               ; preds = %24, %28
+  %34 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 9
+  tail call void @_ZN7leveldb10WriteBatchD1Ev(%"class.leveldb::WriteBatch"* %34) #9
+  %35 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 0
+  tail call void @_ZN7content26IndexedDBPreCloseTaskQueue12PreCloseTaskD2Ev(%"class.content::IndexedDBPreCloseTaskQueue::PreCloseTask"* %35) #9
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal18WeakPtrFactoryBaseD2Ev(%"class.base::internal::WeakPtrFactoryBase"*) unnamed_addr #2
+
+; Function Attrs: nounwind
+declare void @_ZN7leveldb10WriteBatchD1Ev(%"class.leveldb::WriteBatch"*) unnamed_addr #2
+
+; Function Attrs: nounwind
+declare void @_ZN7content26IndexedDBPreCloseTaskQueue12PreCloseTaskD2Ev(%"class.content::IndexedDBPreCloseTaskQueue::PreCloseTask"*) unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7content25IndexedDBTombstoneSweeperD0Ev(%"class.content::IndexedDBTombstoneSweeper"*) unnamed_addr #0 align 2 {
+  tail call void @_ZN7content25IndexedDBTombstoneSweeperD2Ev(%"class.content::IndexedDBTombstoneSweeper"* %0) #9
+  %2 = bitcast %"class.content::IndexedDBTombstoneSweeper"* %0 to i8*
+  tail call void @_ZdlPv(i8* %2) #10
+  ret void
+}
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #3
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden zeroext i1 @_ZNK7content25IndexedDBTombstoneSweeper16RequiresMetadataEv(%"class.content::IndexedDBTombstoneSweeper"* nocapture readnone) unnamed_addr #4 align 2 {
+  ret i1 true
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7content25IndexedDBTombstoneSweeper11SetMetadataEPKNSt3__16vectorIN5blink25IndexedDBDatabaseMetadataENS1_9allocatorIS4_EEEE(%"class.content::IndexedDBTombstoneSweeper"* nocapture, %"class.std::__1::vector"*) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 11
+  store %"class.std::__1::vector"* %1, %"class.std::__1::vector"** %3, align 8
+  %4 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 5
+  store i32 0, i32* %4, align 8
+  %5 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %1, i64 0, i32 0, i32 0
+  %6 = load %"struct.blink::IndexedDBDatabaseMetadata"*, %"struct.blink::IndexedDBDatabaseMetadata"** %5, align 8
+  %7 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %1, i64 0, i32 0, i32 1
+  %8 = load %"struct.blink::IndexedDBDatabaseMetadata"*, %"struct.blink::IndexedDBDatabaseMetadata"** %7, align 8
+  %9 = icmp eq %"struct.blink::IndexedDBDatabaseMetadata"* %6, %8
+  br i1 %9, label %10, label %11
+
+10:                                               ; preds = %18, %2
+  ret void
+
+11:                                               ; preds = %2, %18
+  %12 = phi i32 [ %19, %18 ], [ 0, %2 ]
+  %13 = phi %"struct.blink::IndexedDBDatabaseMetadata"* [ %20, %18 ], [ %6, %2 ]
+  %14 = getelementptr inbounds %"struct.blink::IndexedDBDatabaseMetadata", %"struct.blink::IndexedDBDatabaseMetadata"* %13, i64 0, i32 4, i32 0, i32 0
+  %15 = load %"class.std::__1::__tree_end_node"*, %"class.std::__1::__tree_end_node"** %14, align 8
+  %16 = getelementptr inbounds %"struct.blink::IndexedDBDatabaseMetadata", %"struct.blink::IndexedDBDatabaseMetadata"* %13, i64 0, i32 4, i32 0, i32 1, i32 0, i32 0
+  %17 = icmp eq %"class.std::__1::__tree_end_node"* %15, %16
+  br i1 %17, label %18, label %22
+
+18:                                               ; preds = %57, %11
+  %19 = phi i32 [ %12, %11 ], [ %29, %57 ]
+  %20 = getelementptr inbounds %"struct.blink::IndexedDBDatabaseMetadata", %"struct.blink::IndexedDBDatabaseMetadata"* %13, i64 1
+  %21 = icmp eq %"struct.blink::IndexedDBDatabaseMetadata"* %20, %8
+  br i1 %21, label %10, label %11
+
+22:                                               ; preds = %11, %57
+  %23 = phi i32 [ %29, %57 ], [ %12, %11 ]
+  %24 = phi %"class.std::__1::__tree_end_node"* [ %58, %57 ], [ %15, %11 ]
+  %25 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %24, i64 20
+  %26 = bitcast %"class.std::__1::__tree_end_node"* %25 to i64*
+  %27 = load i64, i64* %26, align 8
+  %28 = trunc i64 %27 to i32
+  %29 = add i32 %23, %28
+  store i32 %29, i32* %4, align 8
+  %30 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %24, i64 1, i32 0
+  %31 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %30, align 8
+  %32 = icmp eq %"class.std::__1::__tree_node_base"* %31, null
+  br i1 %32, label %33, label %41
+
+33:                                               ; preds = %22
+  %34 = bitcast %"class.std::__1::__tree_end_node"* %24 to %"class.std::__1::__tree_node_base"*
+  %35 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %24, i64 2
+  %36 = bitcast %"class.std::__1::__tree_end_node"* %35 to %"class.std::__1::__tree_end_node"**
+  %37 = load %"class.std::__1::__tree_end_node"*, %"class.std::__1::__tree_end_node"** %36, align 8
+  %38 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %37, i64 0, i32 0
+  %39 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %38, align 8
+  %40 = icmp eq %"class.std::__1::__tree_node_base"* %39, %34
+  br i1 %40, label %57, label %48
+
+41:                                               ; preds = %22, %41
+  %42 = phi %"class.std::__1::__tree_node_base"* [ %44, %41 ], [ %31, %22 ]
+  %43 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %42, i64 0, i32 0, i32 0
+  %44 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %43, align 8
+  %45 = icmp eq %"class.std::__1::__tree_node_base"* %44, null
+  br i1 %45, label %46, label %41
+
+46:                                               ; preds = %41
+  %47 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %42, i64 0, i32 0
+  br label %57
+
+48:                                               ; preds = %33, %48
+  %49 = phi %"class.std::__1::__tree_end_node"** [ %52, %48 ], [ %36, %33 ]
+  %50 = bitcast %"class.std::__1::__tree_end_node"** %49 to %"class.std::__1::__tree_node_base"**
+  %51 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %50, align 8
+  %52 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %51, i64 0, i32 2
+  %53 = load %"class.std::__1::__tree_end_node"*, %"class.std::__1::__tree_end_node"** %52, align 8
+  %54 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %53, i64 0, i32 0
+  %55 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %54, align 8
+  %56 = icmp eq %"class.std::__1::__tree_node_base"* %55, %51
+  br i1 %56, label %57, label %48
+
+57:                                               ; preds = %48, %33, %46
+  %58 = phi %"class.std::__1::__tree_end_node"* [ %47, %46 ], [ %37, %33 ], [ %53, %48 ]
+  %59 = icmp eq %"class.std::__1::__tree_end_node"* %58, %16
+  br i1 %59, label %18, label %22
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #5
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #5
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7content25IndexedDBTombstoneSweeper10SweepStateC2Ev(%"struct.content::IndexedDBTombstoneSweeper::SweepState"* nocapture) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"struct.content::IndexedDBTombstoneSweeper::SweepState", %"struct.content::IndexedDBTombstoneSweeper::SweepState"* %0, i64 0, i32 0
+  store i64 0, i64* %2, align 8
+  %3 = getelementptr inbounds %"struct.content::IndexedDBTombstoneSweeper::SweepState", %"struct.content::IndexedDBTombstoneSweeper::SweepState"* %0, i64 0, i32 1, i32 0, i32 0, i32 0, i32 0
+  store i8 0, i8* %3, align 8
+  %4 = getelementptr inbounds %"struct.content::IndexedDBTombstoneSweeper::SweepState", %"struct.content::IndexedDBTombstoneSweeper::SweepState"* %0, i64 0, i32 1, i32 0, i32 0, i32 0, i32 1, i32 0, i32 0
+  %5 = getelementptr inbounds %"struct.content::IndexedDBTombstoneSweeper::SweepState", %"struct.content::IndexedDBTombstoneSweeper::SweepState"* %0, i64 0, i32 3, i32 0, i32 0, i32 0, i32 1, i32 0, i32 0
+  %6 = getelementptr inbounds %"struct.content::IndexedDBTombstoneSweeper::SweepState", %"struct.content::IndexedDBTombstoneSweeper::SweepState"* %0, i64 0, i32 5, i32 0, i32 0, i32 0, i32 1, i32 0, i32 0
+  %7 = getelementptr inbounds %"struct.content::IndexedDBTombstoneSweeper::SweepState", %"struct.content::IndexedDBTombstoneSweeper::SweepState"* %0, i64 0, i32 6, i32 0, i32 0, i32 0, i32 1
+  %8 = bitcast %union.anon.59* %7 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %8, i8 0, i64 80, i1 false) #9
+  call void @llvm.memset.p0i8.i64(i8* align 8 %4, i8 0, i64 41, i1 false)
+  call void @llvm.memset.p0i8.i64(i8* align 8 %5, i8 0, i64 41, i1 false)
+  call void @llvm.memset.p0i8.i64(i8* align 8 %6, i8 0, i64 33, i1 false)
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7content25IndexedDBTombstoneSweeper10SweepStateD2Ev(%"struct.content::IndexedDBTombstoneSweeper::SweepState"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"struct.content::IndexedDBTombstoneSweeper::SweepState", %"struct.content::IndexedDBTombstoneSweeper::SweepState"* %0, i64 0, i32 6, i32 0, i32 0, i32 0, i32 0
+  %3 = load i8, i8* %2, align 8, !range !2
+  %4 = icmp eq i8 %3, 0
+  br i1 %4, label %7, label %5
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"struct.content::IndexedDBTombstoneSweeper::SweepState", %"struct.content::IndexedDBTombstoneSweeper::SweepState"* %0, i64 0, i32 6, i32 0, i32 0, i32 0, i32 1, i32 0
+  tail call void @_ZN7content12IndexDataKeyD1Ev(%"class.content::IndexDataKey"* %6) #9
+  store i8 0, i8* %2, align 8
+  br label %7
+
+7:                                                ; preds = %1, %5
+  %8 = getelementptr inbounds %"struct.content::IndexedDBTombstoneSweeper::SweepState", %"struct.content::IndexedDBTombstoneSweeper::SweepState"* %0, i64 0, i32 5, i32 0, i32 0, i32 0, i32 0
+  %9 = load i8, i8* %8, align 8, !range !2
+  %10 = icmp eq i8 %9, 0
+  br i1 %10, label %12, label %11
+
+11:                                               ; preds = %7
+  store i8 0, i8* %8, align 8
+  br label %12
+
+12:                                               ; preds = %7, %11
+  %13 = getelementptr inbounds %"struct.content::IndexedDBTombstoneSweeper::SweepState", %"struct.content::IndexedDBTombstoneSweeper::SweepState"* %0, i64 0, i32 3, i32 0, i32 0, i32 0, i32 0
+  %14 = load i8, i8* %13, align 8, !range !2
+  %15 = icmp eq i8 %14, 0
+  br i1 %15, label %17, label %16
+
+16:                                               ; preds = %12
+  store i8 0, i8* %13, align 8
+  br label %17
+
+17:                                               ; preds = %12, %16
+  %18 = getelementptr inbounds %"struct.content::IndexedDBTombstoneSweeper::SweepState", %"struct.content::IndexedDBTombstoneSweeper::SweepState"* %0, i64 0, i32 1, i32 0, i32 0, i32 0, i32 0
+  %19 = load i8, i8* %18, align 8, !range !2
+  %20 = icmp eq i8 %19, 0
+  br i1 %20, label %22, label %21
+
+21:                                               ; preds = %17
+  store i8 0, i8* %18, align 8
+  br label %22
+
+22:                                               ; preds = %17, %21
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7content25IndexedDBTombstoneSweeper4StopENS_26IndexedDBPreCloseTaskQueue10StopReasonE(%"class.content::IndexedDBTombstoneSweeper"* nocapture readonly, i32) unnamed_addr #0 align 2 {
+  %3 = alloca %"class.leveldb::Status", align 8
+  %4 = bitcast %"class.leveldb::Status"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %4) #9
+  %5 = getelementptr inbounds %"class.leveldb::Status", %"class.leveldb::Status"* %3, i64 0, i32 0
+  store i8* null, i8** %5, align 8
+  %6 = zext i32 %1 to i64
+  %7 = shl nuw i64 %6, 32
+  %8 = or i64 %7, 1
+  call void @_ZN7content25IndexedDBTombstoneSweeper14RecordUMAStatsEN4absl8optionalINS_26IndexedDBPreCloseTaskQueue10StopReasonEEENS2_INS0_6StatusEEERKN7leveldb6StatusE(%"class.content::IndexedDBTombstoneSweeper"* %0, i64 %8, i64 0, %"class.leveldb::Status"* nonnull dereferenceable(8) %3)
+  %9 = load i8*, i8** %5, align 8
+  %10 = icmp eq i8* %9, null
+  br i1 %10, label %12, label %11
+
+11:                                               ; preds = %2
+  call void @_ZdaPv(i8* nonnull %9) #10
+  br label %12
+
+12:                                               ; preds = %2, %11
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %4) #9
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7content25IndexedDBTombstoneSweeper14RecordUMAStatsEN4absl8optionalINS_26IndexedDBPreCloseTaskQueue10StopReasonEEENS2_INS0_6StatusEEERKN7leveldb6StatusE(%"class.content::IndexedDBTombstoneSweeper"* nocapture readonly, i64, i64, %"class.leveldb::Status"* dereferenceable(8)) local_unnamed_addr #0 align 2 {
+  %5 = alloca %"class.std::__1::basic_string", align 8
+  %6 = alloca %"class.std::__1::basic_string", align 8
+  %7 = trunc i64 %1 to i8
+  %8 = lshr i64 %1, 32
+  %9 = trunc i64 %8 to i32
+  %10 = trunc i64 %2 to i8
+  %11 = lshr i64 %2, 32
+  %12 = trunc i64 %11 to i32
+  %13 = icmp ne i8 %7, 0
+  %14 = icmp eq i32 %9, 2
+  %15 = and i1 %13, %14
+  br i1 %15, label %129, label %16
+
+16:                                               ; preds = %4
+  %17 = bitcast %"class.std::__1::basic_string"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %17) #9
+  %18 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %5, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %19 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %5, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %20 = tail call i8* @_Znwm(i64 64) #10
+  store i8* %20, i8** %18, align 8
+  %21 = bitcast i64* %19 to <2 x i64>*
+  store <2 x i64> <i64 56, i64 -9223372036854775744>, <2 x i64>* %21, align 8
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 1 %20, i8* align 1 getelementptr inbounds ([57 x i8], [57 x i8]* @.str, i64 0, i64 0), i64 56, i1 false) #9
+  %22 = getelementptr inbounds i8, i8* %20, i64 56
+  store i8 0, i8* %22, align 1
+  %23 = bitcast %"class.std::__1::basic_string"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %23) #9
+  %24 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %6, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %25 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %6, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %26 = tail call i8* @_Znwm(i64 64) #10
+  store i8* %26, i8** %24, align 8
+  %27 = bitcast i64* %25 to <2 x i64>*
+  store <2 x i64> <i64 57, i64 -9223372036854775744>, <2 x i64>* %27, align 8
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 1 %26, i8* align 1 getelementptr inbounds ([58 x i8], [58 x i8]* @.str.1, i64 0, i64 0), i64 57, i1 false) #9
+  %28 = getelementptr inbounds i8, i8* %26, i64 57
+  store i8 0, i8* %28, align 1
+  br i1 %13, label %29, label %32
+
+29:                                               ; preds = %16
+  switch i32 %9, label %49 [
+    i32 0, label %45
+    i32 1, label %30
+    i32 3, label %31
+  ]
+
+30:                                               ; preds = %29
+  br label %45
+
+31:                                               ; preds = %29
+  br label %45
+
+32:                                               ; preds = %16
+  %33 = icmp eq i8 %10, 0
+  br i1 %33, label %84, label %34
+
+34:                                               ; preds = %32
+  switch i32 %12, label %84 [
+    i32 1, label %35
+    i32 2, label %38
+    i32 3, label %42
+  ]
+
+35:                                               ; preds = %34
+  %36 = call dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc(%"class.std::__1::basic_string"* nonnull %5, i8* getelementptr inbounds ([14 x i8], [14 x i8]* @.str.5, i64 0, i64 0)) #9
+  %37 = call dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc(%"class.std::__1::basic_string"* nonnull %6, i8* getelementptr inbounds ([14 x i8], [14 x i8]* @.str.5, i64 0, i64 0)) #9
+  br label %84
+
+38:                                               ; preds = %34
+  %39 = tail call i32 @_ZN11leveldb_env24GetLevelDBStatusUMAValueERKN7leveldb6StatusE(%"class.leveldb::Status"* dereferenceable(8) %3) #9
+  tail call void @_ZN4base23UmaHistogramExactLinearEPKcii(i8* getelementptr inbounds ([46 x i8], [46 x i8]* @.str.6, i64 0, i64 0), i32 %39, i32 6) #9
+  %40 = call dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc(%"class.std::__1::basic_string"* nonnull %5, i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str.7, i64 0, i64 0)) #9
+  %41 = call dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc(%"class.std::__1::basic_string"* nonnull %6, i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str.7, i64 0, i64 0)) #9
+  br label %84
+
+42:                                               ; preds = %34
+  %43 = call dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc(%"class.std::__1::basic_string"* nonnull %5, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.8, i64 0, i64 0)) #9
+  %44 = call dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc(%"class.std::__1::basic_string"* nonnull %6, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.8, i64 0, i64 0)) #9
+  br label %53
+
+45:                                               ; preds = %29, %31, %30
+  %46 = phi i8* [ getelementptr inbounds ([15 x i8], [15 x i8]* @.str.3, i64 0, i64 0), %30 ], [ getelementptr inbounds ([11 x i8], [11 x i8]* @.str.4, i64 0, i64 0), %31 ], [ getelementptr inbounds ([17 x i8], [17 x i8]* @.str.2, i64 0, i64 0), %29 ]
+  %47 = call dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc(%"class.std::__1::basic_string"* nonnull %5, i8* %46) #9
+  %48 = call dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc(%"class.std::__1::basic_string"* nonnull %6, i8* %46) #9
+  br label %49
+
+49:                                               ; preds = %45, %29
+  %50 = icmp ne i8 %10, 0
+  %51 = icmp eq i32 %12, 3
+  %52 = and i1 %50, %51
+  br i1 %52, label %53, label %84
+
+53:                                               ; preds = %49, %42
+  %54 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 7, i32 0, i32 0, i32 0, i32 0
+  %55 = load i8, i8* %54, align 8, !range !2
+  %56 = icmp eq i8 %55, 0
+  br i1 %56, label %84, label %57
+
+57:                                               ; preds = %53
+  %58 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 6
+  %59 = load %"class.base::TickClock"*, %"class.base::TickClock"** %58, align 8
+  %60 = icmp eq %"class.base::TickClock"* %59, null
+  br i1 %60, label %67, label %61
+
+61:                                               ; preds = %57
+  %62 = bitcast %"class.base::TickClock"* %59 to i64 (%"class.base::TickClock"*)***
+  %63 = load i64 (%"class.base::TickClock"*)**, i64 (%"class.base::TickClock"*)*** %62, align 8
+  %64 = getelementptr inbounds i64 (%"class.base::TickClock"*)*, i64 (%"class.base::TickClock"*)** %63, i64 2
+  %65 = load i64 (%"class.base::TickClock"*)*, i64 (%"class.base::TickClock"*)** %64, align 8
+  %66 = call i64 %65(%"class.base::TickClock"* nonnull %59) #9
+  br label %69
+
+67:                                               ; preds = %57
+  %68 = call i64 @_ZN4base9TimeTicks3NowEv() #9
+  br label %69
+
+69:                                               ; preds = %67, %61
+  %70 = phi i64 [ %68, %67 ], [ %66, %61 ]
+  %71 = load i8, i8* %54, align 8, !range !2
+  %72 = icmp eq i8 %71, 0
+  br i1 %72, label %73, label %74
+
+73:                                               ; preds = %69
+  call void @_ZN4absl17optional_internal25throw_bad_optional_accessEv() #11
+  unreachable
+
+74:                                               ; preds = %69
+  %75 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 7, i32 0, i32 0, i32 0, i32 1, i32 0, i32 0, i32 0
+  %76 = load i64, i64* %75, align 8
+  %77 = sub nsw i64 %70, %76
+  call void @_ZN4base17UmaHistogramTimesEPKcNS_9TimeDeltaE(i8* getelementptr inbounds ([62 x i8], [62 x i8]* @.str.9, i64 0, i64 0), i64 %77) #9
+  %78 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 14, i32 3
+  %79 = load i32, i32* %78, align 4
+  %80 = icmp sgt i32 %79, 0
+  br i1 %80, label %81, label %84
+
+81:                                               ; preds = %74
+  %82 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 10, i32 0
+  %83 = load i64, i64* %82, align 8
+  call void @_ZN4base17UmaHistogramTimesEPKcNS_9TimeDeltaE(i8* getelementptr inbounds ([63 x i8], [63 x i8]* @.str.10, i64 0, i64 0), i64 %83) #9
+  br label %84
+
+84:                                               ; preds = %53, %32, %34, %38, %35, %74, %81, %49
+  %85 = call %"class.base::HistogramBase"* @_ZN4base9Histogram10FactoryGetERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEEiiji(%"class.std::__1::basic_string"* nonnull dereferenceable(24) %5, i32 1, i32 1000000, i32 50, i32 1) #9
+  %86 = call %"class.base::HistogramBase"* @_ZN4base9Histogram10FactoryGetERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEEiiji(%"class.std::__1::basic_string"* nonnull dereferenceable(24) %6, i32 1, i32 100000000, i32 50, i32 1) #9
+  %87 = icmp eq %"class.base::HistogramBase"* %85, null
+  br i1 %87, label %95, label %88
+
+88:                                               ; preds = %84
+  %89 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 14, i32 3
+  %90 = load i32, i32* %89, align 4
+  %91 = bitcast %"class.base::HistogramBase"* %85 to void (%"class.base::HistogramBase"*, i32)***
+  %92 = load void (%"class.base::HistogramBase"*, i32)**, void (%"class.base::HistogramBase"*, i32)*** %91, align 8
+  %93 = getelementptr inbounds void (%"class.base::HistogramBase"*, i32)*, void (%"class.base::HistogramBase"*, i32)** %92, i64 6
+  %94 = load void (%"class.base::HistogramBase"*, i32)*, void (%"class.base::HistogramBase"*, i32)** %93, align 8
+  call void %94(%"class.base::HistogramBase"* nonnull %85, i32 %90) #9
+  br label %95
+
+95:                                               ; preds = %84, %88
+  %96 = icmp eq %"class.base::HistogramBase"* %86, null
+  br i1 %96, label %105, label %97
+
+97:                                               ; preds = %95
+  %98 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 14, i32 4
+  %99 = load i64, i64* %98, align 8
+  %100 = trunc i64 %99 to i32
+  %101 = bitcast %"class.base::HistogramBase"* %86 to void (%"class.base::HistogramBase"*, i32)***
+  %102 = load void (%"class.base::HistogramBase"*, i32)**, void (%"class.base::HistogramBase"*, i32)*** %101, align 8
+  %103 = getelementptr inbounds void (%"class.base::HistogramBase"*, i32)*, void (%"class.base::HistogramBase"*, i32)** %102, i64 6
+  %104 = load void (%"class.base::HistogramBase"*, i32)*, void (%"class.base::HistogramBase"*, i32)** %103, align 8
+  call void %104(%"class.base::HistogramBase"* nonnull %86, i32 %100) #9
+  br label %105
+
+105:                                              ; preds = %95, %97
+  %106 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 5
+  %107 = load i32, i32* %106, align 8
+  %108 = icmp sgt i32 %107, 0
+  br i1 %108, label %109, label %114
+
+109:                                              ; preds = %105
+  %110 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 4
+  %111 = load i32, i32* %110, align 4
+  %112 = mul nsw i32 %111, 20
+  %113 = sdiv i32 %112, %107
+  call void @_ZN4base23UmaHistogramExactLinearEPKcii(i8* getelementptr inbounds ([52 x i8], [52 x i8]* @.str.11, i64 0, i64 0), i32 %113, i32 21) #9
+  br label %114
+
+114:                                              ; preds = %109, %105
+  %115 = bitcast %"class.std::__1::basic_string"* %6 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %116 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %115, i64 0, i32 1, i32 0
+  %117 = load i8, i8* %116, align 1
+  %118 = icmp slt i8 %117, 0
+  br i1 %118, label %119, label %121
+
+119:                                              ; preds = %114
+  %120 = load i8*, i8** %24, align 8
+  call void @_ZdlPv(i8* %120) #10
+  br label %121
+
+121:                                              ; preds = %114, %119
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %23) #9
+  %122 = bitcast %"class.std::__1::basic_string"* %5 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %123 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %122, i64 0, i32 1, i32 0
+  %124 = load i8, i8* %123, align 1
+  %125 = icmp slt i8 %124, 0
+  br i1 %125, label %126, label %128
+
+126:                                              ; preds = %121
+  %127 = load i8*, i8** %18, align 8
+  call void @_ZdlPv(i8* %127) #10
+  br label %128
+
+128:                                              ; preds = %121, %126
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %17) #9
+  br label %129
+
+129:                                              ; preds = %4, %128
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN7content25IndexedDBTombstoneSweeper8RunRoundEv(%"class.content::IndexedDBTombstoneSweeper"*) unnamed_addr #0 align 2 {
+  %2 = alloca %"class.leveldb::Status", align 8
+  %3 = alloca %"class.leveldb::Status", align 8
+  %4 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 11
+  %5 = load %"class.std::__1::vector"*, %"class.std::__1::vector"** %4, align 8
+  %6 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %5, i64 0, i32 0, i32 0
+  %7 = load %"struct.blink::IndexedDBDatabaseMetadata"*, %"struct.blink::IndexedDBDatabaseMetadata"** %6, align 8
+  %8 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %5, i64 0, i32 0, i32 1
+  %9 = load %"struct.blink::IndexedDBDatabaseMetadata"*, %"struct.blink::IndexedDBDatabaseMetadata"** %8, align 8
+  %10 = icmp eq %"struct.blink::IndexedDBDatabaseMetadata"* %7, %9
+  br i1 %10, label %61, label %11
+
+11:                                               ; preds = %1
+  %12 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 7, i32 0, i32 0, i32 0, i32 0
+  %13 = load i8, i8* %12, align 8, !range !2
+  %14 = icmp eq i8 %13, 0
+  br i1 %14, label %15, label %33
+
+15:                                               ; preds = %11
+  %16 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 6
+  %17 = load %"class.base::TickClock"*, %"class.base::TickClock"** %16, align 8
+  %18 = icmp eq %"class.base::TickClock"* %17, null
+  br i1 %18, label %25, label %19
+
+19:                                               ; preds = %15
+  %20 = bitcast %"class.base::TickClock"* %17 to i64 (%"class.base::TickClock"*)***
+  %21 = load i64 (%"class.base::TickClock"*)**, i64 (%"class.base::TickClock"*)*** %20, align 8
+  %22 = getelementptr inbounds i64 (%"class.base::TickClock"*)*, i64 (%"class.base::TickClock"*)** %21, i64 2
+  %23 = load i64 (%"class.base::TickClock"*)*, i64 (%"class.base::TickClock"*)** %22, align 8
+  %24 = tail call i64 %23(%"class.base::TickClock"* nonnull %17) #9
+  br label %27
+
+25:                                               ; preds = %15
+  %26 = tail call i64 @_ZN4base9TimeTicks3NowEv() #9
+  br label %27
+
+27:                                               ; preds = %25, %19
+  %28 = phi i64 [ %26, %25 ], [ %24, %19 ]
+  %29 = load i8, i8* %12, align 8, !range !2
+  %30 = icmp eq i8 %29, 0
+  %31 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 7, i32 0, i32 0, i32 0, i32 1, i32 0, i32 0, i32 0
+  store i64 %28, i64* %31, align 8
+  br i1 %30, label %32, label %33
+
+32:                                               ; preds = %27
+  store i8 1, i8* %12, align 8
+  br label %33
+
+33:                                               ; preds = %11, %32, %27
+  %34 = bitcast %"class.leveldb::Status"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %34) #9
+  %35 = getelementptr inbounds %"class.leveldb::Status", %"class.leveldb::Status"* %2, i64 0, i32 0
+  store i8* null, i8** %35, align 8
+  %36 = call i32 @_ZN7content25IndexedDBTombstoneSweeper7DoSweepEPN7leveldb6StatusE(%"class.content::IndexedDBTombstoneSweeper"* %0, %"class.leveldb::Status"* nonnull %2)
+  %37 = icmp eq i32 %36, 2
+  br i1 %37, label %51, label %38
+
+38:                                               ; preds = %33
+  %39 = bitcast %"class.leveldb::Status"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %39) #9
+  call void @_ZN7content25IndexedDBTombstoneSweeper14FlushDeletionsEv(%"class.leveldb::Status"* nonnull sret %3, %"class.content::IndexedDBTombstoneSweeper"* %0)
+  %40 = bitcast %"class.leveldb::Status"* %2 to i64*
+  %41 = load i64, i64* %40, align 8
+  %42 = bitcast %"class.leveldb::Status"* %3 to i64*
+  %43 = load i64, i64* %42, align 8
+  store i64 %43, i64* %40, align 8
+  store i64 %41, i64* %42, align 8
+  %44 = icmp eq i64 %41, 0
+  br i1 %44, label %47, label %45
+
+45:                                               ; preds = %38
+  %46 = inttoptr i64 %41 to i8*
+  tail call void @_ZdaPv(i8* nonnull %46) #10
+  br label %47
+
+47:                                               ; preds = %38, %45
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %39) #9
+  %48 = icmp eq i64 %43, 0
+  br i1 %48, label %49, label %51
+
+49:                                               ; preds = %47
+  %50 = icmp eq i32 %36, 0
+  br i1 %50, label %59, label %51
+
+51:                                               ; preds = %49, %33, %47
+  %52 = phi i32 [ %36, %49 ], [ 2, %33 ], [ 2, %47 ]
+  %53 = zext i32 %52 to i64
+  %54 = shl nuw i64 %53, 32
+  %55 = or i64 %54, 1
+  call void @_ZN7content25IndexedDBTombstoneSweeper14RecordUMAStatsEN4absl8optionalINS_26IndexedDBPreCloseTaskQueue10StopReasonEEENS2_INS0_6StatusEEERKN7leveldb6StatusE(%"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i64 %55, %"class.leveldb::Status"* nonnull dereferenceable(8) %2)
+  %56 = load i8*, i8** %35, align 8
+  %57 = icmp eq i8* %56, null
+  br i1 %57, label %59, label %58
+
+58:                                               ; preds = %51
+  call void @_ZdaPv(i8* nonnull %56) #10
+  br label %59
+
+59:                                               ; preds = %49, %51, %58
+  %60 = phi i1 [ true, %51 ], [ true, %58 ], [ false, %49 ]
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %34) #9
+  br label %61
+
+61:                                               ; preds = %1, %59
+  %62 = phi i1 [ %60, %59 ], [ true, %1 ]
+  ret i1 %62
+}
+
+declare i64 @_ZN4base9TimeTicks3NowEv() local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN7content25IndexedDBTombstoneSweeper7DoSweepEPN7leveldb6StatusE(%"class.content::IndexedDBTombstoneSweeper"*, %"class.leveldb::Status"* nocapture) local_unnamed_addr #0 align 2 {
+  %3 = alloca i32, align 4
+  %4 = alloca i32, align 4
+  %5 = alloca %"struct.leveldb::ReadOptions", align 8
+  %6 = alloca [7 x i8], align 1
+  %7 = alloca [7 x i8], align 1
+  %8 = bitcast i32* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #9
+  store i32 0, i32* %3, align 4
+  %9 = bitcast i32* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %9) #9
+  store i32 -1431655766, i32* %4, align 4
+  %10 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 11
+  %11 = load %"class.std::__1::vector"*, %"class.std::__1::vector"** %10, align 8
+  %12 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %11, i64 0, i32 0, i32 0
+  %13 = load %"struct.blink::IndexedDBDatabaseMetadata"*, %"struct.blink::IndexedDBDatabaseMetadata"** %12, align 8
+  %14 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %11, i64 0, i32 0, i32 1
+  %15 = load %"struct.blink::IndexedDBDatabaseMetadata"*, %"struct.blink::IndexedDBDatabaseMetadata"** %14, align 8
+  %16 = icmp eq %"struct.blink::IndexedDBDatabaseMetadata"* %13, %15
+  br i1 %16, label %417, label %17
+
+17:                                               ; preds = %2
+  %18 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 12, i32 0, i32 0, i32 0
+  %19 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %18, align 8
+  %20 = icmp eq %"class.leveldb::Iterator"* %19, null
+  br i1 %20, label %21, label %41
+
+21:                                               ; preds = %17
+  %22 = getelementptr inbounds %"struct.leveldb::ReadOptions", %"struct.leveldb::ReadOptions"* %5, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %22) #9
+  %23 = bitcast %"struct.leveldb::ReadOptions"* %5 to i64*
+  store i64 -6148914691236517206, i64* %23, align 8
+  %24 = getelementptr inbounds %"struct.leveldb::ReadOptions", %"struct.leveldb::ReadOptions"* %5, i64 0, i32 1
+  %25 = getelementptr inbounds %"struct.leveldb::ReadOptions", %"struct.leveldb::ReadOptions"* %5, i64 0, i32 2
+  store %"class.leveldb::Snapshot"* null, %"class.leveldb::Snapshot"** %25, align 8
+  store i8 0, i8* %24, align 1
+  store i8 1, i8* %22, align 8
+  %26 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 0, i32 2
+  %27 = load %"class.leveldb::DB"*, %"class.leveldb::DB"** %26, align 8
+  %28 = bitcast %"class.leveldb::DB"* %27 to %"class.leveldb::Iterator"* (%"class.leveldb::DB"*, %"struct.leveldb::ReadOptions"*)***
+  %29 = load %"class.leveldb::Iterator"* (%"class.leveldb::DB"*, %"struct.leveldb::ReadOptions"*)**, %"class.leveldb::Iterator"* (%"class.leveldb::DB"*, %"struct.leveldb::ReadOptions"*)*** %28, align 8
+  %30 = getelementptr inbounds %"class.leveldb::Iterator"* (%"class.leveldb::DB"*, %"struct.leveldb::ReadOptions"*)*, %"class.leveldb::Iterator"* (%"class.leveldb::DB"*, %"struct.leveldb::ReadOptions"*)** %29, i64 6
+  %31 = load %"class.leveldb::Iterator"* (%"class.leveldb::DB"*, %"struct.leveldb::ReadOptions"*)*, %"class.leveldb::Iterator"* (%"class.leveldb::DB"*, %"struct.leveldb::ReadOptions"*)** %30, align 8
+  %32 = call %"class.leveldb::Iterator"* %31(%"class.leveldb::DB"* %27, %"struct.leveldb::ReadOptions"* nonnull dereferenceable(16) %5) #9
+  %33 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %18, align 8
+  store %"class.leveldb::Iterator"* %32, %"class.leveldb::Iterator"** %18, align 8
+  %34 = icmp eq %"class.leveldb::Iterator"* %33, null
+  br i1 %34, label %40, label %35
+
+35:                                               ; preds = %21
+  %36 = bitcast %"class.leveldb::Iterator"* %33 to void (%"class.leveldb::Iterator"*)***
+  %37 = load void (%"class.leveldb::Iterator"*)**, void (%"class.leveldb::Iterator"*)*** %36, align 8
+  %38 = getelementptr inbounds void (%"class.leveldb::Iterator"*)*, void (%"class.leveldb::Iterator"*)** %37, i64 1
+  %39 = load void (%"class.leveldb::Iterator"*)*, void (%"class.leveldb::Iterator"*)** %38, align 8
+  call void %39(%"class.leveldb::Iterator"* nonnull %33) #9
+  br label %40
+
+40:                                               ; preds = %21, %35
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %22) #9
+  br label %41
+
+41:                                               ; preds = %17, %40
+  %42 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 1, i32 0, i32 0, i32 0, i32 0
+  %43 = load i8, i8* %42, align 8, !range !2
+  %44 = icmp eq i8 %43, 0
+  br i1 %44, label %45, label %65
+
+45:                                               ; preds = %41
+  %46 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 0
+  %47 = load i64, i64* %46, align 8
+  %48 = load %"class.std::__1::vector"*, %"class.std::__1::vector"** %10, align 8
+  %49 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %48, i64 0, i32 0, i32 1
+  %50 = bitcast %"struct.blink::IndexedDBDatabaseMetadata"** %49 to i64*
+  %51 = load i64, i64* %50, align 8
+  %52 = bitcast %"class.std::__1::vector"* %48 to i64*
+  %53 = load i64, i64* %52, align 8
+  %54 = sub i64 %51, %53
+  %55 = sdiv exact i64 %54, 80
+  %56 = urem i64 %47, %55
+  %57 = inttoptr i64 %53 to %"struct.blink::IndexedDBDatabaseMetadata"*
+  %58 = getelementptr inbounds %"struct.blink::IndexedDBDatabaseMetadata", %"struct.blink::IndexedDBDatabaseMetadata"* %57, i64 %56
+  %59 = ptrtoint %"struct.blink::IndexedDBDatabaseMetadata"* %58 to i64
+  %60 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 1, i32 0, i32 0, i32 0, i32 1, i32 0, i32 0
+  store i8 1, i8* %60, align 8
+  %61 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 1, i32 0, i32 0, i32 0, i32 1, i32 0, i32 1
+  store i64 0, i64* %61, align 8
+  %62 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 1, i32 0, i32 0, i32 0, i32 1, i32 0, i32 2
+  %63 = bitcast %"class.std::__1::__wrap_iter"* %62 to i64*
+  store i64 %59, i64* %63, align 8
+  %64 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 1, i32 0, i32 0, i32 0, i32 1, i32 0, i32 3
+  store %"class.std::__1::vector"* %48, %"class.std::__1::vector"** %64, align 8
+  store i8 1, i8* %42, align 8
+  br label %65
+
+65:                                               ; preds = %45, %41
+  %66 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 1, i32 0, i32 0, i32 0, i32 1, i32 0, i32 0
+  %67 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 1, i32 0, i32 0, i32 0, i32 1, i32 0, i32 2, i32 0
+  %68 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 3, i32 0, i32 0, i32 0, i32 0
+  %69 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 2
+  %70 = getelementptr inbounds [7 x i8], [7 x i8]* %6, i64 0, i64 0
+  %71 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 3, i32 0, i32 0, i32 0, i32 1, i32 0, i32 0
+  %72 = bitcast %"class.content::IndexedDBTombstoneSweeper"* %0 to i8*
+  %73 = getelementptr inbounds i8, i8* %72, i64 193
+  %74 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 3, i32 0, i32 0, i32 0, i32 1, i32 0, i32 1
+  %75 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 3, i32 0, i32 0, i32 0, i32 1, i32 0, i32 2
+  %76 = bitcast %"class.std::__1::__map_const_iterator"* %75 to i64*
+  %77 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 3, i32 0, i32 0, i32 0, i32 1, i32 0, i32 3
+  %78 = bitcast %"class.std::__1::__map_const_iterator"* %75 to %"class.std::__1::__tree_node"**
+  %79 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 5, i32 0, i32 0, i32 0, i32 0
+  %80 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 4
+  %81 = getelementptr inbounds [7 x i8], [7 x i8]* %7, i64 0, i64 0
+  %82 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 5, i32 0, i32 0, i32 0, i32 1, i32 0, i32 0
+  %83 = getelementptr inbounds i8, i8* %72, i64 241
+  %84 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 5, i32 0, i32 0, i32 0, i32 1, i32 0, i32 1
+  %85 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 5, i32 0, i32 0, i32 0, i32 1, i32 0, i32 2
+  %86 = bitcast %"class.std::__1::__map_const_iterator.44"* %85 to i64*
+  %87 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 5, i32 0, i32 0, i32 0, i32 1, i32 0, i32 3
+  %88 = bitcast %"class.std::__1::__map_const_iterator.44"* %85 to %"class.std::__1::__tree_node.106"**
+  %89 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 5, i32 0, i32 0, i32 0, i32 1, i32 0, i32 2, i32 0, i32 0
+  %90 = bitcast %"class.std::__1::__tree_end_node"** %89 to i64*
+  %91 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 3, i32 0, i32 0, i32 0, i32 1, i32 0, i32 2, i32 0, i32 0
+  %92 = bitcast %"class.std::__1::__tree_end_node"** %91 to i64*
+  %93 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 1, i32 0, i32 0, i32 0, i32 1, i32 0, i32 1
+  %94 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 1, i32 0, i32 0, i32 0, i32 1, i32 0, i32 3
+  %95 = bitcast %"struct.blink::IndexedDBDatabaseMetadata"** %67 to i64*
+  %96 = load i8, i8* %66, align 8, !range !2
+  %97 = icmp eq i8 %96, 0
+  br i1 %97, label %417, label %98
+
+98:                                               ; preds = %65, %412
+  %99 = load %"struct.blink::IndexedDBDatabaseMetadata"*, %"struct.blink::IndexedDBDatabaseMetadata"** %67, align 8
+  %100 = getelementptr inbounds %"struct.blink::IndexedDBDatabaseMetadata", %"struct.blink::IndexedDBDatabaseMetadata"* %99, i64 0, i32 4
+  %101 = getelementptr inbounds %"struct.blink::IndexedDBDatabaseMetadata", %"struct.blink::IndexedDBDatabaseMetadata"* %99, i64 0, i32 4, i32 0, i32 2, i32 0, i32 0
+  %102 = load i64, i64* %101, align 8
+  %103 = icmp eq i64 %102, 0
+  br i1 %103, label %392, label %104
+
+104:                                              ; preds = %98
+  %105 = load i8, i8* %68, align 8, !range !2
+  %106 = icmp eq i8 %105, 0
+  br i1 %106, label %107, label %185
+
+107:                                              ; preds = %104
+  %108 = load i64, i64* %69, align 8
+  %109 = urem i64 %108, %102
+  call void @llvm.lifetime.start.p0i8(i64 7, i8* nonnull %70)
+  %110 = bitcast %"class.std::__1::map"* %100 to i64*
+  %111 = load i64, i64* %110, align 8
+  %112 = icmp sgt i64 %109, -1
+  br i1 %112, label %115, label %113
+
+113:                                              ; preds = %107
+  %114 = inttoptr i64 %111 to %"class.std::__1::__tree_end_node"*
+  br label %152
+
+115:                                              ; preds = %107
+  %116 = icmp eq i64 %109, 0
+  br i1 %116, label %183, label %117
+
+117:                                              ; preds = %115
+  %118 = inttoptr i64 %111 to %"class.std::__1::__tree_node_base"*
+  br label %119
+
+119:                                              ; preds = %117, %147
+  %120 = phi %"class.std::__1::__tree_node_base"* [ %151, %147 ], [ %118, %117 ]
+  %121 = phi i64 [ %149, %147 ], [ %109, %117 ]
+  %122 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %120, i64 0, i32 1
+  %123 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %122, align 8
+  %124 = icmp eq %"class.std::__1::__tree_node_base"* %123, null
+  br i1 %124, label %125, label %131
+
+125:                                              ; preds = %119
+  %126 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %120, i64 0, i32 2
+  %127 = load %"class.std::__1::__tree_end_node"*, %"class.std::__1::__tree_end_node"** %126, align 8
+  %128 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %127, i64 0, i32 0
+  %129 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %128, align 8
+  %130 = icmp eq %"class.std::__1::__tree_node_base"* %129, %120
+  br i1 %130, label %147, label %138
+
+131:                                              ; preds = %119, %131
+  %132 = phi %"class.std::__1::__tree_node_base"* [ %134, %131 ], [ %123, %119 ]
+  %133 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %132, i64 0, i32 0, i32 0
+  %134 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %133, align 8
+  %135 = icmp eq %"class.std::__1::__tree_node_base"* %134, null
+  br i1 %135, label %136, label %131
+
+136:                                              ; preds = %131
+  %137 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %132, i64 0, i32 0
+  br label %147
+
+138:                                              ; preds = %125, %138
+  %139 = phi %"class.std::__1::__tree_end_node"** [ %142, %138 ], [ %126, %125 ]
+  %140 = bitcast %"class.std::__1::__tree_end_node"** %139 to %"class.std::__1::__tree_node_base"**
+  %141 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %140, align 8
+  %142 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %141, i64 0, i32 2
+  %143 = load %"class.std::__1::__tree_end_node"*, %"class.std::__1::__tree_end_node"** %142, align 8
+  %144 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %143, i64 0, i32 0
+  %145 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %144, align 8
+  %146 = icmp eq %"class.std::__1::__tree_node_base"* %145, %141
+  br i1 %146, label %147, label %138
+
+147:                                              ; preds = %138, %136, %125
+  %148 = phi %"class.std::__1::__tree_end_node"* [ %137, %136 ], [ %127, %125 ], [ %143, %138 ]
+  %149 = add nsw i64 %121, -1
+  %150 = icmp sgt i64 %149, 0
+  %151 = bitcast %"class.std::__1::__tree_end_node"* %148 to %"class.std::__1::__tree_node_base"*
+  br i1 %150, label %119, label %179
+
+152:                                              ; preds = %174, %113
+  %153 = phi %"class.std::__1::__tree_end_node"* [ %114, %113 ], [ %176, %174 ]
+  %154 = phi i64 [ %109, %113 ], [ %177, %174 ]
+  %155 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %153, i64 0, i32 0
+  %156 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %155, align 8
+  %157 = icmp eq %"class.std::__1::__tree_node_base"* %156, null
+  br i1 %157, label %163, label %158
+
+158:                                              ; preds = %152, %158
+  %159 = phi %"class.std::__1::__tree_node_base"* [ %161, %158 ], [ %156, %152 ]
+  %160 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %159, i64 0, i32 1
+  %161 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %160, align 8
+  %162 = icmp eq %"class.std::__1::__tree_node_base"* %161, null
+  br i1 %162, label %174, label %158
+
+163:                                              ; preds = %152, %163
+  %164 = phi %"class.std::__1::__tree_end_node"* [ %168, %163 ], [ %153, %152 ]
+  %165 = bitcast %"class.std::__1::__tree_end_node"* %164 to %"class.std::__1::__tree_node_base"*
+  %166 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %164, i64 2
+  %167 = bitcast %"class.std::__1::__tree_end_node"* %166 to %"class.std::__1::__tree_end_node"**
+  %168 = load %"class.std::__1::__tree_end_node"*, %"class.std::__1::__tree_end_node"** %167, align 8
+  %169 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %168, i64 0, i32 0
+  %170 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %169, align 8
+  %171 = icmp eq %"class.std::__1::__tree_node_base"* %170, %165
+  br i1 %171, label %163, label %172
+
+172:                                              ; preds = %163
+  %173 = bitcast %"class.std::__1::__tree_end_node"* %168 to %"class.std::__1::__tree_node_base"*
+  br label %174
+
+174:                                              ; preds = %158, %172
+  %175 = phi %"class.std::__1::__tree_node_base"* [ %173, %172 ], [ %159, %158 ]
+  %176 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %175, i64 0, i32 0
+  %177 = add nsw i64 %154, 1
+  %178 = icmp eq i64 %177, 0
+  br i1 %178, label %181, label %152
+
+179:                                              ; preds = %147
+  %180 = ptrtoint %"class.std::__1::__tree_end_node"* %148 to i64
+  br label %183
+
+181:                                              ; preds = %174
+  %182 = ptrtoint %"class.std::__1::__tree_node_base"* %175 to i64
+  br label %183
+
+183:                                              ; preds = %181, %179, %115
+  %184 = phi i64 [ %111, %115 ], [ %180, %179 ], [ %182, %181 ]
+  store i8 1, i8* %71, align 8
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %73, i8* nonnull align 1 %70, i64 7, i1 false)
+  store i64 0, i64* %74, align 8
+  store i64 %184, i64* %76, align 8
+  store %"class.std::__1::map"* %100, %"class.std::__1::map"** %77, align 8
+  store i8 1, i8* %68, align 8
+  call void @llvm.lifetime.end.p0i8(i64 7, i8* nonnull %70)
+  br label %185
+
+185:                                              ; preds = %183, %104
+  %186 = getelementptr inbounds %"struct.blink::IndexedDBDatabaseMetadata", %"struct.blink::IndexedDBDatabaseMetadata"* %99, i64 0, i32 1
+  %187 = load i8, i8* %71, align 8, !range !2
+  %188 = icmp eq i8 %187, 0
+  br i1 %188, label %388, label %189
+
+189:                                              ; preds = %185, %385
+  %190 = load %"class.std::__1::__tree_node"*, %"class.std::__1::__tree_node"** %78, align 8
+  %191 = getelementptr inbounds %"class.std::__1::__tree_node", %"class.std::__1::__tree_node"* %190, i64 0, i32 1, i32 0, i32 1, i32 5
+  %192 = getelementptr inbounds %"class.std::__1::__tree_node", %"class.std::__1::__tree_node"* %190, i64 0, i32 1, i32 0, i32 1, i32 5, i32 0, i32 2, i32 0, i32 0
+  %193 = load i64, i64* %192, align 8
+  %194 = icmp eq i64 %193, 0
+  br i1 %194, label %341, label %195
+
+195:                                              ; preds = %189
+  %196 = load i8, i8* %79, align 8, !range !2
+  %197 = icmp eq i8 %196, 0
+  br i1 %197, label %198, label %276
+
+198:                                              ; preds = %195
+  %199 = load i64, i64* %80, align 8
+  %200 = urem i64 %199, %193
+  call void @llvm.lifetime.start.p0i8(i64 7, i8* nonnull %81)
+  %201 = bitcast %"class.std::__1::map.46"* %191 to i64*
+  %202 = load i64, i64* %201, align 8
+  %203 = icmp sgt i64 %200, -1
+  br i1 %203, label %206, label %204
+
+204:                                              ; preds = %198
+  %205 = inttoptr i64 %202 to %"class.std::__1::__tree_end_node"*
+  br label %243
+
+206:                                              ; preds = %198
+  %207 = icmp eq i64 %200, 0
+  br i1 %207, label %274, label %208
+
+208:                                              ; preds = %206
+  %209 = inttoptr i64 %202 to %"class.std::__1::__tree_node_base"*
+  br label %210
+
+210:                                              ; preds = %208, %238
+  %211 = phi %"class.std::__1::__tree_node_base"* [ %242, %238 ], [ %209, %208 ]
+  %212 = phi i64 [ %240, %238 ], [ %200, %208 ]
+  %213 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %211, i64 0, i32 1
+  %214 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %213, align 8
+  %215 = icmp eq %"class.std::__1::__tree_node_base"* %214, null
+  br i1 %215, label %216, label %222
+
+216:                                              ; preds = %210
+  %217 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %211, i64 0, i32 2
+  %218 = load %"class.std::__1::__tree_end_node"*, %"class.std::__1::__tree_end_node"** %217, align 8
+  %219 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %218, i64 0, i32 0
+  %220 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %219, align 8
+  %221 = icmp eq %"class.std::__1::__tree_node_base"* %220, %211
+  br i1 %221, label %238, label %229
+
+222:                                              ; preds = %210, %222
+  %223 = phi %"class.std::__1::__tree_node_base"* [ %225, %222 ], [ %214, %210 ]
+  %224 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %223, i64 0, i32 0, i32 0
+  %225 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %224, align 8
+  %226 = icmp eq %"class.std::__1::__tree_node_base"* %225, null
+  br i1 %226, label %227, label %222
+
+227:                                              ; preds = %222
+  %228 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %223, i64 0, i32 0
+  br label %238
+
+229:                                              ; preds = %216, %229
+  %230 = phi %"class.std::__1::__tree_end_node"** [ %233, %229 ], [ %217, %216 ]
+  %231 = bitcast %"class.std::__1::__tree_end_node"** %230 to %"class.std::__1::__tree_node_base"**
+  %232 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %231, align 8
+  %233 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %232, i64 0, i32 2
+  %234 = load %"class.std::__1::__tree_end_node"*, %"class.std::__1::__tree_end_node"** %233, align 8
+  %235 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %234, i64 0, i32 0
+  %236 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %235, align 8
+  %237 = icmp eq %"class.std::__1::__tree_node_base"* %236, %232
+  br i1 %237, label %238, label %229
+
+238:                                              ; preds = %229, %227, %216
+  %239 = phi %"class.std::__1::__tree_end_node"* [ %228, %227 ], [ %218, %216 ], [ %234, %229 ]
+  %240 = add nsw i64 %212, -1
+  %241 = icmp sgt i64 %240, 0
+  %242 = bitcast %"class.std::__1::__tree_end_node"* %239 to %"class.std::__1::__tree_node_base"*
+  br i1 %241, label %210, label %270
+
+243:                                              ; preds = %265, %204
+  %244 = phi %"class.std::__1::__tree_end_node"* [ %205, %204 ], [ %267, %265 ]
+  %245 = phi i64 [ %200, %204 ], [ %268, %265 ]
+  %246 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %244, i64 0, i32 0
+  %247 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %246, align 8
+  %248 = icmp eq %"class.std::__1::__tree_node_base"* %247, null
+  br i1 %248, label %254, label %249
+
+249:                                              ; preds = %243, %249
+  %250 = phi %"class.std::__1::__tree_node_base"* [ %252, %249 ], [ %247, %243 ]
+  %251 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %250, i64 0, i32 1
+  %252 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %251, align 8
+  %253 = icmp eq %"class.std::__1::__tree_node_base"* %252, null
+  br i1 %253, label %265, label %249
+
+254:                                              ; preds = %243, %254
+  %255 = phi %"class.std::__1::__tree_end_node"* [ %259, %254 ], [ %244, %243 ]
+  %256 = bitcast %"class.std::__1::__tree_end_node"* %255 to %"class.std::__1::__tree_node_base"*
+  %257 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %255, i64 2
+  %258 = bitcast %"class.std::__1::__tree_end_node"* %257 to %"class.std::__1::__tree_end_node"**
+  %259 = load %"class.std::__1::__tree_end_node"*, %"class.std::__1::__tree_end_node"** %258, align 8
+  %260 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %259, i64 0, i32 0
+  %261 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %260, align 8
+  %262 = icmp eq %"class.std::__1::__tree_node_base"* %261, %256
+  br i1 %262, label %254, label %263
+
+263:                                              ; preds = %254
+  %264 = bitcast %"class.std::__1::__tree_end_node"* %259 to %"class.std::__1::__tree_node_base"*
+  br label %265
+
+265:                                              ; preds = %249, %263
+  %266 = phi %"class.std::__1::__tree_node_base"* [ %264, %263 ], [ %250, %249 ]
+  %267 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %266, i64 0, i32 0
+  %268 = add nsw i64 %245, 1
+  %269 = icmp eq i64 %268, 0
+  br i1 %269, label %272, label %243
+
+270:                                              ; preds = %238
+  %271 = ptrtoint %"class.std::__1::__tree_end_node"* %239 to i64
+  br label %274
+
+272:                                              ; preds = %265
+  %273 = ptrtoint %"class.std::__1::__tree_node_base"* %266 to i64
+  br label %274
+
+274:                                              ; preds = %272, %270, %206
+  %275 = phi i64 [ %202, %206 ], [ %271, %270 ], [ %273, %272 ]
+  store i8 1, i8* %82, align 8
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %83, i8* nonnull align 1 %81, i64 7, i1 false)
+  store i64 0, i64* %84, align 8
+  store i64 %275, i64* %86, align 8
+  store %"class.std::__1::map.46"* %191, %"class.std::__1::map.46"** %87, align 8
+  store i8 1, i8* %79, align 8
+  call void @llvm.lifetime.end.p0i8(i64 7, i8* nonnull %81)
+  br label %276
+
+276:                                              ; preds = %274, %195
+  %277 = getelementptr inbounds %"class.std::__1::__tree_node", %"class.std::__1::__tree_node"* %190, i64 0, i32 1, i32 0, i32 1, i32 1
+  %278 = load i8, i8* %82, align 8, !range !2
+  %279 = icmp eq i8 %278, 0
+  br i1 %279, label %337, label %280
+
+280:                                              ; preds = %276, %334
+  %281 = load %"class.std::__1::__tree_node.106"*, %"class.std::__1::__tree_node.106"** %88, align 8
+  %282 = getelementptr inbounds %"class.std::__1::__tree_node.106", %"class.std::__1::__tree_node.106"* %281, i64 0, i32 1, i32 0, i32 1
+  %283 = load i64, i64* %186, align 8
+  %284 = load i64, i64* %277, align 8
+  %285 = call zeroext i1 @_ZN7content25IndexedDBTombstoneSweeper12IterateIndexEllRKN5blink22IndexedDBIndexMetadataEPNS0_6StatusEPN7leveldb6StatusEPi(%"class.content::IndexedDBTombstoneSweeper"* %0, i64 %283, i64 %284, %"struct.blink::IndexedDBIndexMetadata"* dereferenceable(96) %282, i32* nonnull %4, %"class.leveldb::Status"* %1, i32* nonnull %3)
+  br i1 %285, label %286, label %415
+
+286:                                              ; preds = %280
+  %287 = load i8, i8* %79, align 8, !range !2
+  %288 = icmp eq i8 %287, 0
+  br i1 %288, label %289, label %290
+
+289:                                              ; preds = %286
+  call void @_ZN4absl17optional_internal25throw_bad_optional_accessEv() #11
+  unreachable
+
+290:                                              ; preds = %286
+  %291 = load i64, i64* %84, align 8
+  %292 = add i64 %291, 1
+  store i64 %292, i64* %84, align 8
+  %293 = load %"class.std::__1::map.46"*, %"class.std::__1::map.46"** %87, align 8
+  %294 = getelementptr inbounds %"class.std::__1::map.46", %"class.std::__1::map.46"* %293, i64 0, i32 0, i32 2, i32 0, i32 0
+  %295 = load i64, i64* %294, align 8
+  %296 = icmp ult i64 %292, %295
+  br i1 %296, label %298, label %297
+
+297:                                              ; preds = %290
+  store i8 0, i8* %82, align 8
+  br label %334
+
+298:                                              ; preds = %290
+  %299 = load %"class.std::__1::__tree_end_node"*, %"class.std::__1::__tree_end_node"** %89, align 8
+  %300 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %299, i64 1, i32 0
+  %301 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %300, align 8
+  %302 = icmp eq %"class.std::__1::__tree_node_base"* %301, null
+  br i1 %302, label %303, label %311
+
+303:                                              ; preds = %298
+  %304 = bitcast %"class.std::__1::__tree_end_node"* %299 to %"class.std::__1::__tree_node_base"*
+  %305 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %299, i64 2
+  %306 = bitcast %"class.std::__1::__tree_end_node"* %305 to %"class.std::__1::__tree_end_node"**
+  %307 = load %"class.std::__1::__tree_end_node"*, %"class.std::__1::__tree_end_node"** %306, align 8
+  %308 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %307, i64 0, i32 0
+  %309 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %308, align 8
+  %310 = icmp eq %"class.std::__1::__tree_node_base"* %309, %304
+  br i1 %310, label %327, label %318
+
+311:                                              ; preds = %298, %311
+  %312 = phi %"class.std::__1::__tree_node_base"* [ %314, %311 ], [ %301, %298 ]
+  %313 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %312, i64 0, i32 0, i32 0
+  %314 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %313, align 8
+  %315 = icmp eq %"class.std::__1::__tree_node_base"* %314, null
+  br i1 %315, label %316, label %311
+
+316:                                              ; preds = %311
+  %317 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %312, i64 0, i32 0
+  br label %327
+
+318:                                              ; preds = %303, %318
+  %319 = phi %"class.std::__1::__tree_end_node"** [ %322, %318 ], [ %306, %303 ]
+  %320 = bitcast %"class.std::__1::__tree_end_node"** %319 to %"class.std::__1::__tree_node_base"**
+  %321 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %320, align 8
+  %322 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %321, i64 0, i32 2
+  %323 = load %"class.std::__1::__tree_end_node"*, %"class.std::__1::__tree_end_node"** %322, align 8
+  %324 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %323, i64 0, i32 0
+  %325 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %324, align 8
+  %326 = icmp eq %"class.std::__1::__tree_node_base"* %325, %321
+  br i1 %326, label %327, label %318
+
+327:                                              ; preds = %318, %316, %303
+  %328 = phi %"class.std::__1::__tree_end_node"* [ %317, %316 ], [ %307, %303 ], [ %323, %318 ]
+  store %"class.std::__1::__tree_end_node"* %328, %"class.std::__1::__tree_end_node"** %89, align 8
+  %329 = getelementptr inbounds %"class.std::__1::map.46", %"class.std::__1::map.46"* %293, i64 0, i32 0, i32 1, i32 0, i32 0
+  %330 = icmp eq %"class.std::__1::__tree_end_node"* %328, %329
+  br i1 %330, label %331, label %334
+
+331:                                              ; preds = %327
+  %332 = bitcast %"class.std::__1::map.46"* %293 to i64*
+  %333 = load i64, i64* %332, align 8
+  store i64 %333, i64* %90, align 8
+  br label %334
+
+334:                                              ; preds = %297, %327, %331
+  %335 = load i8, i8* %82, align 8, !range !2
+  %336 = icmp eq i8 %335, 0
+  br i1 %336, label %337, label %280
+
+337:                                              ; preds = %334, %276
+  store i8 0, i8* %79, align 8
+  %338 = load i8, i8* %68, align 8, !range !2
+  %339 = icmp eq i8 %338, 0
+  br i1 %339, label %340, label %341
+
+340:                                              ; preds = %337
+  call void @_ZN4absl17optional_internal25throw_bad_optional_accessEv() #11
+  unreachable
+
+341:                                              ; preds = %189, %337
+  %342 = load i64, i64* %74, align 8
+  %343 = add i64 %342, 1
+  store i64 %343, i64* %74, align 8
+  %344 = load %"class.std::__1::map"*, %"class.std::__1::map"** %77, align 8
+  %345 = getelementptr inbounds %"class.std::__1::map", %"class.std::__1::map"* %344, i64 0, i32 0, i32 2, i32 0, i32 0
+  %346 = load i64, i64* %345, align 8
+  %347 = icmp ult i64 %343, %346
+  br i1 %347, label %349, label %348
+
+348:                                              ; preds = %341
+  store i8 0, i8* %71, align 8
+  br label %385
+
+349:                                              ; preds = %341
+  %350 = load %"class.std::__1::__tree_end_node"*, %"class.std::__1::__tree_end_node"** %91, align 8
+  %351 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %350, i64 1, i32 0
+  %352 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %351, align 8
+  %353 = icmp eq %"class.std::__1::__tree_node_base"* %352, null
+  br i1 %353, label %354, label %362
+
+354:                                              ; preds = %349
+  %355 = bitcast %"class.std::__1::__tree_end_node"* %350 to %"class.std::__1::__tree_node_base"*
+  %356 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %350, i64 2
+  %357 = bitcast %"class.std::__1::__tree_end_node"* %356 to %"class.std::__1::__tree_end_node"**
+  %358 = load %"class.std::__1::__tree_end_node"*, %"class.std::__1::__tree_end_node"** %357, align 8
+  %359 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %358, i64 0, i32 0
+  %360 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %359, align 8
+  %361 = icmp eq %"class.std::__1::__tree_node_base"* %360, %355
+  br i1 %361, label %378, label %369
+
+362:                                              ; preds = %349, %362
+  %363 = phi %"class.std::__1::__tree_node_base"* [ %365, %362 ], [ %352, %349 ]
+  %364 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %363, i64 0, i32 0, i32 0
+  %365 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %364, align 8
+  %366 = icmp eq %"class.std::__1::__tree_node_base"* %365, null
+  br i1 %366, label %367, label %362
+
+367:                                              ; preds = %362
+  %368 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %363, i64 0, i32 0
+  br label %378
+
+369:                                              ; preds = %354, %369
+  %370 = phi %"class.std::__1::__tree_end_node"** [ %373, %369 ], [ %357, %354 ]
+  %371 = bitcast %"class.std::__1::__tree_end_node"** %370 to %"class.std::__1::__tree_node_base"**
+  %372 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %371, align 8
+  %373 = getelementptr inbounds %"class.std::__1::__tree_node_base", %"class.std::__1::__tree_node_base"* %372, i64 0, i32 2
+  %374 = load %"class.std::__1::__tree_end_node"*, %"class.std::__1::__tree_end_node"** %373, align 8
+  %375 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %374, i64 0, i32 0
+  %376 = load %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_node_base"** %375, align 8
+  %377 = icmp eq %"class.std::__1::__tree_node_base"* %376, %372
+  br i1 %377, label %378, label %369
+
+378:                                              ; preds = %369, %367, %354
+  %379 = phi %"class.std::__1::__tree_end_node"* [ %368, %367 ], [ %358, %354 ], [ %374, %369 ]
+  store %"class.std::__1::__tree_end_node"* %379, %"class.std::__1::__tree_end_node"** %91, align 8
+  %380 = getelementptr inbounds %"class.std::__1::map", %"class.std::__1::map"* %344, i64 0, i32 0, i32 1, i32 0, i32 0
+  %381 = icmp eq %"class.std::__1::__tree_end_node"* %379, %380
+  br i1 %381, label %382, label %385
+
+382:                                              ; preds = %378
+  %383 = bitcast %"class.std::__1::map"* %344 to i64*
+  %384 = load i64, i64* %383, align 8
+  store i64 %384, i64* %92, align 8
+  br label %385
+
+385:                                              ; preds = %348, %378, %382
+  %386 = load i8, i8* %71, align 8, !range !2
+  %387 = icmp eq i8 %386, 0
+  br i1 %387, label %388, label %189
+
+388:                                              ; preds = %385, %185
+  store i8 0, i8* %68, align 8
+  %389 = load i8, i8* %42, align 8, !range !2
+  %390 = icmp eq i8 %389, 0
+  br i1 %390, label %391, label %392
+
+391:                                              ; preds = %388
+  call void @_ZN4absl17optional_internal25throw_bad_optional_accessEv() #11
+  unreachable
+
+392:                                              ; preds = %98, %388
+  %393 = load i64, i64* %93, align 8
+  %394 = add i64 %393, 1
+  store i64 %394, i64* %93, align 8
+  %395 = load %"class.std::__1::vector"*, %"class.std::__1::vector"** %94, align 8
+  %396 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %395, i64 0, i32 0, i32 1
+  %397 = bitcast %"struct.blink::IndexedDBDatabaseMetadata"** %396 to i64*
+  %398 = load i64, i64* %397, align 8
+  %399 = bitcast %"class.std::__1::vector"* %395 to i64*
+  %400 = load i64, i64* %399, align 8
+  %401 = sub i64 %398, %400
+  %402 = sdiv exact i64 %401, 80
+  %403 = icmp ult i64 %394, %402
+  br i1 %403, label %405, label %404
+
+404:                                              ; preds = %392
+  store i8 0, i8* %66, align 8
+  br label %412
+
+405:                                              ; preds = %392
+  %406 = load %"struct.blink::IndexedDBDatabaseMetadata"*, %"struct.blink::IndexedDBDatabaseMetadata"** %67, align 8
+  %407 = getelementptr inbounds %"struct.blink::IndexedDBDatabaseMetadata", %"struct.blink::IndexedDBDatabaseMetadata"* %406, i64 1
+  store %"struct.blink::IndexedDBDatabaseMetadata"* %407, %"struct.blink::IndexedDBDatabaseMetadata"** %67, align 8
+  %408 = load %"struct.blink::IndexedDBDatabaseMetadata"*, %"struct.blink::IndexedDBDatabaseMetadata"** %396, align 8
+  %409 = icmp eq %"struct.blink::IndexedDBDatabaseMetadata"* %407, %408
+  br i1 %409, label %410, label %412
+
+410:                                              ; preds = %405
+  %411 = load i64, i64* %399, align 8
+  store i64 %411, i64* %95, align 8
+  br label %412
+
+412:                                              ; preds = %404, %405, %410
+  %413 = load i8, i8* %66, align 8, !range !2
+  %414 = icmp eq i8 %413, 0
+  br i1 %414, label %417, label %98
+
+415:                                              ; preds = %280
+  %416 = load i32, i32* %4, align 4
+  br label %417
+
+417:                                              ; preds = %412, %65, %415, %2
+  %418 = phi i32 [ 3, %2 ], [ %416, %415 ], [ 3, %65 ], [ 3, %412 ]
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %9) #9
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #9
+  ret i32 %418
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7content25IndexedDBTombstoneSweeper14FlushDeletionsEv(%"class.leveldb::Status"* noalias nocapture sret, %"class.content::IndexedDBTombstoneSweeper"*) local_unnamed_addr #0 align 2 {
+  %3 = alloca %"class.logging::CheckError", align 8
+  %4 = alloca %"class.leveldb::Status", align 8
+  %5 = alloca %"struct.leveldb::WriteOptions", align 1
+  %6 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %1, i64 0, i32 8
+  %7 = load i8, i8* %6, align 8, !range !2
+  %8 = icmp eq i8 %7, 0
+  br i1 %8, label %9, label %11
+
+9:                                                ; preds = %2
+  %10 = getelementptr inbounds %"class.leveldb::Status", %"class.leveldb::Status"* %0, i64 0, i32 0
+  store i8* null, i8** %10, align 8, !alias.scope !3
+  br label %55
+
+11:                                               ; preds = %2
+  %12 = tail call i64 @_ZN4base9TimeTicks3NowEv() #9
+  %13 = bitcast %"class.leveldb::Status"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %13) #9
+  %14 = getelementptr inbounds %"class.leveldb::Status", %"class.leveldb::Status"* %4, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %14, align 8
+  %15 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %1, i64 0, i32 0, i32 2
+  %16 = load %"class.leveldb::DB"*, %"class.leveldb::DB"** %15, align 8
+  %17 = getelementptr inbounds %"struct.leveldb::WriteOptions", %"struct.leveldb::WriteOptions"* %5, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %17) #9
+  store i8 0, i8* %17, align 1
+  %18 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %1, i64 0, i32 9
+  %19 = bitcast %"class.leveldb::DB"* %16 to void (%"class.leveldb::Status"*, %"class.leveldb::DB"*, %"struct.leveldb::WriteOptions"*, %"class.leveldb::WriteBatch"*)***
+  %20 = load void (%"class.leveldb::Status"*, %"class.leveldb::DB"*, %"struct.leveldb::WriteOptions"*, %"class.leveldb::WriteBatch"*)**, void (%"class.leveldb::Status"*, %"class.leveldb::DB"*, %"struct.leveldb::WriteOptions"*, %"class.leveldb::WriteBatch"*)*** %19, align 8
+  %21 = getelementptr inbounds void (%"class.leveldb::Status"*, %"class.leveldb::DB"*, %"struct.leveldb::WriteOptions"*, %"class.leveldb::WriteBatch"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::DB"*, %"struct.leveldb::WriteOptions"*, %"class.leveldb::WriteBatch"*)** %20, i64 4
+  %22 = load void (%"class.leveldb::Status"*, %"class.leveldb::DB"*, %"struct.leveldb::WriteOptions"*, %"class.leveldb::WriteBatch"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::DB"*, %"struct.leveldb::WriteOptions"*, %"class.leveldb::WriteBatch"*)** %21, align 8
+  call void %22(%"class.leveldb::Status"* nonnull sret %4, %"class.leveldb::DB"* %16, %"struct.leveldb::WriteOptions"* nonnull dereferenceable(1) %5, %"class.leveldb::WriteBatch"* %18) #9
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %17) #9
+  call void @_ZN7leveldb10WriteBatch5ClearEv(%"class.leveldb::WriteBatch"* %18) #9
+  store i8 0, i8* %6, align 8
+  %23 = load i8*, i8** %14, align 8
+  %24 = icmp eq i8* %23, null
+  br i1 %24, label %27, label %25
+
+25:                                               ; preds = %11
+  %26 = call i32 @_ZN11leveldb_env24GetLevelDBStatusUMAValueERKN7leveldb6StatusE(%"class.leveldb::Status"* nonnull dereferenceable(8) %4) #9
+  call void @_ZN4base23UmaHistogramExactLinearEPKcii(i8* getelementptr inbounds ([54 x i8], [54 x i8]* @.str.12, i64 0, i64 0), i32 %26, i32 6) #9
+  br label %51
+
+27:                                               ; preds = %11
+  %28 = call i64 @_ZN4base9TimeTicks3NowEv() #9
+  %29 = sub nsw i64 %28, %12
+  %30 = add i64 %29, -9223372036854775807
+  %31 = icmp ult i64 %30, 2
+  %32 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %1, i64 0, i32 10, i32 0
+  %33 = load i64, i64* %32, align 8
+  br i1 %31, label %41, label %34
+
+34:                                               ; preds = %27
+  %35 = icmp slt i64 %29, 0
+  %36 = select i1 %35, i64 -9223372036854775808, i64 9223372036854775807
+  %37 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %33, i64 %29) #9
+  %38 = extractvalue { i64, i1 } %37, 1
+  %39 = extractvalue { i64, i1 } %37, 0
+  %40 = select i1 %38, i64 %36, i64 %39, !prof !6
+  br label %49
+
+41:                                               ; preds = %27
+  %42 = add i64 %33, -9223372036854775807
+  %43 = icmp ugt i64 %42, 1
+  %44 = icmp eq i64 %33, %29
+  %45 = or i1 %44, %43
+  br i1 %45, label %49, label %46
+
+46:                                               ; preds = %41
+  %47 = bitcast %"class.logging::CheckError"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %47) #9
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %3, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.13, i64 0, i64 0), i32 378, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.14, i64 0, i64 0)) #9
+  %48 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %3) #9
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %3) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %47) #9
+  br label %49
+
+49:                                               ; preds = %34, %41, %46
+  %50 = phi i64 [ %40, %34 ], [ %29, %41 ], [ %29, %46 ]
+  store i64 %50, i64* %32, align 8
+  br label %51
+
+51:                                               ; preds = %25, %49
+  %52 = bitcast %"class.leveldb::Status"* %4 to i64*
+  %53 = load i64, i64* %52, align 8
+  %54 = bitcast %"class.leveldb::Status"* %0 to i64*
+  store i64 %53, i64* %54, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %13) #9
+  br label %55
+
+55:                                               ; preds = %51, %9
+  ret void
+}
+
+declare dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc(%"class.std::__1::basic_string"*, i8*) local_unnamed_addr #1
+
+declare i32 @_ZN11leveldb_env24GetLevelDBStatusUMAValueERKN7leveldb6StatusE(%"class.leveldb::Status"* dereferenceable(8)) local_unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #5
+
+declare void @_ZN4base17UmaHistogramTimesEPKcNS_9TimeDeltaE(i8*, i64) local_unnamed_addr #1
+
+declare %"class.base::HistogramBase"* @_ZN4base9Histogram10FactoryGetERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEEiiji(%"class.std::__1::basic_string"* dereferenceable(24), i32, i32, i32, i32) local_unnamed_addr #1
+
+declare void @_ZN4base23UmaHistogramExactLinearEPKcii(i8*, i32, i32) local_unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #5
+
+declare void @_ZN7leveldb10WriteBatch5ClearEv(%"class.leveldb::WriteBatch"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN7content25IndexedDBTombstoneSweeper23ShouldContinueIterationEPNS0_6StatusEPN7leveldb6StatusEPi(%"class.content::IndexedDBTombstoneSweeper"* nocapture, i32* nocapture, %"class.leveldb::Status"* nocapture, i32* nocapture) local_unnamed_addr #0 align 2 {
+  %5 = alloca %"class.leveldb::Status", align 8
+  %6 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 1
+  %7 = load i32, i32* %6, align 8
+  %8 = add nsw i32 %7, 1
+  store i32 %8, i32* %6, align 8
+  %9 = load i32, i32* %3, align 4
+  %10 = add nsw i32 %9, 1
+  store i32 %10, i32* %3, align 4
+  %11 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 12, i32 0, i32 0, i32 0
+  %12 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %11, align 8
+  %13 = bitcast %"class.leveldb::Iterator"* %12 to i1 (%"class.leveldb::Iterator"*)***
+  %14 = load i1 (%"class.leveldb::Iterator"*)**, i1 (%"class.leveldb::Iterator"*)*** %13, align 8
+  %15 = getelementptr inbounds i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %14, i64 2
+  %16 = load i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %15, align 8
+  %17 = tail call zeroext i1 %16(%"class.leveldb::Iterator"* %12) #9
+  br i1 %17, label %39, label %18
+
+18:                                               ; preds = %4
+  %19 = bitcast %"class.leveldb::Status"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %19) #9
+  %20 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %11, align 8
+  %21 = bitcast %"class.leveldb::Iterator"* %20 to void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)***
+  %22 = load void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)**, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*** %21, align 8
+  %23 = getelementptr inbounds void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)** %22, i64 10
+  %24 = load void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)** %23, align 8
+  call void %24(%"class.leveldb::Status"* nonnull sret %5, %"class.leveldb::Iterator"* %20) #9
+  %25 = bitcast %"class.leveldb::Status"* %2 to i64*
+  %26 = load i64, i64* %25, align 8
+  %27 = bitcast %"class.leveldb::Status"* %5 to i64*
+  %28 = load i64, i64* %27, align 8
+  store i64 %28, i64* %25, align 8
+  store i64 %26, i64* %27, align 8
+  %29 = icmp eq i64 %26, 0
+  %30 = inttoptr i64 %28 to i8*
+  br i1 %29, label %35, label %31
+
+31:                                               ; preds = %18
+  %32 = inttoptr i64 %26 to i8*
+  call void @_ZdaPv(i8* nonnull %32) #10
+  %33 = getelementptr inbounds %"class.leveldb::Status", %"class.leveldb::Status"* %2, i64 0, i32 0
+  %34 = load i8*, i8** %33, align 8
+  br label %35
+
+35:                                               ; preds = %18, %31
+  %36 = phi i8* [ %30, %18 ], [ %34, %31 ]
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %19) #9
+  %37 = icmp eq i8* %36, null
+  %38 = select i1 %37, i32 0, i32 2
+  br label %49
+
+39:                                               ; preds = %4
+  %40 = load i32, i32* %3, align 4
+  %41 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 2
+  %42 = load i32, i32* %41, align 4
+  %43 = icmp slt i32 %40, %42
+  br i1 %43, label %44, label %49
+
+44:                                               ; preds = %39
+  %45 = load i32, i32* %6, align 8
+  %46 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 3
+  %47 = load i32, i32* %46, align 8
+  %48 = icmp slt i32 %45, %47
+  br i1 %48, label %52, label %49
+
+49:                                               ; preds = %44, %39, %35
+  %50 = phi i32 [ %38, %35 ], [ 0, %39 ], [ 1, %44 ]
+  %51 = phi i1 [ %37, %35 ], [ false, %39 ], [ false, %44 ]
+  store i32 %50, i32* %1, align 4
+  br label %52
+
+52:                                               ; preds = %49, %44
+  %53 = phi i1 [ true, %44 ], [ %51, %49 ]
+  ret i1 %53
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN7content25IndexedDBTombstoneSweeper12IterateIndexEllRKN5blink22IndexedDBIndexMetadataEPNS0_6StatusEPN7leveldb6StatusEPi(%"class.content::IndexedDBTombstoneSweeper"*, i64, i64, %"struct.blink::IndexedDBIndexMetadata"* nocapture readonly dereferenceable(96), i32*, %"class.leveldb::Status"* nocapture, i32*) local_unnamed_addr #0 align 2 {
+  %8 = alloca %"class.leveldb::Status", align 8
+  %9 = alloca %"class.leveldb::Status", align 8
+  %10 = alloca %"class.leveldb::Status", align 8
+  %11 = alloca %"class.leveldb::Status", align 8
+  %12 = alloca %"class.leveldb::Status", align 8
+  %13 = alloca %"class.leveldb::Status", align 8
+  %14 = alloca %"class.leveldb::Status", align 8
+  %15 = alloca %"class.leveldb::Slice", align 8
+  %16 = alloca %"class.std::__1::basic_string", align 8
+  %17 = alloca %"class.leveldb::Slice", align 8
+  %18 = alloca %"class.std::__1::basic_string", align 8
+  %19 = alloca %"class.leveldb::Slice", align 8
+  %20 = alloca %"class.base::BasicStringPiece", align 8
+  %21 = alloca %"class.base::BasicStringPiece", align 8
+  %22 = alloca %"class.leveldb::Slice", align 8
+  %23 = alloca %"class.content::IndexDataKey", align 8
+  %24 = alloca i64, align 8
+  %25 = alloca %"class.std::__1::basic_string", align 8
+  %26 = alloca %"class.std::__1::basic_string", align 8
+  %27 = alloca %"class.std::__1::basic_string", align 8
+  %28 = alloca %"class.leveldb::Status", align 8
+  %29 = alloca %"struct.leveldb::ReadOptions", align 8
+  %30 = alloca %"class.leveldb::Slice", align 8
+  %31 = alloca %"class.base::BasicStringPiece", align 8
+  %32 = alloca i64, align 8
+  %33 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 6, i32 0, i32 0, i32 0, i32 0
+  %34 = load i8, i8* %33, align 8, !range !2
+  %35 = icmp eq i8 %34, 0
+  %36 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 12, i32 0, i32 0, i32 0
+  %37 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  br i1 %35, label %159, label %38
+
+38:                                               ; preds = %7
+  %39 = bitcast %"class.leveldb::Slice"* %15 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %39) #9
+  %40 = bitcast %"class.std::__1::basic_string"* %16 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %40) #9
+  %41 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 6, i32 0, i32 0, i32 0, i32 1, i32 0
+  call void @_ZNK7content12IndexDataKey6EncodeEv(%"class.std::__1::basic_string"* nonnull sret %16, %"class.content::IndexDataKey"* %41) #9
+  %42 = getelementptr inbounds %"class.leveldb::Slice", %"class.leveldb::Slice"* %15, i64 0, i32 0
+  %43 = bitcast %"class.std::__1::basic_string"* %16 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %44 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %43, i64 0, i32 1, i32 0
+  %45 = load i8, i8* %44, align 1
+  %46 = icmp slt i8 %45, 0
+  %47 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %16, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %48 = load i8*, i8** %47, align 8
+  %49 = select i1 %46, i8* %48, i8* %40
+  store i8* %49, i8** %42, align 8
+  %50 = getelementptr inbounds %"class.leveldb::Slice", %"class.leveldb::Slice"* %15, i64 0, i32 1
+  %51 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %16, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %52 = load i64, i64* %51, align 8
+  %53 = zext i8 %45 to i64
+  %54 = select i1 %46, i64 %52, i64 %53
+  store i64 %54, i64* %50, align 8
+  %55 = bitcast %"class.leveldb::Iterator"* %37 to void (%"class.leveldb::Iterator"*, %"class.leveldb::Slice"*)***
+  %56 = load void (%"class.leveldb::Iterator"*, %"class.leveldb::Slice"*)**, void (%"class.leveldb::Iterator"*, %"class.leveldb::Slice"*)*** %55, align 8
+  %57 = getelementptr inbounds void (%"class.leveldb::Iterator"*, %"class.leveldb::Slice"*)*, void (%"class.leveldb::Iterator"*, %"class.leveldb::Slice"*)** %56, i64 5
+  %58 = load void (%"class.leveldb::Iterator"*, %"class.leveldb::Slice"*)*, void (%"class.leveldb::Iterator"*, %"class.leveldb::Slice"*)** %57, align 8
+  call void %58(%"class.leveldb::Iterator"* %37, %"class.leveldb::Slice"* nonnull dereferenceable(16) %15) #9
+  %59 = load i8, i8* %44, align 1
+  %60 = icmp slt i8 %59, 0
+  br i1 %60, label %61, label %63
+
+61:                                               ; preds = %38
+  %62 = load i8*, i8** %47, align 8
+  call void @_ZdlPv(i8* %62) #10
+  br label %63
+
+63:                                               ; preds = %38, %61
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %40) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %39) #9
+  %64 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 1
+  %65 = load i32, i32* %64, align 8
+  %66 = add nsw i32 %65, 1
+  store i32 %66, i32* %64, align 8
+  %67 = load i32, i32* %6, align 4
+  %68 = add nsw i32 %67, 1
+  store i32 %68, i32* %6, align 4
+  %69 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %70 = bitcast %"class.leveldb::Iterator"* %69 to i1 (%"class.leveldb::Iterator"*)***
+  %71 = load i1 (%"class.leveldb::Iterator"*)**, i1 (%"class.leveldb::Iterator"*)*** %70, align 8
+  %72 = getelementptr inbounds i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %71, i64 2
+  %73 = load i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %72, align 8
+  %74 = call zeroext i1 %73(%"class.leveldb::Iterator"* %69) #9
+  br i1 %74, label %97, label %75
+
+75:                                               ; preds = %63
+  %76 = bitcast %"class.leveldb::Status"* %14 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %76) #9
+  %77 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %78 = bitcast %"class.leveldb::Iterator"* %77 to void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)***
+  %79 = load void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)**, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*** %78, align 8
+  %80 = getelementptr inbounds void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)** %79, i64 10
+  %81 = load void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)** %80, align 8
+  call void %81(%"class.leveldb::Status"* nonnull sret %14, %"class.leveldb::Iterator"* %77) #9
+  %82 = bitcast %"class.leveldb::Status"* %5 to i64*
+  %83 = load i64, i64* %82, align 8
+  %84 = bitcast %"class.leveldb::Status"* %14 to i64*
+  %85 = load i64, i64* %84, align 8
+  store i64 %85, i64* %82, align 8
+  store i64 %83, i64* %84, align 8
+  %86 = icmp eq i64 %83, 0
+  %87 = inttoptr i64 %85 to i8*
+  br i1 %86, label %92, label %88
+
+88:                                               ; preds = %75
+  %89 = inttoptr i64 %83 to i8*
+  call void @_ZdaPv(i8* nonnull %89) #10
+  %90 = getelementptr inbounds %"class.leveldb::Status", %"class.leveldb::Status"* %5, i64 0, i32 0
+  %91 = load i8*, i8** %90, align 8
+  br label %92
+
+92:                                               ; preds = %88, %75
+  %93 = phi i8* [ %87, %75 ], [ %91, %88 ]
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %76) #9
+  %94 = icmp eq i8* %93, null
+  br i1 %94, label %96, label %95
+
+95:                                               ; preds = %92
+  store i32 2, i32* %4, align 4
+  br label %631
+
+96:                                               ; preds = %92
+  store i32 0, i32* %4, align 4
+  br label %109
+
+97:                                               ; preds = %63
+  %98 = load i32, i32* %6, align 4
+  %99 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 2
+  %100 = load i32, i32* %99, align 4
+  %101 = icmp slt i32 %98, %100
+  br i1 %101, label %103, label %102
+
+102:                                              ; preds = %97
+  store i32 0, i32* %4, align 4
+  br label %631
+
+103:                                              ; preds = %97
+  %104 = load i32, i32* %64, align 8
+  %105 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 3
+  %106 = load i32, i32* %105, align 8
+  %107 = icmp slt i32 %104, %106
+  br i1 %107, label %109, label %108
+
+108:                                              ; preds = %103
+  store i32 1, i32* %4, align 4
+  br label %631
+
+109:                                              ; preds = %103, %96
+  %110 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %111 = bitcast %"class.leveldb::Iterator"* %110 to void (%"class.leveldb::Iterator"*)***
+  %112 = load void (%"class.leveldb::Iterator"*)**, void (%"class.leveldb::Iterator"*)*** %111, align 8
+  %113 = getelementptr inbounds void (%"class.leveldb::Iterator"*)*, void (%"class.leveldb::Iterator"*)** %112, i64 6
+  %114 = load void (%"class.leveldb::Iterator"*)*, void (%"class.leveldb::Iterator"*)** %113, align 8
+  call void %114(%"class.leveldb::Iterator"* %110) #9
+  %115 = load i32, i32* %64, align 8
+  %116 = add nsw i32 %115, 1
+  store i32 %116, i32* %64, align 8
+  %117 = load i32, i32* %6, align 4
+  %118 = add nsw i32 %117, 1
+  store i32 %118, i32* %6, align 4
+  %119 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %120 = bitcast %"class.leveldb::Iterator"* %119 to i1 (%"class.leveldb::Iterator"*)***
+  %121 = load i1 (%"class.leveldb::Iterator"*)**, i1 (%"class.leveldb::Iterator"*)*** %120, align 8
+  %122 = getelementptr inbounds i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %121, i64 2
+  %123 = load i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %122, align 8
+  %124 = call zeroext i1 %123(%"class.leveldb::Iterator"* %119) #9
+  br i1 %124, label %147, label %125
+
+125:                                              ; preds = %109
+  %126 = bitcast %"class.leveldb::Status"* %13 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %126) #9
+  %127 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %128 = bitcast %"class.leveldb::Iterator"* %127 to void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)***
+  %129 = load void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)**, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*** %128, align 8
+  %130 = getelementptr inbounds void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)** %129, i64 10
+  %131 = load void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)** %130, align 8
+  call void %131(%"class.leveldb::Status"* nonnull sret %13, %"class.leveldb::Iterator"* %127) #9
+  %132 = bitcast %"class.leveldb::Status"* %5 to i64*
+  %133 = load i64, i64* %132, align 8
+  %134 = bitcast %"class.leveldb::Status"* %13 to i64*
+  %135 = load i64, i64* %134, align 8
+  store i64 %135, i64* %132, align 8
+  store i64 %133, i64* %134, align 8
+  %136 = icmp eq i64 %133, 0
+  %137 = inttoptr i64 %135 to i8*
+  br i1 %136, label %142, label %138
+
+138:                                              ; preds = %125
+  %139 = inttoptr i64 %133 to i8*
+  call void @_ZdaPv(i8* nonnull %139) #10
+  %140 = getelementptr inbounds %"class.leveldb::Status", %"class.leveldb::Status"* %5, i64 0, i32 0
+  %141 = load i8*, i8** %140, align 8
+  br label %142
+
+142:                                              ; preds = %138, %125
+  %143 = phi i8* [ %137, %125 ], [ %141, %138 ]
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %126) #9
+  %144 = icmp eq i8* %143, null
+  br i1 %144, label %146, label %145
+
+145:                                              ; preds = %142
+  store i32 2, i32* %4, align 4
+  br label %631
+
+146:                                              ; preds = %142
+  store i32 0, i32* %4, align 4
+  br label %231
+
+147:                                              ; preds = %109
+  %148 = load i32, i32* %6, align 4
+  %149 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 2
+  %150 = load i32, i32* %149, align 4
+  %151 = icmp slt i32 %148, %150
+  br i1 %151, label %153, label %152
+
+152:                                              ; preds = %147
+  store i32 0, i32* %4, align 4
+  br label %631
+
+153:                                              ; preds = %147
+  %154 = load i32, i32* %64, align 8
+  %155 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 3
+  %156 = load i32, i32* %155, align 8
+  %157 = icmp slt i32 %154, %156
+  br i1 %157, label %231, label %158
+
+158:                                              ; preds = %153
+  store i32 1, i32* %4, align 4
+  br label %631
+
+159:                                              ; preds = %7
+  %160 = bitcast %"class.leveldb::Slice"* %17 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %160) #9
+  %161 = bitcast %"class.std::__1::basic_string"* %18 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %161) #9
+  %162 = getelementptr inbounds %"struct.blink::IndexedDBIndexMetadata", %"struct.blink::IndexedDBIndexMetadata"* %3, i64 0, i32 1
+  %163 = load i64, i64* %162, align 8
+  call void @_ZN7content12IndexDataKey12EncodeMinKeyElll(%"class.std::__1::basic_string"* nonnull sret %18, i64 %1, i64 %2, i64 %163) #9
+  %164 = getelementptr inbounds %"class.leveldb::Slice", %"class.leveldb::Slice"* %17, i64 0, i32 0
+  %165 = bitcast %"class.std::__1::basic_string"* %18 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %166 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %165, i64 0, i32 1, i32 0
+  %167 = load i8, i8* %166, align 1
+  %168 = icmp slt i8 %167, 0
+  %169 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %18, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %170 = load i8*, i8** %169, align 8
+  %171 = select i1 %168, i8* %170, i8* %161
+  store i8* %171, i8** %164, align 8
+  %172 = getelementptr inbounds %"class.leveldb::Slice", %"class.leveldb::Slice"* %17, i64 0, i32 1
+  %173 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %18, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %174 = load i64, i64* %173, align 8
+  %175 = zext i8 %167 to i64
+  %176 = select i1 %168, i64 %174, i64 %175
+  store i64 %176, i64* %172, align 8
+  %177 = bitcast %"class.leveldb::Iterator"* %37 to void (%"class.leveldb::Iterator"*, %"class.leveldb::Slice"*)***
+  %178 = load void (%"class.leveldb::Iterator"*, %"class.leveldb::Slice"*)**, void (%"class.leveldb::Iterator"*, %"class.leveldb::Slice"*)*** %177, align 8
+  %179 = getelementptr inbounds void (%"class.leveldb::Iterator"*, %"class.leveldb::Slice"*)*, void (%"class.leveldb::Iterator"*, %"class.leveldb::Slice"*)** %178, i64 5
+  %180 = load void (%"class.leveldb::Iterator"*, %"class.leveldb::Slice"*)*, void (%"class.leveldb::Iterator"*, %"class.leveldb::Slice"*)** %179, align 8
+  call void %180(%"class.leveldb::Iterator"* %37, %"class.leveldb::Slice"* nonnull dereferenceable(16) %17) #9
+  %181 = load i8, i8* %166, align 1
+  %182 = icmp slt i8 %181, 0
+  br i1 %182, label %183, label %185
+
+183:                                              ; preds = %159
+  %184 = load i8*, i8** %169, align 8
+  call void @_ZdlPv(i8* %184) #10
+  br label %185
+
+185:                                              ; preds = %159, %183
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %161) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %160) #9
+  %186 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 1
+  %187 = load i32, i32* %186, align 8
+  %188 = add nsw i32 %187, 1
+  store i32 %188, i32* %186, align 8
+  %189 = load i32, i32* %6, align 4
+  %190 = add nsw i32 %189, 1
+  store i32 %190, i32* %6, align 4
+  %191 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %192 = bitcast %"class.leveldb::Iterator"* %191 to i1 (%"class.leveldb::Iterator"*)***
+  %193 = load i1 (%"class.leveldb::Iterator"*)**, i1 (%"class.leveldb::Iterator"*)*** %192, align 8
+  %194 = getelementptr inbounds i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %193, i64 2
+  %195 = load i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %194, align 8
+  %196 = call zeroext i1 %195(%"class.leveldb::Iterator"* %191) #9
+  br i1 %196, label %219, label %197
+
+197:                                              ; preds = %185
+  %198 = bitcast %"class.leveldb::Status"* %12 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %198) #9
+  %199 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %200 = bitcast %"class.leveldb::Iterator"* %199 to void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)***
+  %201 = load void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)**, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*** %200, align 8
+  %202 = getelementptr inbounds void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)** %201, i64 10
+  %203 = load void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)** %202, align 8
+  call void %203(%"class.leveldb::Status"* nonnull sret %12, %"class.leveldb::Iterator"* %199) #9
+  %204 = bitcast %"class.leveldb::Status"* %5 to i64*
+  %205 = load i64, i64* %204, align 8
+  %206 = bitcast %"class.leveldb::Status"* %12 to i64*
+  %207 = load i64, i64* %206, align 8
+  store i64 %207, i64* %204, align 8
+  store i64 %205, i64* %206, align 8
+  %208 = icmp eq i64 %205, 0
+  %209 = inttoptr i64 %207 to i8*
+  br i1 %208, label %214, label %210
+
+210:                                              ; preds = %197
+  %211 = inttoptr i64 %205 to i8*
+  call void @_ZdaPv(i8* nonnull %211) #10
+  %212 = getelementptr inbounds %"class.leveldb::Status", %"class.leveldb::Status"* %5, i64 0, i32 0
+  %213 = load i8*, i8** %212, align 8
+  br label %214
+
+214:                                              ; preds = %210, %197
+  %215 = phi i8* [ %209, %197 ], [ %213, %210 ]
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %198) #9
+  %216 = icmp eq i8* %215, null
+  br i1 %216, label %218, label %217
+
+217:                                              ; preds = %214
+  store i32 2, i32* %4, align 4
+  br label %631
+
+218:                                              ; preds = %214
+  store i32 0, i32* %4, align 4
+  br label %231
+
+219:                                              ; preds = %185
+  %220 = load i32, i32* %6, align 4
+  %221 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 2
+  %222 = load i32, i32* %221, align 4
+  %223 = icmp slt i32 %220, %222
+  br i1 %223, label %225, label %224
+
+224:                                              ; preds = %219
+  store i32 0, i32* %4, align 4
+  br label %631
+
+225:                                              ; preds = %219
+  %226 = load i32, i32* %186, align 8
+  %227 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 3
+  %228 = load i32, i32* %227, align 8
+  %229 = icmp slt i32 %226, %228
+  br i1 %229, label %231, label %230
+
+230:                                              ; preds = %225
+  store i32 1, i32* %4, align 4
+  br label %631
+
+231:                                              ; preds = %225, %218, %153, %146
+  %232 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %233 = bitcast %"class.leveldb::Iterator"* %232 to i1 (%"class.leveldb::Iterator"*)***
+  %234 = load i1 (%"class.leveldb::Iterator"*)**, i1 (%"class.leveldb::Iterator"*)*** %233, align 8
+  %235 = getelementptr inbounds i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %234, i64 2
+  %236 = load i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %235, align 8
+  %237 = call zeroext i1 %236(%"class.leveldb::Iterator"* %232) #9
+  br i1 %237, label %238, label %623
+
+238:                                              ; preds = %231
+  %239 = bitcast %"class.leveldb::Slice"* %19 to i8*
+  %240 = getelementptr inbounds %"class.leveldb::Slice", %"class.leveldb::Slice"* %19, i64 0, i32 0
+  %241 = getelementptr inbounds %"class.leveldb::Slice", %"class.leveldb::Slice"* %19, i64 0, i32 1
+  %242 = bitcast %"class.base::BasicStringPiece"* %20 to i8*
+  %243 = getelementptr inbounds %"class.base::BasicStringPiece", %"class.base::BasicStringPiece"* %20, i64 0, i32 0
+  %244 = getelementptr inbounds %"class.base::BasicStringPiece", %"class.base::BasicStringPiece"* %20, i64 0, i32 1
+  %245 = bitcast %"class.base::BasicStringPiece"* %21 to i8*
+  %246 = getelementptr inbounds %"class.base::BasicStringPiece", %"class.base::BasicStringPiece"* %21, i64 0, i32 0
+  %247 = getelementptr inbounds %"class.base::BasicStringPiece", %"class.base::BasicStringPiece"* %21, i64 0, i32 1
+  %248 = bitcast %"class.leveldb::Slice"* %22 to i8*
+  %249 = getelementptr inbounds %"class.leveldb::Slice", %"class.leveldb::Slice"* %22, i64 0, i32 0
+  %250 = getelementptr inbounds %"class.leveldb::Slice", %"class.leveldb::Slice"* %22, i64 0, i32 1
+  %251 = bitcast %"class.content::IndexDataKey"* %23 to i8*
+  %252 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 6, i32 0, i32 0, i32 0, i32 1, i32 0
+  %253 = getelementptr inbounds %"struct.blink::IndexedDBIndexMetadata", %"struct.blink::IndexedDBIndexMetadata"* %3, i64 0, i32 1
+  %254 = bitcast i64* %24 to i8*
+  %255 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 14, i32 0
+  %256 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 1
+  %257 = bitcast %"class.leveldb::Status"* %11 to i8*
+  %258 = bitcast %"class.leveldb::Status"* %5 to i64*
+  %259 = bitcast %"class.leveldb::Status"* %11 to i64*
+  %260 = getelementptr inbounds %"class.leveldb::Status", %"class.leveldb::Status"* %5, i64 0, i32 0
+  %261 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 2
+  %262 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 3
+  %263 = bitcast %"class.std::__1::basic_string"* %25 to i8*
+  %264 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %25, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %265 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %25, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %266 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %25, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 2
+  %267 = bitcast %"class.std::__1::basic_string"* %25 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %268 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %267, i64 0, i32 1, i32 0
+  %269 = bitcast %"class.std::__1::basic_string"* %26 to i8*
+  %270 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %26, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %271 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %26, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %272 = bitcast %"class.std::__1::basic_string"* %27 to i8*
+  %273 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %27, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %274 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %27, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %275 = bitcast %"class.leveldb::Status"* %28 to i8*
+  %276 = getelementptr inbounds %"class.leveldb::Status", %"class.leveldb::Status"* %28, i64 0, i32 0
+  %277 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 0, i32 2
+  %278 = getelementptr inbounds %"struct.leveldb::ReadOptions", %"struct.leveldb::ReadOptions"* %29, i64 0, i32 0
+  %279 = getelementptr inbounds %"struct.leveldb::ReadOptions", %"struct.leveldb::ReadOptions"* %29, i64 0, i32 1
+  %280 = getelementptr inbounds %"struct.leveldb::ReadOptions", %"struct.leveldb::ReadOptions"* %29, i64 0, i32 2
+  %281 = bitcast %"class.leveldb::Slice"* %30 to i8*
+  %282 = getelementptr inbounds %"class.leveldb::Slice", %"class.leveldb::Slice"* %30, i64 0, i32 0
+  %283 = bitcast %"class.std::__1::basic_string"* %26 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %284 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %283, i64 0, i32 1, i32 0
+  %285 = getelementptr inbounds %"class.leveldb::Slice", %"class.leveldb::Slice"* %30, i64 0, i32 1
+  %286 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 14, i32 1
+  %287 = bitcast %"class.leveldb::Status"* %9 to i8*
+  %288 = bitcast %"class.leveldb::Status"* %9 to i64*
+  %289 = bitcast %"class.base::BasicStringPiece"* %31 to i8*
+  %290 = getelementptr inbounds %"class.base::BasicStringPiece", %"class.base::BasicStringPiece"* %31, i64 0, i32 0
+  %291 = getelementptr inbounds %"class.base::BasicStringPiece", %"class.base::BasicStringPiece"* %31, i64 0, i32 1
+  %292 = bitcast %"class.std::__1::basic_string"* %27 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %293 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %292, i64 0, i32 1, i32 0
+  %294 = bitcast i64* %32 to i8*
+  %295 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 14, i32 2
+  %296 = bitcast %"class.leveldb::Status"* %8 to i8*
+  %297 = bitcast %"class.leveldb::Status"* %8 to i64*
+  %298 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 8
+  %299 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 9
+  %300 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 14, i32 3
+  %301 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 14, i32 4
+  %302 = bitcast %"class.leveldb::Status"* %10 to i8*
+  %303 = bitcast %"class.leveldb::Status"* %10 to i64*
+  %304 = bitcast %"class.leveldb::Slice"* %19 to i8*
+  %305 = bitcast %"class.base::BasicStringPiece"* %20 to i8*
+  %306 = bitcast %"class.base::BasicStringPiece"* %21 to i8*
+  %307 = bitcast %"class.std::__1::basic_string"* %25 to i8*
+  %308 = bitcast %"class.std::__1::basic_string"* %26 to i8*
+  %309 = bitcast %"struct.leveldb::ReadOptions"* %29 to i64*
+  br label %310
+
+310:                                              ; preds = %238, %616
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %239) #9
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %304, i8 -86, i64 16, i1 false)
+  %311 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %312 = bitcast %"class.leveldb::Iterator"* %311 to { i8*, i64 } (%"class.leveldb::Iterator"*)***
+  %313 = load { i8*, i64 } (%"class.leveldb::Iterator"*)**, { i8*, i64 } (%"class.leveldb::Iterator"*)*** %312, align 8
+  %314 = getelementptr inbounds { i8*, i64 } (%"class.leveldb::Iterator"*)*, { i8*, i64 } (%"class.leveldb::Iterator"*)** %313, i64 8
+  %315 = load { i8*, i64 } (%"class.leveldb::Iterator"*)*, { i8*, i64 } (%"class.leveldb::Iterator"*)** %314, align 8
+  %316 = call { i8*, i64 } %315(%"class.leveldb::Iterator"* %311) #9
+  %317 = extractvalue { i8*, i64 } %316, 0
+  store i8* %317, i8** %240, align 8
+  %318 = extractvalue { i8*, i64 } %316, 1
+  store i64 %318, i64* %241, align 8
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %242) #9
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %305, i8 -86, i64 16, i1 false)
+  %319 = call { i8*, i64 } @_ZN11leveldb_env15MakeStringPieceERKN7leveldb5SliceE(%"class.leveldb::Slice"* nonnull dereferenceable(16) %19) #9
+  %320 = extractvalue { i8*, i64 } %319, 0
+  store i8* %320, i8** %243, align 8
+  %321 = extractvalue { i8*, i64 } %319, 1
+  store i64 %321, i64* %244, align 8
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %245) #9
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %306, i8 -86, i64 16, i1 false)
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %248) #9
+  %322 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %323 = bitcast %"class.leveldb::Iterator"* %322 to { i8*, i64 } (%"class.leveldb::Iterator"*)***
+  %324 = load { i8*, i64 } (%"class.leveldb::Iterator"*)**, { i8*, i64 } (%"class.leveldb::Iterator"*)*** %323, align 8
+  %325 = getelementptr inbounds { i8*, i64 } (%"class.leveldb::Iterator"*)*, { i8*, i64 } (%"class.leveldb::Iterator"*)** %324, i64 9
+  %326 = load { i8*, i64 } (%"class.leveldb::Iterator"*)*, { i8*, i64 } (%"class.leveldb::Iterator"*)** %325, align 8
+  %327 = call { i8*, i64 } %326(%"class.leveldb::Iterator"* %322) #9
+  %328 = extractvalue { i8*, i64 } %327, 0
+  store i8* %328, i8** %249, align 8
+  %329 = extractvalue { i8*, i64 } %327, 1
+  store i64 %329, i64* %250, align 8
+  %330 = call { i8*, i64 } @_ZN11leveldb_env15MakeStringPieceERKN7leveldb5SliceE(%"class.leveldb::Slice"* nonnull dereferenceable(16) %22) #9
+  %331 = extractvalue { i8*, i64 } %330, 0
+  store i8* %331, i8** %246, align 8
+  %332 = extractvalue { i8*, i64 } %330, 1
+  store i64 %332, i64* %247, align 8
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %248) #9
+  call void @llvm.lifetime.start.p0i8(i64 80, i8* nonnull %251) #9
+  call void @_ZN7content12IndexDataKeyC1Ev(%"class.content::IndexDataKey"* nonnull %23) #9
+  %333 = load i8, i8* %33, align 8, !range !2
+  %334 = icmp eq i8 %333, 0
+  br i1 %334, label %336, label %335
+
+335:                                              ; preds = %310
+  call void @_ZN7content12IndexDataKeyD1Ev(%"class.content::IndexDataKey"* %252) #9
+  store i8 0, i8* %33, align 8
+  br label %336
+
+336:                                              ; preds = %310, %335
+  call void @_ZN7content12IndexDataKeyC1EOS0_(%"class.content::IndexDataKey"* %252, %"class.content::IndexDataKey"* nonnull dereferenceable(80) %23) #9
+  store i8 1, i8* %33, align 8
+  call void @_ZN7content12IndexDataKeyD1Ev(%"class.content::IndexDataKey"* nonnull %23) #9
+  call void @llvm.lifetime.end.p0i8(i64 80, i8* nonnull %251) #9
+  %337 = load i8, i8* %33, align 8, !range !2
+  %338 = icmp eq i8 %337, 0
+  br i1 %338, label %339, label %340
+
+339:                                              ; preds = %336
+  call void @_ZN4absl17optional_internal25throw_bad_optional_accessEv() #11
+  unreachable
+
+340:                                              ; preds = %336
+  %341 = call zeroext i1 @_ZN7content12IndexDataKey6DecodeEPN4base16BasicStringPieceIcNSt3__111char_traitsIcEEEEPS0_(%"class.base::BasicStringPiece"* nonnull %20, %"class.content::IndexDataKey"* %252) #9
+  br i1 %341, label %342, label %612
+
+342:                                              ; preds = %340
+  %343 = load i8, i8* %33, align 8, !range !2
+  %344 = icmp eq i8 %343, 0
+  br i1 %344, label %345, label %346
+
+345:                                              ; preds = %342
+  call void @_ZN4absl17optional_internal25throw_bad_optional_accessEv() #11
+  unreachable
+
+346:                                              ; preds = %342
+  %347 = call i64 @_ZNK7content12IndexDataKey7IndexIdEv(%"class.content::IndexDataKey"* %252) #9
+  %348 = load i64, i64* %253, align 8
+  %349 = icmp eq i64 %347, %348
+  br i1 %349, label %350, label %612
+
+350:                                              ; preds = %346
+  %351 = add i64 %332, %321
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %254) #9
+  store i64 -6148914691236517206, i64* %24, align 8
+  %352 = call zeroext i1 @_ZN7content12DecodeVarIntEPN4base16BasicStringPieceIcNSt3__111char_traitsIcEEEEPl(%"class.base::BasicStringPiece"* nonnull %21, i64* nonnull %24) #9
+  br i1 %352, label %398, label %353
+
+353:                                              ; preds = %350
+  %354 = load i32, i32* %255, align 8
+  %355 = add nsw i32 %354, 1
+  store i32 %355, i32* %255, align 8
+  %356 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %357 = bitcast %"class.leveldb::Iterator"* %356 to void (%"class.leveldb::Iterator"*)***
+  %358 = load void (%"class.leveldb::Iterator"*)**, void (%"class.leveldb::Iterator"*)*** %357, align 8
+  %359 = getelementptr inbounds void (%"class.leveldb::Iterator"*)*, void (%"class.leveldb::Iterator"*)** %358, i64 6
+  %360 = load void (%"class.leveldb::Iterator"*)*, void (%"class.leveldb::Iterator"*)** %359, align 8
+  call void %360(%"class.leveldb::Iterator"* %356) #9
+  %361 = load i32, i32* %256, align 8
+  %362 = add nsw i32 %361, 1
+  store i32 %362, i32* %256, align 8
+  %363 = load i32, i32* %6, align 4
+  %364 = add nsw i32 %363, 1
+  store i32 %364, i32* %6, align 4
+  %365 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %366 = bitcast %"class.leveldb::Iterator"* %365 to i1 (%"class.leveldb::Iterator"*)***
+  %367 = load i1 (%"class.leveldb::Iterator"*)**, i1 (%"class.leveldb::Iterator"*)*** %366, align 8
+  %368 = getelementptr inbounds i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %367, i64 2
+  %369 = load i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %368, align 8
+  %370 = call zeroext i1 %369(%"class.leveldb::Iterator"* %365) #9
+  br i1 %370, label %388, label %371
+
+371:                                              ; preds = %353
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %257) #9
+  %372 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %373 = bitcast %"class.leveldb::Iterator"* %372 to void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)***
+  %374 = load void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)**, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*** %373, align 8
+  %375 = getelementptr inbounds void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)** %374, i64 10
+  %376 = load void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)** %375, align 8
+  call void %376(%"class.leveldb::Status"* nonnull sret %11, %"class.leveldb::Iterator"* %372) #9
+  %377 = load i64, i64* %258, align 8
+  %378 = load i64, i64* %259, align 8
+  store i64 %378, i64* %258, align 8
+  store i64 %377, i64* %259, align 8
+  %379 = icmp eq i64 %377, 0
+  %380 = inttoptr i64 %378 to i8*
+  br i1 %379, label %384, label %381
+
+381:                                              ; preds = %371
+  %382 = inttoptr i64 %377 to i8*
+  call void @_ZdaPv(i8* nonnull %382) #10
+  %383 = load i8*, i8** %260, align 8
+  br label %384
+
+384:                                              ; preds = %381, %371
+  %385 = phi i8* [ %380, %371 ], [ %383, %381 ]
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %257) #9
+  %386 = icmp eq i8* %385, null
+  br i1 %386, label %387, label %396
+
+387:                                              ; preds = %384
+  store i32 0, i32* %4, align 4
+  br label %613
+
+388:                                              ; preds = %353
+  %389 = load i32, i32* %6, align 4
+  %390 = load i32, i32* %261, align 4
+  %391 = icmp slt i32 %389, %390
+  br i1 %391, label %392, label %396
+
+392:                                              ; preds = %388
+  %393 = load i32, i32* %256, align 8
+  %394 = load i32, i32* %262, align 8
+  %395 = icmp slt i32 %393, %394
+  br i1 %395, label %613, label %396
+
+396:                                              ; preds = %392, %388, %384
+  %397 = phi i32 [ 2, %384 ], [ 0, %388 ], [ 1, %392 ]
+  store i32 %397, i32* %4, align 4
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %254) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %245) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %242) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %239) #9
+  br label %631
+
+398:                                              ; preds = %350
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %263) #9
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %307, i8 -86, i64 24, i1 false)
+  %399 = load i8*, i8** %246, align 8, !noalias !7
+  %400 = load i64, i64* %247, align 8, !noalias !7
+  %401 = icmp ugt i64 %400, -17
+  br i1 %401, label %402, label %404
+
+402:                                              ; preds = %398
+  %403 = bitcast %"class.std::__1::basic_string"* %25 to %"class.std::__1::__basic_string_common"*
+  call void @_ZNKSt3__121__basic_string_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__basic_string_common"* nonnull %403) #11
+  unreachable
+
+404:                                              ; preds = %398
+  %405 = icmp ult i64 %400, 23
+  br i1 %405, label %411, label %406
+
+406:                                              ; preds = %404
+  %407 = add nuw i64 %400, 16
+  %408 = and i64 %407, -16
+  %409 = call i8* @_Znwm(i64 %408) #10
+  store i8* %409, i8** %264, align 8, !alias.scope !7
+  %410 = or i64 %408, -9223372036854775808
+  store i64 %410, i64* %266, align 8, !alias.scope !7
+  store i64 %400, i64* %265, align 8, !alias.scope !7
+  br label %414
+
+411:                                              ; preds = %404
+  %412 = trunc i64 %400 to i8
+  store i8 %412, i8* %268, align 1, !alias.scope !7
+  %413 = icmp eq i64 %400, 0
+  br i1 %413, label %416, label %414
+
+414:                                              ; preds = %411, %406
+  %415 = phi i8* [ %409, %406 ], [ %263, %411 ]
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 1 %415, i8* align 1 %399, i64 %400, i1 false) #9
+  br label %416
+
+416:                                              ; preds = %411, %414
+  %417 = phi i8* [ %263, %411 ], [ %415, %414 ]
+  %418 = getelementptr inbounds i8, i8* %417, i64 %400
+  store i8 0, i8* %418, align 1
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %269) #9
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %308, i8 -86, i64 24, i1 false)
+  call void @_ZN7content14ExistsEntryKey6EncodeEllRKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE(%"class.std::__1::basic_string"* nonnull sret %26, i64 %1, i64 %2, %"class.std::__1::basic_string"* nonnull dereferenceable(24) %25) #9
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %272) #9
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %272, i8 0, i64 24, i1 false) #9
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %275) #9
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %276, align 8
+  %419 = load %"class.leveldb::DB"*, %"class.leveldb::DB"** %277, align 8
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %278) #9
+  store i64 0, i64* %309, align 8
+  store i8 1, i8* %279, align 1
+  store %"class.leveldb::Snapshot"* null, %"class.leveldb::Snapshot"** %280, align 8
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %281) #9
+  %420 = load i8, i8* %284, align 1
+  %421 = icmp slt i8 %420, 0
+  %422 = load i8*, i8** %270, align 8
+  %423 = select i1 %421, i8* %422, i8* %269
+  store i8* %423, i8** %282, align 8
+  %424 = load i64, i64* %271, align 8
+  %425 = zext i8 %420 to i64
+  %426 = select i1 %421, i64 %424, i64 %425
+  store i64 %426, i64* %285, align 8
+  %427 = bitcast %"class.leveldb::DB"* %419 to void (%"class.leveldb::Status"*, %"class.leveldb::DB"*, %"struct.leveldb::ReadOptions"*, %"class.leveldb::Slice"*, %"class.std::__1::basic_string"*)***
+  %428 = load void (%"class.leveldb::Status"*, %"class.leveldb::DB"*, %"struct.leveldb::ReadOptions"*, %"class.leveldb::Slice"*, %"class.std::__1::basic_string"*)**, void (%"class.leveldb::Status"*, %"class.leveldb::DB"*, %"struct.leveldb::ReadOptions"*, %"class.leveldb::Slice"*, %"class.std::__1::basic_string"*)*** %427, align 8
+  %429 = getelementptr inbounds void (%"class.leveldb::Status"*, %"class.leveldb::DB"*, %"struct.leveldb::ReadOptions"*, %"class.leveldb::Slice"*, %"class.std::__1::basic_string"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::DB"*, %"struct.leveldb::ReadOptions"*, %"class.leveldb::Slice"*, %"class.std::__1::basic_string"*)** %428, i64 5
+  %430 = load void (%"class.leveldb::Status"*, %"class.leveldb::DB"*, %"struct.leveldb::ReadOptions"*, %"class.leveldb::Slice"*, %"class.std::__1::basic_string"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::DB"*, %"struct.leveldb::ReadOptions"*, %"class.leveldb::Slice"*, %"class.std::__1::basic_string"*)** %429, align 8
+  call void %430(%"class.leveldb::Status"* nonnull sret %28, %"class.leveldb::DB"* %419, %"struct.leveldb::ReadOptions"* nonnull dereferenceable(16) %29, %"class.leveldb::Slice"* nonnull dereferenceable(16) %30, %"class.std::__1::basic_string"* nonnull %27) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %281) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %278) #9
+  %431 = load i8*, i8** %276, align 8
+  %432 = icmp eq i8* %431, null
+  br i1 %432, label %479, label %433
+
+433:                                              ; preds = %416
+  %434 = load i32, i32* %286, align 4
+  %435 = add nsw i32 %434, 1
+  store i32 %435, i32* %286, align 4
+  %436 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %437 = bitcast %"class.leveldb::Iterator"* %436 to void (%"class.leveldb::Iterator"*)***
+  %438 = load void (%"class.leveldb::Iterator"*)**, void (%"class.leveldb::Iterator"*)*** %437, align 8
+  %439 = getelementptr inbounds void (%"class.leveldb::Iterator"*)*, void (%"class.leveldb::Iterator"*)** %438, i64 6
+  %440 = load void (%"class.leveldb::Iterator"*)*, void (%"class.leveldb::Iterator"*)** %439, align 8
+  call void %440(%"class.leveldb::Iterator"* %436) #9
+  %441 = load i32, i32* %256, align 8
+  %442 = add nsw i32 %441, 1
+  store i32 %442, i32* %256, align 8
+  %443 = load i32, i32* %6, align 4
+  %444 = add nsw i32 %443, 1
+  store i32 %444, i32* %6, align 4
+  %445 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %446 = bitcast %"class.leveldb::Iterator"* %445 to i1 (%"class.leveldb::Iterator"*)***
+  %447 = load i1 (%"class.leveldb::Iterator"*)**, i1 (%"class.leveldb::Iterator"*)*** %446, align 8
+  %448 = getelementptr inbounds i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %447, i64 2
+  %449 = load i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %448, align 8
+  %450 = call zeroext i1 %449(%"class.leveldb::Iterator"* %445) #9
+  br i1 %450, label %469, label %451
+
+451:                                              ; preds = %433
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %287) #9
+  %452 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %453 = bitcast %"class.leveldb::Iterator"* %452 to void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)***
+  %454 = load void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)**, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*** %453, align 8
+  %455 = getelementptr inbounds void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)** %454, i64 10
+  %456 = load void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)** %455, align 8
+  call void %456(%"class.leveldb::Status"* nonnull sret %9, %"class.leveldb::Iterator"* %452) #9
+  %457 = load i64, i64* %258, align 8
+  %458 = load i64, i64* %288, align 8
+  store i64 %458, i64* %258, align 8
+  store i64 %457, i64* %288, align 8
+  %459 = icmp eq i64 %457, 0
+  %460 = inttoptr i64 %458 to i8*
+  br i1 %459, label %464, label %461
+
+461:                                              ; preds = %451
+  %462 = inttoptr i64 %457 to i8*
+  call void @_ZdaPv(i8* nonnull %462) #10
+  %463 = load i8*, i8** %260, align 8
+  br label %464
+
+464:                                              ; preds = %461, %451
+  %465 = phi i8* [ %460, %451 ], [ %463, %461 ]
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %287) #9
+  %466 = icmp eq i8* %465, null
+  br i1 %466, label %468, label %467
+
+467:                                              ; preds = %464
+  store i32 2, i32* %4, align 4
+  br label %592
+
+468:                                              ; preds = %464
+  store i32 0, i32* %4, align 4
+  br label %592
+
+469:                                              ; preds = %433
+  %470 = load i32, i32* %6, align 4
+  %471 = load i32, i32* %261, align 4
+  %472 = icmp slt i32 %470, %471
+  br i1 %472, label %474, label %473
+
+473:                                              ; preds = %469
+  store i32 0, i32* %4, align 4
+  br label %592
+
+474:                                              ; preds = %469
+  %475 = load i32, i32* %256, align 8
+  %476 = load i32, i32* %262, align 8
+  %477 = icmp slt i32 %475, %476
+  br i1 %477, label %592, label %478
+
+478:                                              ; preds = %474
+  store i32 1, i32* %4, align 4
+  br label %592
+
+479:                                              ; preds = %416
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %289) #9
+  %480 = load i8, i8* %293, align 1
+  %481 = icmp slt i8 %480, 0
+  %482 = load i8*, i8** %273, align 8
+  %483 = select i1 %481, i8* %482, i8* %272
+  store i8* %483, i8** %290, align 8
+  %484 = load i64, i64* %274, align 8
+  %485 = zext i8 %480 to i64
+  %486 = select i1 %481, i64 %484, i64 %485
+  store i64 %486, i64* %291, align 8
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %294) #9
+  store i64 -6148914691236517206, i64* %32, align 8
+  %487 = call zeroext i1 @_ZN7content9DecodeIntEPN4base16BasicStringPieceIcNSt3__111char_traitsIcEEEEPl(%"class.base::BasicStringPiece"* nonnull %31, i64* nonnull %32) #9
+  %488 = load i64, i64* %291, align 8
+  %489 = icmp eq i64 %488, 0
+  %490 = and i1 %487, %489
+  br i1 %490, label %537, label %491
+
+491:                                              ; preds = %479
+  %492 = load i32, i32* %295, align 8
+  %493 = add nsw i32 %492, 1
+  store i32 %493, i32* %295, align 8
+  %494 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %495 = bitcast %"class.leveldb::Iterator"* %494 to void (%"class.leveldb::Iterator"*)***
+  %496 = load void (%"class.leveldb::Iterator"*)**, void (%"class.leveldb::Iterator"*)*** %495, align 8
+  %497 = getelementptr inbounds void (%"class.leveldb::Iterator"*)*, void (%"class.leveldb::Iterator"*)** %496, i64 6
+  %498 = load void (%"class.leveldb::Iterator"*)*, void (%"class.leveldb::Iterator"*)** %497, align 8
+  call void %498(%"class.leveldb::Iterator"* %494) #9
+  %499 = load i32, i32* %256, align 8
+  %500 = add nsw i32 %499, 1
+  store i32 %500, i32* %256, align 8
+  %501 = load i32, i32* %6, align 4
+  %502 = add nsw i32 %501, 1
+  store i32 %502, i32* %6, align 4
+  %503 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %504 = bitcast %"class.leveldb::Iterator"* %503 to i1 (%"class.leveldb::Iterator"*)***
+  %505 = load i1 (%"class.leveldb::Iterator"*)**, i1 (%"class.leveldb::Iterator"*)*** %504, align 8
+  %506 = getelementptr inbounds i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %505, i64 2
+  %507 = load i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %506, align 8
+  %508 = call zeroext i1 %507(%"class.leveldb::Iterator"* %503) #9
+  br i1 %508, label %527, label %509
+
+509:                                              ; preds = %491
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %296) #9
+  %510 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %511 = bitcast %"class.leveldb::Iterator"* %510 to void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)***
+  %512 = load void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)**, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*** %511, align 8
+  %513 = getelementptr inbounds void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)** %512, i64 10
+  %514 = load void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)** %513, align 8
+  call void %514(%"class.leveldb::Status"* nonnull sret %8, %"class.leveldb::Iterator"* %510) #9
+  %515 = load i64, i64* %258, align 8
+  %516 = load i64, i64* %297, align 8
+  store i64 %516, i64* %258, align 8
+  store i64 %515, i64* %297, align 8
+  %517 = icmp eq i64 %515, 0
+  %518 = inttoptr i64 %516 to i8*
+  br i1 %517, label %522, label %519
+
+519:                                              ; preds = %509
+  %520 = inttoptr i64 %515 to i8*
+  call void @_ZdaPv(i8* nonnull %520) #10
+  %521 = load i8*, i8** %260, align 8
+  br label %522
+
+522:                                              ; preds = %519, %509
+  %523 = phi i8* [ %518, %509 ], [ %521, %519 ]
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %296) #9
+  %524 = icmp eq i8* %523, null
+  br i1 %524, label %526, label %525
+
+525:                                              ; preds = %522
+  store i32 2, i32* %4, align 4
+  br label %590
+
+526:                                              ; preds = %522
+  store i32 0, i32* %4, align 4
+  br label %590
+
+527:                                              ; preds = %491
+  %528 = load i32, i32* %6, align 4
+  %529 = load i32, i32* %261, align 4
+  %530 = icmp slt i32 %528, %529
+  br i1 %530, label %532, label %531
+
+531:                                              ; preds = %527
+  store i32 0, i32* %4, align 4
+  br label %590
+
+532:                                              ; preds = %527
+  %533 = load i32, i32* %256, align 8
+  %534 = load i32, i32* %262, align 8
+  %535 = icmp slt i32 %533, %534
+  br i1 %535, label %590, label %536
+
+536:                                              ; preds = %532
+  store i32 1, i32* %4, align 4
+  br label %590
+
+537:                                              ; preds = %479
+  %538 = load i64, i64* %32, align 8
+  %539 = load i64, i64* %24, align 8
+  %540 = icmp eq i64 %538, %539
+  br i1 %540, label %546, label %541
+
+541:                                              ; preds = %537
+  store i8 1, i8* %298, align 8
+  call void @_ZN7leveldb10WriteBatch6DeleteERKNS_5SliceE(%"class.leveldb::WriteBatch"* %299, %"class.leveldb::Slice"* nonnull dereferenceable(16) %19) #9
+  %542 = load i32, i32* %300, align 4
+  %543 = add nsw i32 %542, 1
+  store i32 %543, i32* %300, align 4
+  %544 = load i64, i64* %301, align 8
+  %545 = add i64 %351, %544
+  store i64 %545, i64* %301, align 8
+  br label %546
+
+546:                                              ; preds = %537, %541
+  %547 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %548 = bitcast %"class.leveldb::Iterator"* %547 to void (%"class.leveldb::Iterator"*)***
+  %549 = load void (%"class.leveldb::Iterator"*)**, void (%"class.leveldb::Iterator"*)*** %548, align 8
+  %550 = getelementptr inbounds void (%"class.leveldb::Iterator"*)*, void (%"class.leveldb::Iterator"*)** %549, i64 6
+  %551 = load void (%"class.leveldb::Iterator"*)*, void (%"class.leveldb::Iterator"*)** %550, align 8
+  call void %551(%"class.leveldb::Iterator"* %547) #9
+  %552 = load i32, i32* %256, align 8
+  %553 = add nsw i32 %552, 1
+  store i32 %553, i32* %256, align 8
+  %554 = load i32, i32* %6, align 4
+  %555 = add nsw i32 %554, 1
+  store i32 %555, i32* %6, align 4
+  %556 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %557 = bitcast %"class.leveldb::Iterator"* %556 to i1 (%"class.leveldb::Iterator"*)***
+  %558 = load i1 (%"class.leveldb::Iterator"*)**, i1 (%"class.leveldb::Iterator"*)*** %557, align 8
+  %559 = getelementptr inbounds i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %558, i64 2
+  %560 = load i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %559, align 8
+  %561 = call zeroext i1 %560(%"class.leveldb::Iterator"* %556) #9
+  br i1 %561, label %580, label %562
+
+562:                                              ; preds = %546
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %302) #9
+  %563 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %564 = bitcast %"class.leveldb::Iterator"* %563 to void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)***
+  %565 = load void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)**, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*** %564, align 8
+  %566 = getelementptr inbounds void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)** %565, i64 10
+  %567 = load void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)*, void (%"class.leveldb::Status"*, %"class.leveldb::Iterator"*)** %566, align 8
+  call void %567(%"class.leveldb::Status"* nonnull sret %10, %"class.leveldb::Iterator"* %563) #9
+  %568 = load i64, i64* %258, align 8
+  %569 = load i64, i64* %303, align 8
+  store i64 %569, i64* %258, align 8
+  store i64 %568, i64* %303, align 8
+  %570 = icmp eq i64 %568, 0
+  %571 = inttoptr i64 %569 to i8*
+  br i1 %570, label %575, label %572
+
+572:                                              ; preds = %562
+  %573 = inttoptr i64 %568 to i8*
+  call void @_ZdaPv(i8* nonnull %573) #10
+  %574 = load i8*, i8** %260, align 8
+  br label %575
+
+575:                                              ; preds = %572, %562
+  %576 = phi i8* [ %571, %562 ], [ %574, %572 ]
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %302) #9
+  %577 = icmp eq i8* %576, null
+  br i1 %577, label %579, label %578
+
+578:                                              ; preds = %575
+  store i32 2, i32* %4, align 4
+  br label %590
+
+579:                                              ; preds = %575
+  store i32 0, i32* %4, align 4
+  br label %590
+
+580:                                              ; preds = %546
+  %581 = load i32, i32* %6, align 4
+  %582 = load i32, i32* %261, align 4
+  %583 = icmp slt i32 %581, %582
+  br i1 %583, label %585, label %584
+
+584:                                              ; preds = %580
+  store i32 0, i32* %4, align 4
+  br label %590
+
+585:                                              ; preds = %580
+  %586 = load i32, i32* %256, align 8
+  %587 = load i32, i32* %262, align 8
+  %588 = icmp slt i32 %586, %587
+  br i1 %588, label %590, label %589
+
+589:                                              ; preds = %585
+  store i32 1, i32* %4, align 4
+  br label %590
+
+590:                                              ; preds = %578, %589, %584, %525, %536, %531, %585, %579, %532, %526
+  %591 = phi i32 [ 2, %532 ], [ 2, %526 ], [ 0, %585 ], [ 0, %579 ], [ 1, %531 ], [ 1, %536 ], [ 1, %525 ], [ 1, %584 ], [ 1, %589 ], [ 1, %578 ]
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %294) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %289) #9
+  br label %592
+
+592:                                              ; preds = %467, %478, %473, %474, %468, %590
+  %593 = phi i32 [ %591, %590 ], [ 2, %474 ], [ 2, %468 ], [ 1, %473 ], [ 1, %478 ], [ 1, %467 ]
+  %594 = load i8*, i8** %276, align 8
+  %595 = icmp eq i8* %594, null
+  br i1 %595, label %597, label %596
+
+596:                                              ; preds = %592
+  call void @_ZdaPv(i8* nonnull %594) #10
+  br label %597
+
+597:                                              ; preds = %592, %596
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %275) #9
+  %598 = load i8, i8* %293, align 1
+  %599 = icmp slt i8 %598, 0
+  br i1 %599, label %600, label %602
+
+600:                                              ; preds = %597
+  %601 = load i8*, i8** %273, align 8
+  call void @_ZdlPv(i8* %601) #10
+  br label %602
+
+602:                                              ; preds = %597, %600
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %272) #9
+  %603 = load i8, i8* %284, align 1
+  %604 = icmp slt i8 %603, 0
+  br i1 %604, label %605, label %607
+
+605:                                              ; preds = %602
+  %606 = load i8*, i8** %270, align 8
+  call void @_ZdlPv(i8* %606) #10
+  br label %607
+
+607:                                              ; preds = %602, %605
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %269) #9
+  %608 = load i8, i8* %268, align 1
+  %609 = icmp slt i8 %608, 0
+  br i1 %609, label %610, label %614
+
+610:                                              ; preds = %607
+  %611 = load i8*, i8** %264, align 8
+  call void @_ZdlPv(i8* %611) #10
+  br label %614
+
+612:                                              ; preds = %346, %340
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %245) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %242) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %239) #9
+  br label %623
+
+613:                                              ; preds = %392, %387
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %254) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %245) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %242) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %239) #9
+  br label %616
+
+614:                                              ; preds = %610, %607
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %263) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %254) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %245) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %242) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %239) #9
+  %615 = icmp eq i32 %593, 1
+  br i1 %615, label %631, label %616
+
+616:                                              ; preds = %614, %613
+  %617 = load %"class.leveldb::Iterator"*, %"class.leveldb::Iterator"** %36, align 8
+  %618 = bitcast %"class.leveldb::Iterator"* %617 to i1 (%"class.leveldb::Iterator"*)***
+  %619 = load i1 (%"class.leveldb::Iterator"*)**, i1 (%"class.leveldb::Iterator"*)*** %618, align 8
+  %620 = getelementptr inbounds i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %619, i64 2
+  %621 = load i1 (%"class.leveldb::Iterator"*)*, i1 (%"class.leveldb::Iterator"*)** %620, align 8
+  %622 = call zeroext i1 %621(%"class.leveldb::Iterator"* %617) #9
+  br i1 %622, label %310, label %623
+
+623:                                              ; preds = %616, %231, %612
+  %624 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 4
+  %625 = load i32, i32* %624, align 4
+  %626 = add nsw i32 %625, 1
+  store i32 %626, i32* %624, align 4
+  %627 = load i8, i8* %33, align 8, !range !2
+  %628 = icmp eq i8 %627, 0
+  br i1 %628, label %631, label %629
+
+629:                                              ; preds = %623
+  %630 = getelementptr inbounds %"class.content::IndexedDBTombstoneSweeper", %"class.content::IndexedDBTombstoneSweeper"* %0, i64 0, i32 13, i32 6, i32 0, i32 0, i32 0, i32 1, i32 0
+  call void @_ZN7content12IndexDataKeyD1Ev(%"class.content::IndexDataKey"* %630) #9
+  store i8 0, i8* %33, align 8
+  br label %631
+
+631:                                              ; preds = %614, %217, %230, %224, %145, %158, %152, %95, %108, %102, %629, %623, %396
+  %632 = phi i1 [ false, %396 ], [ true, %623 ], [ true, %629 ], [ false, %102 ], [ false, %108 ], [ false, %95 ], [ false, %152 ], [ false, %158 ], [ false, %145 ], [ false, %224 ], [ false, %230 ], [ false, %217 ], [ false, %614 ]
+  ret i1 %632
+}
+
+declare void @_ZNK7content12IndexDataKey6EncodeEv(%"class.std::__1::basic_string"* sret, %"class.content::IndexDataKey"*) local_unnamed_addr #1
+
+declare void @_ZN7content12IndexDataKey12EncodeMinKeyElll(%"class.std::__1::basic_string"* sret, i64, i64, i64) local_unnamed_addr #1
+
+declare { i8*, i64 } @_ZN11leveldb_env15MakeStringPieceERKN7leveldb5SliceE(%"class.leveldb::Slice"* dereferenceable(16)) local_unnamed_addr #1
+
+declare void @_ZN7content12IndexDataKeyC1Ev(%"class.content::IndexDataKey"*) unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN7content12IndexDataKeyD1Ev(%"class.content::IndexDataKey"*) unnamed_addr #2
+
+declare zeroext i1 @_ZN7content12IndexDataKey6DecodeEPN4base16BasicStringPieceIcNSt3__111char_traitsIcEEEEPS0_(%"class.base::BasicStringPiece"*, %"class.content::IndexDataKey"*) local_unnamed_addr #1
+
+declare i64 @_ZNK7content12IndexDataKey7IndexIdEv(%"class.content::IndexDataKey"*) local_unnamed_addr #1
+
+declare zeroext i1 @_ZN7content12DecodeVarIntEPN4base16BasicStringPieceIcNSt3__111char_traitsIcEEEEPl(%"class.base::BasicStringPiece"*, i64*) local_unnamed_addr #1
+
+declare void @_ZN7content14ExistsEntryKey6EncodeEllRKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE(%"class.std::__1::basic_string"* sret, i64, i64, %"class.std::__1::basic_string"* dereferenceable(24)) local_unnamed_addr #1
+
+declare zeroext i1 @_ZN7content9DecodeIntEPN4base16BasicStringPieceIcNSt3__111char_traitsIcEEEEPl(%"class.base::BasicStringPiece"*, i64*) local_unnamed_addr #1
+
+declare void @_ZN7leveldb10WriteBatch6DeleteERKNS_5SliceE(%"class.leveldb::WriteBatch"*, %"class.leveldb::Slice"* dereferenceable(16)) local_unnamed_addr #1
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdaPv(i8*) local_unnamed_addr #3
+
+declare void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* sret, i8*, i32, i8*) local_unnamed_addr #1
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"*) unnamed_addr #2
+
+; Function Attrs: nounwind readnone speculatable
+declare { i64, i1 } @llvm.sadd.with.overflow.i64(i64, i64) #6
+
+declare void @_ZN4base8internal18WeakPtrFactoryBaseC2Em(%"class.base::internal::WeakPtrFactoryBase"*, i64) unnamed_addr #1
+
+; Function Attrs: noreturn
+declare void @_ZNKSt3__121__basic_string_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__basic_string_common"*) local_unnamed_addr #7
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #8
+
+; Function Attrs: noreturn
+declare void @_ZN4absl17optional_internal25throw_bad_optional_accessEv() local_unnamed_addr #7
+
+declare void @_ZN7content12IndexDataKeyC1EOS0_(%"class.content::IndexDataKey"*, %"class.content::IndexDataKey"* dereferenceable(80)) unnamed_addr #1
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { norecurse nounwind readnone ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { argmemonly nounwind }
+attributes #6 = { nounwind readnone speculatable }
+attributes #7 = { noreturn "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #9 = { nounwind }
+attributes #10 = { builtin nounwind }
+attributes #11 = { noreturn nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{i8 0, i8 2}
+!3 = !{!4}
+!4 = distinct !{!4, !5, !"_ZN7leveldb6Status2OKEv: argument 0"}
+!5 = distinct !{!5, !"_ZN7leveldb6Status2OKEv"}
+!6 = !{!"branch_weights", i32 1, i32 2000}
+!7 = !{!8}
+!8 = distinct !{!8, !9, !"_ZNK4base16BasicStringPieceIcNSt3__111char_traitsIcEEEcvNS1_12basic_stringIcS3_NS1_9allocatorIcEEEEEv: argument 0"}
+!9 = distinct !{!9, !"_ZNK4base16BasicStringPieceIcNSt3__111char_traitsIcEEEcvNS1_12basic_stringIcS3_NS1_9allocatorIcEEEEEv"}

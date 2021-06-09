@@ -1,0 +1,203 @@
+; ModuleID = '../../native_client/src/trusted/service_runtime/arch/x86_64/nacl_tls_64.c'
+source_filename = "../../native_client/src/trusted/service_runtime/arch/x86_64/nacl_tls_64.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.NaClThreadContext = type { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i32, i32, i32, i16, i16, i64, i32, i32 }
+%struct.NaClMutex = type { %union.pthread_mutex_t, i32 }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%struct.NaClAppThread = type { %struct.NaClThreadContext, %struct.NaClMutex, %struct.NaClApp*, i32, i32, %struct.NaClThread, %struct.NaClMutex, i32, %struct.NaClAppThreadSuspendedRegisters*, i32, i64, i8*, i32, i32, i32, %struct.NaClListNode, i32, %struct.NaClCondVar }
+%struct.NaClApp = type opaque
+%struct.NaClThread = type { i64 }
+%struct.NaClAppThreadSuspendedRegisters = type opaque
+%struct.NaClListNode = type { %struct.NaClListNode*, %struct.NaClListNode* }
+%struct.NaClCondVar = type { %union.pthread_cond_t }
+%union.pthread_cond_t = type { %struct.__pthread_cond_s }
+%struct.__pthread_cond_s = type { %union.anon, %union.anon.0, [2 x i32], [2 x i32], i32, i32, [2 x i32] }
+%union.anon = type { i64 }
+%union.anon.0 = type { i64 }
+
+@nacl_current_thread = hidden thread_local local_unnamed_addr global %struct.NaClThreadContext* null, align 8
+@gNaClTlsMu = internal global %struct.NaClMutex zeroinitializer, align 8
+@gNaClThreadIdxInUse = internal unnamed_addr global [8192 x i32] zeroinitializer, align 16
+@.str = private unnamed_addr constant [51 x i8] c"NaClAllocateThreadIdx: no more slots for a thread\0A\00", align 1
+@.str.1 = private unnamed_addr constant [40 x i8] c"Fatal error in file %s, line %d: !(%s)\0A\00", align 1
+@.str.2 = private unnamed_addr constant [74 x i8] c"../../native_client/src/trusted/service_runtime/arch/x86_64/nacl_tls_64.c\00", align 1
+@.str.3 = private unnamed_addr constant [16 x i8] c"i < kNumThreads\00", align 1
+@.str.4 = private unnamed_addr constant [47 x i8] c"NaClTlsInit: gNaClTlsMu initialization failed\0A\00", align 1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClTlsAllocate(%struct.NaClAppThread* nocapture readnone) local_unnamed_addr #0 {
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @gNaClTlsMu) #5
+  br label %2
+
+2:                                                ; preds = %31, %1
+  %3 = phi i64 [ 1, %1 ], [ %32, %31 ]
+  %4 = getelementptr inbounds [8192 x i32], [8192 x i32]* @gNaClThreadIdxInUse, i64 0, i64 %3
+  %5 = load i32, i32* %4, align 4
+  %6 = icmp eq i32 %5, 0
+  br i1 %6, label %12, label %7
+
+7:                                                ; preds = %2
+  %8 = add nuw nsw i64 %3, 1
+  %9 = getelementptr inbounds [8192 x i32], [8192 x i32]* @gNaClThreadIdxInUse, i64 0, i64 %8
+  %10 = load i32, i32* %9, align 4
+  %11 = icmp eq i32 %10, 0
+  br i1 %11, label %12, label %19
+
+12:                                               ; preds = %27, %19, %7, %2
+  %13 = phi i64 [ %3, %2 ], [ %8, %7 ], [ %20, %19 ], [ %25, %27 ]
+  %14 = phi i32* [ %4, %2 ], [ %9, %7 ], [ %21, %19 ], [ %28, %27 ]
+  store i32 1, i32* %14, align 4
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* nonnull @gNaClTlsMu) #5
+  %15 = trunc i64 %13 to i32
+  br label %17
+
+16:                                               ; preds = %24
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* nonnull @gNaClTlsMu) #5
+  tail call void (i32, i8*, ...) @NaClLog(i32 -3, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @.str, i64 0, i64 0)) #5
+  br label %17
+
+17:                                               ; preds = %12, %16
+  %18 = phi i32 [ %15, %12 ], [ 0, %16 ]
+  ret i32 %18
+
+19:                                               ; preds = %7
+  %20 = add nuw nsw i64 %3, 2
+  %21 = getelementptr inbounds [8192 x i32], [8192 x i32]* @gNaClThreadIdxInUse, i64 0, i64 %20
+  %22 = load i32, i32* %21, align 4
+  %23 = icmp eq i32 %22, 0
+  br i1 %23, label %12, label %24
+
+24:                                               ; preds = %19
+  %25 = add nuw nsw i64 %3, 3
+  %26 = icmp eq i64 %25, 8192
+  br i1 %26, label %16, label %27
+
+27:                                               ; preds = %24
+  %28 = getelementptr inbounds [8192 x i32], [8192 x i32]* @gNaClThreadIdxInUse, i64 0, i64 %25
+  %29 = load i32, i32* %28, align 4
+  %30 = icmp eq i32 %29, 0
+  br i1 %30, label %12, label %31
+
+31:                                               ; preds = %27
+  %32 = add nuw nsw i64 %3, 4
+  br label %2
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClTlsFree(%struct.NaClAppThread* nocapture readonly) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 0, i32 21
+  %3 = load i32, i32* %2, align 8
+  %4 = zext i32 %3 to i64
+  %5 = icmp ult i32 %3, 8192
+  br i1 %5, label %7, label %6
+
+6:                                                ; preds = %1
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.1, i64 0, i64 0), i8* getelementptr inbounds ([74 x i8], [74 x i8]* @.str.2, i64 0, i64 0), i32 91, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str.3, i64 0, i64 0)) #5
+  br label %7
+
+7:                                                ; preds = %1, %6
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @gNaClTlsMu) #5
+  %8 = getelementptr inbounds [8192 x i32], [8192 x i32]* @gNaClThreadIdxInUse, i64 0, i64 %4
+  store i32 0, i32* %8, align 4
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* nonnull @gNaClTlsMu) #5
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden i32 @NaClGetThreadIdx(%struct.NaClAppThread* nocapture readonly) local_unnamed_addr #1 {
+  %2 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 0, i32 21
+  %3 = load i32, i32* %2, align 8
+  ret i32 %3
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable writeonly
+define hidden void @NaClTlsSetTlsValue1(%struct.NaClAppThread* nocapture, i32) local_unnamed_addr #2 {
+  %3 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 0, i32 25
+  store i32 %1, i32* %3, align 8
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable writeonly
+define hidden void @NaClTlsSetTlsValue2(%struct.NaClAppThread* nocapture, i32) local_unnamed_addr #2 {
+  %3 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 0, i32 26
+  store i32 %1, i32* %3, align 4
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden i32 @NaClTlsGetTlsValue1(%struct.NaClAppThread* nocapture readonly) local_unnamed_addr #1 {
+  %2 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 0, i32 25
+  %3 = load i32, i32* %2, align 8
+  ret i32 %3
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden i32 @NaClTlsGetTlsValue2(%struct.NaClAppThread* nocapture readonly) local_unnamed_addr #1 {
+  %2 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 0, i32 26
+  %3 = load i32, i32* %2, align 4
+  ret i32 %3
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClTlsInit() local_unnamed_addr #0 {
+  tail call void @llvm.memset.p0i8.i64(i8* align 16 bitcast ([8192 x i32]* @gNaClThreadIdxInUse to i8*), i8 0, i64 32768, i1 false) #5
+  %1 = tail call i32 @NaClMutexCtor(%struct.NaClMutex* nonnull @gNaClTlsMu) #5
+  %2 = icmp eq i32 %1, 0
+  br i1 %2, label %3, label %4
+
+3:                                                ; preds = %0
+  tail call void (i32, i8*, ...) @NaClLog(i32 -2, i8* getelementptr inbounds ([47 x i8], [47 x i8]* @.str.4, i64 0, i64 0)) #5
+  br label %4
+
+4:                                                ; preds = %0, %3
+  %5 = phi i32 [ 0, %3 ], [ 1, %0 ]
+  ret i32 %5
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClTlsFini() local_unnamed_addr #0 {
+  tail call void @NaClMutexDtor(%struct.NaClMutex* nonnull @gNaClTlsMu) #5
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable writeonly
+define hidden void @NaClTlsSetCurrentThread(%struct.NaClAppThread*) local_unnamed_addr #2 {
+  %2 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 0
+  store %struct.NaClThreadContext* %2, %struct.NaClThreadContext** @nacl_current_thread, align 8
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden %struct.NaClAppThread* @NaClTlsGetCurrentThread() local_unnamed_addr #1 {
+  %1 = load %struct.NaClAppThread*, %struct.NaClAppThread** bitcast (%struct.NaClThreadContext** @nacl_current_thread to %struct.NaClAppThread**), align 8
+  ret %struct.NaClAppThread* %1
+}
+
+declare void @NaClXMutexLock(%struct.NaClMutex*) local_unnamed_addr #3
+
+declare void @NaClXMutexUnlock(%struct.NaClMutex*) local_unnamed_addr #3
+
+declare void @NaClLog(i32, i8*, ...) local_unnamed_addr #3
+
+declare i32 @NaClMutexCtor(%struct.NaClMutex*) local_unnamed_addr #3
+
+declare void @NaClMutexDtor(%struct.NaClMutex*) local_unnamed_addr #3
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #4
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { norecurse nounwind readonly ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { nofree norecurse nounwind ssp uwtable writeonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { argmemonly nounwind }
+attributes #5 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}

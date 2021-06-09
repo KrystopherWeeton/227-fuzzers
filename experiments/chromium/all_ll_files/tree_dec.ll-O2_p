@@ -1,0 +1,1269 @@
+; ModuleID = '../../third_party/libwebp/src/dec/tree_dec.c'
+source_filename = "../../third_party/libwebp/src/dec/tree_dec.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.VP8Proba = type { [3 x i8], [4 x [8 x %struct.VP8BandProbas]], [4 x [17 x %struct.VP8BandProbas*]] }
+%struct.VP8BandProbas = type { [3 x [11 x i8]] }
+%struct.VP8BitReader = type { i64, i32, i32, i8*, i8*, i8*, i32 }
+%struct.VP8Decoder = type { i32, i32, i8*, %struct.VP8BitReader, %struct.VP8FrameHeader, %struct.VP8PictureHeader, %struct.VP8FilterHeader, %struct.VP8SegmentHeader, %struct.WebPWorker, i32, i32, i32, %struct.VP8ThreadContext, i32, i32, i32, i32, i32, i32, i32, [8 x %struct.VP8BitReader], i32, %struct.VP8Random, [4 x %struct.VP8QuantMatrix], %struct.VP8Proba, i32, i8, i8*, [4 x i8], %struct.VP8TopSamples*, %struct.VP8MB*, %struct.VP8FInfo*, i8*, i8*, i8*, i8*, i32, i32, i8*, i64, i32, i32, %struct.VP8MBData*, i32, [4 x [2 x %struct.VP8FInfo]], %struct.ALPHDecoder*, i8*, i64, i32, i8*, i8*, i8*, i32 }
+%struct.VP8FrameHeader = type { i8, i8, i8, i32 }
+%struct.VP8PictureHeader = type { i16, i16, i8, i8, i8, i8 }
+%struct.VP8FilterHeader = type { i32, i32, i32, i32, [4 x i32], [4 x i32] }
+%struct.VP8SegmentHeader = type { i32, i32, i32, [4 x i8], [4 x i8] }
+%struct.WebPWorker = type { i8*, i32, i32 (i8*, i8*)*, i8*, i8*, i32 }
+%struct.VP8ThreadContext = type { i32, i32, i32, %struct.VP8FInfo*, %struct.VP8MBData*, %struct.VP8Io }
+%struct.VP8Io = type { i32, i32, i32, i32, i32, i8*, i8*, i8*, i32, i32, i8*, i32 (%struct.VP8Io*)*, i32 (%struct.VP8Io*)*, void (%struct.VP8Io*)*, i32, i64, i8*, i32, i32, i32, i32, i32, i32, i32, i32, i32, i8* }
+%struct.VP8Random = type { i32, i32, [55 x i32], i32 }
+%struct.VP8QuantMatrix = type { [2 x i32], [2 x i32], [2 x i32], i32, i32 }
+%struct.VP8TopSamples = type { [16 x i8], [8 x i8], [8 x i8] }
+%struct.VP8MB = type { i8, i8 }
+%struct.VP8FInfo = type { i8, i8, i8, i8 }
+%struct.VP8MBData = type { [384 x i16], i8, [16 x i8], i8, i32, i32, i8, i8, i8 }
+%struct.ALPHDecoder = type opaque
+
+@CoeffsUpdateProba = internal unnamed_addr constant [4 x [8 x [3 x [11 x i8]]]] [[8 x [3 x [11 x i8]]] [[3 x [11 x i8]] [[11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\B0\F6\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\DF\F1\FC\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\F9\FD\FD\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\F4\FC\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\EA\FE\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FD\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\F6\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\EF\FD\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FE\FF\FE\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\F8\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FB\FF\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FD\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FB\FE\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FE\FF\FE\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FE\FD\FF\FE\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FA\FF\FE\FF\FE\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"]], [8 x [3 x [11 x i8]]] [[3 x [11 x i8]] [[11 x i8] c"\D9\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\E1\FC\F1\FD\FF\FF\FE\FF\FF\FF\FF", [11 x i8] c"\EA\FA\F1\FA\FD\FF\FD\FE\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\DF\FE\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\EE\FD\FE\FE\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\F8\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\F9\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FD\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\F7\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FD\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FC\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FE\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FD\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FE\FD\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FA\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"]], [8 x [3 x [11 x i8]]] [[3 x [11 x i8]] [[11 x i8] c"\BA\FB\FA\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\EA\FB\F4\FE\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FB\FB\F3\FD\FE\FF\FE\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FD\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\EC\FD\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FB\FD\FD\FE\FE\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FE\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FE\FE\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FE\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"]], [8 x [3 x [11 x i8]]] [[3 x [11 x i8]] [[11 x i8] c"\F8\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FA\FE\FC\FE\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\F8\FE\F9\FD\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FD\FD\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\F6\FD\FD\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FC\FE\FB\FE\FE\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FE\FC\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\F8\FE\FD\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FD\FF\FE\FE\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FB\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\F5\FB\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FD\FD\FE\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FB\FD\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FC\FD\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FC\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\F9\FF\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FE\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FF\FD\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FA\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"]]], align 16
+@CoeffsProba0 = internal unnamed_addr constant [4 x [8 x [3 x [11 x i8]]]] [[8 x [3 x [11 x i8]]] [[3 x [11 x i8]] [[11 x i8] c"\80\80\80\80\80\80\80\80\80\80\80", [11 x i8] c"\80\80\80\80\80\80\80\80\80\80\80", [11 x i8] c"\80\80\80\80\80\80\80\80\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\FD\88\FE\FF\E4\DB\80\80\80\80\80", [11 x i8] c"\BD\81\F2\FF\E3\D5\FF\DB\80\80\80", [11 x i8] c"j~\E3\FC\D6\D1\FF\FF\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01b\F8\FF\EC\E2\FF\FF\80\80\80", [11 x i8] c"\B5\85\EE\FE\DD\EA\FF\9A\80\80\80", [11 x i8] c"N\86\CA\F7\C6\B4\FF\DB\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\B9\F9\FF\F3\FF\80\80\80\80\80", [11 x i8] c"\B8\96\F7\FF\EC\E0\80\80\80\80\80", [11 x i8] c"Mn\D8\FF\EC\E6\80\80\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01e\FB\FF\F1\FF\80\80\80\80\80", [11 x i8] c"\AA\8B\F1\FC\EC\D1\FF\FF\80\80\80", [11 x i8] c"%t\C4\F3\E4\FF\FF\FF\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\CC\FE\FF\F5\FF\80\80\80\80\80", [11 x i8] c"\CF\A0\FA\FF\EE\80\80\80\80\80\80", [11 x i8] c"fg\E7\FF\D3\AB\80\80\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\98\FC\FF\F0\FF\80\80\80\80\80", [11 x i8] c"\B1\87\F3\FF\EA\E1\80\80\80\80\80", [11 x i8] c"P\81\D3\FF\C2\E0\80\80\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\01\FF\80\80\80\80\80\80\80\80", [11 x i8] c"\F6\01\FF\80\80\80\80\80\80\80\80", [11 x i8] c"\FF\80\80\80\80\80\80\80\80\80\80"]], [8 x [3 x [11 x i8]]] [[3 x [11 x i8]] [[11 x i8] c"\C6#\ED\DF\C1\BB\A2\A0\91\9B>", [11 x i8] c"\83-\C6\DD\AC\B0\DC\9D\FC\DD\01", [11 x i8] c"D/\92\D0\95\A7\DD\A2\FF\DF\80"], [3 x [11 x i8]] [[11 x i8] c"\01\95\F1\FF\DD\E0\FF\FF\80\80\80", [11 x i8] c"\B8\8D\EA\FD\DE\DC\FF\C7\80\80\80", [11 x i8] c"Qc\B5\F2\B0\BE\F9\CA\FF\FF\80"], [3 x [11 x i8]] [[11 x i8] c"\01\81\E8\FD\D6\C5\F2\C4\FF\FF\80", [11 x i8] c"cy\D2\FA\C9\C6\FF\CA\80\80\80", [11 x i8] c"\17[\A3\F2\AA\BB\F7\D2\FF\FF\80"], [3 x [11 x i8]] [[11 x i8] c"\01\C8\F6\FF\EA\FF\80\80\80\80\80", [11 x i8] c"m\B2\F1\FF\E7\F5\FF\FF\80\80\80", [11 x i8] c",\82\C9\FD\CD\C0\FF\FF\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\84\EF\FB\DB\D1\FF\A5\80\80\80", [11 x i8] c"^\88\E1\FB\DA\BE\FF\FF\80\80\80", [11 x i8] c"\16d\AE\F5\BA\A1\FF\C7\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\B6\F9\FF\E8\EB\80\80\80\80\80", [11 x i8] c"|\8F\F1\FF\E3\EA\80\80\80\80\80", [11 x i8] c"#M\B5\FB\C1\D3\FF\CD\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\9D\F7\FF\EC\E7\FF\FF\80\80\80", [11 x i8] c"y\8D\EB\FF\E1\E3\FF\FF\80\80\80", [11 x i8] c"-c\BC\FB\C3\D9\FF\E0\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\01\FB\FF\D5\FF\80\80\80\80\80", [11 x i8] c"\CB\01\F8\FF\FF\80\80\80\80\80\80", [11 x i8] c"\89\01\B1\FF\E0\FF\80\80\80\80\80"]], [8 x [3 x [11 x i8]]] [[3 x [11 x i8]] [[11 x i8] c"\FD\09\F8\FB\CF\D0\FF\C0\80\80\80", [11 x i8] c"\AF\0D\E0\F3\C1\B9\F9\C6\FF\FF\80", [11 x i8] c"I\11\AB\DD\A1\B3\EC\A7\FF\EA\80"], [3 x [11 x i8]] [[11 x i8] c"\01_\F7\FD\D4\B7\FF\FF\80\80\80", [11 x i8] c"\EFZ\F4\FA\D3\D1\FF\FF\80\80\80", [11 x i8] c"\9BM\C3\F8\BC\C3\FF\FF\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\18\EF\FB\DA\DB\FF\CD\80\80\80", [11 x i8] c"\C93\DB\FF\C4\BA\80\80\80\80\80", [11 x i8] c"E.\BE\EF\C9\DA\FF\E4\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\BF\FB\FF\FF\80\80\80\80\80\80", [11 x i8] c"\DF\A5\F9\FF\D5\FF\80\80\80\80\80", [11 x i8] c"\8D|\F8\FF\FF\80\80\80\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\10\F8\FF\FF\80\80\80\80\80\80", [11 x i8] c"\BE$\E6\FF\EC\FF\80\80\80\80\80", [11 x i8] c"\95\01\FF\80\80\80\80\80\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\E2\FF\80\80\80\80\80\80\80\80", [11 x i8] c"\F7\C0\FF\80\80\80\80\80\80\80\80", [11 x i8] c"\F0\80\FF\80\80\80\80\80\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\86\FC\FF\FF\80\80\80\80\80\80", [11 x i8] c"\D5>\FA\FF\FF\80\80\80\80\80\80", [11 x i8] c"7]\FF\80\80\80\80\80\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\80\80\80\80\80\80\80\80\80\80\80", [11 x i8] c"\80\80\80\80\80\80\80\80\80\80\80", [11 x i8] c"\80\80\80\80\80\80\80\80\80\80\80"]], [8 x [3 x [11 x i8]]] [[3 x [11 x i8]] [[11 x i8] c"\CA\18\D5\EB\BA\BF\DC\A0\F0\AF\FF", [11 x i8] c"~&\B6\E8\A9\B8\E4\AE\FF\BB\80", [11 x i8] c"=.\8A\DB\97\B2\F0\AA\FF\D8\80"], [3 x [11 x i8]] [[11 x i8] c"\01p\E6\FA\C7\BF\F7\9F\FF\FF\80", [11 x i8] c"\A6m\E4\FC\D3\D7\FF\AE\80\80\80", [11 x i8] c"'M\A2\E8\AC\B4\F5\B2\FF\FF\80"], [3 x [11 x i8]] [[11 x i8] c"\014\DC\F6\C6\C7\F9\DC\FF\FF\80", [11 x i8] c"|J\BF\F3\B7\C1\FA\DD\FF\FF\80", [11 x i8] c"\18G\82\DB\9A\AA\F3\B6\FF\FF\80"], [3 x [11 x i8]] [[11 x i8] c"\01\B6\E1\F9\DB\F0\FF\E0\80\80\80", [11 x i8] c"\95\96\E2\FC\D8\CD\FF\AB\80\80\80", [11 x i8] c"\1Cl\AA\F2\B7\C2\FE\DF\FF\FF\80"], [3 x [11 x i8]] [[11 x i8] c"\01Q\E6\FC\CC\CB\FF\C0\80\80\80", [11 x i8] c"{f\D1\F7\BC\C4\FF\E9\80\80\80", [11 x i8] c"\14_\99\F3\A4\AD\FF\CB\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\DE\F8\FF\D8\D5\80\80\80\80\80", [11 x i8] c"\A8\AF\F6\FC\EB\CD\FF\FF\80\80\80", [11 x i8] c"/t\D7\FF\D3\D4\FF\FF\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01y\EC\FD\D4\D6\FF\FF\80\80\80", [11 x i8] c"\8DT\D5\FC\C9\CA\FF\DB\80\80\80", [11 x i8] c"*P\A0\F0\A2\B9\FF\CD\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\01\FF\80\80\80\80\80\80\80\80", [11 x i8] c"\F4\01\FF\80\80\80\80\80\80\80\80", [11 x i8] c"\EE\01\FF\80\80\80\80\80\80\80\80"]]], align 16
+@kBModesProba = internal unnamed_addr constant [10 x [10 x [9 x i8]]] [[10 x [9 x i8]] [[9 x i8] c"\E7x0Ysqx\98p", [9 x i8] c"\98\B3@~\AAv.F_", [9 x i8] c"\AFE\8FPURH\9Bg", [9 x i8] c"8:\0A\AB\DA\BD\11\0D\98", [9 x i8] c"r\1A\11\A3,\C3\15\0A\AD", [9 x i8] c"y\18P\C3\1A>,@U", [9 x i8] c"\90G\0A&\AB\D5\90\22\1A", [9 x i8] c"\AA.7\13\88\A0!\CEG", [9 x i8] c"?\14\08rr\D0\0C\09\E2", [9 x i8] c"Q(\0B`\B6T\1D\10$"], [10 x [9 x i8]] [[9 x i8] c"\86\B7Y\89bej\A5\94", [9 x i8] c"H\BBd\82\9Do KP", [9 x i8] c"Bf\A7cJ>(\EA\80", [9 x i8] c")5\09\B2\F1\8D\1A\08k", [9 x i8] c"J+\1A\92I\A61\17\9D", [9 x i8] c"A&i\A034\1Fs\80", [9 x i8] c"hO\0C\1B\D9\FFW\11\07", [9 x i8] c"WDG,r3\0F\BA\17", [9 x i8] c"/)\0En\B6\B7\15\11\C2", [9 x i8] c"B-\19f\C5\BD\17\12\16"], [10 x [9 x i8]] [[9 x i8] c"XX\93\96*.-\C4\CD", [9 x i8] c"+a\B7uU&#\B3=", [9 x i8] c"'5\C8W\1A\15+\E8\AB", [9 x i8] c"8\223hrf\1D]M", [9 x i8] c"'\1CU\AB:\A5Zb@", [9 x i8] c"\22\16t\CE\17\22+\A6I", [9 x i8] c"k6 \1A3\01Q+\1F", [9 x i8] c"D\19j\16@\AB$\E1r", [9 x i8] c"\22\13\15f\84\BC\10L|", [9 x i8] c">\12N_U9203"], [10 x [9 x i8]] [[9 x i8] c"\C1e#\9F\D7oY.o", [9 x i8] c"<\94\1F\AC\DB\E4\15\12o", [9 x i8] c"pqMU\B3\FF&xr", [9 x i8] c"(*\01\C4\F5\D1\0A\19m", [9 x i8] c"X+\1D\8C\A6\D5%+\9A", [9 x i8] c"=?\1E\9BC-D\01\D1", [9 x i8] c"dP\08+\9A\013\1AG", [9 x i8] c"\8ENN\10\FF\80\22\C5\AB", [9 x i8] c")(\05f\D3\B7\04\01\DD", [9 x i8] c"32\11\A8\D1\C0\17\19R"], [10 x [9 x i8]] [[9 x i8] c"\8A\1F$\AB\1B\A6&,\E5", [9 x i8] c"CW:\A9Rs\1A;\B3", [9 x i8] c"?;Z\B4;\A6]I\9A", [9 x i8] c"((\15t\8F\D1\22'\AF", [9 x i8] c"/\0F\10\B7\22\DF1-\B7", [9 x i8] c".\11!\B7\06b\0F \B7", [9 x i8] c"9.\16\18\80\016\11%", [9 x i8] c"A Is\1C\80\17\80\CD", [9 x i8] c"(\03\09s3\C0\12\06\DF", [9 x i8] c"W%\09s;M@\15/"], [10 x [9 x i8]] [[9 x i8] c"h7,\DA\0965\82\E2", [9 x i8] c"@ZF\CD()\17\1A9", [9 x i8] c"69p\B8\05)&\A6\D5", [9 x i8] c"\1E\22\1A\85\98t\0A \86", [9 x i8] c"'\135\DD\1Ar I\FF", [9 x i8] c"\1F\09A\EA\02\0F\01vI", [9 x i8] c"K \0C3\C0\FF\A0+3", [9 x i8] c"X\1F#CfU7\BAU", [9 x i8] c"8\15\17o;\CD-%\C0", [9 x i8] c"7&F|If\01\22b"], [10 x [9 x i8]] [[9 x i8] c"}b*XhUu\AFR", [9 x i8] c"_T5Y\80dqe-", [9 x i8] c"KO{/3\80Q\AB\01", [9 x i8] c"9\11\05Gf95)1", [9 x i8] c"&!\0Dy9I\1A\01U", [9 x i8] c")\0AC\8AMnZ/r", [9 x i8] c"s\15\02\0Af\FF\A6\17\06", [9 x i8] c"e\1D\10\0AU\80e\C4\1A", [9 x i8] c"9\12\0Aff\D5\22\14+", [9 x i8] c"u\14\0F$\A3\80D\01\1A"], [10 x [9 x i8]] [[9 x i8] c"f=G%\225\1F\F3\C0", [9 x i8] c"E<G&Iw\1C\DE%", [9 x i8] c"D-\80\22\01/\0B\F5\AB", [9 x i8] c">\11\13F\92U7>F", [9 x i8] c"%+%\9Ad\A3U\A0\01", [9 x i8] c"?\09\5C\88\1C@ \C9U", [9 x i8] c"K\0F\09\09@\FF\B8w\10", [9 x i8] c"V\06\1C\05@\FF\19\F8\01", [9 x i8] c"8\08\11\84\89\FF7t\80", [9 x i8] c":\0F\14R\879\1Ay("], [10 x [9 x i8]] [[9 x i8] c"\A42\1F\89\9A\85\19#\DA", [9 x i8] c"3g,\83\83{\1F\06\9E", [9 x i8] c"V(@\87\94\E0-\B7\80", [9 x i8] c"\16\1A\11\83\F0\9A\0E\01\D1", [9 x i8] c"-\10\15[@\DE\07\01\C5", [9 x i8] c"8\15'\9B<\8A\17f\D5", [9 x i8] c"S\0C\0D6\C0\FFD/\1C", [9 x i8] c"U\1AUU\80\80 \92\AB", [9 x i8] c"\12\0B\07?\90\AB\04\04\F6", [9 x i8] c"#\1B\0A\92\AE\AB\0C\1A\80"], [10 x [9 x i8]] [[9 x i8] c"\BEP#c\B4P~6-", [9 x i8] c"U~/W\B03)\14 ", [9 x i8] c"eK\80\8Bv\92t\80U", [9 x i8] c"8)\0F\B0\ECU%\09>", [9 x i8] c"G\1E\11wv\FF\11\12\8A", [9 x i8] c"e&<\8A7F+\1A\8E", [9 x i8] c"\92$\13\1E\AB\FFa\1B\14", [9 x i8] c"\8A-=>\DB\01Q\BC@", [9 x i8] c" )\14u\97\8E\14\15\A3", [9 x i8] c"p\13\0C=\C3\800\04\18"]], align 16
+@kYModesIntra4 = internal unnamed_addr constant [18 x i8] c"\00\01\FF\02\FE\03\04\06\FD\05\FC\FB\FA\07\F9\08\F8\F7", align 16
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @VP8ResetProba(%struct.VP8Proba* nocapture) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.VP8Proba, %struct.VP8Proba* %0, i64 0, i32 0, i64 0
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %2, i8 -1, i64 3, i1 false)
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @VP8ParseIntraModeRow(%struct.VP8BitReader*, %struct.VP8Decoder* nocapture) local_unnamed_addr #0 {
+  %3 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 13
+  %4 = load i32, i32* %3, align 8
+  %5 = icmp sgt i32 %4, 0
+  br i1 %5, label %6, label %685
+
+6:                                                ; preds = %2
+  %7 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 27
+  %8 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 28, i64 0
+  %9 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 42
+  %10 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 7, i32 1
+  %11 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 0, i64 0
+  %12 = getelementptr inbounds %struct.VP8BitReader, %struct.VP8BitReader* %0, i64 0, i32 1
+  %13 = getelementptr inbounds %struct.VP8BitReader, %struct.VP8BitReader* %0, i64 0, i32 2
+  %14 = getelementptr inbounds %struct.VP8BitReader, %struct.VP8BitReader* %0, i64 0, i32 3
+  %15 = getelementptr inbounds %struct.VP8BitReader, %struct.VP8BitReader* %0, i64 0, i32 5
+  %16 = getelementptr inbounds %struct.VP8BitReader, %struct.VP8BitReader* %0, i64 0, i32 0
+  %17 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 0, i64 1
+  %18 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 0, i64 2
+  %19 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 25
+  %20 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 26
+  br label %21
+
+21:                                               ; preds = %6, %678
+  %22 = phi i64 [ 0, %6 ], [ %681, %678 ]
+  %23 = load i8*, i8** %7, align 8
+  %24 = shl i64 %22, 2
+  %25 = and i64 %24, 4294967292
+  %26 = getelementptr inbounds i8, i8* %23, i64 %25
+  %27 = load %struct.VP8MBData*, %struct.VP8MBData** %9, align 8
+  %28 = load i32, i32* %10, align 4
+  %29 = icmp eq i32 %28, 0
+  br i1 %29, label %167, label %30
+
+30:                                               ; preds = %21
+  %31 = load i8, i8* %11, align 8
+  %32 = zext i8 %31 to i32
+  %33 = load i32, i32* %12, align 8
+  %34 = load i32, i32* %13, align 4
+  %35 = icmp slt i32 %34, 0
+  br i1 %35, label %36, label %52
+
+36:                                               ; preds = %30
+  %37 = load i8*, i8** %14, align 8
+  %38 = load i8*, i8** %15, align 8
+  %39 = icmp ult i8* %37, %38
+  br i1 %39, label %40, label %50
+
+40:                                               ; preds = %36
+  %41 = bitcast i8* %37 to i64*
+  %42 = load i64, i64* %41, align 1
+  %43 = getelementptr inbounds i8, i8* %37, i64 7
+  store i8* %43, i8** %14, align 8
+  %44 = tail call i64 @llvm.bswap.i64(i64 %42) #4
+  %45 = lshr i64 %44, 8
+  %46 = load i64, i64* %16, align 8
+  %47 = shl i64 %46, 56
+  %48 = or i64 %47, %45
+  store i64 %48, i64* %16, align 8
+  %49 = add nsw i32 %34, 56
+  store i32 %49, i32* %13, align 4
+  br label %52
+
+50:                                               ; preds = %36
+  tail call void @VP8LoadFinalBytes(%struct.VP8BitReader* %0) #4
+  %51 = load i32, i32* %13, align 4
+  br label %52
+
+52:                                               ; preds = %50, %40, %30
+  %53 = phi i32 [ %51, %50 ], [ %49, %40 ], [ %34, %30 ]
+  %54 = mul i32 %33, %32
+  %55 = lshr i32 %54, 8
+  %56 = load i64, i64* %16, align 8
+  %57 = zext i32 %53 to i64
+  %58 = lshr i64 %56, %57
+  %59 = trunc i64 %58 to i32
+  %60 = icmp ult i32 %55, %59
+  br i1 %60, label %61, label %67
+
+61:                                               ; preds = %52
+  %62 = sub i32 %33, %55
+  %63 = add nuw nsw i32 %55, 1
+  %64 = zext i32 %63 to i64
+  %65 = shl i64 %64, %57
+  %66 = sub i64 %56, %65
+  store i64 %66, i64* %16, align 8
+  br label %69
+
+67:                                               ; preds = %52
+  %68 = add nuw nsw i32 %55, 1
+  br label %69
+
+69:                                               ; preds = %67, %61
+  %70 = phi i64 [ %66, %61 ], [ %56, %67 ]
+  %71 = phi i32 [ %62, %61 ], [ %68, %67 ]
+  %72 = tail call i32 @llvm.ctlz.i32(i32 %71, i1 true) #4, !range !2
+  %73 = xor i32 %72, 24
+  %74 = shl i32 %71, %73
+  %75 = sub nsw i32 %53, %73
+  store i32 %75, i32* %13, align 4
+  %76 = add i32 %74, -1
+  store i32 %76, i32* %12, align 8
+  br i1 %60, label %122, label %77
+
+77:                                               ; preds = %69
+  %78 = load i8, i8* %17, align 1
+  %79 = zext i8 %78 to i32
+  %80 = icmp slt i32 %75, 0
+  br i1 %80, label %81, label %97
+
+81:                                               ; preds = %77
+  %82 = load i8*, i8** %14, align 8
+  %83 = load i8*, i8** %15, align 8
+  %84 = icmp ult i8* %82, %83
+  br i1 %84, label %85, label %94
+
+85:                                               ; preds = %81
+  %86 = bitcast i8* %82 to i64*
+  %87 = load i64, i64* %86, align 1
+  %88 = getelementptr inbounds i8, i8* %82, i64 7
+  store i8* %88, i8** %14, align 8
+  %89 = tail call i64 @llvm.bswap.i64(i64 %87) #4
+  %90 = lshr i64 %89, 8
+  %91 = shl i64 %70, 56
+  %92 = or i64 %90, %91
+  store i64 %92, i64* %16, align 8
+  %93 = add nsw i32 %75, 56
+  store i32 %93, i32* %13, align 4
+  br label %97
+
+94:                                               ; preds = %81
+  tail call void @VP8LoadFinalBytes(%struct.VP8BitReader* %0) #4
+  %95 = load i32, i32* %13, align 4
+  %96 = load i64, i64* %16, align 8
+  br label %97
+
+97:                                               ; preds = %94, %85, %77
+  %98 = phi i64 [ %96, %94 ], [ %92, %85 ], [ %70, %77 ]
+  %99 = phi i32 [ %95, %94 ], [ %93, %85 ], [ %75, %77 ]
+  %100 = mul i32 %76, %79
+  %101 = lshr i32 %100, 8
+  %102 = zext i32 %99 to i64
+  %103 = lshr i64 %98, %102
+  %104 = trunc i64 %103 to i32
+  %105 = icmp ult i32 %101, %104
+  %106 = zext i1 %105 to i8
+  br i1 %105, label %107, label %113
+
+107:                                              ; preds = %97
+  %108 = sub i32 %76, %101
+  %109 = add nuw nsw i32 %101, 1
+  %110 = zext i32 %109 to i64
+  %111 = shl i64 %110, %102
+  %112 = sub i64 %98, %111
+  store i64 %112, i64* %16, align 8
+  br label %115
+
+113:                                              ; preds = %97
+  %114 = add nuw nsw i32 %101, 1
+  br label %115
+
+115:                                              ; preds = %113, %107
+  %116 = phi i32 [ %108, %107 ], [ %114, %113 ]
+  %117 = tail call i32 @llvm.ctlz.i32(i32 %116, i1 true) #4, !range !2
+  %118 = xor i32 %117, 24
+  %119 = shl i32 %116, %118
+  %120 = sub nsw i32 %99, %118
+  store i32 %120, i32* %13, align 4
+  %121 = add i32 %119, -1
+  store i32 %121, i32* %12, align 8
+  br label %167
+
+122:                                              ; preds = %69
+  %123 = load i8, i8* %18, align 2
+  %124 = zext i8 %123 to i32
+  %125 = icmp slt i32 %75, 0
+  br i1 %125, label %126, label %142
+
+126:                                              ; preds = %122
+  %127 = load i8*, i8** %14, align 8
+  %128 = load i8*, i8** %15, align 8
+  %129 = icmp ult i8* %127, %128
+  br i1 %129, label %130, label %139
+
+130:                                              ; preds = %126
+  %131 = bitcast i8* %127 to i64*
+  %132 = load i64, i64* %131, align 1
+  %133 = getelementptr inbounds i8, i8* %127, i64 7
+  store i8* %133, i8** %14, align 8
+  %134 = tail call i64 @llvm.bswap.i64(i64 %132) #4
+  %135 = lshr i64 %134, 8
+  %136 = shl i64 %70, 56
+  %137 = or i64 %135, %136
+  store i64 %137, i64* %16, align 8
+  %138 = add nsw i32 %75, 56
+  store i32 %138, i32* %13, align 4
+  br label %142
+
+139:                                              ; preds = %126
+  tail call void @VP8LoadFinalBytes(%struct.VP8BitReader* %0) #4
+  %140 = load i32, i32* %13, align 4
+  %141 = load i64, i64* %16, align 8
+  br label %142
+
+142:                                              ; preds = %139, %130, %122
+  %143 = phi i64 [ %141, %139 ], [ %137, %130 ], [ %70, %122 ]
+  %144 = phi i32 [ %140, %139 ], [ %138, %130 ], [ %75, %122 ]
+  %145 = mul i32 %76, %124
+  %146 = lshr i32 %145, 8
+  %147 = zext i32 %144 to i64
+  %148 = lshr i64 %143, %147
+  %149 = trunc i64 %148 to i32
+  %150 = icmp ult i32 %146, %149
+  br i1 %150, label %151, label %157
+
+151:                                              ; preds = %142
+  %152 = sub i32 %76, %146
+  %153 = add nuw nsw i32 %146, 1
+  %154 = zext i32 %153 to i64
+  %155 = shl i64 %154, %147
+  %156 = sub i64 %143, %155
+  store i64 %156, i64* %16, align 8
+  br label %159
+
+157:                                              ; preds = %142
+  %158 = add nuw nsw i32 %146, 1
+  br label %159
+
+159:                                              ; preds = %157, %151
+  %160 = phi i32 [ %152, %151 ], [ %158, %157 ]
+  %161 = tail call i32 @llvm.ctlz.i32(i32 %160, i1 true) #4, !range !2
+  %162 = xor i32 %161, 24
+  %163 = shl i32 %160, %162
+  %164 = sub nsw i32 %144, %162
+  store i32 %164, i32* %13, align 4
+  %165 = add i32 %163, -1
+  store i32 %165, i32* %12, align 8
+  %166 = select i1 %150, i8 3, i8 2
+  br label %167
+
+167:                                              ; preds = %21, %115, %159
+  %168 = phi i8 [ %106, %115 ], [ %166, %159 ], [ 0, %21 ]
+  %169 = getelementptr inbounds %struct.VP8MBData, %struct.VP8MBData* %27, i64 %22, i32 8
+  store i8 %168, i8* %169, align 2
+  %170 = load i32, i32* %19, align 8
+  %171 = icmp eq i32 %170, 0
+  br i1 %171, label %220, label %172
+
+172:                                              ; preds = %167
+  %173 = load i8, i8* %20, align 4
+  %174 = zext i8 %173 to i32
+  %175 = load i32, i32* %12, align 8
+  %176 = load i32, i32* %13, align 4
+  %177 = icmp slt i32 %176, 0
+  br i1 %177, label %178, label %194
+
+178:                                              ; preds = %172
+  %179 = load i8*, i8** %14, align 8
+  %180 = load i8*, i8** %15, align 8
+  %181 = icmp ult i8* %179, %180
+  br i1 %181, label %182, label %192
+
+182:                                              ; preds = %178
+  %183 = bitcast i8* %179 to i64*
+  %184 = load i64, i64* %183, align 1
+  %185 = getelementptr inbounds i8, i8* %179, i64 7
+  store i8* %185, i8** %14, align 8
+  %186 = tail call i64 @llvm.bswap.i64(i64 %184) #4
+  %187 = lshr i64 %186, 8
+  %188 = load i64, i64* %16, align 8
+  %189 = shl i64 %188, 56
+  %190 = or i64 %189, %187
+  store i64 %190, i64* %16, align 8
+  %191 = add nsw i32 %176, 56
+  store i32 %191, i32* %13, align 4
+  br label %194
+
+192:                                              ; preds = %178
+  tail call void @VP8LoadFinalBytes(%struct.VP8BitReader* %0) #4
+  %193 = load i32, i32* %13, align 4
+  br label %194
+
+194:                                              ; preds = %192, %182, %172
+  %195 = phi i32 [ %193, %192 ], [ %191, %182 ], [ %176, %172 ]
+  %196 = mul i32 %175, %174
+  %197 = lshr i32 %196, 8
+  %198 = load i64, i64* %16, align 8
+  %199 = zext i32 %195 to i64
+  %200 = lshr i64 %198, %199
+  %201 = trunc i64 %200 to i32
+  %202 = icmp ult i32 %197, %201
+  br i1 %202, label %203, label %209
+
+203:                                              ; preds = %194
+  %204 = sub i32 %175, %197
+  %205 = add nuw nsw i32 %197, 1
+  %206 = zext i32 %205 to i64
+  %207 = shl i64 %206, %199
+  %208 = sub i64 %198, %207
+  store i64 %208, i64* %16, align 8
+  br label %211
+
+209:                                              ; preds = %194
+  %210 = add nuw nsw i32 %197, 1
+  br label %211
+
+211:                                              ; preds = %209, %203
+  %212 = phi i32 [ %204, %203 ], [ %210, %209 ]
+  %213 = tail call i32 @llvm.ctlz.i32(i32 %212, i1 true) #4, !range !2
+  %214 = xor i32 %213, 24
+  %215 = shl i32 %212, %214
+  %216 = sub nsw i32 %195, %214
+  store i32 %216, i32* %13, align 4
+  %217 = add i32 %215, -1
+  store i32 %217, i32* %12, align 8
+  %218 = zext i1 %202 to i8
+  %219 = getelementptr inbounds %struct.VP8MBData, %struct.VP8MBData* %27, i64 %22, i32 7
+  store i8 %218, i8* %219, align 1
+  br label %220
+
+220:                                              ; preds = %211, %167
+  %221 = load i32, i32* %12, align 8
+  %222 = load i32, i32* %13, align 4
+  %223 = icmp slt i32 %222, 0
+  br i1 %223, label %224, label %240
+
+224:                                              ; preds = %220
+  %225 = load i8*, i8** %14, align 8
+  %226 = load i8*, i8** %15, align 8
+  %227 = icmp ult i8* %225, %226
+  br i1 %227, label %228, label %238
+
+228:                                              ; preds = %224
+  %229 = bitcast i8* %225 to i64*
+  %230 = load i64, i64* %229, align 1
+  %231 = getelementptr inbounds i8, i8* %225, i64 7
+  store i8* %231, i8** %14, align 8
+  %232 = tail call i64 @llvm.bswap.i64(i64 %230) #4
+  %233 = lshr i64 %232, 8
+  %234 = load i64, i64* %16, align 8
+  %235 = shl i64 %234, 56
+  %236 = or i64 %235, %233
+  store i64 %236, i64* %16, align 8
+  %237 = add nsw i32 %222, 56
+  store i32 %237, i32* %13, align 4
+  br label %240
+
+238:                                              ; preds = %224
+  tail call void @VP8LoadFinalBytes(%struct.VP8BitReader* %0) #4
+  %239 = load i32, i32* %13, align 4
+  br label %240
+
+240:                                              ; preds = %238, %228, %220
+  %241 = phi i32 [ %239, %238 ], [ %237, %228 ], [ %222, %220 ]
+  %242 = mul i32 %221, 145
+  %243 = lshr i32 %242, 8
+  %244 = load i64, i64* %16, align 8
+  %245 = zext i32 %241 to i64
+  %246 = lshr i64 %244, %245
+  %247 = trunc i64 %246 to i32
+  %248 = icmp ult i32 %243, %247
+  br i1 %248, label %249, label %255
+
+249:                                              ; preds = %240
+  %250 = sub i32 %221, %243
+  %251 = add nuw nsw i32 %243, 1
+  %252 = zext i32 %251 to i64
+  %253 = shl i64 %252, %245
+  %254 = sub i64 %244, %253
+  store i64 %254, i64* %16, align 8
+  br label %257
+
+255:                                              ; preds = %240
+  %256 = add nuw nsw i32 %243, 1
+  br label %257
+
+257:                                              ; preds = %255, %249
+  %258 = phi i32 [ %250, %249 ], [ %256, %255 ]
+  %259 = tail call i32 @llvm.ctlz.i32(i32 %258, i1 true) #4, !range !2
+  %260 = xor i32 %259, 24
+  %261 = shl i32 %258, %260
+  %262 = sub nsw i32 %241, %260
+  store i32 %262, i32* %13, align 4
+  %263 = add i32 %261, -1
+  store i32 %263, i32* %12, align 8
+  %264 = xor i1 %248, true
+  %265 = zext i1 %264 to i8
+  %266 = getelementptr inbounds %struct.VP8MBData, %struct.VP8MBData* %27, i64 %22, i32 1
+  store i8 %265, i8* %266, align 4
+  br i1 %248, label %267, label %400
+
+267:                                              ; preds = %257
+  %268 = load i32, i32* %12, align 8
+  %269 = load i32, i32* %13, align 4
+  %270 = icmp slt i32 %269, 0
+  br i1 %270, label %271, label %287
+
+271:                                              ; preds = %267
+  %272 = load i8*, i8** %14, align 8
+  %273 = load i8*, i8** %15, align 8
+  %274 = icmp ult i8* %272, %273
+  br i1 %274, label %275, label %285
+
+275:                                              ; preds = %271
+  %276 = bitcast i8* %272 to i64*
+  %277 = load i64, i64* %276, align 1
+  %278 = getelementptr inbounds i8, i8* %272, i64 7
+  store i8* %278, i8** %14, align 8
+  %279 = tail call i64 @llvm.bswap.i64(i64 %277) #4
+  %280 = lshr i64 %279, 8
+  %281 = load i64, i64* %16, align 8
+  %282 = shl i64 %281, 56
+  %283 = or i64 %282, %280
+  store i64 %283, i64* %16, align 8
+  %284 = add nsw i32 %269, 56
+  store i32 %284, i32* %13, align 4
+  br label %287
+
+285:                                              ; preds = %271
+  tail call void @VP8LoadFinalBytes(%struct.VP8BitReader* %0) #4
+  %286 = load i32, i32* %13, align 4
+  br label %287
+
+287:                                              ; preds = %285, %275, %267
+  %288 = phi i32 [ %286, %285 ], [ %284, %275 ], [ %269, %267 ]
+  %289 = mul i32 %268, 156
+  %290 = lshr i32 %289, 8
+  %291 = load i64, i64* %16, align 8
+  %292 = zext i32 %288 to i64
+  %293 = lshr i64 %291, %292
+  %294 = trunc i64 %293 to i32
+  %295 = icmp ult i32 %290, %294
+  br i1 %295, label %296, label %302
+
+296:                                              ; preds = %287
+  %297 = sub i32 %268, %290
+  %298 = add nuw nsw i32 %290, 1
+  %299 = zext i32 %298 to i64
+  %300 = shl i64 %299, %292
+  %301 = sub i64 %291, %300
+  store i64 %301, i64* %16, align 8
+  br label %304
+
+302:                                              ; preds = %287
+  %303 = add nuw nsw i32 %290, 1
+  br label %304
+
+304:                                              ; preds = %302, %296
+  %305 = phi i64 [ %301, %296 ], [ %291, %302 ]
+  %306 = phi i32 [ %297, %296 ], [ %303, %302 ]
+  %307 = tail call i32 @llvm.ctlz.i32(i32 %306, i1 true) #4, !range !2
+  %308 = xor i32 %307, 24
+  %309 = shl i32 %306, %308
+  %310 = sub nsw i32 %288, %308
+  store i32 %310, i32* %13, align 4
+  %311 = add i32 %309, -1
+  store i32 %311, i32* %12, align 8
+  %312 = icmp slt i32 %310, 0
+  br i1 %295, label %313, label %355
+
+313:                                              ; preds = %304
+  br i1 %312, label %314, label %330
+
+314:                                              ; preds = %313
+  %315 = load i8*, i8** %14, align 8
+  %316 = load i8*, i8** %15, align 8
+  %317 = icmp ult i8* %315, %316
+  br i1 %317, label %318, label %327
+
+318:                                              ; preds = %314
+  %319 = bitcast i8* %315 to i64*
+  %320 = load i64, i64* %319, align 1
+  %321 = getelementptr inbounds i8, i8* %315, i64 7
+  store i8* %321, i8** %14, align 8
+  %322 = tail call i64 @llvm.bswap.i64(i64 %320) #4
+  %323 = lshr i64 %322, 8
+  %324 = shl i64 %305, 56
+  %325 = or i64 %323, %324
+  store i64 %325, i64* %16, align 8
+  %326 = add nsw i32 %310, 56
+  store i32 %326, i32* %13, align 4
+  br label %330
+
+327:                                              ; preds = %314
+  tail call void @VP8LoadFinalBytes(%struct.VP8BitReader* %0) #4
+  %328 = load i32, i32* %13, align 4
+  %329 = load i64, i64* %16, align 8
+  br label %330
+
+330:                                              ; preds = %327, %318, %313
+  %331 = phi i64 [ %329, %327 ], [ %325, %318 ], [ %305, %313 ]
+  %332 = phi i32 [ %328, %327 ], [ %326, %318 ], [ %310, %313 ]
+  %333 = lshr i32 %311, 1
+  %334 = and i32 %333, 16777215
+  %335 = zext i32 %332 to i64
+  %336 = lshr i64 %331, %335
+  %337 = trunc i64 %336 to i32
+  %338 = icmp ult i32 %334, %337
+  br i1 %338, label %339, label %345
+
+339:                                              ; preds = %330
+  %340 = sub i32 %311, %334
+  %341 = add nuw nsw i32 %334, 1
+  %342 = zext i32 %341 to i64
+  %343 = shl i64 %342, %335
+  %344 = sub i64 %331, %343
+  store i64 %344, i64* %16, align 8
+  br label %347
+
+345:                                              ; preds = %330
+  %346 = add nuw nsw i32 %334, 1
+  br label %347
+
+347:                                              ; preds = %345, %339
+  %348 = phi i32 [ %340, %339 ], [ %346, %345 ]
+  %349 = tail call i32 @llvm.ctlz.i32(i32 %348, i1 true) #4, !range !2
+  %350 = xor i32 %349, 24
+  %351 = shl i32 %348, %350
+  %352 = sub nsw i32 %332, %350
+  store i32 %352, i32* %13, align 4
+  %353 = add i32 %351, -1
+  store i32 %353, i32* %12, align 8
+  %354 = select i1 %338, i8 1, i8 3
+  br label %397
+
+355:                                              ; preds = %304
+  br i1 %312, label %356, label %372
+
+356:                                              ; preds = %355
+  %357 = load i8*, i8** %14, align 8
+  %358 = load i8*, i8** %15, align 8
+  %359 = icmp ult i8* %357, %358
+  br i1 %359, label %360, label %369
+
+360:                                              ; preds = %356
+  %361 = bitcast i8* %357 to i64*
+  %362 = load i64, i64* %361, align 1
+  %363 = getelementptr inbounds i8, i8* %357, i64 7
+  store i8* %363, i8** %14, align 8
+  %364 = tail call i64 @llvm.bswap.i64(i64 %362) #4
+  %365 = lshr i64 %364, 8
+  %366 = shl i64 %305, 56
+  %367 = or i64 %365, %366
+  store i64 %367, i64* %16, align 8
+  %368 = add nsw i32 %310, 56
+  store i32 %368, i32* %13, align 4
+  br label %372
+
+369:                                              ; preds = %356
+  tail call void @VP8LoadFinalBytes(%struct.VP8BitReader* %0) #4
+  %370 = load i32, i32* %13, align 4
+  %371 = load i64, i64* %16, align 8
+  br label %372
+
+372:                                              ; preds = %369, %360, %355
+  %373 = phi i64 [ %371, %369 ], [ %367, %360 ], [ %305, %355 ]
+  %374 = phi i32 [ %370, %369 ], [ %368, %360 ], [ %310, %355 ]
+  %375 = mul i32 %311, 163
+  %376 = lshr i32 %375, 8
+  %377 = zext i32 %374 to i64
+  %378 = lshr i64 %373, %377
+  %379 = trunc i64 %378 to i32
+  %380 = icmp ult i32 %376, %379
+  br i1 %380, label %381, label %387
+
+381:                                              ; preds = %372
+  %382 = sub i32 %311, %376
+  %383 = add nuw nsw i32 %376, 1
+  %384 = zext i32 %383 to i64
+  %385 = shl i64 %384, %377
+  %386 = sub i64 %373, %385
+  store i64 %386, i64* %16, align 8
+  br label %389
+
+387:                                              ; preds = %372
+  %388 = add nuw nsw i32 %376, 1
+  br label %389
+
+389:                                              ; preds = %387, %381
+  %390 = phi i32 [ %382, %381 ], [ %388, %387 ]
+  %391 = tail call i32 @llvm.ctlz.i32(i32 %390, i1 true) #4, !range !2
+  %392 = xor i32 %391, 24
+  %393 = shl i32 %390, %392
+  %394 = sub nsw i32 %374, %392
+  store i32 %394, i32* %13, align 4
+  %395 = add i32 %393, -1
+  store i32 %395, i32* %12, align 8
+  %396 = select i1 %380, i8 2, i8 0
+  br label %397
+
+397:                                              ; preds = %389, %347
+  %398 = phi i8 [ %354, %347 ], [ %396, %389 ]
+  %399 = getelementptr inbounds %struct.VP8MBData, %struct.VP8MBData* %27, i64 %22, i32 2, i64 0
+  store i8 %398, i8* %399, align 1
+  tail call void @llvm.memset.p0i8.i64(i8* align 1 %26, i8 %398, i64 4, i1 false) #4
+  tail call void @llvm.memset.p0i8.i64(i8* align 1 %8, i8 %398, i64 4, i1 false) #4
+  br label %547
+
+400:                                              ; preds = %257
+  %401 = getelementptr inbounds %struct.VP8MBData, %struct.VP8MBData* %27, i64 %22, i32 2, i64 0
+  %402 = bitcast i8* %26 to i32*
+  br label %403
+
+403:                                              ; preds = %540, %400
+  %404 = phi i64 [ 0, %400 ], [ %545, %540 ]
+  %405 = phi i8* [ %401, %400 ], [ %544, %540 ]
+  %406 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 28, i64 %404
+  %407 = load i8, i8* %406, align 1
+  %408 = zext i8 %407 to i32
+  br label %409
+
+409:                                              ; preds = %534, %403
+  %410 = phi i64 [ 0, %403 ], [ %538, %534 ]
+  %411 = phi i32 [ %408, %403 ], [ %536, %534 ]
+  %412 = getelementptr inbounds i8, i8* %26, i64 %410
+  %413 = load i8, i8* %412, align 1
+  %414 = zext i8 %413 to i64
+  %415 = sext i32 %411 to i64
+  %416 = getelementptr inbounds [10 x [10 x [9 x i8]]], [10 x [10 x [9 x i8]]]* @kBModesProba, i64 0, i64 %414, i64 %415, i64 0
+  %417 = load i8, i8* %416, align 1
+  %418 = zext i8 %417 to i32
+  %419 = load i32, i32* %12, align 8
+  %420 = load i32, i32* %13, align 4
+  %421 = icmp slt i32 %420, 0
+  br i1 %421, label %422, label %438
+
+422:                                              ; preds = %409
+  %423 = load i8*, i8** %14, align 8
+  %424 = load i8*, i8** %15, align 8
+  %425 = icmp ult i8* %423, %424
+  br i1 %425, label %426, label %436
+
+426:                                              ; preds = %422
+  %427 = bitcast i8* %423 to i64*
+  %428 = load i64, i64* %427, align 1
+  %429 = getelementptr inbounds i8, i8* %423, i64 7
+  store i8* %429, i8** %14, align 8
+  %430 = tail call i64 @llvm.bswap.i64(i64 %428) #4
+  %431 = lshr i64 %430, 8
+  %432 = load i64, i64* %16, align 8
+  %433 = shl i64 %432, 56
+  %434 = or i64 %433, %431
+  store i64 %434, i64* %16, align 8
+  %435 = add nsw i32 %420, 56
+  store i32 %435, i32* %13, align 4
+  br label %438
+
+436:                                              ; preds = %422
+  tail call void @VP8LoadFinalBytes(%struct.VP8BitReader* %0) #4
+  %437 = load i32, i32* %13, align 4
+  br label %438
+
+438:                                              ; preds = %436, %426, %409
+  %439 = phi i32 [ %437, %436 ], [ %435, %426 ], [ %420, %409 ]
+  %440 = mul i32 %419, %418
+  %441 = lshr i32 %440, 8
+  %442 = load i64, i64* %16, align 8
+  %443 = zext i32 %439 to i64
+  %444 = lshr i64 %442, %443
+  %445 = trunc i64 %444 to i32
+  %446 = icmp ult i32 %441, %445
+  br i1 %446, label %447, label %453
+
+447:                                              ; preds = %438
+  %448 = sub i32 %419, %441
+  %449 = add nuw nsw i32 %441, 1
+  %450 = zext i32 %449 to i64
+  %451 = shl i64 %450, %443
+  %452 = sub i64 %442, %451
+  store i64 %452, i64* %16, align 8
+  br label %455
+
+453:                                              ; preds = %438
+  %454 = add nuw nsw i32 %441, 1
+  br label %455
+
+455:                                              ; preds = %453, %447
+  %456 = phi i64 [ %452, %447 ], [ %442, %453 ]
+  %457 = phi i32 [ %448, %447 ], [ %454, %453 ]
+  %458 = tail call i32 @llvm.ctlz.i32(i32 %457, i1 true) #4, !range !2
+  %459 = xor i32 %458, 24
+  %460 = shl i32 %457, %459
+  %461 = sub nsw i32 %439, %459
+  store i32 %461, i32* %13, align 4
+  %462 = add i32 %460, -1
+  store i32 %462, i32* %12, align 8
+  %463 = zext i1 %446 to i64
+  %464 = getelementptr inbounds [18 x i8], [18 x i8]* @kYModesIntra4, i64 0, i64 %463
+  %465 = load i8, i8* %464, align 1
+  %466 = sext i8 %465 to i32
+  %467 = lshr i64 41706, %463
+  %468 = and i64 %467, 1
+  %469 = icmp eq i64 %468, 0
+  br i1 %469, label %534, label %470
+
+470:                                              ; preds = %455, %516
+  %471 = phi i64 [ %517, %516 ], [ %456, %455 ]
+  %472 = phi i32 [ %522, %516 ], [ %461, %455 ]
+  %473 = phi i32 [ %523, %516 ], [ %462, %455 ]
+  %474 = phi i32 [ %528, %516 ], [ %466, %455 ]
+  %475 = phi i8 [ %527, %516 ], [ %465, %455 ]
+  %476 = shl nsw i32 %474, 1
+  %477 = sext i8 %475 to i64
+  %478 = getelementptr inbounds [10 x [10 x [9 x i8]]], [10 x [10 x [9 x i8]]]* @kBModesProba, i64 0, i64 %414, i64 %415, i64 %477
+  %479 = load i8, i8* %478, align 1
+  %480 = zext i8 %479 to i32
+  %481 = icmp slt i32 %472, 0
+  br i1 %481, label %482, label %498
+
+482:                                              ; preds = %470
+  %483 = load i8*, i8** %14, align 8
+  %484 = load i8*, i8** %15, align 8
+  %485 = icmp ult i8* %483, %484
+  br i1 %485, label %486, label %495
+
+486:                                              ; preds = %482
+  %487 = bitcast i8* %483 to i64*
+  %488 = load i64, i64* %487, align 1
+  %489 = getelementptr inbounds i8, i8* %483, i64 7
+  store i8* %489, i8** %14, align 8
+  %490 = tail call i64 @llvm.bswap.i64(i64 %488) #4
+  %491 = lshr i64 %490, 8
+  %492 = shl i64 %471, 56
+  %493 = or i64 %491, %492
+  store i64 %493, i64* %16, align 8
+  %494 = add nsw i32 %472, 56
+  store i32 %494, i32* %13, align 4
+  br label %498
+
+495:                                              ; preds = %482
+  tail call void @VP8LoadFinalBytes(%struct.VP8BitReader* %0) #4
+  %496 = load i32, i32* %13, align 4
+  %497 = load i64, i64* %16, align 8
+  br label %498
+
+498:                                              ; preds = %495, %486, %470
+  %499 = phi i64 [ %497, %495 ], [ %493, %486 ], [ %471, %470 ]
+  %500 = phi i32 [ %496, %495 ], [ %494, %486 ], [ %472, %470 ]
+  %501 = mul i32 %473, %480
+  %502 = lshr i32 %501, 8
+  %503 = zext i32 %500 to i64
+  %504 = lshr i64 %499, %503
+  %505 = trunc i64 %504 to i32
+  %506 = icmp ult i32 %502, %505
+  %507 = zext i1 %506 to i32
+  br i1 %506, label %508, label %514
+
+508:                                              ; preds = %498
+  %509 = sub i32 %473, %502
+  %510 = add nuw nsw i32 %502, 1
+  %511 = zext i32 %510 to i64
+  %512 = shl i64 %511, %503
+  %513 = sub i64 %499, %512
+  store i64 %513, i64* %16, align 8
+  br label %516
+
+514:                                              ; preds = %498
+  %515 = add nuw nsw i32 %502, 1
+  br label %516
+
+516:                                              ; preds = %514, %508
+  %517 = phi i64 [ %513, %508 ], [ %499, %514 ]
+  %518 = phi i32 [ %509, %508 ], [ %515, %514 ]
+  %519 = tail call i32 @llvm.ctlz.i32(i32 %518, i1 true) #4, !range !2
+  %520 = xor i32 %519, 24
+  %521 = shl i32 %518, %520
+  %522 = sub nsw i32 %500, %520
+  store i32 %522, i32* %13, align 4
+  %523 = add i32 %521, -1
+  store i32 %523, i32* %12, align 8
+  %524 = or i32 %476, %507
+  %525 = sext i32 %524 to i64
+  %526 = getelementptr inbounds [18 x i8], [18 x i8]* @kYModesIntra4, i64 0, i64 %525
+  %527 = load i8, i8* %526, align 1
+  %528 = sext i8 %527 to i32
+  %529 = lshr i64 41706, %525
+  %530 = and i64 %529, 1
+  %531 = icmp eq i64 %530, 0
+  br i1 %531, label %532, label %470
+
+532:                                              ; preds = %516
+  %533 = sext i8 %527 to i32
+  br label %534
+
+534:                                              ; preds = %532, %455
+  %535 = phi i32 [ %466, %455 ], [ %533, %532 ]
+  %536 = sub nsw i32 0, %535
+  %537 = trunc i32 %536 to i8
+  store i8 %537, i8* %412, align 1
+  %538 = add nuw nsw i64 %410, 1
+  %539 = icmp eq i64 %538, 4
+  br i1 %539, label %540, label %409
+
+540:                                              ; preds = %534
+  %541 = trunc i32 %536 to i8
+  %542 = bitcast i8* %405 to i32*
+  %543 = load i32, i32* %402, align 1
+  store i32 %543, i32* %542, align 1
+  %544 = getelementptr inbounds i8, i8* %405, i64 4
+  store i8 %541, i8* %406, align 1
+  %545 = add nuw nsw i64 %404, 1
+  %546 = icmp eq i64 %545, 4
+  br i1 %546, label %547, label %403
+
+547:                                              ; preds = %540, %397
+  %548 = load i32, i32* %12, align 8
+  %549 = load i32, i32* %13, align 4
+  %550 = icmp slt i32 %549, 0
+  br i1 %550, label %551, label %567
+
+551:                                              ; preds = %547
+  %552 = load i8*, i8** %14, align 8
+  %553 = load i8*, i8** %15, align 8
+  %554 = icmp ult i8* %552, %553
+  br i1 %554, label %555, label %565
+
+555:                                              ; preds = %551
+  %556 = bitcast i8* %552 to i64*
+  %557 = load i64, i64* %556, align 1
+  %558 = getelementptr inbounds i8, i8* %552, i64 7
+  store i8* %558, i8** %14, align 8
+  %559 = tail call i64 @llvm.bswap.i64(i64 %557) #4
+  %560 = lshr i64 %559, 8
+  %561 = load i64, i64* %16, align 8
+  %562 = shl i64 %561, 56
+  %563 = or i64 %562, %560
+  store i64 %563, i64* %16, align 8
+  %564 = add nsw i32 %549, 56
+  store i32 %564, i32* %13, align 4
+  br label %567
+
+565:                                              ; preds = %551
+  tail call void @VP8LoadFinalBytes(%struct.VP8BitReader* %0) #4
+  %566 = load i32, i32* %13, align 4
+  br label %567
+
+567:                                              ; preds = %565, %555, %547
+  %568 = phi i32 [ %566, %565 ], [ %564, %555 ], [ %549, %547 ]
+  %569 = mul i32 %548, 142
+  %570 = lshr i32 %569, 8
+  %571 = load i64, i64* %16, align 8
+  %572 = zext i32 %568 to i64
+  %573 = lshr i64 %571, %572
+  %574 = trunc i64 %573 to i32
+  %575 = icmp ult i32 %570, %574
+  br i1 %575, label %576, label %582
+
+576:                                              ; preds = %567
+  %577 = sub i32 %548, %570
+  %578 = add nuw nsw i32 %570, 1
+  %579 = zext i32 %578 to i64
+  %580 = shl i64 %579, %572
+  %581 = sub i64 %571, %580
+  store i64 %581, i64* %16, align 8
+  br label %584
+
+582:                                              ; preds = %567
+  %583 = add nuw nsw i32 %570, 1
+  br label %584
+
+584:                                              ; preds = %582, %576
+  %585 = phi i64 [ %581, %576 ], [ %571, %582 ]
+  %586 = phi i32 [ %577, %576 ], [ %583, %582 ]
+  %587 = tail call i32 @llvm.ctlz.i32(i32 %586, i1 true) #4, !range !2
+  %588 = xor i32 %587, 24
+  %589 = shl i32 %586, %588
+  %590 = sub nsw i32 %568, %588
+  store i32 %590, i32* %13, align 4
+  %591 = add i32 %589, -1
+  store i32 %591, i32* %12, align 8
+  br i1 %575, label %592, label %678
+
+592:                                              ; preds = %584
+  %593 = icmp slt i32 %590, 0
+  br i1 %593, label %594, label %610
+
+594:                                              ; preds = %592
+  %595 = load i8*, i8** %14, align 8
+  %596 = load i8*, i8** %15, align 8
+  %597 = icmp ult i8* %595, %596
+  br i1 %597, label %598, label %607
+
+598:                                              ; preds = %594
+  %599 = bitcast i8* %595 to i64*
+  %600 = load i64, i64* %599, align 1
+  %601 = getelementptr inbounds i8, i8* %595, i64 7
+  store i8* %601, i8** %14, align 8
+  %602 = tail call i64 @llvm.bswap.i64(i64 %600) #4
+  %603 = lshr i64 %602, 8
+  %604 = shl i64 %585, 56
+  %605 = or i64 %603, %604
+  store i64 %605, i64* %16, align 8
+  %606 = add nsw i32 %590, 56
+  store i32 %606, i32* %13, align 4
+  br label %610
+
+607:                                              ; preds = %594
+  tail call void @VP8LoadFinalBytes(%struct.VP8BitReader* %0) #4
+  %608 = load i32, i32* %13, align 4
+  %609 = load i64, i64* %16, align 8
+  br label %610
+
+610:                                              ; preds = %607, %598, %592
+  %611 = phi i64 [ %609, %607 ], [ %605, %598 ], [ %585, %592 ]
+  %612 = phi i32 [ %608, %607 ], [ %606, %598 ], [ %590, %592 ]
+  %613 = mul i32 %591, 114
+  %614 = lshr i32 %613, 8
+  %615 = zext i32 %612 to i64
+  %616 = lshr i64 %611, %615
+  %617 = trunc i64 %616 to i32
+  %618 = icmp ult i32 %614, %617
+  br i1 %618, label %619, label %625
+
+619:                                              ; preds = %610
+  %620 = sub i32 %591, %614
+  %621 = add nuw nsw i32 %614, 1
+  %622 = zext i32 %621 to i64
+  %623 = shl i64 %622, %615
+  %624 = sub i64 %611, %623
+  store i64 %624, i64* %16, align 8
+  br label %627
+
+625:                                              ; preds = %610
+  %626 = add nuw nsw i32 %614, 1
+  br label %627
+
+627:                                              ; preds = %625, %619
+  %628 = phi i64 [ %624, %619 ], [ %611, %625 ]
+  %629 = phi i32 [ %620, %619 ], [ %626, %625 ]
+  %630 = tail call i32 @llvm.ctlz.i32(i32 %629, i1 true) #4, !range !2
+  %631 = xor i32 %630, 24
+  %632 = shl i32 %629, %631
+  %633 = sub nsw i32 %612, %631
+  store i32 %633, i32* %13, align 4
+  %634 = add i32 %632, -1
+  store i32 %634, i32* %12, align 8
+  br i1 %618, label %635, label %678
+
+635:                                              ; preds = %627
+  %636 = icmp slt i32 %633, 0
+  br i1 %636, label %637, label %653
+
+637:                                              ; preds = %635
+  %638 = load i8*, i8** %14, align 8
+  %639 = load i8*, i8** %15, align 8
+  %640 = icmp ult i8* %638, %639
+  br i1 %640, label %641, label %650
+
+641:                                              ; preds = %637
+  %642 = bitcast i8* %638 to i64*
+  %643 = load i64, i64* %642, align 1
+  %644 = getelementptr inbounds i8, i8* %638, i64 7
+  store i8* %644, i8** %14, align 8
+  %645 = tail call i64 @llvm.bswap.i64(i64 %643) #4
+  %646 = lshr i64 %645, 8
+  %647 = shl i64 %628, 56
+  %648 = or i64 %646, %647
+  store i64 %648, i64* %16, align 8
+  %649 = add nsw i32 %633, 56
+  store i32 %649, i32* %13, align 4
+  br label %653
+
+650:                                              ; preds = %637
+  tail call void @VP8LoadFinalBytes(%struct.VP8BitReader* %0) #4
+  %651 = load i32, i32* %13, align 4
+  %652 = load i64, i64* %16, align 8
+  br label %653
+
+653:                                              ; preds = %650, %641, %635
+  %654 = phi i64 [ %652, %650 ], [ %648, %641 ], [ %628, %635 ]
+  %655 = phi i32 [ %651, %650 ], [ %649, %641 ], [ %633, %635 ]
+  %656 = mul i32 %634, 183
+  %657 = lshr i32 %656, 8
+  %658 = zext i32 %655 to i64
+  %659 = lshr i64 %654, %658
+  %660 = trunc i64 %659 to i32
+  %661 = icmp ult i32 %657, %660
+  br i1 %661, label %662, label %668
+
+662:                                              ; preds = %653
+  %663 = sub i32 %634, %657
+  %664 = add nuw nsw i32 %657, 1
+  %665 = zext i32 %664 to i64
+  %666 = shl i64 %665, %658
+  %667 = sub i64 %654, %666
+  store i64 %667, i64* %16, align 8
+  br label %670
+
+668:                                              ; preds = %653
+  %669 = add nuw nsw i32 %657, 1
+  br label %670
+
+670:                                              ; preds = %668, %662
+  %671 = phi i32 [ %663, %662 ], [ %669, %668 ]
+  %672 = tail call i32 @llvm.ctlz.i32(i32 %671, i1 true) #4, !range !2
+  %673 = xor i32 %672, 24
+  %674 = shl i32 %671, %673
+  %675 = sub nsw i32 %655, %673
+  store i32 %675, i32* %13, align 4
+  %676 = add i32 %674, -1
+  store i32 %676, i32* %12, align 8
+  %677 = select i1 %661, i8 1, i8 3
+  br label %678
+
+678:                                              ; preds = %584, %627, %670
+  %679 = phi i8 [ 0, %584 ], [ %677, %670 ], [ 2, %627 ]
+  %680 = getelementptr inbounds %struct.VP8MBData, %struct.VP8MBData* %27, i64 %22, i32 3
+  store i8 %679, i8* %680, align 1
+  %681 = add nuw nsw i64 %22, 1
+  %682 = load i32, i32* %3, align 8
+  %683 = sext i32 %682 to i64
+  %684 = icmp slt i64 %681, %683
+  br i1 %684, label %21, label %685
+
+685:                                              ; preds = %678, %2
+  %686 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 3, i32 6
+  %687 = load i32, i32* %686, align 8
+  %688 = icmp eq i32 %687, 0
+  %689 = zext i1 %688 to i32
+  ret i32 %689
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @VP8ParseProba(%struct.VP8BitReader*, %struct.VP8Decoder*) local_unnamed_addr #0 {
+  %3 = getelementptr inbounds %struct.VP8BitReader, %struct.VP8BitReader* %0, i64 0, i32 1
+  %4 = getelementptr inbounds %struct.VP8BitReader, %struct.VP8BitReader* %0, i64 0, i32 2
+  %5 = getelementptr inbounds %struct.VP8BitReader, %struct.VP8BitReader* %0, i64 0, i32 3
+  %6 = getelementptr inbounds %struct.VP8BitReader, %struct.VP8BitReader* %0, i64 0, i32 5
+  %7 = getelementptr inbounds %struct.VP8BitReader, %struct.VP8BitReader* %0, i64 0, i32 0
+  br label %8
+
+8:                                                ; preds = %10, %2
+  %9 = phi i64 [ 0, %2 ], [ %36, %10 ]
+  br label %38
+
+10:                                               ; preds = %105
+  %11 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 1, i64 %9, i64 0
+  %12 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 2, i64 %9, i64 0
+  store %struct.VP8BandProbas* %11, %struct.VP8BandProbas** %12, align 8
+  %13 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 1, i64 %9, i64 1
+  %14 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 2, i64 %9, i64 1
+  store %struct.VP8BandProbas* %13, %struct.VP8BandProbas** %14, align 8
+  %15 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 1, i64 %9, i64 2
+  %16 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 2, i64 %9, i64 2
+  store %struct.VP8BandProbas* %15, %struct.VP8BandProbas** %16, align 8
+  %17 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 1, i64 %9, i64 3
+  %18 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 2, i64 %9, i64 3
+  store %struct.VP8BandProbas* %17, %struct.VP8BandProbas** %18, align 8
+  %19 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 1, i64 %9, i64 6
+  %20 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 2, i64 %9, i64 4
+  store %struct.VP8BandProbas* %19, %struct.VP8BandProbas** %20, align 8
+  %21 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 1, i64 %9, i64 4
+  %22 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 2, i64 %9, i64 5
+  store %struct.VP8BandProbas* %21, %struct.VP8BandProbas** %22, align 8
+  %23 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 1, i64 %9, i64 5
+  %24 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 2, i64 %9, i64 6
+  store %struct.VP8BandProbas* %23, %struct.VP8BandProbas** %24, align 8
+  %25 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 2, i64 %9, i64 7
+  store %struct.VP8BandProbas* %19, %struct.VP8BandProbas** %25, align 8
+  %26 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 2, i64 %9, i64 8
+  store %struct.VP8BandProbas* %19, %struct.VP8BandProbas** %26, align 8
+  %27 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 2, i64 %9, i64 9
+  store %struct.VP8BandProbas* %19, %struct.VP8BandProbas** %27, align 8
+  %28 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 2, i64 %9, i64 10
+  store %struct.VP8BandProbas* %19, %struct.VP8BandProbas** %28, align 8
+  %29 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 2, i64 %9, i64 11
+  store %struct.VP8BandProbas* %19, %struct.VP8BandProbas** %29, align 8
+  %30 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 2, i64 %9, i64 12
+  store %struct.VP8BandProbas* %19, %struct.VP8BandProbas** %30, align 8
+  %31 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 2, i64 %9, i64 13
+  store %struct.VP8BandProbas* %19, %struct.VP8BandProbas** %31, align 8
+  %32 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 2, i64 %9, i64 14
+  store %struct.VP8BandProbas* %19, %struct.VP8BandProbas** %32, align 8
+  %33 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 1, i64 %9, i64 7
+  %34 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 2, i64 %9, i64 15
+  store %struct.VP8BandProbas* %33, %struct.VP8BandProbas** %34, align 8
+  %35 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 2, i64 %9, i64 16
+  store %struct.VP8BandProbas* %11, %struct.VP8BandProbas** %35, align 8
+  %36 = add nuw nsw i64 %9, 1
+  %37 = icmp eq i64 %36, 4
+  br i1 %37, label %108, label %8
+
+38:                                               ; preds = %105, %8
+  %39 = phi i64 [ 0, %8 ], [ %106, %105 ]
+  br label %40
+
+40:                                               ; preds = %102, %38
+  %41 = phi i64 [ 0, %38 ], [ %103, %102 ]
+  br label %42
+
+42:                                               ; preds = %96, %40
+  %43 = phi i64 [ 0, %40 ], [ %100, %96 ]
+  %44 = getelementptr inbounds [4 x [8 x [3 x [11 x i8]]]], [4 x [8 x [3 x [11 x i8]]]]* @CoeffsUpdateProba, i64 0, i64 %9, i64 %39, i64 %41, i64 %43
+  %45 = load i8, i8* %44, align 1
+  %46 = zext i8 %45 to i32
+  %47 = load i32, i32* %3, align 8
+  %48 = load i32, i32* %4, align 4
+  %49 = icmp slt i32 %48, 0
+  br i1 %49, label %50, label %66
+
+50:                                               ; preds = %42
+  %51 = load i8*, i8** %5, align 8
+  %52 = load i8*, i8** %6, align 8
+  %53 = icmp ult i8* %51, %52
+  br i1 %53, label %54, label %64
+
+54:                                               ; preds = %50
+  %55 = bitcast i8* %51 to i64*
+  %56 = load i64, i64* %55, align 1
+  %57 = getelementptr inbounds i8, i8* %51, i64 7
+  store i8* %57, i8** %5, align 8
+  %58 = tail call i64 @llvm.bswap.i64(i64 %56) #4
+  %59 = lshr i64 %58, 8
+  %60 = load i64, i64* %7, align 8
+  %61 = shl i64 %60, 56
+  %62 = or i64 %61, %59
+  store i64 %62, i64* %7, align 8
+  %63 = add nsw i32 %48, 56
+  store i32 %63, i32* %4, align 4
+  br label %66
+
+64:                                               ; preds = %50
+  tail call void @VP8LoadFinalBytes(%struct.VP8BitReader* %0) #4
+  %65 = load i32, i32* %4, align 4
+  br label %66
+
+66:                                               ; preds = %64, %54, %42
+  %67 = phi i32 [ %65, %64 ], [ %63, %54 ], [ %48, %42 ]
+  %68 = mul i32 %47, %46
+  %69 = lshr i32 %68, 8
+  %70 = load i64, i64* %7, align 8
+  %71 = zext i32 %67 to i64
+  %72 = lshr i64 %70, %71
+  %73 = trunc i64 %72 to i32
+  %74 = icmp ult i32 %69, %73
+  br i1 %74, label %75, label %81
+
+75:                                               ; preds = %66
+  %76 = sub i32 %47, %69
+  %77 = add nuw nsw i32 %69, 1
+  %78 = zext i32 %77 to i64
+  %79 = shl i64 %78, %71
+  %80 = sub i64 %70, %79
+  store i64 %80, i64* %7, align 8
+  br label %83
+
+81:                                               ; preds = %66
+  %82 = add nuw nsw i32 %69, 1
+  br label %83
+
+83:                                               ; preds = %75, %81
+  %84 = phi i32 [ %76, %75 ], [ %82, %81 ]
+  %85 = tail call i32 @llvm.ctlz.i32(i32 %84, i1 true) #4, !range !2
+  %86 = xor i32 %85, 24
+  %87 = shl i32 %84, %86
+  %88 = sub nsw i32 %67, %86
+  store i32 %88, i32* %4, align 4
+  %89 = add i32 %87, -1
+  store i32 %89, i32* %3, align 8
+  br i1 %74, label %90, label %92
+
+90:                                               ; preds = %83
+  %91 = tail call i32 @VP8GetValue(%struct.VP8BitReader* %0, i32 8) #4
+  br label %96
+
+92:                                               ; preds = %83
+  %93 = getelementptr inbounds [4 x [8 x [3 x [11 x i8]]]], [4 x [8 x [3 x [11 x i8]]]]* @CoeffsProba0, i64 0, i64 %9, i64 %39, i64 %41, i64 %43
+  %94 = load i8, i8* %93, align 1
+  %95 = zext i8 %94 to i32
+  br label %96
+
+96:                                               ; preds = %92, %90
+  %97 = phi i32 [ %91, %90 ], [ %95, %92 ]
+  %98 = trunc i32 %97 to i8
+  %99 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 24, i32 1, i64 %9, i64 %39, i32 0, i64 %41, i64 %43
+  store i8 %98, i8* %99, align 1
+  %100 = add nuw nsw i64 %43, 1
+  %101 = icmp eq i64 %100, 11
+  br i1 %101, label %102, label %42
+
+102:                                              ; preds = %96
+  %103 = add nuw nsw i64 %41, 1
+  %104 = icmp eq i64 %103, 3
+  br i1 %104, label %105, label %40
+
+105:                                              ; preds = %102
+  %106 = add nuw nsw i64 %39, 1
+  %107 = icmp eq i64 %106, 8
+  br i1 %107, label %10, label %38
+
+108:                                              ; preds = %10
+  %109 = tail call i32 @VP8GetValue(%struct.VP8BitReader* %0, i32 1) #4
+  %110 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 25
+  store i32 %109, i32* %110, align 8
+  %111 = icmp eq i32 %109, 0
+  br i1 %111, label %116, label %112
+
+112:                                              ; preds = %108
+  %113 = tail call i32 @VP8GetValue(%struct.VP8BitReader* %0, i32 8) #4
+  %114 = trunc i32 %113 to i8
+  %115 = getelementptr inbounds %struct.VP8Decoder, %struct.VP8Decoder* %1, i64 0, i32 26
+  store i8 %114, i8* %115, align 4
+  br label %116
+
+116:                                              ; preds = %108, %112
+  ret void
+}
+
+declare i32 @VP8GetValue(%struct.VP8BitReader*, i32) local_unnamed_addr #2
+
+declare void @VP8LoadFinalBytes(%struct.VP8BitReader*) local_unnamed_addr #2
+
+; Function Attrs: nounwind readnone speculatable
+declare i64 @llvm.bswap.i64(i64) #3
+
+; Function Attrs: nounwind readnone speculatable
+declare i32 @llvm.ctlz.i32(i32, i1 immarg) #3
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { argmemonly nounwind }
+attributes #2 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nounwind readnone speculatable }
+attributes #4 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{i32 0, i32 33}

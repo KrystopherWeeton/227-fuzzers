@@ -1,0 +1,1455 @@
+; ModuleID = '../../base/allocator/partition_allocator/partition_page.cc'
+source_filename = "../../base/allocator/partition_allocator/partition_page.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"struct.base::internal::SlotSpanMetadata" = type <{ %"class.base::internal::PartitionFreelistEntry"*, %"struct.base::internal::SlotSpanMetadata"*, %"struct.base::internal::PartitionBucket"*, i16, i16, i8, i8 }>
+%"class.base::internal::PartitionFreelistEntry" = type { %"struct.base::internal::EncodedPartitionFreelistEntry"*, i64 }
+%"struct.base::internal::EncodedPartitionFreelistEntry" = type { [8 x i8], [8 x i8] }
+%"struct.base::internal::PartitionBucket" = type { %"struct.base::internal::SlotSpanMetadata"*, %"struct.base::internal::SlotSpanMetadata"*, %"struct.base::internal::SlotSpanMetadata"*, i32, i32, i64 }
+%"struct.base::internal::SlotSpanMetadata.6" = type <{ %"class.base::internal::PartitionFreelistEntry"*, %"struct.base::internal::SlotSpanMetadata.6"*, %"struct.base::internal::PartitionBucket.7"*, i16, i16, i8, i8 }>
+%"struct.base::internal::PartitionBucket.7" = type { %"struct.base::internal::SlotSpanMetadata.6"*, %"struct.base::internal::SlotSpanMetadata.6"*, %"struct.base::internal::SlotSpanMetadata.6"*, i32, i32, i64 }
+%"struct.base::internal::PartitionSuperPageExtentEntry" = type { %"struct.base::PartitionRoot"*, i8*, i8*, %"struct.base::internal::PartitionSuperPageExtentEntry"* }
+%"struct.base::PartitionRoot" = type <{ i8, i8, i8, i8, i8, i8, i8, i8, %"class.base::internal::MaybeSpinLock", [4 x i8], [128 x %"struct.base::internal::PartitionBucket"], %"struct.base::internal::PartitionBucket", i8, [7 x i8], %"struct.std::__1::atomic.1", %"struct.std::__1::atomic.1", %"struct.std::__1::atomic.1", i8*, i8*, i8*, %"struct.base::internal::PartitionSuperPageExtentEntry"*, %"struct.base::internal::PartitionSuperPageExtentEntry"*, %"struct.base::internal::PartitionDirectMapExtent"*, [16 x %"struct.base::internal::SlotSpanMetadata"*], i16, [6 x i8], i64, %"struct.std::__1::atomic", [4 x i8] }>
+%"class.base::internal::MaybeSpinLock" = type { %"class.base::internal::SpinningMutex" }
+%"class.base::internal::SpinningMutex" = type { %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic.1" = type { %"struct.std::__1::__atomic_base.2" }
+%"struct.std::__1::__atomic_base.2" = type { %"struct.std::__1::__atomic_base.3" }
+%"struct.std::__1::__atomic_base.3" = type { %"struct.std::__1::__cxx_atomic_impl.4" }
+%"struct.std::__1::__cxx_atomic_impl.4" = type { %"struct.std::__1::__cxx_atomic_base_impl.5" }
+%"struct.std::__1::__cxx_atomic_base_impl.5" = type { i64 }
+%"struct.base::internal::PartitionDirectMapExtent" = type { %"struct.base::internal::PartitionDirectMapExtent"*, %"struct.base::internal::PartitionDirectMapExtent"*, %"struct.base::internal::PartitionBucket"*, i64 }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.0" }
+%"struct.std::__1::__atomic_base.0" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"struct.base::internal::PartitionPage" = type { %union.anon, i8, i8 }
+%union.anon = type <{ %"struct.base::internal::SubsequentPageMetadata", [22 x i8] }>
+%"struct.base::internal::SubsequentPageMetadata" = type { i64 }
+%"struct.base::internal::PartitionSuperPageExtentEntry.10" = type { %"struct.base::PartitionRoot.8"*, i8*, i8*, %"struct.base::internal::PartitionSuperPageExtentEntry.10"* }
+%"struct.base::PartitionRoot.8" = type <{ i8, i8, i8, i8, i8, i8, i8, %"class.base::internal::MaybeSpinLock.9", [5 x i8], [128 x %"struct.base::internal::PartitionBucket.7"], %"struct.base::internal::PartitionBucket.7", i8, [7 x i8], %"struct.std::__1::atomic.1", %"struct.std::__1::atomic.1", %"struct.std::__1::atomic.1", i8*, i8*, i8*, %"struct.base::internal::PartitionSuperPageExtentEntry.10"*, %"struct.base::internal::PartitionSuperPageExtentEntry.10"*, %"struct.base::internal::PartitionDirectMapExtent.11"*, [16 x %"struct.base::internal::SlotSpanMetadata.6"*], i16, [6 x i8], i64, %"struct.std::__1::atomic", [4 x i8] }>
+%"class.base::internal::MaybeSpinLock.9" = type { [4 x i8] }
+%"struct.base::internal::PartitionDirectMapExtent.11" = type { %"struct.base::internal::PartitionDirectMapExtent.11"*, %"struct.base::internal::PartitionDirectMapExtent.11"*, %"struct.base::internal::PartitionBucket.7"*, i64 }
+%"struct.base::internal::PartitionPage.13" = type { %union.anon.14, i8, i8 }
+%union.anon.14 = type <{ %"struct.base::internal::SubsequentPageMetadata", [22 x i8] }>
+%"struct.base::internal::DeferredUnmap" = type { i8*, i64 }
+%"class.base::internal::AddressPoolManager" = type { [2 x %"class.base::internal::AddressPoolManager::Pool"] }
+%"class.base::internal::AddressPoolManager::Pool" = type { %"class.base::Lock", %"class.std::__1::bitset", i64, i64, i64 }
+%"class.base::Lock" = type { %"class.base::internal::LockImpl" }
+%"class.base::internal::LockImpl" = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%"class.std::__1::bitset" = type { %"class.std::__1::__bitset" }
+%"class.std::__1::__bitset" = type { [64 x i64] }
+
+$_ZN4base8internal16SlotSpanMetadataILb1EEC5EPNS0_15PartitionBucketILb1EEE = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb1EE12FreeSlowPathEv = comdat any
+
+$_ZNK4base8internal16SlotSpanMetadataILb1EE15CanStoreRawSizeEv = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb1EE10SetRawSizeEm = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb1EE22get_sentinel_slot_spanEv = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb1EE4FreeEPv = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb1EE15SetFreelistHeadEPNS0_22PartitionFreelistEntryE = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb1EE8DecommitEPNS_13PartitionRootILb1EEE = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb1EE18ToSlotSpanStartPtrEPKS2_ = comdat any
+
+$_ZNK4base8internal16SlotSpanMetadataILb1EE18GetProvisionedSizeEv = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb1EE18DecommitIfPossibleEPNS_13PartitionRootILb1EEE = comdat any
+
+$_ZNK4base8internal16SlotSpanMetadataILb1EE8is_emptyEv = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb1EE16FromSlotStartPtrEPv = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb1EE16FromSlotInnerPtrEPv = comdat any
+
+$_ZNK4base8internal16SlotSpanMetadataILb1EE10GetRawSizeEv = comdat any
+
+$_ZNK4base8internal16SlotSpanMetadataILb1EE19GetUtilizedSlotSizeEv = comdat any
+
+$_ZNK4base8internal16SlotSpanMetadataILb1EE13GetUsableSizeEPNS_13PartitionRootILb1EEE = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb1EE5ResetEv = comdat any
+
+$_ZNK4base8internal16SlotSpanMetadataILb1EE9is_activeEv = comdat any
+
+$_ZNK4base8internal16SlotSpanMetadataILb1EE7is_fullEv = comdat any
+
+$_ZNK4base8internal16SlotSpanMetadataILb1EE14is_decommittedEv = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb1EEC5Ev = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb0EEC5EPNS0_15PartitionBucketILb0EEE = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb0EE12FreeSlowPathEv = comdat any
+
+$_ZNK4base8internal16SlotSpanMetadataILb0EE15CanStoreRawSizeEv = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb0EE10SetRawSizeEm = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb0EE22get_sentinel_slot_spanEv = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb0EE4FreeEPv = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb0EE15SetFreelistHeadEPNS0_22PartitionFreelistEntryE = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb0EE8DecommitEPNS_13PartitionRootILb0EEE = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb0EE18ToSlotSpanStartPtrEPKS2_ = comdat any
+
+$_ZNK4base8internal16SlotSpanMetadataILb0EE18GetProvisionedSizeEv = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb0EE18DecommitIfPossibleEPNS_13PartitionRootILb0EEE = comdat any
+
+$_ZNK4base8internal16SlotSpanMetadataILb0EE8is_emptyEv = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb0EE16FromSlotStartPtrEPv = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb0EE16FromSlotInnerPtrEPv = comdat any
+
+$_ZNK4base8internal16SlotSpanMetadataILb0EE10GetRawSizeEv = comdat any
+
+$_ZNK4base8internal16SlotSpanMetadataILb0EE19GetUtilizedSlotSizeEv = comdat any
+
+$_ZNK4base8internal16SlotSpanMetadataILb0EE13GetUsableSizeEPNS_13PartitionRootILb0EEE = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb0EE5ResetEv = comdat any
+
+$_ZNK4base8internal16SlotSpanMetadataILb0EE9is_activeEv = comdat any
+
+$_ZNK4base8internal16SlotSpanMetadataILb0EE7is_fullEv = comdat any
+
+$_ZNK4base8internal16SlotSpanMetadataILb0EE14is_decommittedEv = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb0EEC5Ev = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb1EE19sentinel_slot_span_E = comdat any
+
+$_ZN4base8internal16SlotSpanMetadataILb0EE19sentinel_slot_span_E = comdat any
+
+@.str = private unnamed_addr constant [104 x i8] c"../../base/allocator/partition_allocator/partition_page.cc(157) Check failed: num_allocated_slots != -1\00", align 1
+@.str.1 = private unnamed_addr constant [105 x i8] c"../../base/allocator/partition_allocator/partition_page.h(549) Check failed: slot_start != freelist_head\00", align 1
+@_ZN4base8internal16SlotSpanMetadataILb1EE19sentinel_slot_span_E = weak_odr hidden global %"struct.base::internal::SlotSpanMetadata" zeroinitializer, comdat, align 1
+@_ZN4base8internal16SlotSpanMetadataILb0EE19sentinel_slot_span_E = weak_odr hidden global %"struct.base::internal::SlotSpanMetadata.6" zeroinitializer, comdat, align 1
+@_ZN4base8internal21PartitionAddressSpace13non_brp_pool_E = external local_unnamed_addr global i32, align 4
+
+@_ZN4base8internal16SlotSpanMetadataILb1EEC1EPNS0_15PartitionBucketILb1EEE = weak_odr hidden unnamed_addr alias void (%"struct.base::internal::SlotSpanMetadata"*, %"struct.base::internal::PartitionBucket"*), void (%"struct.base::internal::SlotSpanMetadata"*, %"struct.base::internal::PartitionBucket"*)* @_ZN4base8internal16SlotSpanMetadataILb1EEC2EPNS0_15PartitionBucketILb1EEE
+@_ZN4base8internal16SlotSpanMetadataILb1EEC1Ev = weak_odr hidden unnamed_addr alias void (%"struct.base::internal::SlotSpanMetadata"*), void (%"struct.base::internal::SlotSpanMetadata"*)* @_ZN4base8internal16SlotSpanMetadataILb1EEC2Ev
+@_ZN4base8internal16SlotSpanMetadataILb0EEC1EPNS0_15PartitionBucketILb0EEE = weak_odr hidden unnamed_addr alias void (%"struct.base::internal::SlotSpanMetadata.6"*, %"struct.base::internal::PartitionBucket.7"*), void (%"struct.base::internal::SlotSpanMetadata.6"*, %"struct.base::internal::PartitionBucket.7"*)* @_ZN4base8internal16SlotSpanMetadataILb0EEC2EPNS0_15PartitionBucketILb0EEE
+@_ZN4base8internal16SlotSpanMetadataILb0EEC1Ev = weak_odr hidden unnamed_addr alias void (%"struct.base::internal::SlotSpanMetadata.6"*), void (%"struct.base::internal::SlotSpanMetadata.6"*)* @_ZN4base8internal16SlotSpanMetadataILb0EEC2Ev
+
+; Function Attrs: nounwind ssp uwtable
+define weak_odr hidden void @_ZN4base8internal16SlotSpanMetadataILb1EEC2EPNS0_15PartitionBucketILb1EEE(%"struct.base::internal::SlotSpanMetadata"*, %"struct.base::internal::PartitionBucket"*) unnamed_addr #0 comdat($_ZN4base8internal16SlotSpanMetadataILb1EEC5EPNS0_15PartitionBucketILb1EEE) align 2 {
+  %3 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 2
+  %4 = bitcast %"struct.base::internal::SlotSpanMetadata"* %0 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 1 %4, i8 0, i64 16, i1 false)
+  store %"struct.base::internal::PartitionBucket"* %1, %"struct.base::internal::PartitionBucket"** %3, align 1
+  %5 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 3
+  store i16 0, i16* %5, align 1
+  %6 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 4
+  store i16 0, i16* %6, align 1
+  %7 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 5
+  store i8 0, i8* %7, align 1
+  %8 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 6
+  %9 = getelementptr inbounds %"struct.base::internal::PartitionBucket", %"struct.base::internal::PartitionBucket"* %1, i64 0, i32 3
+  %10 = load i32, i32* %9, align 8
+  %11 = icmp ugt i32 %10, 65536
+  %12 = zext i1 %11 to i8
+  store i8 %12, i8* %8, align 1
+  ret void
+}
+
+; Function Attrs: noinline nounwind ssp uwtable
+define weak_odr hidden { i8*, i64 } @_ZN4base8internal16SlotSpanMetadataILb1EE12FreeSlowPathEv(%"struct.base::internal::SlotSpanMetadata"*) local_unnamed_addr #1 comdat align 2 {
+  %2 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 3
+  %3 = load i16, i16* %2, align 1
+  switch i16 %3, label %125 [
+    i16 0, label %4
+    i16 -1, label %123
+  ], !prof !2
+
+4:                                                ; preds = %1
+  %5 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 2
+  %6 = load %"struct.base::internal::PartitionBucket"*, %"struct.base::internal::PartitionBucket"** %5, align 1
+  %7 = getelementptr inbounds %"struct.base::internal::PartitionBucket", %"struct.base::internal::PartitionBucket"* %6, i64 0, i32 4
+  %8 = load i32, i32* %7, align 4
+  %9 = and i32 %8, 255
+  %10 = icmp eq i32 %9, 0
+  br i1 %10, label %11, label %58, !prof !3
+
+11:                                               ; preds = %4
+  %12 = ptrtoint %"struct.base::internal::SlotSpanMetadata"* %0 to i64
+  %13 = and i64 %12, -4096
+  %14 = inttoptr i64 %13 to %"struct.base::internal::PartitionSuperPageExtentEntry"*
+  %15 = getelementptr inbounds %"struct.base::internal::PartitionSuperPageExtentEntry", %"struct.base::internal::PartitionSuperPageExtentEntry"* %14, i64 0, i32 0
+  %16 = load %"struct.base::PartitionRoot"*, %"struct.base::PartitionRoot"** %15, align 4096
+  %17 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 -2, i32 5
+  %18 = getelementptr inbounds i8, i8* %17, i64 136
+  %19 = getelementptr inbounds i8, i8* %17, i64 144
+  %20 = bitcast i8* %19 to %"struct.base::internal::PartitionDirectMapExtent"**
+  %21 = load %"struct.base::internal::PartitionDirectMapExtent"*, %"struct.base::internal::PartitionDirectMapExtent"** %20, align 8
+  %22 = icmp eq %"struct.base::internal::PartitionDirectMapExtent"* %21, null
+  %23 = bitcast i8* %18 to %"struct.base::internal::PartitionDirectMapExtent"**
+  %24 = bitcast i8* %18 to i64*
+  %25 = load i64, i64* %24, align 8
+  %26 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %16, i64 0, i32 22
+  %27 = bitcast %"struct.base::internal::PartitionDirectMapExtent"** %26 to i64*
+  %28 = bitcast %"struct.base::internal::PartitionDirectMapExtent"* %21 to i64*
+  %29 = select i1 %22, i64* %27, i64* %28
+  store i64 %25, i64* %29, align 8
+  %30 = load %"struct.base::internal::PartitionDirectMapExtent"*, %"struct.base::internal::PartitionDirectMapExtent"** %23, align 8
+  %31 = icmp eq %"struct.base::internal::PartitionDirectMapExtent"* %30, null
+  br i1 %31, label %37, label %32
+
+32:                                               ; preds = %11
+  %33 = bitcast i8* %19 to i64*
+  %34 = load i64, i64* %33, align 8
+  %35 = getelementptr inbounds %"struct.base::internal::PartitionDirectMapExtent", %"struct.base::internal::PartitionDirectMapExtent"* %30, i64 0, i32 1
+  %36 = bitcast %"struct.base::internal::PartitionDirectMapExtent"** %35 to i64*
+  store i64 %34, i64* %36, align 8
+  br label %37
+
+37:                                               ; preds = %11, %32
+  %38 = load %"struct.base::internal::PartitionBucket"*, %"struct.base::internal::PartitionBucket"** %5, align 1
+  %39 = getelementptr inbounds %"struct.base::internal::PartitionBucket", %"struct.base::internal::PartitionBucket"* %38, i64 0, i32 3
+  %40 = load i32, i32* %39, align 8
+  %41 = zext i32 %40 to i64
+  %42 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %16, i64 0, i32 14, i32 0, i32 0, i32 0, i32 0, i32 0
+  %43 = atomicrmw sub i64* %42, i64 %41 monotonic
+  %44 = getelementptr inbounds i8, i8* %17, i64 160
+  %45 = bitcast i8* %44 to i64*
+  %46 = load i64, i64* %45, align 8
+  %47 = add i64 %46, 20480
+  %48 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %16, i64 0, i32 16, i32 0, i32 0, i32 0, i32 0, i32 0
+  %49 = atomicrmw sub i64* %48, i64 %47 seq_cst
+  %50 = and i64 %12, 2097151
+  %51 = add nuw nsw i64 %50, 36028797018959872
+  %52 = lshr i64 %51, 5
+  %53 = and i64 %12, -2097152
+  %54 = shl i64 %52, 14
+  %55 = add i64 %54, %53
+  %56 = inttoptr i64 %55 to i8*
+  %57 = getelementptr inbounds i8, i8* %56, i64 -16384
+  br label %148
+
+58:                                               ; preds = %4
+  %59 = getelementptr inbounds %"struct.base::internal::PartitionBucket", %"struct.base::internal::PartitionBucket"* %6, i64 0, i32 0
+  %60 = load %"struct.base::internal::SlotSpanMetadata"*, %"struct.base::internal::SlotSpanMetadata"** %59, align 8
+  %61 = icmp eq %"struct.base::internal::SlotSpanMetadata"* %60, %0
+  br i1 %61, label %62, label %64, !prof !4
+
+62:                                               ; preds = %58
+  %63 = tail call zeroext i1 @_ZN4base8internal15PartitionBucketILb1EE20SetNewActiveSlotSpanEv(%"struct.base::internal::PartitionBucket"* %6) #6
+  br label %64
+
+64:                                               ; preds = %62, %58
+  %65 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 6
+  %66 = load i8, i8* %65, align 1, !range !5
+  %67 = icmp eq i8 %66, 0
+  br i1 %67, label %71, label %68
+
+68:                                               ; preds = %64
+  %69 = bitcast %"struct.base::internal::SlotSpanMetadata"* %0 to %"struct.base::internal::PartitionPage"*
+  %70 = getelementptr inbounds %"struct.base::internal::PartitionPage", %"struct.base::internal::PartitionPage"* %69, i64 1, i32 0, i32 0, i32 0
+  store i64 0, i64* %70, align 1
+  br label %71
+
+71:                                               ; preds = %64, %68
+  %72 = ptrtoint %"struct.base::internal::SlotSpanMetadata"* %0 to i64
+  %73 = and i64 %72, -4096
+  %74 = inttoptr i64 %73 to %"struct.base::internal::PartitionSuperPageExtentEntry"*
+  %75 = getelementptr inbounds %"struct.base::internal::PartitionSuperPageExtentEntry", %"struct.base::internal::PartitionSuperPageExtentEntry"* %74, i64 0, i32 0
+  %76 = load %"struct.base::PartitionRoot"*, %"struct.base::PartitionRoot"** %75, align 4096
+  %77 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 5
+  %78 = load i8, i8* %77, align 1
+  %79 = icmp eq i8 %78, -1
+  br i1 %79, label %83, label %80
+
+80:                                               ; preds = %71
+  %81 = sext i8 %78 to i64
+  %82 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %76, i64 0, i32 23, i64 %81
+  store %"struct.base::internal::SlotSpanMetadata"* null, %"struct.base::internal::SlotSpanMetadata"** %82, align 8
+  br label %83
+
+83:                                               ; preds = %80, %71
+  %84 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %76, i64 0, i32 24
+  %85 = load i16, i16* %84, align 8
+  %86 = sext i16 %85 to i64
+  %87 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %76, i64 0, i32 23, i64 %86
+  %88 = load %"struct.base::internal::SlotSpanMetadata"*, %"struct.base::internal::SlotSpanMetadata"** %87, align 8
+  %89 = icmp eq %"struct.base::internal::SlotSpanMetadata"* %88, null
+  br i1 %89, label %118, label %90
+
+90:                                               ; preds = %83
+  %91 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %88, i64 0, i32 5
+  store i8 -1, i8* %91, align 1
+  %92 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %88, i64 0, i32 3
+  %93 = load i16, i16* %92, align 1
+  %94 = icmp eq i16 %93, 0
+  br i1 %94, label %95, label %118
+
+95:                                               ; preds = %90
+  %96 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %88, i64 0, i32 0
+  %97 = load %"class.base::internal::PartitionFreelistEntry"*, %"class.base::internal::PartitionFreelistEntry"** %96, align 1
+  %98 = icmp eq %"class.base::internal::PartitionFreelistEntry"* %97, null
+  br i1 %98, label %118, label %99
+
+99:                                               ; preds = %95
+  %100 = ptrtoint %"struct.base::internal::SlotSpanMetadata"* %88 to i64
+  %101 = and i64 %100, 2097151
+  %102 = add nuw nsw i64 %101, 36028797018959872
+  %103 = lshr i64 %102, 5
+  %104 = and i64 %100, -2097152
+  %105 = shl i64 %103, 14
+  %106 = add i64 %105, %104
+  %107 = inttoptr i64 %106 to i8*
+  %108 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %88, i64 0, i32 2
+  %109 = load %"struct.base::internal::PartitionBucket"*, %"struct.base::internal::PartitionBucket"** %108, align 1
+  %110 = getelementptr inbounds %"struct.base::internal::PartitionBucket", %"struct.base::internal::PartitionBucket"* %109, i64 0, i32 4
+  %111 = load i32, i32* %110, align 4
+  %112 = shl i32 %111, 12
+  %113 = and i32 %112, 1044480
+  %114 = zext i32 %113 to i64
+  tail call void @_ZN4base19DecommitSystemPagesEPvmNS_28PageAccessibilityDispositionE(i8* %107, i64 %114, i32 1) #6
+  %115 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %76, i64 0, i32 14, i32 0, i32 0, i32 0, i32 0, i32 0
+  %116 = atomicrmw sub i64* %115, i64 %114 monotonic
+  store %"class.base::internal::PartitionFreelistEntry"* null, %"class.base::internal::PartitionFreelistEntry"** %96, align 1
+  %117 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %88, i64 0, i32 4
+  store i16 0, i16* %117, align 1
+  br label %118
+
+118:                                              ; preds = %83, %90, %95, %99
+  store %"struct.base::internal::SlotSpanMetadata"* %0, %"struct.base::internal::SlotSpanMetadata"** %87, align 8
+  %119 = trunc i16 %85 to i8
+  store i8 %119, i8* %77, align 1
+  %120 = add i16 %85, 1
+  %121 = icmp eq i16 %120, 16
+  %122 = select i1 %121, i16 0, i16 %120
+  store i16 %122, i16* %84, align 8
+  br label %148
+
+123:                                              ; preds = %1
+  tail call void @_ZN7logging8RawCheckEPKc(i8* getelementptr inbounds ([104 x i8], [104 x i8]* @.str, i64 0, i64 0)) #6
+  %124 = load i16, i16* %2, align 1
+  br label %125
+
+125:                                              ; preds = %1, %123
+  %126 = phi i16 [ %3, %1 ], [ %124, %123 ]
+  %127 = sub i16 -2, %126
+  store i16 %127, i16* %2, align 1
+  %128 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 2
+  %129 = load %"struct.base::internal::PartitionBucket"*, %"struct.base::internal::PartitionBucket"** %128, align 1
+  %130 = getelementptr inbounds %"struct.base::internal::PartitionBucket", %"struct.base::internal::PartitionBucket"* %129, i64 0, i32 0
+  %131 = load %"struct.base::internal::SlotSpanMetadata"*, %"struct.base::internal::SlotSpanMetadata"** %130, align 8
+  %132 = icmp eq %"struct.base::internal::SlotSpanMetadata"* %131, @_ZN4base8internal16SlotSpanMetadataILb1EE19sentinel_slot_span_E
+  br i1 %132, label %137, label %133, !prof !3
+
+133:                                              ; preds = %125
+  %134 = ptrtoint %"struct.base::internal::SlotSpanMetadata"* %131 to i64
+  %135 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 1
+  %136 = bitcast %"struct.base::internal::SlotSpanMetadata"** %135 to i64*
+  store i64 %134, i64* %136, align 1
+  br label %137
+
+137:                                              ; preds = %125, %133
+  store %"struct.base::internal::SlotSpanMetadata"* %0, %"struct.base::internal::SlotSpanMetadata"** %130, align 8
+  %138 = load %"struct.base::internal::PartitionBucket"*, %"struct.base::internal::PartitionBucket"** %128, align 1
+  %139 = getelementptr inbounds %"struct.base::internal::PartitionBucket", %"struct.base::internal::PartitionBucket"* %138, i64 0, i32 4
+  %140 = load i32, i32* %139, align 4
+  %141 = add i32 %140, -256
+  store i32 %141, i32* %139, align 4
+  %142 = load i16, i16* %2, align 1
+  %143 = icmp eq i16 %142, 0
+  br i1 %143, label %144, label %148, !prof !3
+
+144:                                              ; preds = %137
+  %145 = tail call { i8*, i64 } @_ZN4base8internal16SlotSpanMetadataILb1EE12FreeSlowPathEv(%"struct.base::internal::SlotSpanMetadata"* %0)
+  %146 = extractvalue { i8*, i64 } %145, 0
+  %147 = extractvalue { i8*, i64 } %145, 1
+  br label %148
+
+148:                                              ; preds = %118, %137, %144, %37
+  %149 = phi i8* [ %57, %37 ], [ %146, %144 ], [ null, %137 ], [ null, %118 ]
+  %150 = phi i64 [ %47, %37 ], [ %147, %144 ], [ 0, %137 ], [ 0, %118 ]
+  %151 = insertvalue { i8*, i64 } undef, i8* %149, 0
+  %152 = insertvalue { i8*, i64 } %151, i64 %150, 1
+  ret { i8*, i64 } %152
+}
+
+declare zeroext i1 @_ZN4base8internal15PartitionBucketILb1EE20SetNewActiveSlotSpanEv(%"struct.base::internal::PartitionBucket"*) local_unnamed_addr #2
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden zeroext i1 @_ZNK4base8internal16SlotSpanMetadataILb1EE15CanStoreRawSizeEv(%"struct.base::internal::SlotSpanMetadata"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 6
+  %3 = load i8, i8* %2, align 1, !range !5
+  %4 = icmp ne i8 %3, 0
+  ret i1 %4
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden void @_ZN4base8internal16SlotSpanMetadataILb1EE10SetRawSizeEm(%"struct.base::internal::SlotSpanMetadata"*, i64) local_unnamed_addr #3 comdat align 2 {
+  %3 = bitcast %"struct.base::internal::SlotSpanMetadata"* %0 to %"struct.base::internal::PartitionPage"*
+  %4 = getelementptr inbounds %"struct.base::internal::PartitionPage", %"struct.base::internal::PartitionPage"* %3, i64 1, i32 0, i32 0, i32 0
+  store i64 %1, i64* %4, align 1
+  ret void
+}
+
+declare void @_ZN7logging8RawCheckEPKc(i8*) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define weak_odr hidden %"struct.base::internal::SlotSpanMetadata"* @_ZN4base8internal16SlotSpanMetadataILb1EE22get_sentinel_slot_spanEv() local_unnamed_addr #0 comdat align 2 {
+  ret %"struct.base::internal::SlotSpanMetadata"* @_ZN4base8internal16SlotSpanMetadataILb1EE19sentinel_slot_span_E
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden { i8*, i64 } @_ZN4base8internal16SlotSpanMetadataILb1EE4FreeEPv(%"struct.base::internal::SlotSpanMetadata"*, i8*) local_unnamed_addr #3 comdat align 2 {
+  %3 = bitcast %"struct.base::internal::SlotSpanMetadata"* %0 to i8**
+  %4 = load i8*, i8** %3, align 1
+  %5 = icmp eq i8* %4, %1
+  br i1 %5, label %8, label %6, !prof !3
+
+6:                                                ; preds = %2
+  %7 = ptrtoint i8* %4 to i64
+  br label %11
+
+8:                                                ; preds = %2
+  tail call void @_ZN7logging8RawCheckEPKc(i8* getelementptr inbounds ([105 x i8], [105 x i8]* @.str.1, i64 0, i64 0)) #6
+  %9 = bitcast %"struct.base::internal::SlotSpanMetadata"* %0 to i64*
+  %10 = load i64, i64* %9, align 1
+  br label %11
+
+11:                                               ; preds = %6, %8
+  %12 = phi i64 [ %7, %6 ], [ %10, %8 ]
+  %13 = tail call i64 @llvm.bswap.i64(i64 %12) #6
+  %14 = inttoptr i64 %13 to %"struct.base::internal::EncodedPartitionFreelistEntry"*
+  %15 = bitcast i8* %1 to %"struct.base::internal::EncodedPartitionFreelistEntry"**
+  store %"struct.base::internal::EncodedPartitionFreelistEntry"* %14, %"struct.base::internal::EncodedPartitionFreelistEntry"** %15, align 8
+  %16 = xor i64 %13, -1
+  %17 = getelementptr inbounds i8, i8* %1, i64 8
+  %18 = bitcast i8* %17 to i64*
+  store i64 %16, i64* %18, align 8
+  store i8* %1, i8** %3, align 1
+  %19 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 3
+  %20 = load i16, i16* %19, align 1
+  %21 = add i16 %20, -1
+  store i16 %21, i16* %19, align 1
+  %22 = icmp slt i16 %21, 1
+  br i1 %22, label %23, label %27, !prof !3
+
+23:                                               ; preds = %11
+  %24 = tail call { i8*, i64 } @_ZN4base8internal16SlotSpanMetadataILb1EE12FreeSlowPathEv(%"struct.base::internal::SlotSpanMetadata"* %0)
+  %25 = extractvalue { i8*, i64 } %24, 0
+  %26 = extractvalue { i8*, i64 } %24, 1
+  br label %27
+
+27:                                               ; preds = %11, %23
+  %28 = phi i8* [ %25, %23 ], [ null, %11 ]
+  %29 = phi i64 [ %26, %23 ], [ 0, %11 ]
+  %30 = insertvalue { i8*, i64 } undef, i8* %28, 0
+  %31 = insertvalue { i8*, i64 } %30, i64 %29, 1
+  ret { i8*, i64 } %31
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden void @_ZN4base8internal16SlotSpanMetadataILb1EE15SetFreelistHeadEPNS0_22PartitionFreelistEntryE(%"struct.base::internal::SlotSpanMetadata"*, %"class.base::internal::PartitionFreelistEntry"*) local_unnamed_addr #3 comdat align 2 {
+  %3 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 0
+  store %"class.base::internal::PartitionFreelistEntry"* %1, %"class.base::internal::PartitionFreelistEntry"** %3, align 1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define weak_odr hidden void @_ZN4base8internal16SlotSpanMetadataILb1EE8DecommitEPNS_13PartitionRootILb1EEE(%"struct.base::internal::SlotSpanMetadata"*, %"struct.base::PartitionRoot"*) local_unnamed_addr #0 comdat align 2 {
+  %3 = ptrtoint %"struct.base::internal::SlotSpanMetadata"* %0 to i64
+  %4 = and i64 %3, 2097151
+  %5 = add nuw nsw i64 %4, 36028797018959872
+  %6 = lshr i64 %5, 5
+  %7 = and i64 %3, -2097152
+  %8 = shl i64 %6, 14
+  %9 = add i64 %8, %7
+  %10 = inttoptr i64 %9 to i8*
+  %11 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 2
+  %12 = load %"struct.base::internal::PartitionBucket"*, %"struct.base::internal::PartitionBucket"** %11, align 1
+  %13 = getelementptr inbounds %"struct.base::internal::PartitionBucket", %"struct.base::internal::PartitionBucket"* %12, i64 0, i32 4
+  %14 = load i32, i32* %13, align 4
+  %15 = shl i32 %14, 12
+  %16 = and i32 %15, 1044480
+  %17 = zext i32 %16 to i64
+  tail call void @_ZN4base19DecommitSystemPagesEPvmNS_28PageAccessibilityDispositionE(i8* %10, i64 %17, i32 1) #6
+  %18 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %1, i64 0, i32 14, i32 0, i32 0, i32 0, i32 0, i32 0
+  %19 = atomicrmw sub i64* %18, i64 %17 monotonic
+  %20 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 0
+  store %"class.base::internal::PartitionFreelistEntry"* null, %"class.base::internal::PartitionFreelistEntry"** %20, align 1
+  %21 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 4
+  store i16 0, i16* %21, align 1
+  ret void
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden i8* @_ZN4base8internal16SlotSpanMetadataILb1EE18ToSlotSpanStartPtrEPKS2_(%"struct.base::internal::SlotSpanMetadata"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = ptrtoint %"struct.base::internal::SlotSpanMetadata"* %0 to i64
+  %3 = and i64 %2, 2097151
+  %4 = add nuw nsw i64 %3, 36028797018959872
+  %5 = lshr i64 %4, 5
+  %6 = and i64 %2, -2097152
+  %7 = shl i64 %5, 14
+  %8 = add i64 %7, %6
+  %9 = inttoptr i64 %8 to i8*
+  ret i8* %9
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden i64 @_ZNK4base8internal16SlotSpanMetadataILb1EE18GetProvisionedSizeEv(%"struct.base::internal::SlotSpanMetadata"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 2
+  %3 = load %"struct.base::internal::PartitionBucket"*, %"struct.base::internal::PartitionBucket"** %2, align 1
+  %4 = getelementptr inbounds %"struct.base::internal::PartitionBucket", %"struct.base::internal::PartitionBucket"* %3, i64 0, i32 4
+  %5 = load i32, i32* %4, align 4
+  %6 = shl i32 %5, 12
+  %7 = and i32 %6, 1044480
+  %8 = getelementptr inbounds %"struct.base::internal::PartitionBucket", %"struct.base::internal::PartitionBucket"* %3, i64 0, i32 3
+  %9 = load i32, i32* %8, align 8
+  %10 = udiv i32 %7, %9
+  %11 = and i32 %10, 65535
+  %12 = zext i32 %11 to i64
+  %13 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 4
+  %14 = load i16, i16* %13, align 1
+  %15 = zext i16 %14 to i64
+  %16 = sub nsw i64 %12, %15
+  %17 = zext i32 %9 to i64
+  %18 = mul nsw i64 %16, %17
+  ret i64 %18
+}
+
+; Function Attrs: nounwind ssp uwtable
+define weak_odr hidden void @_ZN4base8internal16SlotSpanMetadataILb1EE18DecommitIfPossibleEPNS_13PartitionRootILb1EEE(%"struct.base::internal::SlotSpanMetadata"*, %"struct.base::PartitionRoot"*) local_unnamed_addr #0 comdat align 2 {
+  %3 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 5
+  store i8 -1, i8* %3, align 1
+  %4 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 3
+  %5 = load i16, i16* %4, align 1
+  %6 = icmp eq i16 %5, 0
+  br i1 %6, label %7, label %30
+
+7:                                                ; preds = %2
+  %8 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 0
+  %9 = load %"class.base::internal::PartitionFreelistEntry"*, %"class.base::internal::PartitionFreelistEntry"** %8, align 1
+  %10 = icmp eq %"class.base::internal::PartitionFreelistEntry"* %9, null
+  br i1 %10, label %30, label %11
+
+11:                                               ; preds = %7
+  %12 = ptrtoint %"struct.base::internal::SlotSpanMetadata"* %0 to i64
+  %13 = and i64 %12, 2097151
+  %14 = add nuw nsw i64 %13, 36028797018959872
+  %15 = lshr i64 %14, 5
+  %16 = and i64 %12, -2097152
+  %17 = shl i64 %15, 14
+  %18 = add i64 %17, %16
+  %19 = inttoptr i64 %18 to i8*
+  %20 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 2
+  %21 = load %"struct.base::internal::PartitionBucket"*, %"struct.base::internal::PartitionBucket"** %20, align 1
+  %22 = getelementptr inbounds %"struct.base::internal::PartitionBucket", %"struct.base::internal::PartitionBucket"* %21, i64 0, i32 4
+  %23 = load i32, i32* %22, align 4
+  %24 = shl i32 %23, 12
+  %25 = and i32 %24, 1044480
+  %26 = zext i32 %25 to i64
+  tail call void @_ZN4base19DecommitSystemPagesEPvmNS_28PageAccessibilityDispositionE(i8* %19, i64 %26, i32 1) #6
+  %27 = getelementptr inbounds %"struct.base::PartitionRoot", %"struct.base::PartitionRoot"* %1, i64 0, i32 14, i32 0, i32 0, i32 0, i32 0, i32 0
+  %28 = atomicrmw sub i64* %27, i64 %26 monotonic
+  store %"class.base::internal::PartitionFreelistEntry"* null, %"class.base::internal::PartitionFreelistEntry"** %8, align 1
+  %29 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 4
+  store i16 0, i16* %29, align 1
+  br label %30
+
+30:                                               ; preds = %7, %2, %11
+  ret void
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden zeroext i1 @_ZNK4base8internal16SlotSpanMetadataILb1EE8is_emptyEv(%"struct.base::internal::SlotSpanMetadata"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 3
+  %3 = load i16, i16* %2, align 1
+  %4 = icmp eq i16 %3, 0
+  br i1 %4, label %5, label %9
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 0
+  %7 = load %"class.base::internal::PartitionFreelistEntry"*, %"class.base::internal::PartitionFreelistEntry"** %6, align 1
+  %8 = icmp ne %"class.base::internal::PartitionFreelistEntry"* %7, null
+  br label %9
+
+9:                                                ; preds = %1, %5
+  %10 = phi i1 [ false, %1 ], [ %8, %5 ]
+  ret i1 %10
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden %"struct.base::internal::SlotSpanMetadata"* @_ZN4base8internal16SlotSpanMetadataILb1EE16FromSlotStartPtrEPv(i8*) local_unnamed_addr #3 comdat align 2 {
+  %2 = ptrtoint i8* %0 to i64
+  %3 = and i64 %2, -2097152
+  %4 = or i64 %3, 4096
+  %5 = inttoptr i64 %4 to i8*
+  %6 = lshr i64 %2, 9
+  %7 = and i64 %6, 4064
+  %8 = getelementptr inbounds i8, i8* %5, i64 %7
+  %9 = bitcast i8* %8 to %"struct.base::internal::PartitionPage"*
+  %10 = getelementptr inbounds i8, i8* %8, i64 30
+  %11 = load i8, i8* %10, align 2
+  %12 = zext i8 %11 to i64
+  %13 = sub nsw i64 0, %12
+  %14 = getelementptr inbounds %"struct.base::internal::PartitionPage", %"struct.base::internal::PartitionPage"* %9, i64 %13, i32 0
+  %15 = bitcast %union.anon* %14 to %"struct.base::internal::SlotSpanMetadata"*
+  ret %"struct.base::internal::SlotSpanMetadata"* %15
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden %"struct.base::internal::SlotSpanMetadata"* @_ZN4base8internal16SlotSpanMetadataILb1EE16FromSlotInnerPtrEPv(i8*) local_unnamed_addr #3 comdat align 2 {
+  %2 = ptrtoint i8* %0 to i64
+  %3 = and i64 %2, -2097152
+  %4 = or i64 %3, 4096
+  %5 = inttoptr i64 %4 to i8*
+  %6 = lshr i64 %2, 9
+  %7 = and i64 %6, 4064
+  %8 = getelementptr inbounds i8, i8* %5, i64 %7
+  %9 = bitcast i8* %8 to %"struct.base::internal::PartitionPage"*
+  %10 = getelementptr inbounds i8, i8* %8, i64 30
+  %11 = load i8, i8* %10, align 2
+  %12 = zext i8 %11 to i64
+  %13 = sub nsw i64 0, %12
+  %14 = getelementptr inbounds %"struct.base::internal::PartitionPage", %"struct.base::internal::PartitionPage"* %9, i64 %13, i32 0
+  %15 = bitcast %union.anon* %14 to %"struct.base::internal::SlotSpanMetadata"*
+  ret %"struct.base::internal::SlotSpanMetadata"* %15
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden i64 @_ZNK4base8internal16SlotSpanMetadataILb1EE10GetRawSizeEv(%"struct.base::internal::SlotSpanMetadata"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = bitcast %"struct.base::internal::SlotSpanMetadata"* %0 to %"struct.base::internal::PartitionPage"*
+  %3 = getelementptr inbounds %"struct.base::internal::PartitionPage", %"struct.base::internal::PartitionPage"* %2, i64 1, i32 0, i32 0, i32 0
+  %4 = load i64, i64* %3, align 1
+  ret i64 %4
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden i64 @_ZNK4base8internal16SlotSpanMetadataILb1EE19GetUtilizedSlotSizeEv(%"struct.base::internal::SlotSpanMetadata"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 6
+  %3 = load i8, i8* %2, align 1, !range !5
+  %4 = icmp eq i8 %3, 0
+  br i1 %4, label %5, label %11, !prof !4
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 2
+  %7 = load %"struct.base::internal::PartitionBucket"*, %"struct.base::internal::PartitionBucket"** %6, align 1
+  %8 = getelementptr inbounds %"struct.base::internal::PartitionBucket", %"struct.base::internal::PartitionBucket"* %7, i64 0, i32 3
+  %9 = load i32, i32* %8, align 8
+  %10 = zext i32 %9 to i64
+  br label %15
+
+11:                                               ; preds = %1
+  %12 = bitcast %"struct.base::internal::SlotSpanMetadata"* %0 to %"struct.base::internal::PartitionPage"*
+  %13 = getelementptr inbounds %"struct.base::internal::PartitionPage", %"struct.base::internal::PartitionPage"* %12, i64 1, i32 0, i32 0, i32 0
+  %14 = load i64, i64* %13, align 1
+  br label %15
+
+15:                                               ; preds = %11, %5
+  %16 = phi i64 [ %10, %5 ], [ %14, %11 ]
+  ret i64 %16
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden i64 @_ZNK4base8internal16SlotSpanMetadataILb1EE13GetUsableSizeEPNS_13PartitionRootILb1EEE(%"struct.base::internal::SlotSpanMetadata"*, %"struct.base::PartitionRoot"*) local_unnamed_addr #3 comdat align 2 {
+  %3 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 6
+  %4 = load i8, i8* %3, align 1, !range !5
+  %5 = icmp eq i8 %4, 0
+  br i1 %5, label %6, label %12, !prof !4
+
+6:                                                ; preds = %2
+  %7 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 2
+  %8 = load %"struct.base::internal::PartitionBucket"*, %"struct.base::internal::PartitionBucket"** %7, align 1
+  %9 = getelementptr inbounds %"struct.base::internal::PartitionBucket", %"struct.base::internal::PartitionBucket"* %8, i64 0, i32 3
+  %10 = load i32, i32* %9, align 8
+  %11 = zext i32 %10 to i64
+  br label %16
+
+12:                                               ; preds = %2
+  %13 = bitcast %"struct.base::internal::SlotSpanMetadata"* %0 to %"struct.base::internal::PartitionPage"*
+  %14 = getelementptr inbounds %"struct.base::internal::PartitionPage", %"struct.base::internal::PartitionPage"* %13, i64 1, i32 0, i32 0, i32 0
+  %15 = load i64, i64* %14, align 1
+  br label %16
+
+16:                                               ; preds = %12, %6
+  %17 = phi i64 [ %11, %6 ], [ %15, %12 ]
+  ret i64 %17
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden void @_ZN4base8internal16SlotSpanMetadataILb1EE5ResetEv(%"struct.base::internal::SlotSpanMetadata"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 2
+  %3 = load %"struct.base::internal::PartitionBucket"*, %"struct.base::internal::PartitionBucket"** %2, align 1
+  %4 = getelementptr inbounds %"struct.base::internal::PartitionBucket", %"struct.base::internal::PartitionBucket"* %3, i64 0, i32 4
+  %5 = load i32, i32* %4, align 4
+  %6 = shl i32 %5, 12
+  %7 = and i32 %6, 1044480
+  %8 = getelementptr inbounds %"struct.base::internal::PartitionBucket", %"struct.base::internal::PartitionBucket"* %3, i64 0, i32 3
+  %9 = load i32, i32* %8, align 8
+  %10 = udiv i32 %7, %9
+  %11 = trunc i32 %10 to i16
+  %12 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 4
+  store i16 %11, i16* %12, align 1
+  %13 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 1
+  store %"struct.base::internal::SlotSpanMetadata"* null, %"struct.base::internal::SlotSpanMetadata"** %13, align 1
+  ret void
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden zeroext i1 @_ZNK4base8internal16SlotSpanMetadataILb1EE9is_activeEv(%"struct.base::internal::SlotSpanMetadata"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 3
+  %3 = load i16, i16* %2, align 1
+  %4 = icmp sgt i16 %3, 0
+  br i1 %4, label %5, label %13
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 0
+  %7 = load %"class.base::internal::PartitionFreelistEntry"*, %"class.base::internal::PartitionFreelistEntry"** %6, align 1
+  %8 = icmp eq %"class.base::internal::PartitionFreelistEntry"* %7, null
+  br i1 %8, label %9, label %13
+
+9:                                                ; preds = %5
+  %10 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 4
+  %11 = load i16, i16* %10, align 1
+  %12 = icmp ne i16 %11, 0
+  br label %13
+
+13:                                               ; preds = %5, %9, %1
+  %14 = phi i1 [ false, %1 ], [ true, %5 ], [ %12, %9 ]
+  ret i1 %14
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden zeroext i1 @_ZNK4base8internal16SlotSpanMetadataILb1EE7is_fullEv(%"struct.base::internal::SlotSpanMetadata"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 3
+  %3 = load i16, i16* %2, align 1
+  %4 = sext i16 %3 to i32
+  %5 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 2
+  %6 = load %"struct.base::internal::PartitionBucket"*, %"struct.base::internal::PartitionBucket"** %5, align 1
+  %7 = getelementptr inbounds %"struct.base::internal::PartitionBucket", %"struct.base::internal::PartitionBucket"* %6, i64 0, i32 4
+  %8 = load i32, i32* %7, align 4
+  %9 = shl i32 %8, 12
+  %10 = and i32 %9, 1044480
+  %11 = getelementptr inbounds %"struct.base::internal::PartitionBucket", %"struct.base::internal::PartitionBucket"* %6, i64 0, i32 3
+  %12 = load i32, i32* %11, align 8
+  %13 = udiv i32 %10, %12
+  %14 = and i32 %13, 65535
+  %15 = icmp eq i32 %14, %4
+  ret i1 %15
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden zeroext i1 @_ZNK4base8internal16SlotSpanMetadataILb1EE14is_decommittedEv(%"struct.base::internal::SlotSpanMetadata"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 3
+  %3 = load i16, i16* %2, align 1
+  %4 = icmp eq i16 %3, 0
+  br i1 %4, label %5, label %9
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata", %"struct.base::internal::SlotSpanMetadata"* %0, i64 0, i32 0
+  %7 = load %"class.base::internal::PartitionFreelistEntry"*, %"class.base::internal::PartitionFreelistEntry"** %6, align 1
+  %8 = icmp eq %"class.base::internal::PartitionFreelistEntry"* %7, null
+  br label %9
+
+9:                                                ; preds = %1, %5
+  %10 = phi i1 [ false, %1 ], [ %8, %5 ]
+  ret i1 %10
+}
+
+; Function Attrs: nounwind ssp uwtable
+define weak_odr hidden void @_ZN4base8internal16SlotSpanMetadataILb1EEC2Ev(%"struct.base::internal::SlotSpanMetadata"*) unnamed_addr #0 comdat($_ZN4base8internal16SlotSpanMetadataILb1EEC5Ev) align 2 {
+  %2 = bitcast %"struct.base::internal::SlotSpanMetadata"* %0 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 1 %2, i8 0, i64 30, i1 false)
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define weak_odr hidden void @_ZN4base8internal16SlotSpanMetadataILb0EEC2EPNS0_15PartitionBucketILb0EEE(%"struct.base::internal::SlotSpanMetadata.6"*, %"struct.base::internal::PartitionBucket.7"*) unnamed_addr #0 comdat($_ZN4base8internal16SlotSpanMetadataILb0EEC5EPNS0_15PartitionBucketILb0EEE) align 2 {
+  %3 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 2
+  %4 = bitcast %"struct.base::internal::SlotSpanMetadata.6"* %0 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 1 %4, i8 0, i64 16, i1 false)
+  store %"struct.base::internal::PartitionBucket.7"* %1, %"struct.base::internal::PartitionBucket.7"** %3, align 1
+  %5 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 3
+  store i16 0, i16* %5, align 1
+  %6 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 4
+  store i16 0, i16* %6, align 1
+  %7 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 5
+  store i8 0, i8* %7, align 1
+  %8 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 6
+  %9 = getelementptr inbounds %"struct.base::internal::PartitionBucket.7", %"struct.base::internal::PartitionBucket.7"* %1, i64 0, i32 3
+  %10 = load i32, i32* %9, align 8
+  %11 = icmp ugt i32 %10, 65536
+  %12 = zext i1 %11 to i8
+  store i8 %12, i8* %8, align 1
+  ret void
+}
+
+; Function Attrs: noinline nounwind ssp uwtable
+define weak_odr hidden { i8*, i64 } @_ZN4base8internal16SlotSpanMetadataILb0EE12FreeSlowPathEv(%"struct.base::internal::SlotSpanMetadata.6"*) local_unnamed_addr #1 comdat align 2 {
+  %2 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 3
+  %3 = load i16, i16* %2, align 1
+  switch i16 %3, label %125 [
+    i16 0, label %4
+    i16 -1, label %123
+  ], !prof !2
+
+4:                                                ; preds = %1
+  %5 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 2
+  %6 = load %"struct.base::internal::PartitionBucket.7"*, %"struct.base::internal::PartitionBucket.7"** %5, align 1
+  %7 = getelementptr inbounds %"struct.base::internal::PartitionBucket.7", %"struct.base::internal::PartitionBucket.7"* %6, i64 0, i32 4
+  %8 = load i32, i32* %7, align 4
+  %9 = and i32 %8, 255
+  %10 = icmp eq i32 %9, 0
+  br i1 %10, label %11, label %58, !prof !3
+
+11:                                               ; preds = %4
+  %12 = ptrtoint %"struct.base::internal::SlotSpanMetadata.6"* %0 to i64
+  %13 = and i64 %12, -4096
+  %14 = inttoptr i64 %13 to %"struct.base::internal::PartitionSuperPageExtentEntry.10"*
+  %15 = getelementptr inbounds %"struct.base::internal::PartitionSuperPageExtentEntry.10", %"struct.base::internal::PartitionSuperPageExtentEntry.10"* %14, i64 0, i32 0
+  %16 = load %"struct.base::PartitionRoot.8"*, %"struct.base::PartitionRoot.8"** %15, align 4096
+  %17 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 -2, i32 5
+  %18 = getelementptr inbounds i8, i8* %17, i64 136
+  %19 = getelementptr inbounds i8, i8* %17, i64 144
+  %20 = bitcast i8* %19 to %"struct.base::internal::PartitionDirectMapExtent.11"**
+  %21 = load %"struct.base::internal::PartitionDirectMapExtent.11"*, %"struct.base::internal::PartitionDirectMapExtent.11"** %20, align 8
+  %22 = icmp eq %"struct.base::internal::PartitionDirectMapExtent.11"* %21, null
+  %23 = bitcast i8* %18 to %"struct.base::internal::PartitionDirectMapExtent.11"**
+  %24 = bitcast i8* %18 to i64*
+  %25 = load i64, i64* %24, align 8
+  %26 = getelementptr inbounds %"struct.base::PartitionRoot.8", %"struct.base::PartitionRoot.8"* %16, i64 0, i32 21
+  %27 = bitcast %"struct.base::internal::PartitionDirectMapExtent.11"** %26 to i64*
+  %28 = bitcast %"struct.base::internal::PartitionDirectMapExtent.11"* %21 to i64*
+  %29 = select i1 %22, i64* %27, i64* %28
+  store i64 %25, i64* %29, align 8
+  %30 = load %"struct.base::internal::PartitionDirectMapExtent.11"*, %"struct.base::internal::PartitionDirectMapExtent.11"** %23, align 8
+  %31 = icmp eq %"struct.base::internal::PartitionDirectMapExtent.11"* %30, null
+  br i1 %31, label %37, label %32
+
+32:                                               ; preds = %11
+  %33 = bitcast i8* %19 to i64*
+  %34 = load i64, i64* %33, align 8
+  %35 = getelementptr inbounds %"struct.base::internal::PartitionDirectMapExtent.11", %"struct.base::internal::PartitionDirectMapExtent.11"* %30, i64 0, i32 1
+  %36 = bitcast %"struct.base::internal::PartitionDirectMapExtent.11"** %35 to i64*
+  store i64 %34, i64* %36, align 8
+  br label %37
+
+37:                                               ; preds = %11, %32
+  %38 = load %"struct.base::internal::PartitionBucket.7"*, %"struct.base::internal::PartitionBucket.7"** %5, align 1
+  %39 = getelementptr inbounds %"struct.base::internal::PartitionBucket.7", %"struct.base::internal::PartitionBucket.7"* %38, i64 0, i32 3
+  %40 = load i32, i32* %39, align 8
+  %41 = zext i32 %40 to i64
+  %42 = getelementptr inbounds %"struct.base::PartitionRoot.8", %"struct.base::PartitionRoot.8"* %16, i64 0, i32 13, i32 0, i32 0, i32 0, i32 0, i32 0
+  %43 = atomicrmw sub i64* %42, i64 %41 monotonic
+  %44 = getelementptr inbounds i8, i8* %17, i64 160
+  %45 = bitcast i8* %44 to i64*
+  %46 = load i64, i64* %45, align 8
+  %47 = add i64 %46, 20480
+  %48 = getelementptr inbounds %"struct.base::PartitionRoot.8", %"struct.base::PartitionRoot.8"* %16, i64 0, i32 15, i32 0, i32 0, i32 0, i32 0, i32 0
+  %49 = atomicrmw sub i64* %48, i64 %47 seq_cst
+  %50 = and i64 %12, 2097151
+  %51 = add nuw nsw i64 %50, 36028797018959872
+  %52 = lshr i64 %51, 5
+  %53 = and i64 %12, -2097152
+  %54 = shl i64 %52, 14
+  %55 = add i64 %54, %53
+  %56 = inttoptr i64 %55 to i8*
+  %57 = getelementptr inbounds i8, i8* %56, i64 -16384
+  br label %148
+
+58:                                               ; preds = %4
+  %59 = getelementptr inbounds %"struct.base::internal::PartitionBucket.7", %"struct.base::internal::PartitionBucket.7"* %6, i64 0, i32 0
+  %60 = load %"struct.base::internal::SlotSpanMetadata.6"*, %"struct.base::internal::SlotSpanMetadata.6"** %59, align 8
+  %61 = icmp eq %"struct.base::internal::SlotSpanMetadata.6"* %60, %0
+  br i1 %61, label %62, label %64, !prof !4
+
+62:                                               ; preds = %58
+  %63 = tail call zeroext i1 @_ZN4base8internal15PartitionBucketILb0EE20SetNewActiveSlotSpanEv(%"struct.base::internal::PartitionBucket.7"* %6) #6
+  br label %64
+
+64:                                               ; preds = %62, %58
+  %65 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 6
+  %66 = load i8, i8* %65, align 1, !range !5
+  %67 = icmp eq i8 %66, 0
+  br i1 %67, label %71, label %68
+
+68:                                               ; preds = %64
+  %69 = bitcast %"struct.base::internal::SlotSpanMetadata.6"* %0 to %"struct.base::internal::PartitionPage.13"*
+  %70 = getelementptr inbounds %"struct.base::internal::PartitionPage.13", %"struct.base::internal::PartitionPage.13"* %69, i64 1, i32 0, i32 0, i32 0
+  store i64 0, i64* %70, align 1
+  br label %71
+
+71:                                               ; preds = %64, %68
+  %72 = ptrtoint %"struct.base::internal::SlotSpanMetadata.6"* %0 to i64
+  %73 = and i64 %72, -4096
+  %74 = inttoptr i64 %73 to %"struct.base::internal::PartitionSuperPageExtentEntry.10"*
+  %75 = getelementptr inbounds %"struct.base::internal::PartitionSuperPageExtentEntry.10", %"struct.base::internal::PartitionSuperPageExtentEntry.10"* %74, i64 0, i32 0
+  %76 = load %"struct.base::PartitionRoot.8"*, %"struct.base::PartitionRoot.8"** %75, align 4096
+  %77 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 5
+  %78 = load i8, i8* %77, align 1
+  %79 = icmp eq i8 %78, -1
+  br i1 %79, label %83, label %80
+
+80:                                               ; preds = %71
+  %81 = sext i8 %78 to i64
+  %82 = getelementptr inbounds %"struct.base::PartitionRoot.8", %"struct.base::PartitionRoot.8"* %76, i64 0, i32 22, i64 %81
+  store %"struct.base::internal::SlotSpanMetadata.6"* null, %"struct.base::internal::SlotSpanMetadata.6"** %82, align 8
+  br label %83
+
+83:                                               ; preds = %80, %71
+  %84 = getelementptr inbounds %"struct.base::PartitionRoot.8", %"struct.base::PartitionRoot.8"* %76, i64 0, i32 23
+  %85 = load i16, i16* %84, align 8
+  %86 = sext i16 %85 to i64
+  %87 = getelementptr inbounds %"struct.base::PartitionRoot.8", %"struct.base::PartitionRoot.8"* %76, i64 0, i32 22, i64 %86
+  %88 = load %"struct.base::internal::SlotSpanMetadata.6"*, %"struct.base::internal::SlotSpanMetadata.6"** %87, align 8
+  %89 = icmp eq %"struct.base::internal::SlotSpanMetadata.6"* %88, null
+  br i1 %89, label %118, label %90
+
+90:                                               ; preds = %83
+  %91 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %88, i64 0, i32 5
+  store i8 -1, i8* %91, align 1
+  %92 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %88, i64 0, i32 3
+  %93 = load i16, i16* %92, align 1
+  %94 = icmp eq i16 %93, 0
+  br i1 %94, label %95, label %118
+
+95:                                               ; preds = %90
+  %96 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %88, i64 0, i32 0
+  %97 = load %"class.base::internal::PartitionFreelistEntry"*, %"class.base::internal::PartitionFreelistEntry"** %96, align 1
+  %98 = icmp eq %"class.base::internal::PartitionFreelistEntry"* %97, null
+  br i1 %98, label %118, label %99
+
+99:                                               ; preds = %95
+  %100 = ptrtoint %"struct.base::internal::SlotSpanMetadata.6"* %88 to i64
+  %101 = and i64 %100, 2097151
+  %102 = add nuw nsw i64 %101, 36028797018959872
+  %103 = lshr i64 %102, 5
+  %104 = and i64 %100, -2097152
+  %105 = shl i64 %103, 14
+  %106 = add i64 %105, %104
+  %107 = inttoptr i64 %106 to i8*
+  %108 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %88, i64 0, i32 2
+  %109 = load %"struct.base::internal::PartitionBucket.7"*, %"struct.base::internal::PartitionBucket.7"** %108, align 1
+  %110 = getelementptr inbounds %"struct.base::internal::PartitionBucket.7", %"struct.base::internal::PartitionBucket.7"* %109, i64 0, i32 4
+  %111 = load i32, i32* %110, align 4
+  %112 = shl i32 %111, 12
+  %113 = and i32 %112, 1044480
+  %114 = zext i32 %113 to i64
+  tail call void @_ZN4base19DecommitSystemPagesEPvmNS_28PageAccessibilityDispositionE(i8* %107, i64 %114, i32 1) #6
+  %115 = getelementptr inbounds %"struct.base::PartitionRoot.8", %"struct.base::PartitionRoot.8"* %76, i64 0, i32 13, i32 0, i32 0, i32 0, i32 0, i32 0
+  %116 = atomicrmw sub i64* %115, i64 %114 monotonic
+  store %"class.base::internal::PartitionFreelistEntry"* null, %"class.base::internal::PartitionFreelistEntry"** %96, align 1
+  %117 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %88, i64 0, i32 4
+  store i16 0, i16* %117, align 1
+  br label %118
+
+118:                                              ; preds = %83, %90, %95, %99
+  store %"struct.base::internal::SlotSpanMetadata.6"* %0, %"struct.base::internal::SlotSpanMetadata.6"** %87, align 8
+  %119 = trunc i16 %85 to i8
+  store i8 %119, i8* %77, align 1
+  %120 = add i16 %85, 1
+  %121 = icmp eq i16 %120, 16
+  %122 = select i1 %121, i16 0, i16 %120
+  store i16 %122, i16* %84, align 8
+  br label %148
+
+123:                                              ; preds = %1
+  tail call void @_ZN7logging8RawCheckEPKc(i8* getelementptr inbounds ([104 x i8], [104 x i8]* @.str, i64 0, i64 0)) #6
+  %124 = load i16, i16* %2, align 1
+  br label %125
+
+125:                                              ; preds = %1, %123
+  %126 = phi i16 [ %3, %1 ], [ %124, %123 ]
+  %127 = sub i16 -2, %126
+  store i16 %127, i16* %2, align 1
+  %128 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 2
+  %129 = load %"struct.base::internal::PartitionBucket.7"*, %"struct.base::internal::PartitionBucket.7"** %128, align 1
+  %130 = getelementptr inbounds %"struct.base::internal::PartitionBucket.7", %"struct.base::internal::PartitionBucket.7"* %129, i64 0, i32 0
+  %131 = load %"struct.base::internal::SlotSpanMetadata.6"*, %"struct.base::internal::SlotSpanMetadata.6"** %130, align 8
+  %132 = icmp eq %"struct.base::internal::SlotSpanMetadata.6"* %131, @_ZN4base8internal16SlotSpanMetadataILb0EE19sentinel_slot_span_E
+  br i1 %132, label %137, label %133, !prof !3
+
+133:                                              ; preds = %125
+  %134 = ptrtoint %"struct.base::internal::SlotSpanMetadata.6"* %131 to i64
+  %135 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 1
+  %136 = bitcast %"struct.base::internal::SlotSpanMetadata.6"** %135 to i64*
+  store i64 %134, i64* %136, align 1
+  br label %137
+
+137:                                              ; preds = %125, %133
+  store %"struct.base::internal::SlotSpanMetadata.6"* %0, %"struct.base::internal::SlotSpanMetadata.6"** %130, align 8
+  %138 = load %"struct.base::internal::PartitionBucket.7"*, %"struct.base::internal::PartitionBucket.7"** %128, align 1
+  %139 = getelementptr inbounds %"struct.base::internal::PartitionBucket.7", %"struct.base::internal::PartitionBucket.7"* %138, i64 0, i32 4
+  %140 = load i32, i32* %139, align 4
+  %141 = add i32 %140, -256
+  store i32 %141, i32* %139, align 4
+  %142 = load i16, i16* %2, align 1
+  %143 = icmp eq i16 %142, 0
+  br i1 %143, label %144, label %148, !prof !3
+
+144:                                              ; preds = %137
+  %145 = tail call { i8*, i64 } @_ZN4base8internal16SlotSpanMetadataILb0EE12FreeSlowPathEv(%"struct.base::internal::SlotSpanMetadata.6"* %0)
+  %146 = extractvalue { i8*, i64 } %145, 0
+  %147 = extractvalue { i8*, i64 } %145, 1
+  br label %148
+
+148:                                              ; preds = %118, %137, %144, %37
+  %149 = phi i8* [ %57, %37 ], [ %146, %144 ], [ null, %137 ], [ null, %118 ]
+  %150 = phi i64 [ %47, %37 ], [ %147, %144 ], [ 0, %137 ], [ 0, %118 ]
+  %151 = insertvalue { i8*, i64 } undef, i8* %149, 0
+  %152 = insertvalue { i8*, i64 } %151, i64 %150, 1
+  ret { i8*, i64 } %152
+}
+
+declare zeroext i1 @_ZN4base8internal15PartitionBucketILb0EE20SetNewActiveSlotSpanEv(%"struct.base::internal::PartitionBucket.7"*) local_unnamed_addr #2
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden zeroext i1 @_ZNK4base8internal16SlotSpanMetadataILb0EE15CanStoreRawSizeEv(%"struct.base::internal::SlotSpanMetadata.6"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 6
+  %3 = load i8, i8* %2, align 1, !range !5
+  %4 = icmp ne i8 %3, 0
+  ret i1 %4
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden void @_ZN4base8internal16SlotSpanMetadataILb0EE10SetRawSizeEm(%"struct.base::internal::SlotSpanMetadata.6"*, i64) local_unnamed_addr #3 comdat align 2 {
+  %3 = bitcast %"struct.base::internal::SlotSpanMetadata.6"* %0 to %"struct.base::internal::PartitionPage.13"*
+  %4 = getelementptr inbounds %"struct.base::internal::PartitionPage.13", %"struct.base::internal::PartitionPage.13"* %3, i64 1, i32 0, i32 0, i32 0
+  store i64 %1, i64* %4, align 1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define weak_odr hidden %"struct.base::internal::SlotSpanMetadata.6"* @_ZN4base8internal16SlotSpanMetadataILb0EE22get_sentinel_slot_spanEv() local_unnamed_addr #0 comdat align 2 {
+  ret %"struct.base::internal::SlotSpanMetadata.6"* @_ZN4base8internal16SlotSpanMetadataILb0EE19sentinel_slot_span_E
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden { i8*, i64 } @_ZN4base8internal16SlotSpanMetadataILb0EE4FreeEPv(%"struct.base::internal::SlotSpanMetadata.6"*, i8*) local_unnamed_addr #3 comdat align 2 {
+  %3 = bitcast %"struct.base::internal::SlotSpanMetadata.6"* %0 to i8**
+  %4 = load i8*, i8** %3, align 1
+  %5 = icmp eq i8* %4, %1
+  br i1 %5, label %8, label %6, !prof !3
+
+6:                                                ; preds = %2
+  %7 = ptrtoint i8* %4 to i64
+  br label %11
+
+8:                                                ; preds = %2
+  tail call void @_ZN7logging8RawCheckEPKc(i8* getelementptr inbounds ([105 x i8], [105 x i8]* @.str.1, i64 0, i64 0)) #6
+  %9 = bitcast %"struct.base::internal::SlotSpanMetadata.6"* %0 to i64*
+  %10 = load i64, i64* %9, align 1
+  br label %11
+
+11:                                               ; preds = %6, %8
+  %12 = phi i64 [ %7, %6 ], [ %10, %8 ]
+  %13 = tail call i64 @llvm.bswap.i64(i64 %12) #6
+  %14 = inttoptr i64 %13 to %"struct.base::internal::EncodedPartitionFreelistEntry"*
+  %15 = bitcast i8* %1 to %"struct.base::internal::EncodedPartitionFreelistEntry"**
+  store %"struct.base::internal::EncodedPartitionFreelistEntry"* %14, %"struct.base::internal::EncodedPartitionFreelistEntry"** %15, align 8
+  %16 = xor i64 %13, -1
+  %17 = getelementptr inbounds i8, i8* %1, i64 8
+  %18 = bitcast i8* %17 to i64*
+  store i64 %16, i64* %18, align 8
+  store i8* %1, i8** %3, align 1
+  %19 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 3
+  %20 = load i16, i16* %19, align 1
+  %21 = add i16 %20, -1
+  store i16 %21, i16* %19, align 1
+  %22 = icmp slt i16 %21, 1
+  br i1 %22, label %23, label %27, !prof !3
+
+23:                                               ; preds = %11
+  %24 = tail call { i8*, i64 } @_ZN4base8internal16SlotSpanMetadataILb0EE12FreeSlowPathEv(%"struct.base::internal::SlotSpanMetadata.6"* %0)
+  %25 = extractvalue { i8*, i64 } %24, 0
+  %26 = extractvalue { i8*, i64 } %24, 1
+  br label %27
+
+27:                                               ; preds = %11, %23
+  %28 = phi i8* [ %25, %23 ], [ null, %11 ]
+  %29 = phi i64 [ %26, %23 ], [ 0, %11 ]
+  %30 = insertvalue { i8*, i64 } undef, i8* %28, 0
+  %31 = insertvalue { i8*, i64 } %30, i64 %29, 1
+  ret { i8*, i64 } %31
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden void @_ZN4base8internal16SlotSpanMetadataILb0EE15SetFreelistHeadEPNS0_22PartitionFreelistEntryE(%"struct.base::internal::SlotSpanMetadata.6"*, %"class.base::internal::PartitionFreelistEntry"*) local_unnamed_addr #3 comdat align 2 {
+  %3 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 0
+  store %"class.base::internal::PartitionFreelistEntry"* %1, %"class.base::internal::PartitionFreelistEntry"** %3, align 1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define weak_odr hidden void @_ZN4base8internal16SlotSpanMetadataILb0EE8DecommitEPNS_13PartitionRootILb0EEE(%"struct.base::internal::SlotSpanMetadata.6"*, %"struct.base::PartitionRoot.8"*) local_unnamed_addr #0 comdat align 2 {
+  %3 = ptrtoint %"struct.base::internal::SlotSpanMetadata.6"* %0 to i64
+  %4 = and i64 %3, 2097151
+  %5 = add nuw nsw i64 %4, 36028797018959872
+  %6 = lshr i64 %5, 5
+  %7 = and i64 %3, -2097152
+  %8 = shl i64 %6, 14
+  %9 = add i64 %8, %7
+  %10 = inttoptr i64 %9 to i8*
+  %11 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 2
+  %12 = load %"struct.base::internal::PartitionBucket.7"*, %"struct.base::internal::PartitionBucket.7"** %11, align 1
+  %13 = getelementptr inbounds %"struct.base::internal::PartitionBucket.7", %"struct.base::internal::PartitionBucket.7"* %12, i64 0, i32 4
+  %14 = load i32, i32* %13, align 4
+  %15 = shl i32 %14, 12
+  %16 = and i32 %15, 1044480
+  %17 = zext i32 %16 to i64
+  tail call void @_ZN4base19DecommitSystemPagesEPvmNS_28PageAccessibilityDispositionE(i8* %10, i64 %17, i32 1) #6
+  %18 = getelementptr inbounds %"struct.base::PartitionRoot.8", %"struct.base::PartitionRoot.8"* %1, i64 0, i32 13, i32 0, i32 0, i32 0, i32 0, i32 0
+  %19 = atomicrmw sub i64* %18, i64 %17 monotonic
+  %20 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 0
+  store %"class.base::internal::PartitionFreelistEntry"* null, %"class.base::internal::PartitionFreelistEntry"** %20, align 1
+  %21 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 4
+  store i16 0, i16* %21, align 1
+  ret void
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden i8* @_ZN4base8internal16SlotSpanMetadataILb0EE18ToSlotSpanStartPtrEPKS2_(%"struct.base::internal::SlotSpanMetadata.6"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = ptrtoint %"struct.base::internal::SlotSpanMetadata.6"* %0 to i64
+  %3 = and i64 %2, 2097151
+  %4 = add nuw nsw i64 %3, 36028797018959872
+  %5 = lshr i64 %4, 5
+  %6 = and i64 %2, -2097152
+  %7 = shl i64 %5, 14
+  %8 = add i64 %7, %6
+  %9 = inttoptr i64 %8 to i8*
+  ret i8* %9
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden i64 @_ZNK4base8internal16SlotSpanMetadataILb0EE18GetProvisionedSizeEv(%"struct.base::internal::SlotSpanMetadata.6"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 2
+  %3 = load %"struct.base::internal::PartitionBucket.7"*, %"struct.base::internal::PartitionBucket.7"** %2, align 1
+  %4 = getelementptr inbounds %"struct.base::internal::PartitionBucket.7", %"struct.base::internal::PartitionBucket.7"* %3, i64 0, i32 4
+  %5 = load i32, i32* %4, align 4
+  %6 = shl i32 %5, 12
+  %7 = and i32 %6, 1044480
+  %8 = getelementptr inbounds %"struct.base::internal::PartitionBucket.7", %"struct.base::internal::PartitionBucket.7"* %3, i64 0, i32 3
+  %9 = load i32, i32* %8, align 8
+  %10 = udiv i32 %7, %9
+  %11 = and i32 %10, 65535
+  %12 = zext i32 %11 to i64
+  %13 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 4
+  %14 = load i16, i16* %13, align 1
+  %15 = zext i16 %14 to i64
+  %16 = sub nsw i64 %12, %15
+  %17 = zext i32 %9 to i64
+  %18 = mul nsw i64 %16, %17
+  ret i64 %18
+}
+
+; Function Attrs: nounwind ssp uwtable
+define weak_odr hidden void @_ZN4base8internal16SlotSpanMetadataILb0EE18DecommitIfPossibleEPNS_13PartitionRootILb0EEE(%"struct.base::internal::SlotSpanMetadata.6"*, %"struct.base::PartitionRoot.8"*) local_unnamed_addr #0 comdat align 2 {
+  %3 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 5
+  store i8 -1, i8* %3, align 1
+  %4 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 3
+  %5 = load i16, i16* %4, align 1
+  %6 = icmp eq i16 %5, 0
+  br i1 %6, label %7, label %30
+
+7:                                                ; preds = %2
+  %8 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 0
+  %9 = load %"class.base::internal::PartitionFreelistEntry"*, %"class.base::internal::PartitionFreelistEntry"** %8, align 1
+  %10 = icmp eq %"class.base::internal::PartitionFreelistEntry"* %9, null
+  br i1 %10, label %30, label %11
+
+11:                                               ; preds = %7
+  %12 = ptrtoint %"struct.base::internal::SlotSpanMetadata.6"* %0 to i64
+  %13 = and i64 %12, 2097151
+  %14 = add nuw nsw i64 %13, 36028797018959872
+  %15 = lshr i64 %14, 5
+  %16 = and i64 %12, -2097152
+  %17 = shl i64 %15, 14
+  %18 = add i64 %17, %16
+  %19 = inttoptr i64 %18 to i8*
+  %20 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 2
+  %21 = load %"struct.base::internal::PartitionBucket.7"*, %"struct.base::internal::PartitionBucket.7"** %20, align 1
+  %22 = getelementptr inbounds %"struct.base::internal::PartitionBucket.7", %"struct.base::internal::PartitionBucket.7"* %21, i64 0, i32 4
+  %23 = load i32, i32* %22, align 4
+  %24 = shl i32 %23, 12
+  %25 = and i32 %24, 1044480
+  %26 = zext i32 %25 to i64
+  tail call void @_ZN4base19DecommitSystemPagesEPvmNS_28PageAccessibilityDispositionE(i8* %19, i64 %26, i32 1) #6
+  %27 = getelementptr inbounds %"struct.base::PartitionRoot.8", %"struct.base::PartitionRoot.8"* %1, i64 0, i32 13, i32 0, i32 0, i32 0, i32 0, i32 0
+  %28 = atomicrmw sub i64* %27, i64 %26 monotonic
+  store %"class.base::internal::PartitionFreelistEntry"* null, %"class.base::internal::PartitionFreelistEntry"** %8, align 1
+  %29 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 4
+  store i16 0, i16* %29, align 1
+  br label %30
+
+30:                                               ; preds = %7, %2, %11
+  ret void
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden zeroext i1 @_ZNK4base8internal16SlotSpanMetadataILb0EE8is_emptyEv(%"struct.base::internal::SlotSpanMetadata.6"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 3
+  %3 = load i16, i16* %2, align 1
+  %4 = icmp eq i16 %3, 0
+  br i1 %4, label %5, label %9
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 0
+  %7 = load %"class.base::internal::PartitionFreelistEntry"*, %"class.base::internal::PartitionFreelistEntry"** %6, align 1
+  %8 = icmp ne %"class.base::internal::PartitionFreelistEntry"* %7, null
+  br label %9
+
+9:                                                ; preds = %1, %5
+  %10 = phi i1 [ false, %1 ], [ %8, %5 ]
+  ret i1 %10
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden %"struct.base::internal::SlotSpanMetadata.6"* @_ZN4base8internal16SlotSpanMetadataILb0EE16FromSlotStartPtrEPv(i8*) local_unnamed_addr #3 comdat align 2 {
+  %2 = ptrtoint i8* %0 to i64
+  %3 = and i64 %2, -2097152
+  %4 = or i64 %3, 4096
+  %5 = inttoptr i64 %4 to i8*
+  %6 = lshr i64 %2, 9
+  %7 = and i64 %6, 4064
+  %8 = getelementptr inbounds i8, i8* %5, i64 %7
+  %9 = bitcast i8* %8 to %"struct.base::internal::PartitionPage.13"*
+  %10 = getelementptr inbounds i8, i8* %8, i64 30
+  %11 = load i8, i8* %10, align 2
+  %12 = zext i8 %11 to i64
+  %13 = sub nsw i64 0, %12
+  %14 = getelementptr inbounds %"struct.base::internal::PartitionPage.13", %"struct.base::internal::PartitionPage.13"* %9, i64 %13, i32 0
+  %15 = bitcast %union.anon.14* %14 to %"struct.base::internal::SlotSpanMetadata.6"*
+  ret %"struct.base::internal::SlotSpanMetadata.6"* %15
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden %"struct.base::internal::SlotSpanMetadata.6"* @_ZN4base8internal16SlotSpanMetadataILb0EE16FromSlotInnerPtrEPv(i8*) local_unnamed_addr #3 comdat align 2 {
+  %2 = ptrtoint i8* %0 to i64
+  %3 = and i64 %2, -2097152
+  %4 = or i64 %3, 4096
+  %5 = inttoptr i64 %4 to i8*
+  %6 = lshr i64 %2, 9
+  %7 = and i64 %6, 4064
+  %8 = getelementptr inbounds i8, i8* %5, i64 %7
+  %9 = bitcast i8* %8 to %"struct.base::internal::PartitionPage.13"*
+  %10 = getelementptr inbounds i8, i8* %8, i64 30
+  %11 = load i8, i8* %10, align 2
+  %12 = zext i8 %11 to i64
+  %13 = sub nsw i64 0, %12
+  %14 = getelementptr inbounds %"struct.base::internal::PartitionPage.13", %"struct.base::internal::PartitionPage.13"* %9, i64 %13, i32 0
+  %15 = bitcast %union.anon.14* %14 to %"struct.base::internal::SlotSpanMetadata.6"*
+  ret %"struct.base::internal::SlotSpanMetadata.6"* %15
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden i64 @_ZNK4base8internal16SlotSpanMetadataILb0EE10GetRawSizeEv(%"struct.base::internal::SlotSpanMetadata.6"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = bitcast %"struct.base::internal::SlotSpanMetadata.6"* %0 to %"struct.base::internal::PartitionPage.13"*
+  %3 = getelementptr inbounds %"struct.base::internal::PartitionPage.13", %"struct.base::internal::PartitionPage.13"* %2, i64 1, i32 0, i32 0, i32 0
+  %4 = load i64, i64* %3, align 1
+  ret i64 %4
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden i64 @_ZNK4base8internal16SlotSpanMetadataILb0EE19GetUtilizedSlotSizeEv(%"struct.base::internal::SlotSpanMetadata.6"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 6
+  %3 = load i8, i8* %2, align 1, !range !5
+  %4 = icmp eq i8 %3, 0
+  br i1 %4, label %5, label %11, !prof !4
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 2
+  %7 = load %"struct.base::internal::PartitionBucket.7"*, %"struct.base::internal::PartitionBucket.7"** %6, align 1
+  %8 = getelementptr inbounds %"struct.base::internal::PartitionBucket.7", %"struct.base::internal::PartitionBucket.7"* %7, i64 0, i32 3
+  %9 = load i32, i32* %8, align 8
+  %10 = zext i32 %9 to i64
+  br label %15
+
+11:                                               ; preds = %1
+  %12 = bitcast %"struct.base::internal::SlotSpanMetadata.6"* %0 to %"struct.base::internal::PartitionPage.13"*
+  %13 = getelementptr inbounds %"struct.base::internal::PartitionPage.13", %"struct.base::internal::PartitionPage.13"* %12, i64 1, i32 0, i32 0, i32 0
+  %14 = load i64, i64* %13, align 1
+  br label %15
+
+15:                                               ; preds = %11, %5
+  %16 = phi i64 [ %10, %5 ], [ %14, %11 ]
+  ret i64 %16
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden i64 @_ZNK4base8internal16SlotSpanMetadataILb0EE13GetUsableSizeEPNS_13PartitionRootILb0EEE(%"struct.base::internal::SlotSpanMetadata.6"*, %"struct.base::PartitionRoot.8"*) local_unnamed_addr #3 comdat align 2 {
+  %3 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 6
+  %4 = load i8, i8* %3, align 1, !range !5
+  %5 = icmp eq i8 %4, 0
+  br i1 %5, label %6, label %12, !prof !4
+
+6:                                                ; preds = %2
+  %7 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 2
+  %8 = load %"struct.base::internal::PartitionBucket.7"*, %"struct.base::internal::PartitionBucket.7"** %7, align 1
+  %9 = getelementptr inbounds %"struct.base::internal::PartitionBucket.7", %"struct.base::internal::PartitionBucket.7"* %8, i64 0, i32 3
+  %10 = load i32, i32* %9, align 8
+  %11 = zext i32 %10 to i64
+  br label %16
+
+12:                                               ; preds = %2
+  %13 = bitcast %"struct.base::internal::SlotSpanMetadata.6"* %0 to %"struct.base::internal::PartitionPage.13"*
+  %14 = getelementptr inbounds %"struct.base::internal::PartitionPage.13", %"struct.base::internal::PartitionPage.13"* %13, i64 1, i32 0, i32 0, i32 0
+  %15 = load i64, i64* %14, align 1
+  br label %16
+
+16:                                               ; preds = %12, %6
+  %17 = phi i64 [ %11, %6 ], [ %15, %12 ]
+  ret i64 %17
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden void @_ZN4base8internal16SlotSpanMetadataILb0EE5ResetEv(%"struct.base::internal::SlotSpanMetadata.6"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 2
+  %3 = load %"struct.base::internal::PartitionBucket.7"*, %"struct.base::internal::PartitionBucket.7"** %2, align 1
+  %4 = getelementptr inbounds %"struct.base::internal::PartitionBucket.7", %"struct.base::internal::PartitionBucket.7"* %3, i64 0, i32 4
+  %5 = load i32, i32* %4, align 4
+  %6 = shl i32 %5, 12
+  %7 = and i32 %6, 1044480
+  %8 = getelementptr inbounds %"struct.base::internal::PartitionBucket.7", %"struct.base::internal::PartitionBucket.7"* %3, i64 0, i32 3
+  %9 = load i32, i32* %8, align 8
+  %10 = udiv i32 %7, %9
+  %11 = trunc i32 %10 to i16
+  %12 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 4
+  store i16 %11, i16* %12, align 1
+  %13 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 1
+  store %"struct.base::internal::SlotSpanMetadata.6"* null, %"struct.base::internal::SlotSpanMetadata.6"** %13, align 1
+  ret void
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden zeroext i1 @_ZNK4base8internal16SlotSpanMetadataILb0EE9is_activeEv(%"struct.base::internal::SlotSpanMetadata.6"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 3
+  %3 = load i16, i16* %2, align 1
+  %4 = icmp sgt i16 %3, 0
+  br i1 %4, label %5, label %13
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 0
+  %7 = load %"class.base::internal::PartitionFreelistEntry"*, %"class.base::internal::PartitionFreelistEntry"** %6, align 1
+  %8 = icmp eq %"class.base::internal::PartitionFreelistEntry"* %7, null
+  br i1 %8, label %9, label %13
+
+9:                                                ; preds = %5
+  %10 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 4
+  %11 = load i16, i16* %10, align 1
+  %12 = icmp ne i16 %11, 0
+  br label %13
+
+13:                                               ; preds = %5, %9, %1
+  %14 = phi i1 [ false, %1 ], [ true, %5 ], [ %12, %9 ]
+  ret i1 %14
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden zeroext i1 @_ZNK4base8internal16SlotSpanMetadataILb0EE7is_fullEv(%"struct.base::internal::SlotSpanMetadata.6"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 3
+  %3 = load i16, i16* %2, align 1
+  %4 = sext i16 %3 to i32
+  %5 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 2
+  %6 = load %"struct.base::internal::PartitionBucket.7"*, %"struct.base::internal::PartitionBucket.7"** %5, align 1
+  %7 = getelementptr inbounds %"struct.base::internal::PartitionBucket.7", %"struct.base::internal::PartitionBucket.7"* %6, i64 0, i32 4
+  %8 = load i32, i32* %7, align 4
+  %9 = shl i32 %8, 12
+  %10 = and i32 %9, 1044480
+  %11 = getelementptr inbounds %"struct.base::internal::PartitionBucket.7", %"struct.base::internal::PartitionBucket.7"* %6, i64 0, i32 3
+  %12 = load i32, i32* %11, align 8
+  %13 = udiv i32 %10, %12
+  %14 = and i32 %13, 65535
+  %15 = icmp eq i32 %14, %4
+  ret i1 %15
+}
+
+; Function Attrs: alwaysinline nounwind ssp uwtable
+define weak_odr hidden zeroext i1 @_ZNK4base8internal16SlotSpanMetadataILb0EE14is_decommittedEv(%"struct.base::internal::SlotSpanMetadata.6"*) local_unnamed_addr #3 comdat align 2 {
+  %2 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 3
+  %3 = load i16, i16* %2, align 1
+  %4 = icmp eq i16 %3, 0
+  br i1 %4, label %5, label %9
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"struct.base::internal::SlotSpanMetadata.6", %"struct.base::internal::SlotSpanMetadata.6"* %0, i64 0, i32 0
+  %7 = load %"class.base::internal::PartitionFreelistEntry"*, %"class.base::internal::PartitionFreelistEntry"** %6, align 1
+  %8 = icmp eq %"class.base::internal::PartitionFreelistEntry"* %7, null
+  br label %9
+
+9:                                                ; preds = %1, %5
+  %10 = phi i1 [ false, %1 ], [ %8, %5 ]
+  ret i1 %10
+}
+
+; Function Attrs: nounwind ssp uwtable
+define weak_odr hidden void @_ZN4base8internal16SlotSpanMetadataILb0EEC2Ev(%"struct.base::internal::SlotSpanMetadata.6"*) unnamed_addr #0 comdat($_ZN4base8internal16SlotSpanMetadataILb0EEC5Ev) align 2 {
+  %2 = bitcast %"struct.base::internal::SlotSpanMetadata.6"* %0 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 1 %2, i8 0, i64 30, i1 false)
+  ret void
+}
+
+; Function Attrs: noinline nounwind ssp uwtable
+define hidden void @_ZN4base8internal13DeferredUnmap5UnmapEv(%"struct.base::internal::DeferredUnmap"* nocapture readonly) local_unnamed_addr #1 align 2 {
+  %2 = tail call %"class.base::internal::AddressPoolManager"* @_ZN4base8internal18AddressPoolManager11GetInstanceEv() #6
+  %3 = load i32, i32* @_ZN4base8internal21PartitionAddressSpace13non_brp_pool_E, align 4
+  %4 = getelementptr inbounds %"struct.base::internal::DeferredUnmap", %"struct.base::internal::DeferredUnmap"* %0, i64 0, i32 0
+  %5 = load i8*, i8** %4, align 8
+  %6 = getelementptr inbounds %"struct.base::internal::DeferredUnmap", %"struct.base::internal::DeferredUnmap"* %0, i64 0, i32 1
+  %7 = load i64, i64* %6, align 8
+  tail call void @_ZN4base8internal18AddressPoolManager20UnreserveAndDecommitEjPvm(%"class.base::internal::AddressPoolManager"* %2, i32 %3, i8* %5, i64 %7) #6
+  ret void
+}
+
+declare %"class.base::internal::AddressPoolManager"* @_ZN4base8internal18AddressPoolManager11GetInstanceEv() local_unnamed_addr #2
+
+declare void @_ZN4base8internal18AddressPoolManager20UnreserveAndDecommitEjPvm(%"class.base::internal::AddressPoolManager"*, i32, i8*, i64) local_unnamed_addr #2
+
+; Function Attrs: nounwind readnone speculatable
+declare i64 @llvm.bswap.i64(i64) #4
+
+declare void @_ZN4base19DecommitSystemPagesEPvmNS_28PageAccessibilityDispositionE(i8*, i64, i32) local_unnamed_addr #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #5
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { noinline nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { alwaysinline nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind readnone speculatable }
+attributes #5 = { argmemonly nounwind }
+attributes #6 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{!"branch_weights", i32 2000, i32 4002000, i32 1}
+!3 = !{!"branch_weights", i32 1, i32 2000}
+!4 = !{!"branch_weights", i32 2000, i32 1}
+!5 = !{i8 0, i8 2}

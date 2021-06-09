@@ -1,0 +1,730 @@
+; ModuleID = '../../native_client/src/trusted/fault_injection/fault_injection.c'
+source_filename = "../../native_client/src/trusted/fault_injection/fault_injection.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.NaClFaultInjectCallSiteCount = type { i64, i64 }
+%struct.NaClMutex = type { %union.pthread_mutex_t, i32 }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%struct.NaClFaultInjectInfo = type { i8*, i32, %struct.NaClFaultExpr*, i64, i64 }
+%struct.NaClFaultExpr = type { i32, i64, i64 }
+
+@gNaClFaultInjectCallSites = hidden local_unnamed_addr global %struct.NaClFaultInjectCallSiteCount* null, align 8
+@gNaClFaultInjectMu = hidden local_unnamed_addr global %struct.NaClMutex* null, align 8
+@gTls_FaultInjectionCount = internal thread_local unnamed_addr global %struct.NaClFaultInjectCallSiteCount* null, align 8
+@.str = private unnamed_addr constant [21 x i8] c"NACL_FAULT_INJECTION\00", align 1
+@.str.1 = private unnamed_addr constant [40 x i8] c"Fatal error in file %s, line %d: !(%s)\0A\00", align 1
+@.str.2 = private unnamed_addr constant [66 x i8] c"../../native_client/src/trusted/fault_injection/fault_injection.c\00", align 1
+@.str.3 = private unnamed_addr constant [15 x i8] c"NULL != config\00", align 1
+@.str.4 = private unnamed_addr constant [3 x i8] c",:\00", align 1
+@.str.5 = private unnamed_addr constant [143 x i8] c"NaClFaultInjection: syntax error in configuration; environment variable NACL_FAULT_INJECTION contains %s, which is not syntactically correct.\0A\00", align 1
+@gNaClNumFaultInjectInfo = internal unnamed_addr global i64 0, align 8
+@gNaClFaultInjectInfo = internal unnamed_addr global %struct.NaClFaultInjectInfo* null, align 8
+@NaClFaultInjectionModuleInit.initialized = internal unnamed_addr global i1 false, align 4
+@.str.6 = private unnamed_addr constant [27 x i8] c"NaClFaultInject: found %s\0A\00", align 1
+@.str.7 = private unnamed_addr constant [42 x i8] c"NaClFaultInject: thread-specific counter\0A\00", align 1
+@.str.8 = private unnamed_addr constant [33 x i8] c"NaClFaultInject: global counter\0A\00", align 1
+@.str.9 = private unnamed_addr constant [35 x i8] c"NaClFaultInject: counter(%lx,%lx)\0A\00", align 1
+@.str.10 = private unnamed_addr constant [41 x i8] c"NaClFaultInject: should fail, value %lx\0A\00", align 1
+@.str.11 = private unnamed_addr constant [60 x i8] c"NaClFaultInject: control entry %s malformed, no equal sign\0A\00", align 1
+@.str.12 = private unnamed_addr constant [33 x i8] c"NULL != out_info->call_site_name\00", align 1
+@.str.13 = private unnamed_addr constant [38 x i8] c"NaClFaultInject: control sequence %s\0A\00", align 1
+@.str.14 = private unnamed_addr constant [103 x i8] c"NaClFaultInjection: fault control expression should indicate if the counter is thread-local or global\0A\00", align 1
+@.str.15 = private unnamed_addr constant [32 x i8] c"NaClLogInject: bad fault count\0A\00", align 1
+@.str.16 = private unnamed_addr constant [51 x i8] c"NaClFaultInjection: expected 'P' or 'F', got '%c'\0A\00", align 1
+@.str.17 = private unnamed_addr constant [18 x i8] c"NULL != new_exprs\00", align 1
+@.str.18 = private unnamed_addr constant [44 x i8] c"NaClFaultInject: adding %c(%ld,%lu) at %lu\0A\00", align 1
+@.str.20 = private unnamed_addr constant [13 x i8] c"NULL != info\00", align 1
+@.str.21 = private unnamed_addr constant [34 x i8] c"NULL != gNaClFaultInjectCallSites\00", align 1
+@.str.22 = private unnamed_addr constant [27 x i8] c"NULL != gNaClFaultInjectMu\00", align 1
+@.str.23 = private unnamed_addr constant [37 x i8] c"counter_ix < gNaClNumFaultInjectInfo\00", align 1
+@.str.24 = private unnamed_addr constant [17 x i8] c"NULL != counters\00", align 1
+@gTls_FaultInjectValue = internal thread_local unnamed_addr global i64 0, align 8
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClFaultInjectionPreThreadExitCleanup() local_unnamed_addr #0 {
+  %1 = load i8*, i8** bitcast (%struct.NaClFaultInjectCallSiteCount** @gTls_FaultInjectionCount to i8**), align 8
+  tail call void @free(i8* %1) #8
+  store %struct.NaClFaultInjectCallSiteCount* null, %struct.NaClFaultInjectCallSiteCount** @gTls_FaultInjectionCount, align 8
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @free(i8* nocapture) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClFaultInjectionModuleInternalInit() local_unnamed_addr #0 {
+  %1 = alloca i8*, align 8
+  %2 = alloca i8*, align 8
+  %3 = alloca i8*, align 8
+  %4 = tail call i8* @getenv(i8* getelementptr inbounds ([21 x i8], [21 x i8]* @.str, i64 0, i64 0)) #8
+  %5 = icmp eq i8* %4, null
+  br i1 %5, label %217, label %6
+
+6:                                                ; preds = %0
+  %7 = tail call noalias i8* @strdup(i8* nonnull %4) #8
+  %8 = icmp eq i8* %7, null
+  br i1 %8, label %9, label %10
+
+9:                                                ; preds = %6
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.1, i64 0, i64 0), i8* getelementptr inbounds ([66 x i8], [66 x i8]* @.str.2, i64 0, i64 0), i32 589, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.3, i64 0, i64 0)) #8
+  br label %10
+
+10:                                               ; preds = %6, %9
+  %11 = load i8, i8* %7, align 1
+  %12 = icmp eq i8 %11, 0
+  br i1 %12, label %189, label %13
+
+13:                                               ; preds = %10
+  %14 = bitcast i8** %2 to i8*
+  %15 = bitcast i8** %1 to i8*
+  %16 = bitcast i8** %3 to i8*
+  br label %17
+
+17:                                               ; preds = %13, %174
+  %18 = phi i8* [ %7, %13 ], [ %32, %174 ]
+  %19 = phi i64 [ -6148914691236517206, %13 ], [ %165, %174 ]
+  %20 = phi i64 [ -6148914691236517206, %13 ], [ %166, %174 ]
+  %21 = phi %struct.NaClFaultExpr* [ inttoptr (i64 -6148914691236517206 to %struct.NaClFaultExpr*), %13 ], [ %167, %174 ]
+  %22 = phi i32 [ -1431655766, %13 ], [ %168, %174 ]
+  %23 = phi i8* [ inttoptr (i64 -6148914691236517206 to i8*), %13 ], [ %169, %174 ]
+  %24 = tail call i8* @strpbrk(i8* %18, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str.4, i64 0, i64 0)) #9
+  %25 = icmp eq i8* %24, null
+  br i1 %25, label %26, label %29
+
+26:                                               ; preds = %17
+  %27 = tail call i64 @strlen(i8* %18) #9
+  %28 = getelementptr inbounds i8, i8* %18, i64 %27
+  br label %31
+
+29:                                               ; preds = %17
+  store i8 0, i8* %24, align 1
+  %30 = getelementptr inbounds i8, i8* %24, i64 1
+  br label %31
+
+31:                                               ; preds = %29, %26
+  %32 = phi i8* [ %28, %26 ], [ %30, %29 ]
+  %33 = tail call i8* @strchr(i8* %18, i32 61) #9
+  %34 = icmp eq i8* %33, null
+  br i1 %34, label %35, label %36
+
+35:                                               ; preds = %31
+  tail call void (i32, i8*, ...) @NaClLog(i32 -3, i8* getelementptr inbounds ([60 x i8], [60 x i8]* @.str.11, i64 0, i64 0), i8* %18) #8
+  br label %158
+
+36:                                               ; preds = %31
+  %37 = ptrtoint i8* %33 to i64
+  %38 = ptrtoint i8* %18 to i64
+  %39 = sub i64 %37, %38
+  %40 = tail call noalias i8* @strndup(i8* %18, i64 %39) #8
+  %41 = icmp eq i8* %40, null
+  br i1 %41, label %42, label %43
+
+42:                                               ; preds = %36
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.1, i64 0, i64 0), i8* getelementptr inbounds ([66 x i8], [66 x i8]* @.str.2, i64 0, i64 0), i32 562, i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.12, i64 0, i64 0)) #8
+  br label %43
+
+43:                                               ; preds = %42, %36
+  %44 = getelementptr inbounds i8, i8* %33, i64 1
+  tail call void (i32, i8*, ...) @NaClLog(i32 6, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.13, i64 0, i64 0), i8* %44) #8
+  %45 = load i8, i8* %44, align 1
+  switch i8 %45, label %47 [
+    i8 84, label %48
+    i8 71, label %46
+  ]
+
+46:                                               ; preds = %43
+  br label %48
+
+47:                                               ; preds = %43
+  tail call void (i32, i8*, ...) @NaClLog(i32 -3, i8* getelementptr inbounds ([103 x i8], [103 x i8]* @.str.14, i64 0, i64 0)) #8
+  br label %158
+
+48:                                               ; preds = %46, %43
+  %49 = phi i32 [ 0, %46 ], [ 1, %43 ]
+  %50 = getelementptr inbounds i8, i8* %33, i64 2
+  br label %51
+
+51:                                               ; preds = %138, %48
+  %52 = phi i8* [ null, %48 ], [ %143, %138 ]
+  %53 = phi %struct.NaClFaultExpr* [ null, %48 ], [ %139, %138 ]
+  %54 = phi i64 [ 0, %48 ], [ %153, %138 ]
+  %55 = phi i64 [ 0, %48 ], [ %144, %138 ]
+  %56 = phi i8* [ %50, %48 ], [ %157, %138 ]
+  %57 = load i8, i8* %56, align 1
+  %58 = sext i8 %57 to i32
+  switch i32 %58, label %136 [
+    i32 0, label %164
+    i32 80, label %59
+    i32 70, label %88
+  ]
+
+59:                                               ; preds = %51
+  %60 = getelementptr inbounds i8, i8* %56, i64 1
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %16) #8
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %3, align 8
+  %61 = load i8, i8* %60, align 1
+  %62 = icmp eq i8 %61, 64
+  br i1 %62, label %63, label %65
+
+63:                                               ; preds = %59
+  %64 = getelementptr inbounds i8, i8* %56, i64 2
+  br label %70
+
+65:                                               ; preds = %59
+  %66 = call i64 @strtoul(i8* %60, i8** nonnull %3, i32 0) #8
+  %67 = load i8*, i8** %3, align 8
+  %68 = icmp eq i8* %67, %60
+  %69 = select i1 %68, i64 1, i64 %66
+  br label %70
+
+70:                                               ; preds = %65, %63
+  %71 = phi i64 [ -1, %63 ], [ %69, %65 ]
+  %72 = phi i8* [ %64, %63 ], [ %67, %65 ]
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %16) #8
+  %73 = icmp eq i64 %54, %55
+  br i1 %73, label %74, label %84
+
+74:                                               ; preds = %70
+  %75 = shl i64 %54, 1
+  %76 = icmp eq i64 %75, 0
+  %77 = select i1 %76, i64 4, i64 %75
+  %78 = mul i64 %77, 24
+  %79 = tail call i8* @realloc(i8* %52, i64 %78) #8
+  %80 = icmp eq i8* %79, null
+  br i1 %80, label %81, label %82
+
+81:                                               ; preds = %74
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.1, i64 0, i64 0), i8* getelementptr inbounds ([66 x i8], [66 x i8]* @.str.2, i64 0, i64 0), i32 432, i8* getelementptr inbounds ([18 x i8], [18 x i8]* @.str.17, i64 0, i64 0)) #8
+  br label %82
+
+82:                                               ; preds = %81, %74
+  %83 = bitcast i8* %79 to %struct.NaClFaultExpr*
+  br label %84
+
+84:                                               ; preds = %70, %82
+  %85 = phi i8* [ %79, %82 ], [ %52, %70 ]
+  %86 = phi %struct.NaClFaultExpr* [ %83, %82 ], [ %53, %70 ]
+  %87 = phi i64 [ %77, %82 ], [ %55, %70 ]
+  tail call void (i32, i8*, ...) @NaClLog(i32 6, i8* getelementptr inbounds ([44 x i8], [44 x i8]* @.str.18, i64 0, i64 0), i32 80, i64 0, i64 %71, i64 %54) #8
+  br label %138
+
+88:                                               ; preds = %51
+  %89 = getelementptr inbounds i8, i8* %56, i64 1
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %14) #8
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %2, align 8
+  %90 = load i8, i8* %89, align 1
+  %91 = icmp eq i8 %90, 64
+  br i1 %91, label %92, label %94
+
+92:                                               ; preds = %88
+  %93 = getelementptr inbounds i8, i8* %56, i64 2
+  br label %99
+
+94:                                               ; preds = %88
+  %95 = call i64 @strtoul(i8* %89, i8** nonnull %2, i32 0) #8
+  %96 = load i8*, i8** %2, align 8
+  %97 = icmp eq i8* %96, %89
+  %98 = select i1 %97, i64 0, i64 %95
+  br label %99
+
+99:                                               ; preds = %94, %92
+  %100 = phi i64 [ -1, %92 ], [ %98, %94 ]
+  %101 = phi i8* [ %93, %92 ], [ %96, %94 ]
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %14) #8
+  %102 = load i8, i8* %101, align 1
+  %103 = icmp eq i8 %102, 47
+  br i1 %103, label %104, label %118
+
+104:                                              ; preds = %99
+  %105 = getelementptr inbounds i8, i8* %101, i64 1
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %15) #8
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %1, align 8
+  %106 = load i8, i8* %105, align 1
+  %107 = icmp eq i8 %106, 64
+  br i1 %107, label %108, label %110
+
+108:                                              ; preds = %104
+  %109 = getelementptr inbounds i8, i8* %101, i64 2
+  br label %114
+
+110:                                              ; preds = %104
+  %111 = call i64 @strtoul(i8* %105, i8** nonnull %1, i32 0) #8
+  %112 = load i8*, i8** %1, align 8
+  %113 = icmp eq i8* %112, %105
+  br i1 %113, label %117, label %114
+
+114:                                              ; preds = %110, %108
+  %115 = phi i64 [ -1, %108 ], [ %111, %110 ]
+  %116 = phi i8* [ %109, %108 ], [ %112, %110 ]
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %15) #8
+  br label %118
+
+117:                                              ; preds = %110
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %15) #8
+  tail call void (i32, i8*, ...) @NaClLog(i32 -3, i8* getelementptr inbounds ([32 x i8], [32 x i8]* @.str.15, i64 0, i64 0)) #8
+  br label %158
+
+118:                                              ; preds = %99, %114
+  %119 = phi i64 [ %115, %114 ], [ 1, %99 ]
+  %120 = phi i8* [ %116, %114 ], [ %101, %99 ]
+  %121 = icmp eq i64 %54, %55
+  br i1 %121, label %122, label %132
+
+122:                                              ; preds = %118
+  %123 = shl i64 %54, 1
+  %124 = icmp eq i64 %123, 0
+  %125 = select i1 %124, i64 4, i64 %123
+  %126 = mul i64 %125, 24
+  %127 = tail call i8* @realloc(i8* %52, i64 %126) #8
+  %128 = icmp eq i8* %127, null
+  br i1 %128, label %129, label %130
+
+129:                                              ; preds = %122
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.1, i64 0, i64 0), i8* getelementptr inbounds ([66 x i8], [66 x i8]* @.str.2, i64 0, i64 0), i32 432, i8* getelementptr inbounds ([18 x i8], [18 x i8]* @.str.17, i64 0, i64 0)) #8
+  br label %130
+
+130:                                              ; preds = %129, %122
+  %131 = bitcast i8* %127 to %struct.NaClFaultExpr*
+  br label %132
+
+132:                                              ; preds = %118, %130
+  %133 = phi i8* [ %127, %130 ], [ %52, %118 ]
+  %134 = phi %struct.NaClFaultExpr* [ %131, %130 ], [ %53, %118 ]
+  %135 = phi i64 [ %125, %130 ], [ %55, %118 ]
+  tail call void (i32, i8*, ...) @NaClLog(i32 6, i8* getelementptr inbounds ([44 x i8], [44 x i8]* @.str.18, i64 0, i64 0), i32 70, i64 %100, i64 %119, i64 %54) #8
+  br label %138
+
+136:                                              ; preds = %51
+  %137 = sext i8 %57 to i32
+  tail call void (i32, i8*, ...) @NaClLog(i32 -3, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @.str.16, i64 0, i64 0), i32 %137) #8
+  br label %158
+
+138:                                              ; preds = %132, %84
+  %139 = phi %struct.NaClFaultExpr* [ %134, %132 ], [ %86, %84 ]
+  %140 = phi i32 [ 0, %132 ], [ 1, %84 ]
+  %141 = phi i64 [ %100, %132 ], [ 0, %84 ]
+  %142 = phi i64 [ %119, %132 ], [ %71, %84 ]
+  %143 = phi i8* [ %133, %132 ], [ %85, %84 ]
+  %144 = phi i64 [ %135, %132 ], [ %87, %84 ]
+  %145 = phi i8* [ %120, %132 ], [ %72, %84 ]
+  %146 = getelementptr inbounds %struct.NaClFaultExpr, %struct.NaClFaultExpr* %139, i64 %54
+  %147 = bitcast %struct.NaClFaultExpr* %146 to i8*
+  %148 = getelementptr inbounds %struct.NaClFaultExpr, %struct.NaClFaultExpr* %146, i64 0, i32 0
+  store i32 %140, i32* %148, align 8
+  %149 = getelementptr inbounds i8, i8* %147, i64 4
+  %150 = bitcast i8* %149 to i32*
+  store i32 -1431655766, i32* %150, align 4
+  %151 = getelementptr inbounds %struct.NaClFaultExpr, %struct.NaClFaultExpr* %139, i64 %54, i32 1
+  store i64 %141, i64* %151, align 8
+  %152 = getelementptr inbounds %struct.NaClFaultExpr, %struct.NaClFaultExpr* %139, i64 %54, i32 2
+  store i64 %142, i64* %152, align 8
+  %153 = add i64 %54, 1
+  %154 = load i8, i8* %145, align 1
+  %155 = icmp eq i8 %154, 43
+  %156 = getelementptr inbounds i8, i8* %145, i64 1
+  %157 = select i1 %155, i8* %156, i8* %145
+  br label %51
+
+158:                                              ; preds = %35, %47, %136, %117
+  %159 = phi i8* [ %40, %117 ], [ %40, %136 ], [ %40, %47 ], [ %23, %35 ]
+  %160 = phi i32 [ %49, %117 ], [ %49, %136 ], [ 0, %47 ], [ %22, %35 ]
+  %161 = phi %struct.NaClFaultExpr* [ %53, %117 ], [ %53, %136 ], [ null, %47 ], [ %21, %35 ]
+  %162 = phi i64 [ %54, %117 ], [ %54, %136 ], [ 0, %47 ], [ %20, %35 ]
+  %163 = phi i64 [ %55, %117 ], [ %55, %136 ], [ 0, %47 ], [ %19, %35 ]
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([143 x i8], [143 x i8]* @.str.5, i64 0, i64 0), i8* %18) #8
+  br label %164
+
+164:                                              ; preds = %51, %158
+  %165 = phi i64 [ %163, %158 ], [ %55, %51 ]
+  %166 = phi i64 [ %162, %158 ], [ %54, %51 ]
+  %167 = phi %struct.NaClFaultExpr* [ %161, %158 ], [ %53, %51 ]
+  %168 = phi i32 [ %160, %158 ], [ %49, %51 ]
+  %169 = phi i8* [ %159, %158 ], [ %40, %51 ]
+  %170 = load i8*, i8** bitcast (%struct.NaClFaultInjectInfo** @gNaClFaultInjectInfo to i8**), align 8
+  %171 = tail call i8* @realloc(i8* %170, i64 160) #8
+  %172 = icmp eq i8* %171, null
+  br i1 %172, label %173, label %174
+
+173:                                              ; preds = %164
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.1, i64 0, i64 0), i8* getelementptr inbounds ([66 x i8], [66 x i8]* @.str.2, i64 0, i64 0), i32 268, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @.str.20, i64 0, i64 0)) #8
+  br label %174
+
+174:                                              ; preds = %164, %173
+  store i8* %171, i8** bitcast (%struct.NaClFaultInjectInfo** @gNaClFaultInjectInfo to i8**), align 8
+  %175 = bitcast i8* %171 to %struct.NaClFaultInjectInfo*
+  %176 = load i64, i64* @gNaClNumFaultInjectInfo, align 8
+  %177 = add i64 %176, 1
+  store i64 %177, i64* @gNaClNumFaultInjectInfo, align 8
+  %178 = getelementptr inbounds %struct.NaClFaultInjectInfo, %struct.NaClFaultInjectInfo* %175, i64 %176
+  %179 = bitcast %struct.NaClFaultInjectInfo* %178 to i8*
+  %180 = getelementptr inbounds %struct.NaClFaultInjectInfo, %struct.NaClFaultInjectInfo* %178, i64 0, i32 0
+  store i8* %169, i8** %180, align 8
+  %181 = getelementptr inbounds %struct.NaClFaultInjectInfo, %struct.NaClFaultInjectInfo* %175, i64 %176, i32 1
+  store i32 %168, i32* %181, align 8
+  %182 = getelementptr inbounds i8, i8* %179, i64 12
+  %183 = bitcast i8* %182 to i32*
+  store i32 -1431655766, i32* %183, align 4
+  %184 = getelementptr inbounds %struct.NaClFaultInjectInfo, %struct.NaClFaultInjectInfo* %175, i64 %176, i32 2
+  store %struct.NaClFaultExpr* %167, %struct.NaClFaultExpr** %184, align 8
+  %185 = getelementptr inbounds %struct.NaClFaultInjectInfo, %struct.NaClFaultInjectInfo* %175, i64 %176, i32 3
+  store i64 %166, i64* %185, align 8
+  %186 = getelementptr inbounds %struct.NaClFaultInjectInfo, %struct.NaClFaultInjectInfo* %175, i64 %176, i32 4
+  store i64 %165, i64* %186, align 8
+  %187 = load i8, i8* %32, align 1
+  %188 = icmp eq i8 %187, 0
+  br i1 %188, label %189, label %17
+
+189:                                              ; preds = %174, %10
+  tail call void @free(i8* %7) #8
+  %190 = load i64, i64* @gNaClNumFaultInjectInfo, align 8
+  %191 = shl i64 %190, 4
+  %192 = tail call noalias i8* @malloc(i64 %191) #8
+  store i8* %192, i8** bitcast (%struct.NaClFaultInjectCallSiteCount** @gNaClFaultInjectCallSites to i8**), align 8
+  %193 = icmp eq i8* %192, null
+  br i1 %193, label %194, label %196
+
+194:                                              ; preds = %189
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.1, i64 0, i64 0), i8* getelementptr inbounds ([66 x i8], [66 x i8]* @.str.2, i64 0, i64 0), i32 286, i8* getelementptr inbounds ([34 x i8], [34 x i8]* @.str.21, i64 0, i64 0)) #8
+  %195 = load i64, i64* @gNaClNumFaultInjectInfo, align 8
+  br label %196
+
+196:                                              ; preds = %194, %189
+  %197 = phi i64 [ %190, %189 ], [ %195, %194 ]
+  %198 = mul i64 %197, 48
+  %199 = tail call noalias i8* @malloc(i64 %198) #8
+  store i8* %199, i8** bitcast (%struct.NaClMutex** @gNaClFaultInjectMu to i8**), align 8
+  %200 = icmp eq i8* %199, null
+  br i1 %200, label %201, label %203
+
+201:                                              ; preds = %196
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.1, i64 0, i64 0), i8* getelementptr inbounds ([66 x i8], [66 x i8]* @.str.2, i64 0, i64 0), i32 290, i8* getelementptr inbounds ([27 x i8], [27 x i8]* @.str.22, i64 0, i64 0)) #8
+  %202 = load i64, i64* @gNaClNumFaultInjectInfo, align 8
+  br label %203
+
+203:                                              ; preds = %201, %196
+  %204 = phi i64 [ %197, %196 ], [ %202, %201 ]
+  %205 = icmp eq i64 %204, 0
+  br i1 %205, label %217, label %206
+
+206:                                              ; preds = %203, %206
+  %207 = phi i64 [ %214, %206 ], [ 0, %203 ]
+  %208 = load %struct.NaClFaultInjectCallSiteCount*, %struct.NaClFaultInjectCallSiteCount** @gNaClFaultInjectCallSites, align 8
+  %209 = getelementptr inbounds %struct.NaClFaultInjectCallSiteCount, %struct.NaClFaultInjectCallSiteCount* %208, i64 %207, i32 0
+  store i64 0, i64* %209, align 8
+  %210 = load %struct.NaClFaultInjectCallSiteCount*, %struct.NaClFaultInjectCallSiteCount** @gNaClFaultInjectCallSites, align 8
+  %211 = getelementptr inbounds %struct.NaClFaultInjectCallSiteCount, %struct.NaClFaultInjectCallSiteCount* %210, i64 %207, i32 1
+  store i64 0, i64* %211, align 8
+  %212 = load %struct.NaClMutex*, %struct.NaClMutex** @gNaClFaultInjectMu, align 8
+  %213 = getelementptr inbounds %struct.NaClMutex, %struct.NaClMutex* %212, i64 %207
+  tail call void @NaClXMutexCtor(%struct.NaClMutex* %213) #8
+  %214 = add nuw i64 %207, 1
+  %215 = load i64, i64* @gNaClNumFaultInjectInfo, align 8
+  %216 = icmp ult i64 %214, %215
+  br i1 %216, label %206, label %217
+
+217:                                              ; preds = %206, %203, %0
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+; Function Attrs: nofree nounwind readonly
+declare i8* @getenv(i8* nocapture) local_unnamed_addr #3
+
+; Function Attrs: nofree nounwind
+declare noalias i8* @strdup(i8* nocapture readonly) local_unnamed_addr #4
+
+declare void @NaClLog(i32, i8*, ...) local_unnamed_addr #5
+
+; Function Attrs: nofree nounwind readonly
+declare i8* @strpbrk(i8*, i8* nocapture) local_unnamed_addr #3
+
+; Function Attrs: argmemonly nofree nounwind readonly
+declare i64 @strlen(i8* nocapture) local_unnamed_addr #6
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClFaultInjectionModuleInternalFini() local_unnamed_addr #0 {
+  %1 = load i8*, i8** bitcast (%struct.NaClFaultInjectCallSiteCount** @gNaClFaultInjectCallSites to i8**), align 8
+  tail call void @free(i8* %1) #8
+  store %struct.NaClFaultInjectCallSiteCount* null, %struct.NaClFaultInjectCallSiteCount** @gNaClFaultInjectCallSites, align 8
+  %2 = load i64, i64* @gNaClNumFaultInjectInfo, align 8
+  %3 = icmp eq i64 %2, 0
+  %4 = load %struct.NaClMutex*, %struct.NaClMutex** @gNaClFaultInjectMu, align 8
+  br i1 %3, label %13, label %5
+
+5:                                                ; preds = %0, %5
+  %6 = phi %struct.NaClMutex* [ %12, %5 ], [ %4, %0 ]
+  %7 = phi i64 [ %9, %5 ], [ 0, %0 ]
+  %8 = getelementptr inbounds %struct.NaClMutex, %struct.NaClMutex* %6, i64 %7
+  tail call void @NaClMutexDtor(%struct.NaClMutex* %8) #8
+  %9 = add nuw i64 %7, 1
+  %10 = load i64, i64* @gNaClNumFaultInjectInfo, align 8
+  %11 = icmp ult i64 %9, %10
+  %12 = load %struct.NaClMutex*, %struct.NaClMutex** @gNaClFaultInjectMu, align 8
+  br i1 %11, label %5, label %13
+
+13:                                               ; preds = %5, %0
+  %14 = phi %struct.NaClMutex* [ %4, %0 ], [ %12, %5 ]
+  %15 = bitcast %struct.NaClMutex* %14 to i8*
+  tail call void @free(i8* %15) #8
+  %16 = load i64, i64* @gNaClNumFaultInjectInfo, align 8
+  %17 = icmp eq i64 %16, 0
+  %18 = load %struct.NaClFaultInjectInfo*, %struct.NaClFaultInjectInfo** @gNaClFaultInjectInfo, align 8
+  br i1 %17, label %32, label %19
+
+19:                                               ; preds = %13, %19
+  %20 = phi %struct.NaClFaultInjectInfo* [ %31, %19 ], [ %18, %13 ]
+  %21 = phi i64 [ %28, %19 ], [ 0, %13 ]
+  %22 = getelementptr inbounds %struct.NaClFaultInjectInfo, %struct.NaClFaultInjectInfo* %20, i64 %21, i32 0
+  %23 = load i8*, i8** %22, align 8
+  tail call void @free(i8* %23) #8
+  %24 = load %struct.NaClFaultInjectInfo*, %struct.NaClFaultInjectInfo** @gNaClFaultInjectInfo, align 8
+  %25 = getelementptr inbounds %struct.NaClFaultInjectInfo, %struct.NaClFaultInjectInfo* %24, i64 %21, i32 2
+  %26 = bitcast %struct.NaClFaultExpr** %25 to i8**
+  %27 = load i8*, i8** %26, align 8
+  tail call void @free(i8* %27) #8
+  %28 = add nuw i64 %21, 1
+  %29 = load i64, i64* @gNaClNumFaultInjectInfo, align 8
+  %30 = icmp ult i64 %28, %29
+  %31 = load %struct.NaClFaultInjectInfo*, %struct.NaClFaultInjectInfo** @gNaClFaultInjectInfo, align 8
+  br i1 %30, label %19, label %32
+
+32:                                               ; preds = %19, %13
+  %33 = phi %struct.NaClFaultInjectInfo* [ %18, %13 ], [ %31, %19 ]
+  %34 = bitcast %struct.NaClFaultInjectInfo* %33 to i8*
+  tail call void @free(i8* %34) #8
+  store %struct.NaClFaultInjectInfo* null, %struct.NaClFaultInjectInfo** @gNaClFaultInjectInfo, align 8
+  store i64 0, i64* @gNaClNumFaultInjectInfo, align 8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClFaultInjectionModuleInit() local_unnamed_addr #0 {
+  %1 = load i1, i1* @NaClFaultInjectionModuleInit.initialized, align 4
+  br i1 %1, label %3, label %2
+
+2:                                                ; preds = %0
+  tail call void @NaClFaultInjectionModuleInternalInit()
+  store i1 true, i1* @NaClFaultInjectionModuleInit.initialized, align 4
+  br label %3
+
+3:                                                ; preds = %0, %2
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClFaultInjectionFaultP(i8*) local_unnamed_addr #0 {
+  %2 = load i64, i64* @gNaClNumFaultInjectInfo, align 8
+  %3 = icmp eq i64 %2, 0
+  br i1 %3, label %91, label %4
+
+4:                                                ; preds = %1
+  %5 = load %struct.NaClFaultInjectInfo*, %struct.NaClFaultInjectInfo** @gNaClFaultInjectInfo, align 8
+  br label %6
+
+6:                                                ; preds = %4, %14
+  %7 = phi i64 [ 0, %4 ], [ %15, %14 ]
+  %8 = getelementptr inbounds %struct.NaClFaultInjectInfo, %struct.NaClFaultInjectInfo* %5, i64 %7, i32 0
+  %9 = load i8*, i8** %8, align 8
+  %10 = tail call i32 @strcmp(i8* %0, i8* %9) #9
+  %11 = icmp eq i32 %10, 0
+  br i1 %11, label %12, label %14
+
+12:                                               ; preds = %6
+  tail call void (i32, i8*, ...) @NaClLog(i32 6, i8* getelementptr inbounds ([27 x i8], [27 x i8]* @.str.6, i64 0, i64 0), i8* %0) #8
+  %13 = load i64, i64* @gNaClNumFaultInjectInfo, align 8
+  br label %17
+
+14:                                               ; preds = %6
+  %15 = add nuw i64 %7, 1
+  %16 = icmp ult i64 %15, %2
+  br i1 %16, label %6, label %17
+
+17:                                               ; preds = %14, %12
+  %18 = phi i64 [ %13, %12 ], [ %2, %14 ]
+  %19 = phi i64 [ %7, %12 ], [ %15, %14 ]
+  %20 = icmp eq i64 %19, %18
+  br i1 %20, label %91, label %21
+
+21:                                               ; preds = %17
+  %22 = load %struct.NaClFaultInjectInfo*, %struct.NaClFaultInjectInfo** @gNaClFaultInjectInfo, align 8
+  %23 = getelementptr inbounds %struct.NaClFaultInjectInfo, %struct.NaClFaultInjectInfo* %22, i64 %19, i32 1
+  %24 = load i32, i32* %23, align 8
+  %25 = icmp eq i32 %24, 0
+  br i1 %25, label %47, label %26
+
+26:                                               ; preds = %21
+  tail call void (i32, i8*, ...) @NaClLog(i32 6, i8* getelementptr inbounds ([42 x i8], [42 x i8]* @.str.7, i64 0, i64 0)) #8
+  %27 = load i64, i64* @gNaClNumFaultInjectInfo, align 8
+  %28 = icmp ugt i64 %27, %19
+  br i1 %28, label %30, label %29
+
+29:                                               ; preds = %26
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.1, i64 0, i64 0), i8* getelementptr inbounds ([66 x i8], [66 x i8]* @.str.2, i64 0, i64 0), i32 317, i8* getelementptr inbounds ([37 x i8], [37 x i8]* @.str.23, i64 0, i64 0)) #8
+  br label %30
+
+30:                                               ; preds = %29, %26
+  %31 = load %struct.NaClFaultInjectCallSiteCount*, %struct.NaClFaultInjectCallSiteCount** @gTls_FaultInjectionCount, align 8
+  %32 = icmp eq %struct.NaClFaultInjectCallSiteCount* %31, null
+  br i1 %32, label %33, label %51
+
+33:                                               ; preds = %30
+  %34 = load i64, i64* @gNaClNumFaultInjectInfo, align 8
+  %35 = shl i64 %34, 4
+  %36 = tail call noalias i8* @malloc(i64 %35) #8
+  %37 = bitcast i8* %36 to %struct.NaClFaultInjectCallSiteCount*
+  %38 = icmp eq i8* %36, null
+  br i1 %38, label %39, label %41
+
+39:                                               ; preds = %33
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.1, i64 0, i64 0), i8* getelementptr inbounds ([66 x i8], [66 x i8]* @.str.2, i64 0, i64 0), i32 326, i8* getelementptr inbounds ([17 x i8], [17 x i8]* @.str.24, i64 0, i64 0)) #8
+  %40 = load i64, i64* @gNaClNumFaultInjectInfo, align 8
+  br label %41
+
+41:                                               ; preds = %39, %33
+  %42 = phi i64 [ %34, %33 ], [ %40, %39 ]
+  %43 = icmp eq i64 %42, 0
+  br i1 %43, label %46, label %44
+
+44:                                               ; preds = %41
+  %45 = shl nuw i64 %42, 4
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %36, i8 0, i64 %45, i1 false) #8
+  br label %46
+
+46:                                               ; preds = %44, %41
+  store i8* %36, i8** bitcast (%struct.NaClFaultInjectCallSiteCount** @gTls_FaultInjectionCount to i8**), align 8
+  br label %51
+
+47:                                               ; preds = %21
+  tail call void (i32, i8*, ...) @NaClLog(i32 6, i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.8, i64 0, i64 0)) #8
+  %48 = load %struct.NaClMutex*, %struct.NaClMutex** @gNaClFaultInjectMu, align 8
+  %49 = getelementptr inbounds %struct.NaClMutex, %struct.NaClMutex* %48, i64 %19
+  tail call void @NaClXMutexLock(%struct.NaClMutex* %49) #8
+  %50 = load %struct.NaClFaultInjectCallSiteCount*, %struct.NaClFaultInjectCallSiteCount** @gNaClFaultInjectCallSites, align 8
+  br label %51
+
+51:                                               ; preds = %46, %30, %47
+  %52 = phi %struct.NaClFaultInjectCallSiteCount* [ %50, %47 ], [ %37, %46 ], [ %31, %30 ]
+  %53 = getelementptr inbounds %struct.NaClFaultInjectCallSiteCount, %struct.NaClFaultInjectCallSiteCount* %52, i64 %19
+  %54 = icmp eq %struct.NaClFaultInjectCallSiteCount* %53, null
+  br i1 %54, label %91, label %55
+
+55:                                               ; preds = %51
+  %56 = getelementptr inbounds %struct.NaClFaultInjectCallSiteCount, %struct.NaClFaultInjectCallSiteCount* %53, i64 0, i32 0
+  %57 = load i64, i64* %56, align 8
+  %58 = getelementptr inbounds %struct.NaClFaultInjectCallSiteCount, %struct.NaClFaultInjectCallSiteCount* %52, i64 %19, i32 1
+  %59 = load i64, i64* %58, align 8
+  tail call void (i32, i8*, ...) @NaClLog(i32 6, i8* getelementptr inbounds ([35 x i8], [35 x i8]* @.str.9, i64 0, i64 0), i64 %57, i64 %59) #8
+  %60 = load i64, i64* %56, align 8
+  %61 = getelementptr inbounds %struct.NaClFaultInjectInfo, %struct.NaClFaultInjectInfo* %22, i64 %19, i32 3
+  %62 = load i64, i64* %61, align 8
+  %63 = icmp ult i64 %60, %62
+  br i1 %63, label %64, label %84
+
+64:                                               ; preds = %55
+  %65 = getelementptr inbounds %struct.NaClFaultInjectInfo, %struct.NaClFaultInjectInfo* %22, i64 %19, i32 2
+  %66 = load %struct.NaClFaultExpr*, %struct.NaClFaultExpr** %65, align 8
+  %67 = getelementptr inbounds %struct.NaClFaultExpr, %struct.NaClFaultExpr* %66, i64 %60, i32 0
+  %68 = load i32, i32* %67, align 8
+  %69 = icmp eq i32 %68, 0
+  br i1 %69, label %70, label %74
+
+70:                                               ; preds = %64
+  %71 = getelementptr inbounds %struct.NaClFaultExpr, %struct.NaClFaultExpr* %66, i64 %60, i32 1
+  %72 = load i64, i64* %71, align 8
+  tail call void (i32, i8*, ...) @NaClLog(i32 6, i8* getelementptr inbounds ([41 x i8], [41 x i8]* @.str.10, i64 0, i64 0), i64 %72) #8
+  %73 = load i64, i64* %71, align 8
+  store i64 %73, i64* @gTls_FaultInjectValue, align 8
+  br label %74
+
+74:                                               ; preds = %64, %70
+  %75 = phi i32 [ 1, %70 ], [ 0, %64 ]
+  %76 = load i64, i64* %58, align 8
+  %77 = add i64 %76, 1
+  store i64 %77, i64* %58, align 8
+  %78 = getelementptr inbounds %struct.NaClFaultExpr, %struct.NaClFaultExpr* %66, i64 %60, i32 2
+  %79 = load i64, i64* %78, align 8
+  %80 = icmp ult i64 %77, %79
+  br i1 %80, label %84, label %81
+
+81:                                               ; preds = %74
+  store i64 0, i64* %58, align 8
+  %82 = load i64, i64* %56, align 8
+  %83 = add i64 %82, 1
+  store i64 %83, i64* %56, align 8
+  br label %84
+
+84:                                               ; preds = %55, %74, %81
+  %85 = phi i32 [ %75, %81 ], [ %75, %74 ], [ 0, %55 ]
+  %86 = load i32, i32* %23, align 8
+  %87 = icmp eq i32 %86, 0
+  br i1 %87, label %88, label %91
+
+88:                                               ; preds = %84
+  %89 = load %struct.NaClMutex*, %struct.NaClMutex** @gNaClFaultInjectMu, align 8
+  %90 = getelementptr inbounds %struct.NaClMutex, %struct.NaClMutex* %89, i64 %19
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* %90) #8
+  br label %91
+
+91:                                               ; preds = %1, %88, %84, %51, %17
+  %92 = phi i32 [ 0, %17 ], [ 0, %51 ], [ %85, %84 ], [ %85, %88 ], [ 0, %1 ]
+  ret i32 %92
+}
+
+; Function Attrs: nofree nounwind readonly
+declare i32 @strcmp(i8* nocapture, i8* nocapture) local_unnamed_addr #3
+
+declare void @NaClXMutexLock(%struct.NaClMutex*) local_unnamed_addr #5
+
+declare void @NaClXMutexUnlock(%struct.NaClMutex*) local_unnamed_addr #5
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden i64 @NaClFaultInjectionValue() local_unnamed_addr #7 {
+  %1 = load i64, i64* @gTls_FaultInjectValue, align 8
+  ret i64 %1
+}
+
+; Function Attrs: nofree nounwind readonly
+declare i8* @strchr(i8*, i32) local_unnamed_addr #3
+
+; Function Attrs: nofree nounwind
+declare noalias i8* @strndup(i8* nocapture readonly, i64) local_unnamed_addr #4
+
+; Function Attrs: nofree nounwind
+declare i64 @strtoul(i8* readonly, i8** nocapture, i32) local_unnamed_addr #4
+
+; Function Attrs: nounwind
+declare noalias i8* @realloc(i8* nocapture, i64) local_unnamed_addr #1
+
+; Function Attrs: nofree nounwind
+declare noalias i8* @malloc(i64) local_unnamed_addr #4
+
+declare void @NaClXMutexCtor(%struct.NaClMutex*) local_unnamed_addr #5
+
+declare void @NaClMutexDtor(%struct.NaClMutex*) local_unnamed_addr #5
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { nofree nounwind readonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nofree nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { argmemonly nofree nounwind readonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { norecurse nounwind readonly ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { nounwind }
+attributes #9 = { nounwind readonly }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}

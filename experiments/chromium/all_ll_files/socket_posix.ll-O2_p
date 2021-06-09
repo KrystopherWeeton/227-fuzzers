@@ -1,0 +1,2443 @@
+; ModuleID = '../../net/socket/socket_posix.cc'
+source_filename = "../../net/socket/socket_posix.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"struct.base::trace_event::TraceCategory" = type { i8, i32, i8* }
+%"class.std::__1::locale::id" = type <{ %"struct.std::__1::once_flag", i32, [4 x i8] }>
+%"struct.std::__1::once_flag" = type { i64 }
+%"class.net::SocketPosix" = type <{ %"class.base::WatchableIOMessagePumpPosix::FdWatcher", i32, [4 x i8], %"class.base::MessagePumpLibevent::FdWatchController", %"class.std::__1::unique_ptr.1"*, %"class.base::OnceCallback", %"class.base::MessagePumpLibevent::FdWatchController", %class.scoped_refptr.8, i32, [4 x i8], %"class.base::OnceCallback", %"class.base::OnceCallback", %"class.base::MessagePumpLibevent::FdWatchController", %class.scoped_refptr.8, i32, [4 x i8], %"class.base::OnceCallback", i8, [7 x i8], %"class.std::__1::unique_ptr.10", %"class.base::ThreadChecker", [7 x i8] }>
+%"class.base::WatchableIOMessagePumpPosix::FdWatcher" = type { i32 (...)** }
+%"class.std::__1::unique_ptr.1" = type { %"class.std::__1::__compressed_pair.2" }
+%"class.std::__1::__compressed_pair.2" = type { %"struct.std::__1::__compressed_pair_elem.3" }
+%"struct.std::__1::__compressed_pair_elem.3" = type { %"class.net::SocketPosix"* }
+%"class.base::MessagePumpLibevent::FdWatchController" = type { %"class.base::WatchableIOMessagePumpPosix::FdWatchControllerInterface", %"class.std::__1::unique_ptr", %"class.base::MessagePumpLibevent"*, %"class.base::WatchableIOMessagePumpPosix::FdWatcher"*, i8* }
+%"class.base::WatchableIOMessagePumpPosix::FdWatchControllerInterface" = type { i32 (...)**, %"class.base::Location" }
+%"class.base::Location" = type { i8*, i8*, i32, i8* }
+%"class.std::__1::unique_ptr" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %struct.event* }
+%struct.event = type opaque
+%"class.base::MessagePumpLibevent" = type <{ %"class.base::MessagePump", %"struct.base::MessagePumpLibevent::RunState"*, i8, [7 x i8], %struct.event_base*, i32, i32, %struct.event*, %"class.base::ThreadChecker", [7 x i8] }>
+%"class.base::MessagePump" = type { i32 (...)** }
+%"struct.base::MessagePumpLibevent::RunState" = type <{ %"class.base::MessagePump::Delegate"*, i8, [7 x i8] }>
+%"class.base::MessagePump::Delegate" = type { i32 (...)** }
+%struct.event_base = type opaque
+%class.scoped_refptr.8 = type { %"class.net::IOBuffer"* }
+%"class.net::IOBuffer" = type { i32 (...)**, %"class.base::RefCountedThreadSafe.9", i8* }
+%"class.base::RefCountedThreadSafe.9" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.7" }
+%"struct.std::__1::__atomic_base.7" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"class.base::OnceCallback" = type { %"class.base::internal::CallbackBase" }
+%"class.base::internal::CallbackBase" = type { %class.scoped_refptr }
+%class.scoped_refptr = type { %"class.base::internal::BindStateBase"* }
+%"class.base::internal::BindStateBase" = type { %"class.base::RefCountedThreadSafe", void ()*, void (%"class.base::internal::BindStateBase"*)*, i1 (%"class.base::internal::BindStateBase"*, i32)* }
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.std::__1::unique_ptr.10" = type { %"class.std::__1::__compressed_pair.11" }
+%"class.std::__1::__compressed_pair.11" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"struct.std::__1::__compressed_pair_elem.12" = type { %"struct.net::SockaddrStorage"* }
+%"struct.net::SockaddrStorage" = type { %struct.sockaddr_storage, i32, %struct.sockaddr* }
+%struct.sockaddr_storage = type { i16, [118 x i8], i64 }
+%struct.sockaddr = type { i16, [14 x i8] }
+%"class.base::ThreadChecker" = type { i8 }
+%"class.logging::ErrnoLogMessage" = type <{ %"class.logging::LogMessage", i32, [4 x i8] }>
+%"class.logging::LogMessage" = type { i32 (...)**, i32, %"class.std::__1::basic_ostringstream", i64, i8*, i32, %"class.base::ScopedClearLastErrorBase" }
+%"class.std::__1::basic_ostringstream" = type { %"class.std::__1::basic_ostream.base", %"class.std::__1::basic_stringbuf", %"class.std::__1::basic_ios.base" }
+%"class.std::__1::basic_ostream.base" = type { i32 (...)** }
+%"class.std::__1::basic_stringbuf" = type <{ %"class.std::__1::basic_streambuf", %"class.std::__1::basic_string", i8*, i32, [4 x i8] }>
+%"class.std::__1::basic_streambuf" = type { i32 (...)**, %"class.std::__1::locale", i8*, i8*, i8*, i8*, i8*, i8* }
+%"class.std::__1::locale" = type { %"class.std::__1::locale::__imp"* }
+%"class.std::__1::locale::__imp" = type opaque
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.16" }
+%"class.std::__1::__compressed_pair.16" = type { %"struct.std::__1::__compressed_pair_elem.17" }
+%"struct.std::__1::__compressed_pair_elem.17" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon }
+%union.anon = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.std::__1::basic_ios.base" = type <{ %"class.std::__1::ios_base", %"class.std::__1::basic_ostream"*, i32 }>
+%"class.std::__1::ios_base" = type { i32 (...)**, i32, i64, i64, i32, i32, i8*, i8*, void (i32, %"class.std::__1::ios_base"*, i32)**, i32*, i64, i64, i64*, i64, i64, i8**, i64, i64 }
+%"class.std::__1::basic_ostream" = type { i32 (...)**, %"class.std::__1::basic_ios.base" }
+%"class.base::ScopedClearLastErrorBase" = type { i32 }
+%"class.base::CurrentIOThread" = type { %"class.base::CurrentThread" }
+%"class.base::CurrentThread" = type { %"class.base::sequence_manager::internal::SequenceManagerImpl"* }
+%"class.base::sequence_manager::internal::SequenceManagerImpl" = type opaque
+%"class.logging::CheckError" = type { %"class.logging::LogMessage"* }
+%"struct.net::NetworkTrafficAnnotationTag" = type { i32 }
+%"class.base::TimeTicks" = type { %"class.base::time_internal::TimeBase" }
+%"class.base::time_internal::TimeBase" = type { i64 }
+%"class.base::trace_event::TraceArguments" = type { i8, [2 x i8], [2 x i8*], [2 x %"union.base::trace_event::TraceValue"] }
+%"union.base::trace_event::TraceValue" = type { i64 }
+%"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry" = type { i8, %"class.std::__1::basic_ostream"* }
+%"class.std::__1::locale::facet" = type { %"class.std::__1::__shared_count" }
+%"class.std::__1::__shared_count" = type { i32 (...)**, i64 }
+%"class.std::__1::ctype" = type <{ %"class.std::__1::locale::facet", i16*, i8, [7 x i8] }>
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short" = type { [23 x i8], %struct.anon }
+%struct.anon = type { i8 }
+
+$_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m = comdat any
+
+$_ZNSt3__116__pad_and_outputIcNS_11char_traitsIcEEEENS_19ostreambuf_iteratorIT_T0_EES6_PKS4_S8_S8_RNS_8ios_baseES4_ = comdat any
+
+$_ZN4base8internal7InvokerINS0_9BindStateIMN3net11SocketPosixEFviEJNS0_17UnretainedWrapperIS4_EEEEEFviEE7RunOnceEPNS0_13BindStateBaseEi = comdat any
+
+$_ZN4base8internal9BindStateIMN3net11SocketPosixEFviEJNS0_17UnretainedWrapperIS3_EEEE7DestroyEPKNS0_13BindStateBaseE = comdat any
+
+@_ZTVN3net11SocketPosixE = hidden unnamed_addr constant { [6 x i8*] } { [6 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.net::SocketPosix"*, i32)* @_ZN3net11SocketPosix28OnFileCanReadWithoutBlockingEi to i8*), i8* bitcast (void (%"class.net::SocketPosix"*, i32)* @_ZN3net11SocketPosix29OnFileCanWriteWithoutBlockingEi to i8*), i8* bitcast (void (%"class.net::SocketPosix"*)* @_ZN3net11SocketPosixD2Ev to i8*), i8* bitcast (void (%"class.net::SocketPosix"*)* @_ZN3net11SocketPosixD0Ev to i8*)] }, align 8
+@.str = private unnamed_addr constant [12 x i8] c"SocketPosix\00", align 1
+@.str.1 = private unnamed_addr constant [33 x i8] c"../../net/socket/socket_posix.cc\00", align 1
+@.str.2 = private unnamed_addr constant [30 x i8] c"CreatePlatformSocket() failed\00", align 1
+@.str.3 = private unnamed_addr constant [14 x i8] c"bind() failed\00", align 1
+@.str.4 = private unnamed_addr constant [16 x i8] c"listen() failed\00", align 1
+@.str.5 = private unnamed_addr constant [37 x i8] c"WatchFileDescriptor failed on accept\00", align 1
+@.str.6 = private unnamed_addr constant [38 x i8] c"WatchFileDescriptor failed on connect\00", align 1
+@.str.7 = private unnamed_addr constant [34 x i8] c"read_if_ready_callback_.is_null()\00", align 1
+@.str.8 = private unnamed_addr constant [35 x i8] c"WatchFileDescriptor failed on read\00", align 1
+@.str.9 = private unnamed_addr constant [26 x i8] c"write_callback_.is_null()\00", align 1
+@.str.10 = private unnamed_addr constant [36 x i8] c"WatchFileDescriptor failed on write\00", align 1
+@_ZN4base11trace_event16CategoryRegistry11categories_E = external global [300 x %"struct.base::trace_event::TraceCategory"], align 16
+@.str.11 = private unnamed_addr constant [42 x i8] c"SocketPosix::OnFileCanReadWithoutBlocking\00", align 1
+@_ZNSt3__15ctypeIcE2idE = external global %"class.std::__1::locale::id", align 8
+
+@_ZN3net11SocketPosixC1Ev = hidden unnamed_addr alias void (%"class.net::SocketPosix"*), void (%"class.net::SocketPosix"*)* @_ZN3net11SocketPosixC2Ev
+@_ZN3net11SocketPosixD1Ev = hidden unnamed_addr alias void (%"class.net::SocketPosix"*), void (%"class.net::SocketPosix"*)* @_ZN3net11SocketPosixD2Ev
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3net11SocketPosixC2Ev(%"class.net::SocketPosix"*) unnamed_addr #0 align 2 {
+  %2 = alloca %"class.base::Location", align 8
+  %3 = alloca %"class.base::Location", align 8
+  %4 = alloca %"class.base::Location", align 8
+  %5 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [6 x i8*] }, { [6 x i8*] }* @_ZTVN3net11SocketPosixE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %5, align 8
+  %6 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  store i32 -1, i32* %6, align 8
+  %7 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 3
+  %8 = bitcast %"class.base::Location"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %8) #10
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %2, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.1, i64 0, i64 0), i32 73) #10
+  call void @_ZN4base19MessagePumpLibevent17FdWatchControllerC1ERKNS_8LocationE(%"class.base::MessagePumpLibevent::FdWatchController"* %7, %"class.base::Location"* nonnull dereferenceable(32) %2) #10
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %8) #10
+  %9 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 5, i32 0, i32 0, i32 0
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %9, align 8
+  %10 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 6
+  %11 = bitcast %"class.base::Location"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %11) #10
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %3, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.1, i64 0, i64 0), i32 74) #10
+  call void @_ZN4base19MessagePumpLibevent17FdWatchControllerC1ERKNS_8LocationE(%"class.base::MessagePumpLibevent::FdWatchController"* %10, %"class.base::Location"* nonnull dereferenceable(32) %3) #10
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %11) #10
+  %12 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 7, i32 0
+  store %"class.net::IOBuffer"* null, %"class.net::IOBuffer"** %12, align 8
+  %13 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 8
+  store i32 0, i32* %13, align 8
+  %14 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 10, i32 0, i32 0, i32 0
+  %15 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 12
+  %16 = bitcast %"class.base::Location"* %4 to i8*
+  %17 = bitcast %"class.base::internal::BindStateBase"** %14 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %17, i8 0, i64 16, i1 false)
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %16) #10
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %4, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.1, i64 0, i64 0), i32 76) #10
+  call void @_ZN4base19MessagePumpLibevent17FdWatchControllerC1ERKNS_8LocationE(%"class.base::MessagePumpLibevent::FdWatchController"* %15, %"class.base::Location"* nonnull dereferenceable(32) %4) #10
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %16) #10
+  %18 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 13, i32 0
+  store %"class.net::IOBuffer"* null, %"class.net::IOBuffer"** %18, align 8
+  %19 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 14
+  store i32 0, i32* %19, align 8
+  %20 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 16, i32 0, i32 0, i32 0
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %20, align 8
+  %21 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 17
+  store i8 0, i8* %21, align 8
+  %22 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 19
+  %23 = bitcast %"class.std::__1::unique_ptr.10"* %22 to i64*
+  store i64 0, i64* %23, align 8
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #1
+
+declare void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* sret, i8*, i8*, i32) local_unnamed_addr #2
+
+declare void @_ZN4base19MessagePumpLibevent17FdWatchControllerC1ERKNS_8LocationE(%"class.base::MessagePumpLibevent::FdWatchController"*, %"class.base::Location"* dereferenceable(32)) unnamed_addr #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3net11SocketPosixD2Ev(%"class.net::SocketPosix"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [6 x i8*] }, { [6 x i8*] }* @_ZTVN3net11SocketPosixE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  tail call void @_ZN3net11SocketPosix22StopWatchingAndCleanUpEb(%"class.net::SocketPosix"* %0, i1 zeroext true) #10
+  %3 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 19, i32 0, i32 0, i32 0
+  %4 = load %"struct.net::SockaddrStorage"*, %"struct.net::SockaddrStorage"** %3, align 8
+  store %"struct.net::SockaddrStorage"* null, %"struct.net::SockaddrStorage"** %3, align 8
+  %5 = icmp eq %"struct.net::SockaddrStorage"* %4, null
+  br i1 %5, label %8, label %6
+
+6:                                                ; preds = %1
+  %7 = bitcast %"struct.net::SockaddrStorage"* %4 to i8*
+  tail call void @_ZdlPv(i8* %7) #11
+  br label %8
+
+8:                                                ; preds = %1, %6
+  %9 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 16, i32 0
+  tail call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* %9) #10
+  %10 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 13, i32 0
+  %11 = load %"class.net::IOBuffer"*, %"class.net::IOBuffer"** %10, align 8
+  %12 = icmp eq %"class.net::IOBuffer"* %11, null
+  br i1 %12, label %25, label %13
+
+13:                                               ; preds = %8
+  %14 = getelementptr inbounds %"class.net::IOBuffer", %"class.net::IOBuffer"* %11, i64 0, i32 1
+  %15 = getelementptr inbounds %"class.base::RefCountedThreadSafe.9", %"class.base::RefCountedThreadSafe.9"* %14, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %16 = atomicrmw sub i32* %15, i32 1 acq_rel
+  %17 = icmp eq i32 %16, 1
+  br i1 %17, label %18, label %25
+
+18:                                               ; preds = %13
+  %19 = getelementptr inbounds %"class.base::RefCountedThreadSafe.9", %"class.base::RefCountedThreadSafe.9"* %14, i64 -2
+  %20 = bitcast %"class.base::RefCountedThreadSafe.9"* %19 to %"class.net::IOBuffer"*
+  %21 = bitcast %"class.base::RefCountedThreadSafe.9"* %19 to void (%"class.net::IOBuffer"*)***
+  %22 = load void (%"class.net::IOBuffer"*)**, void (%"class.net::IOBuffer"*)*** %21, align 8
+  %23 = getelementptr inbounds void (%"class.net::IOBuffer"*)*, void (%"class.net::IOBuffer"*)** %22, i64 1
+  %24 = load void (%"class.net::IOBuffer"*)*, void (%"class.net::IOBuffer"*)** %23, align 8
+  tail call void %24(%"class.net::IOBuffer"* nonnull %20) #10
+  br label %25
+
+25:                                               ; preds = %8, %13, %18
+  %26 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 12
+  tail call void @_ZN4base19MessagePumpLibevent17FdWatchControllerD1Ev(%"class.base::MessagePumpLibevent::FdWatchController"* %26) #10
+  %27 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 11, i32 0
+  tail call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* %27) #10
+  %28 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 10, i32 0
+  tail call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* %28) #10
+  %29 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 7, i32 0
+  %30 = load %"class.net::IOBuffer"*, %"class.net::IOBuffer"** %29, align 8
+  %31 = icmp eq %"class.net::IOBuffer"* %30, null
+  br i1 %31, label %44, label %32
+
+32:                                               ; preds = %25
+  %33 = getelementptr inbounds %"class.net::IOBuffer", %"class.net::IOBuffer"* %30, i64 0, i32 1
+  %34 = getelementptr inbounds %"class.base::RefCountedThreadSafe.9", %"class.base::RefCountedThreadSafe.9"* %33, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %35 = atomicrmw sub i32* %34, i32 1 acq_rel
+  %36 = icmp eq i32 %35, 1
+  br i1 %36, label %37, label %44
+
+37:                                               ; preds = %32
+  %38 = getelementptr inbounds %"class.base::RefCountedThreadSafe.9", %"class.base::RefCountedThreadSafe.9"* %33, i64 -2
+  %39 = bitcast %"class.base::RefCountedThreadSafe.9"* %38 to %"class.net::IOBuffer"*
+  %40 = bitcast %"class.base::RefCountedThreadSafe.9"* %38 to void (%"class.net::IOBuffer"*)***
+  %41 = load void (%"class.net::IOBuffer"*)**, void (%"class.net::IOBuffer"*)*** %40, align 8
+  %42 = getelementptr inbounds void (%"class.net::IOBuffer"*)*, void (%"class.net::IOBuffer"*)** %41, i64 1
+  %43 = load void (%"class.net::IOBuffer"*)*, void (%"class.net::IOBuffer"*)** %42, align 8
+  tail call void %43(%"class.net::IOBuffer"* nonnull %39) #10
+  br label %44
+
+44:                                               ; preds = %25, %32, %37
+  %45 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 6
+  tail call void @_ZN4base19MessagePumpLibevent17FdWatchControllerD1Ev(%"class.base::MessagePumpLibevent::FdWatchController"* %45) #10
+  %46 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 5, i32 0
+  tail call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* %46) #10
+  %47 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 3
+  tail call void @_ZN4base19MessagePumpLibevent17FdWatchControllerD1Ev(%"class.base::MessagePumpLibevent::FdWatchController"* %47) #10
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3net11SocketPosix5CloseEv(%"class.net::SocketPosix"*) local_unnamed_addr #0 align 2 {
+  tail call void @_ZN3net11SocketPosix22StopWatchingAndCleanUpEb(%"class.net::SocketPosix"* %0, i1 zeroext true)
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"*) unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN4base19MessagePumpLibevent17FdWatchControllerD1Ev(%"class.base::MessagePumpLibevent::FdWatchController"*) unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3net11SocketPosixD0Ev(%"class.net::SocketPosix"*) unnamed_addr #0 align 2 {
+  tail call void @_ZN3net11SocketPosixD2Ev(%"class.net::SocketPosix"* %0) #10
+  %2 = bitcast %"class.net::SocketPosix"* %0 to i8*
+  tail call void @_ZdlPv(i8* %2) #11
+  ret void
+}
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3net11SocketPosix4OpenEi(%"class.net::SocketPosix"*, i32) local_unnamed_addr #0 align 2 {
+  %3 = alloca %"class.logging::ErrnoLogMessage", align 8
+  %4 = icmp eq i32 %1, 1
+  %5 = select i1 %4, i32 0, i32 6
+  %6 = tail call i32 @_ZN3net20CreatePlatformSocketEiii(i32 %1, i32 1, i32 %5) #10
+  %7 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  store i32 %6, i32* %7, align 8
+  %8 = icmp slt i32 %6, 0
+  br i1 %8, label %9, label %21
+
+9:                                                ; preds = %2
+  %10 = tail call zeroext i1 @_ZN7logging22ShouldCreateLogMessageEi(i32 2) #10
+  br i1 %10, label %11, label %17
+
+11:                                               ; preds = %9
+  %12 = bitcast %"class.logging::ErrnoLogMessage"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 312, i8* nonnull %12) #10
+  %13 = tail call i32 @_ZN7logging22GetLastSystemErrorCodeEv() #10
+  call void @_ZN7logging15ErrnoLogMessageC1EPKciii(%"class.logging::ErrnoLogMessage"* nonnull %3, i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.1, i64 0, i64 0), i32 96, i32 2, i32 %13) #10
+  %14 = getelementptr inbounds %"class.logging::ErrnoLogMessage", %"class.logging::ErrnoLogMessage"* %3, i64 0, i32 0, i32 2
+  %15 = bitcast %"class.std::__1::basic_ostringstream"* %14 to %"class.std::__1::basic_ostream"*
+  %16 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %15, i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.2, i64 0, i64 0), i64 29) #10
+  call void @_ZN7logging15ErrnoLogMessageD1Ev(%"class.logging::ErrnoLogMessage"* nonnull %3) #10
+  call void @llvm.lifetime.end.p0i8(i64 312, i8* nonnull %12) #10
+  br label %17
+
+17:                                               ; preds = %9, %11
+  %18 = tail call i32* @__errno_location() #12
+  %19 = load i32, i32* %18, align 4
+  %20 = call i32 @_ZN3net14MapSystemErrorEi(i32 %19) #10
+  br label %27
+
+21:                                               ; preds = %2
+  %22 = tail call zeroext i1 @_ZN4base14SetNonBlockingEi(i32 %6) #10
+  br i1 %22, label %27, label %23
+
+23:                                               ; preds = %21
+  %24 = tail call i32* @__errno_location() #12
+  %25 = load i32, i32* %24, align 4
+  %26 = tail call i32 @_ZN3net14MapSystemErrorEi(i32 %25) #10
+  tail call void @_ZN3net11SocketPosix22StopWatchingAndCleanUpEb(%"class.net::SocketPosix"* %0, i1 zeroext true) #10
+  br label %27
+
+27:                                               ; preds = %21, %23, %17
+  %28 = phi i32 [ %20, %17 ], [ %26, %23 ], [ 0, %21 ]
+  ret i32 %28
+}
+
+declare i32 @_ZN3net20CreatePlatformSocketEiii(i32, i32, i32) local_unnamed_addr #2
+
+declare zeroext i1 @_ZN7logging22ShouldCreateLogMessageEi(i32) local_unnamed_addr #2
+
+declare i32 @_ZN7logging22GetLastSystemErrorCodeEv() local_unnamed_addr #2
+
+declare void @_ZN7logging15ErrnoLogMessageC1EPKciii(%"class.logging::ErrnoLogMessage"*, i8*, i32, i32, i32) unnamed_addr #2
+
+; Function Attrs: nounwind
+declare void @_ZN7logging15ErrnoLogMessageD1Ev(%"class.logging::ErrnoLogMessage"*) unnamed_addr #3
+
+declare i32 @_ZN3net14MapSystemErrorEi(i32) local_unnamed_addr #2
+
+; Function Attrs: nounwind readnone
+declare i32* @__errno_location() local_unnamed_addr #5
+
+declare zeroext i1 @_ZN4base14SetNonBlockingEi(i32) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3net11SocketPosix20AdoptConnectedSocketEiRKNS_15SockaddrStorageE(%"class.net::SocketPosix"*, i32, %"struct.net::SockaddrStorage"* dereferenceable(144)) local_unnamed_addr #0 align 2 {
+  %4 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  store i32 %1, i32* %4, align 8
+  %5 = tail call zeroext i1 @_ZN4base14SetNonBlockingEi(i32 %1) #10
+  br i1 %5, label %11, label %6
+
+6:                                                ; preds = %3
+  %7 = tail call i32* @__errno_location() #12
+  %8 = load i32, i32* %7, align 4
+  %9 = tail call i32 @_ZN3net14MapSystemErrorEi(i32 %8) #10
+  tail call void @_ZN3net11SocketPosix22StopWatchingAndCleanUpEb(%"class.net::SocketPosix"* %0, i1 zeroext true) #10
+  %10 = icmp eq i32 %9, 0
+  br i1 %10, label %11, label %22
+
+11:                                               ; preds = %3, %6
+  %12 = tail call i8* @_Znwm(i64 144) #11
+  %13 = bitcast i8* %12 to %"struct.net::SockaddrStorage"*
+  tail call void @_ZN3net15SockaddrStorageC1ERKS0_(%"struct.net::SockaddrStorage"* nonnull %13, %"struct.net::SockaddrStorage"* dereferenceable(144) %2) #10
+  %14 = ptrtoint i8* %12 to i64
+  %15 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 19
+  %16 = getelementptr inbounds %"class.std::__1::unique_ptr.10", %"class.std::__1::unique_ptr.10"* %15, i64 0, i32 0, i32 0, i32 0
+  %17 = load %"struct.net::SockaddrStorage"*, %"struct.net::SockaddrStorage"** %16, align 8
+  %18 = bitcast %"class.std::__1::unique_ptr.10"* %15 to i64*
+  store i64 %14, i64* %18, align 8
+  %19 = icmp eq %"struct.net::SockaddrStorage"* %17, null
+  br i1 %19, label %22, label %20
+
+20:                                               ; preds = %11
+  %21 = bitcast %"struct.net::SockaddrStorage"* %17 to i8*
+  tail call void @_ZdlPv(i8* %21) #11
+  br label %22
+
+22:                                               ; preds = %20, %11, %6
+  %23 = phi i32 [ %9, %6 ], [ 0, %11 ], [ 0, %20 ]
+  ret i32 %23
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3net11SocketPosix22AdoptUnconnectedSocketEi(%"class.net::SocketPosix"*, i32) local_unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  store i32 %1, i32* %3, align 8
+  %4 = tail call zeroext i1 @_ZN4base14SetNonBlockingEi(i32 %1) #10
+  br i1 %4, label %9, label %5
+
+5:                                                ; preds = %2
+  %6 = tail call i32* @__errno_location() #12
+  %7 = load i32, i32* %6, align 4
+  %8 = tail call i32 @_ZN3net14MapSystemErrorEi(i32 %7) #10
+  tail call void @_ZN3net11SocketPosix22StopWatchingAndCleanUpEb(%"class.net::SocketPosix"* %0, i1 zeroext true) #10
+  br label %9
+
+9:                                                ; preds = %2, %5
+  %10 = phi i32 [ %8, %5 ], [ 0, %2 ]
+  ret i32 %10
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3net11SocketPosix14SetPeerAddressERKNS_15SockaddrStorageE(%"class.net::SocketPosix"* nocapture, %"struct.net::SockaddrStorage"* dereferenceable(144)) local_unnamed_addr #0 align 2 {
+  %3 = tail call i8* @_Znwm(i64 144) #11
+  %4 = bitcast i8* %3 to %"struct.net::SockaddrStorage"*
+  tail call void @_ZN3net15SockaddrStorageC1ERKS0_(%"struct.net::SockaddrStorage"* nonnull %4, %"struct.net::SockaddrStorage"* dereferenceable(144) %1) #10
+  %5 = ptrtoint i8* %3 to i64
+  %6 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 19
+  %7 = getelementptr inbounds %"class.std::__1::unique_ptr.10", %"class.std::__1::unique_ptr.10"* %6, i64 0, i32 0, i32 0, i32 0
+  %8 = load %"struct.net::SockaddrStorage"*, %"struct.net::SockaddrStorage"** %7, align 8
+  %9 = bitcast %"class.std::__1::unique_ptr.10"* %6 to i64*
+  store i64 %5, i64* %9, align 8
+  %10 = icmp eq %"struct.net::SockaddrStorage"* %8, null
+  br i1 %10, label %13, label %11
+
+11:                                               ; preds = %2
+  %12 = bitcast %"struct.net::SockaddrStorage"* %8 to i8*
+  tail call void @_ZdlPv(i8* %12) #11
+  br label %13
+
+13:                                               ; preds = %11, %2
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3net11SocketPosix22ReleaseConnectedSocketEv(%"class.net::SocketPosix"*) local_unnamed_addr #0 align 2 {
+  tail call void @_ZN3net11SocketPosix22StopWatchingAndCleanUpEb(%"class.net::SocketPosix"* %0, i1 zeroext false)
+  %2 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  %3 = load i32, i32* %2, align 8
+  store i32 -1, i32* %2, align 8
+  ret i32 %3
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3net11SocketPosix22StopWatchingAndCleanUpEb(%"class.net::SocketPosix"*, i1 zeroext) local_unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 3
+  %4 = tail call zeroext i1 @_ZN4base19MessagePumpLibevent17FdWatchController26StopWatchingFileDescriptorEv(%"class.base::MessagePumpLibevent::FdWatchController"* %3) #10
+  %5 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 6
+  %6 = tail call zeroext i1 @_ZN4base19MessagePumpLibevent17FdWatchController26StopWatchingFileDescriptorEv(%"class.base::MessagePumpLibevent::FdWatchController"* %5) #10
+  %7 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 12
+  %8 = tail call zeroext i1 @_ZN4base19MessagePumpLibevent17FdWatchController26StopWatchingFileDescriptorEv(%"class.base::MessagePumpLibevent::FdWatchController"* %7) #10
+  br i1 %1, label %9, label %15
+
+9:                                                ; preds = %2
+  %10 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  %11 = load i32, i32* %10, align 8
+  %12 = icmp eq i32 %11, -1
+  br i1 %12, label %15, label %13
+
+13:                                               ; preds = %9
+  %14 = tail call i32 @close(i32 %11) #10
+  store i32 -1, i32* %10, align 8
+  br label %15
+
+15:                                               ; preds = %9, %13, %2
+  %16 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 5, i32 0
+  %17 = getelementptr inbounds %"class.base::internal::CallbackBase", %"class.base::internal::CallbackBase"* %16, i64 0, i32 0, i32 0
+  %18 = load %"class.base::internal::BindStateBase"*, %"class.base::internal::BindStateBase"** %17, align 8
+  %19 = icmp eq %"class.base::internal::BindStateBase"* %18, null
+  br i1 %19, label %22, label %20
+
+20:                                               ; preds = %15
+  %21 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 4
+  store %"class.std::__1::unique_ptr.1"* null, %"class.std::__1::unique_ptr.1"** %21, align 8
+  tail call void @_ZN4base8internal12CallbackBase5ResetEv(%"class.base::internal::CallbackBase"* %16) #10
+  br label %22
+
+22:                                               ; preds = %20, %15
+  %23 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 10, i32 0
+  %24 = getelementptr inbounds %"class.base::internal::CallbackBase", %"class.base::internal::CallbackBase"* %23, i64 0, i32 0, i32 0
+  %25 = load %"class.base::internal::BindStateBase"*, %"class.base::internal::BindStateBase"** %24, align 8
+  %26 = icmp eq %"class.base::internal::BindStateBase"* %25, null
+  br i1 %26, label %47, label %27
+
+27:                                               ; preds = %22
+  %28 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 7
+  %29 = bitcast %class.scoped_refptr.8* %28 to i64*
+  %30 = getelementptr inbounds %class.scoped_refptr.8, %class.scoped_refptr.8* %28, i64 0, i32 0
+  %31 = load %"class.net::IOBuffer"*, %"class.net::IOBuffer"** %30, align 8
+  store i64 0, i64* %29, align 8
+  %32 = icmp eq %"class.net::IOBuffer"* %31, null
+  br i1 %32, label %45, label %33
+
+33:                                               ; preds = %27
+  %34 = getelementptr inbounds %"class.net::IOBuffer", %"class.net::IOBuffer"* %31, i64 0, i32 1
+  %35 = getelementptr inbounds %"class.base::RefCountedThreadSafe.9", %"class.base::RefCountedThreadSafe.9"* %34, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %36 = atomicrmw sub i32* %35, i32 1 acq_rel
+  %37 = icmp eq i32 %36, 1
+  br i1 %37, label %38, label %45
+
+38:                                               ; preds = %33
+  %39 = getelementptr inbounds %"class.base::RefCountedThreadSafe.9", %"class.base::RefCountedThreadSafe.9"* %34, i64 -2
+  %40 = bitcast %"class.base::RefCountedThreadSafe.9"* %39 to %"class.net::IOBuffer"*
+  %41 = bitcast %"class.base::RefCountedThreadSafe.9"* %39 to void (%"class.net::IOBuffer"*)***
+  %42 = load void (%"class.net::IOBuffer"*)**, void (%"class.net::IOBuffer"*)*** %41, align 8
+  %43 = getelementptr inbounds void (%"class.net::IOBuffer"*)*, void (%"class.net::IOBuffer"*)** %42, i64 1
+  %44 = load void (%"class.net::IOBuffer"*)*, void (%"class.net::IOBuffer"*)** %43, align 8
+  tail call void %44(%"class.net::IOBuffer"* nonnull %40) #10
+  br label %45
+
+45:                                               ; preds = %27, %33, %38
+  %46 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 8
+  store i32 0, i32* %46, align 8
+  tail call void @_ZN4base8internal12CallbackBase5ResetEv(%"class.base::internal::CallbackBase"* %23) #10
+  br label %47
+
+47:                                               ; preds = %45, %22
+  %48 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 11, i32 0
+  tail call void @_ZN4base8internal12CallbackBase5ResetEv(%"class.base::internal::CallbackBase"* %48) #10
+  %49 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 16, i32 0
+  %50 = getelementptr inbounds %"class.base::internal::CallbackBase", %"class.base::internal::CallbackBase"* %49, i64 0, i32 0, i32 0
+  %51 = load %"class.base::internal::BindStateBase"*, %"class.base::internal::BindStateBase"** %50, align 8
+  %52 = icmp eq %"class.base::internal::BindStateBase"* %51, null
+  br i1 %52, label %73, label %53
+
+53:                                               ; preds = %47
+  %54 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 13
+  %55 = bitcast %class.scoped_refptr.8* %54 to i64*
+  %56 = getelementptr inbounds %class.scoped_refptr.8, %class.scoped_refptr.8* %54, i64 0, i32 0
+  %57 = load %"class.net::IOBuffer"*, %"class.net::IOBuffer"** %56, align 8
+  store i64 0, i64* %55, align 8
+  %58 = icmp eq %"class.net::IOBuffer"* %57, null
+  br i1 %58, label %71, label %59
+
+59:                                               ; preds = %53
+  %60 = getelementptr inbounds %"class.net::IOBuffer", %"class.net::IOBuffer"* %57, i64 0, i32 1
+  %61 = getelementptr inbounds %"class.base::RefCountedThreadSafe.9", %"class.base::RefCountedThreadSafe.9"* %60, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %62 = atomicrmw sub i32* %61, i32 1 acq_rel
+  %63 = icmp eq i32 %62, 1
+  br i1 %63, label %64, label %71
+
+64:                                               ; preds = %59
+  %65 = getelementptr inbounds %"class.base::RefCountedThreadSafe.9", %"class.base::RefCountedThreadSafe.9"* %60, i64 -2
+  %66 = bitcast %"class.base::RefCountedThreadSafe.9"* %65 to %"class.net::IOBuffer"*
+  %67 = bitcast %"class.base::RefCountedThreadSafe.9"* %65 to void (%"class.net::IOBuffer"*)***
+  %68 = load void (%"class.net::IOBuffer"*)**, void (%"class.net::IOBuffer"*)*** %67, align 8
+  %69 = getelementptr inbounds void (%"class.net::IOBuffer"*)*, void (%"class.net::IOBuffer"*)** %68, i64 1
+  %70 = load void (%"class.net::IOBuffer"*)*, void (%"class.net::IOBuffer"*)** %69, align 8
+  tail call void %70(%"class.net::IOBuffer"* nonnull %66) #10
+  br label %71
+
+71:                                               ; preds = %53, %59, %64
+  %72 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 14
+  store i32 0, i32* %72, align 8
+  tail call void @_ZN4base8internal12CallbackBase5ResetEv(%"class.base::internal::CallbackBase"* %49) #10
+  br label %73
+
+73:                                               ; preds = %71, %47
+  %74 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 17
+  store i8 0, i8* %74, align 8
+  %75 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 19, i32 0, i32 0, i32 0
+  %76 = load %"struct.net::SockaddrStorage"*, %"struct.net::SockaddrStorage"** %75, align 8
+  store %"struct.net::SockaddrStorage"* null, %"struct.net::SockaddrStorage"** %75, align 8
+  %77 = icmp eq %"struct.net::SockaddrStorage"* %76, null
+  br i1 %77, label %80, label %78
+
+78:                                               ; preds = %73
+  %79 = bitcast %"struct.net::SockaddrStorage"* %76 to i8*
+  tail call void @_ZdlPv(i8* %79) #11
+  br label %80
+
+80:                                               ; preds = %73, %78
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3net11SocketPosix4BindERKNS_15SockaddrStorageE(%"class.net::SocketPosix"* nocapture readonly, %"struct.net::SockaddrStorage"* nocapture readonly dereferenceable(144)) local_unnamed_addr #0 align 2 {
+  %3 = alloca %"class.logging::ErrnoLogMessage", align 8
+  %4 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  %5 = load i32, i32* %4, align 8
+  %6 = getelementptr inbounds %"struct.net::SockaddrStorage", %"struct.net::SockaddrStorage"* %1, i64 0, i32 2
+  %7 = load %struct.sockaddr*, %struct.sockaddr** %6, align 8
+  %8 = getelementptr inbounds %"struct.net::SockaddrStorage", %"struct.net::SockaddrStorage"* %1, i64 0, i32 1
+  %9 = load i32, i32* %8, align 8
+  %10 = tail call i32 @bind(i32 %5, %struct.sockaddr* %7, i32 %9) #10
+  %11 = icmp slt i32 %10, 0
+  br i1 %11, label %12, label %24
+
+12:                                               ; preds = %2
+  %13 = tail call zeroext i1 @_ZN7logging22ShouldCreateLogMessageEi(i32 2) #10
+  br i1 %13, label %14, label %20
+
+14:                                               ; preds = %12
+  %15 = bitcast %"class.logging::ErrnoLogMessage"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 312, i8* nonnull %15) #10
+  %16 = tail call i32 @_ZN7logging22GetLastSystemErrorCodeEv() #10
+  call void @_ZN7logging15ErrnoLogMessageC1EPKciii(%"class.logging::ErrnoLogMessage"* nonnull %3, i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.1, i64 0, i64 0), i32 150, i32 2, i32 %16) #10
+  %17 = getelementptr inbounds %"class.logging::ErrnoLogMessage", %"class.logging::ErrnoLogMessage"* %3, i64 0, i32 0, i32 2
+  %18 = bitcast %"class.std::__1::basic_ostringstream"* %17 to %"class.std::__1::basic_ostream"*
+  %19 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %18, i8* getelementptr inbounds ([14 x i8], [14 x i8]* @.str.3, i64 0, i64 0), i64 13) #10
+  call void @_ZN7logging15ErrnoLogMessageD1Ev(%"class.logging::ErrnoLogMessage"* nonnull %3) #10
+  call void @llvm.lifetime.end.p0i8(i64 312, i8* nonnull %15) #10
+  br label %20
+
+20:                                               ; preds = %12, %14
+  %21 = tail call i32* @__errno_location() #12
+  %22 = load i32, i32* %21, align 4
+  %23 = call i32 @_ZN3net14MapSystemErrorEi(i32 %22) #10
+  br label %24
+
+24:                                               ; preds = %2, %20
+  %25 = phi i32 [ %23, %20 ], [ 0, %2 ]
+  ret i32 %25
+}
+
+; Function Attrs: nounwind
+declare i32 @bind(i32, %struct.sockaddr*, i32) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3net11SocketPosix6ListenEi(%"class.net::SocketPosix"* nocapture readonly, i32) local_unnamed_addr #0 align 2 {
+  %3 = alloca %"class.logging::ErrnoLogMessage", align 8
+  %4 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  %5 = load i32, i32* %4, align 8
+  %6 = tail call i32 @listen(i32 %5, i32 %1) #10
+  %7 = icmp slt i32 %6, 0
+  br i1 %7, label %8, label %20
+
+8:                                                ; preds = %2
+  %9 = tail call zeroext i1 @_ZN7logging22ShouldCreateLogMessageEi(i32 2) #10
+  br i1 %9, label %10, label %16
+
+10:                                               ; preds = %8
+  %11 = bitcast %"class.logging::ErrnoLogMessage"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 312, i8* nonnull %11) #10
+  %12 = tail call i32 @_ZN7logging22GetLastSystemErrorCodeEv() #10
+  call void @_ZN7logging15ErrnoLogMessageC1EPKciii(%"class.logging::ErrnoLogMessage"* nonnull %3, i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.1, i64 0, i64 0), i32 164, i32 2, i32 %12) #10
+  %13 = getelementptr inbounds %"class.logging::ErrnoLogMessage", %"class.logging::ErrnoLogMessage"* %3, i64 0, i32 0, i32 2
+  %14 = bitcast %"class.std::__1::basic_ostringstream"* %13 to %"class.std::__1::basic_ostream"*
+  %15 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %14, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str.4, i64 0, i64 0), i64 15) #10
+  call void @_ZN7logging15ErrnoLogMessageD1Ev(%"class.logging::ErrnoLogMessage"* nonnull %3) #10
+  call void @llvm.lifetime.end.p0i8(i64 312, i8* nonnull %11) #10
+  br label %16
+
+16:                                               ; preds = %8, %10
+  %17 = tail call i32* @__errno_location() #12
+  %18 = load i32, i32* %17, align 4
+  %19 = call i32 @_ZN3net14MapSystemErrorEi(i32 %18) #10
+  br label %20
+
+20:                                               ; preds = %2, %16
+  %21 = phi i32 [ %19, %16 ], [ 0, %2 ]
+  ret i32 %21
+}
+
+; Function Attrs: nounwind
+declare i32 @listen(i32, i32) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3net11SocketPosix6AcceptEPNSt3__110unique_ptrIS0_NS1_14default_deleteIS0_EEEEN4base12OnceCallbackIFviEEE(%"class.net::SocketPosix"*, %"class.std::__1::unique_ptr.1"*, %"class.base::OnceCallback"*) local_unnamed_addr #0 align 2 {
+  %4 = alloca %"class.base::CurrentIOThread", align 8
+  %5 = alloca %"class.logging::ErrnoLogMessage", align 8
+  %6 = tail call i32 @_ZN3net11SocketPosix8DoAcceptEPNSt3__110unique_ptrIS0_NS1_14default_deleteIS0_EEEE(%"class.net::SocketPosix"* %0, %"class.std::__1::unique_ptr.1"* %1)
+  %7 = icmp eq i32 %6, -1
+  br i1 %7, label %8, label %34
+
+8:                                                ; preds = %3
+  %9 = bitcast %"class.base::CurrentIOThread"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %9) #10
+  %10 = tail call %"class.base::sequence_manager::internal::SequenceManagerImpl"* @_ZN4base15CurrentIOThread3GetEv() #10
+  %11 = getelementptr inbounds %"class.base::CurrentIOThread", %"class.base::CurrentIOThread"* %4, i64 0, i32 0, i32 0
+  store %"class.base::sequence_manager::internal::SequenceManagerImpl"* %10, %"class.base::sequence_manager::internal::SequenceManagerImpl"** %11, align 8
+  %12 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  %13 = load i32, i32* %12, align 8
+  %14 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 3
+  %15 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 0
+  %16 = call zeroext i1 @_ZN4base15CurrentIOThread19WatchFileDescriptorEibNS_27WatchableIOMessagePumpPosix4ModeEPNS_19MessagePumpLibevent17FdWatchControllerEPNS1_9FdWatcherE(%"class.base::CurrentIOThread"* nonnull %4, i32 %13, i1 zeroext true, i32 1, %"class.base::MessagePumpLibevent::FdWatchController"* %14, %"class.base::WatchableIOMessagePumpPosix::FdWatcher"* %15) #10
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %9) #10
+  br i1 %16, label %29, label %17
+
+17:                                               ; preds = %8
+  %18 = call zeroext i1 @_ZN7logging22ShouldCreateLogMessageEi(i32 2) #10
+  br i1 %18, label %19, label %25
+
+19:                                               ; preds = %17
+  %20 = bitcast %"class.logging::ErrnoLogMessage"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 312, i8* nonnull %20) #10
+  %21 = call i32 @_ZN7logging22GetLastSystemErrorCodeEv() #10
+  call void @_ZN7logging15ErrnoLogMessageC1EPKciii(%"class.logging::ErrnoLogMessage"* nonnull %5, i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.1, i64 0, i64 0), i32 186, i32 2, i32 %21) #10
+  %22 = getelementptr inbounds %"class.logging::ErrnoLogMessage", %"class.logging::ErrnoLogMessage"* %5, i64 0, i32 0, i32 2
+  %23 = bitcast %"class.std::__1::basic_ostringstream"* %22 to %"class.std::__1::basic_ostream"*
+  %24 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %23, i8* getelementptr inbounds ([37 x i8], [37 x i8]* @.str.5, i64 0, i64 0), i64 36) #10
+  call void @_ZN7logging15ErrnoLogMessageD1Ev(%"class.logging::ErrnoLogMessage"* nonnull %5) #10
+  call void @llvm.lifetime.end.p0i8(i64 312, i8* nonnull %20) #10
+  br label %25
+
+25:                                               ; preds = %17, %19
+  %26 = tail call i32* @__errno_location() #12
+  %27 = load i32, i32* %26, align 4
+  %28 = call i32 @_ZN3net14MapSystemErrorEi(i32 %27) #10
+  br label %34
+
+29:                                               ; preds = %8
+  %30 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 4
+  store %"class.std::__1::unique_ptr.1"* %1, %"class.std::__1::unique_ptr.1"** %30, align 8
+  %31 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 5, i32 0
+  %32 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %2, i64 0, i32 0
+  %33 = call dereferenceable(8) %"class.base::internal::CallbackBase"* @_ZN4base8internal12CallbackBaseaSEOS1_(%"class.base::internal::CallbackBase"* %31, %"class.base::internal::CallbackBase"* dereferenceable(8) %32) #10
+  br label %34
+
+34:                                               ; preds = %3, %29, %25
+  %35 = phi i32 [ %28, %25 ], [ -1, %29 ], [ %6, %3 ]
+  ret i32 %35
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3net11SocketPosix8DoAcceptEPNSt3__110unique_ptrIS0_NS1_14default_deleteIS0_EEEE(%"class.net::SocketPosix"* nocapture readonly, %"class.std::__1::unique_ptr.1"* nocapture) local_unnamed_addr #0 align 2 {
+  %3 = alloca %"class.base::Location", align 8
+  %4 = alloca %"class.base::Location", align 8
+  %5 = alloca %"class.base::Location", align 8
+  %6 = alloca %"struct.net::SockaddrStorage", align 8
+  %7 = bitcast %"struct.net::SockaddrStorage"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 144, i8* nonnull %7) #10
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %7, i8 -86, i64 144, i1 false)
+  call void @_ZN3net15SockaddrStorageC1Ev(%"struct.net::SockaddrStorage"* nonnull %6) #10
+  %8 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  %9 = getelementptr inbounds %"struct.net::SockaddrStorage", %"struct.net::SockaddrStorage"* %6, i64 0, i32 2
+  %10 = getelementptr inbounds %"struct.net::SockaddrStorage", %"struct.net::SockaddrStorage"* %6, i64 0, i32 1
+  br label %11
+
+11:                                               ; preds = %16, %2
+  %12 = load i32, i32* %8, align 8
+  %13 = load %struct.sockaddr*, %struct.sockaddr** %9, align 8
+  %14 = call i32 @accept(i32 %12, %struct.sockaddr* %13, i32* %10) #10
+  %15 = icmp eq i32 %14, -1
+  br i1 %15, label %16, label %20
+
+16:                                               ; preds = %11
+  %17 = tail call i32* @__errno_location() #12
+  %18 = load i32, i32* %17, align 4
+  %19 = icmp eq i32 %18, 4
+  br i1 %19, label %11, label %25
+
+20:                                               ; preds = %11
+  %21 = icmp slt i32 %14, 0
+  br i1 %21, label %22, label %30
+
+22:                                               ; preds = %20
+  %23 = tail call i32* @__errno_location() #12
+  %24 = load i32, i32* %23, align 4
+  br label %25
+
+25:                                               ; preds = %16, %22
+  %26 = phi i32 [ %24, %22 ], [ %18, %16 ]
+  %27 = icmp eq i32 %26, 103
+  br i1 %27, label %79, label %28
+
+28:                                               ; preds = %25
+  %29 = call i32 @_ZN3net14MapSystemErrorEi(i32 %26) #10
+  br label %79
+
+30:                                               ; preds = %20
+  %31 = call i8* @_Znwm(i64 328) #11
+  %32 = bitcast i8* %31 to %"class.net::SocketPosix"*
+  %33 = bitcast i8* %31 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [6 x i8*] }, { [6 x i8*] }* @_ZTVN3net11SocketPosixE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %33, align 8
+  %34 = getelementptr inbounds i8, i8* %31, i64 8
+  %35 = bitcast i8* %34 to i32*
+  store i32 -1, i32* %35, align 8
+  %36 = getelementptr inbounds i8, i8* %31, i64 16
+  %37 = bitcast i8* %36 to %"class.base::MessagePumpLibevent::FdWatchController"*
+  %38 = bitcast %"class.base::Location"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %38) #10
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %3, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.1, i64 0, i64 0), i32 73) #10
+  call void @_ZN4base19MessagePumpLibevent17FdWatchControllerC1ERKNS_8LocationE(%"class.base::MessagePumpLibevent::FdWatchController"* %37, %"class.base::Location"* nonnull dereferenceable(32) %3) #10
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %38) #10
+  %39 = getelementptr inbounds i8, i8* %31, i64 96
+  %40 = bitcast i8* %39 to %"class.base::internal::BindStateBase"**
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %40, align 8
+  %41 = getelementptr inbounds i8, i8* %31, i64 104
+  %42 = bitcast i8* %41 to %"class.base::MessagePumpLibevent::FdWatchController"*
+  %43 = bitcast %"class.base::Location"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %43) #10
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %4, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.1, i64 0, i64 0), i32 74) #10
+  call void @_ZN4base19MessagePumpLibevent17FdWatchControllerC1ERKNS_8LocationE(%"class.base::MessagePumpLibevent::FdWatchController"* %42, %"class.base::Location"* nonnull dereferenceable(32) %4) #10
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %43) #10
+  %44 = getelementptr inbounds i8, i8* %31, i64 176
+  %45 = bitcast i8* %44 to %"class.net::IOBuffer"**
+  store %"class.net::IOBuffer"* null, %"class.net::IOBuffer"** %45, align 8
+  %46 = getelementptr inbounds i8, i8* %31, i64 184
+  %47 = bitcast i8* %46 to i32*
+  store i32 0, i32* %47, align 8
+  %48 = getelementptr inbounds i8, i8* %31, i64 192
+  %49 = getelementptr inbounds i8, i8* %31, i64 208
+  %50 = bitcast i8* %49 to %"class.base::MessagePumpLibevent::FdWatchController"*
+  %51 = bitcast %"class.base::Location"* %5 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %48, i8 0, i64 16, i1 false) #10
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %51) #10
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %5, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.1, i64 0, i64 0), i32 76) #10
+  call void @_ZN4base19MessagePumpLibevent17FdWatchControllerC1ERKNS_8LocationE(%"class.base::MessagePumpLibevent::FdWatchController"* %50, %"class.base::Location"* nonnull dereferenceable(32) %5) #10
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %51) #10
+  %52 = getelementptr inbounds i8, i8* %31, i64 280
+  %53 = bitcast i8* %52 to %"class.net::IOBuffer"**
+  store %"class.net::IOBuffer"* null, %"class.net::IOBuffer"** %53, align 8
+  %54 = getelementptr inbounds i8, i8* %31, i64 288
+  %55 = bitcast i8* %54 to i32*
+  store i32 0, i32* %55, align 8
+  %56 = getelementptr inbounds i8, i8* %31, i64 296
+  %57 = bitcast i8* %56 to %"class.base::internal::BindStateBase"**
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %57, align 8
+  %58 = getelementptr inbounds i8, i8* %31, i64 304
+  store i8 0, i8* %58, align 8
+  %59 = getelementptr inbounds i8, i8* %31, i64 312
+  %60 = bitcast i8* %59 to i64*
+  store i64 0, i64* %60, align 8
+  %61 = call i32 @_ZN3net11SocketPosix20AdoptConnectedSocketEiRKNS_15SockaddrStorageE(%"class.net::SocketPosix"* nonnull %32, i32 %14, %"struct.net::SockaddrStorage"* nonnull dereferenceable(144) %6)
+  %62 = icmp eq i32 %61, 0
+  br i1 %62, label %63, label %74
+
+63:                                               ; preds = %30
+  %64 = ptrtoint i8* %31 to i64
+  %65 = getelementptr inbounds %"class.std::__1::unique_ptr.1", %"class.std::__1::unique_ptr.1"* %1, i64 0, i32 0, i32 0, i32 0
+  %66 = load %"class.net::SocketPosix"*, %"class.net::SocketPosix"** %65, align 8
+  %67 = bitcast %"class.std::__1::unique_ptr.1"* %1 to i64*
+  store i64 %64, i64* %67, align 8
+  %68 = icmp eq %"class.net::SocketPosix"* %66, null
+  br i1 %68, label %79, label %69
+
+69:                                               ; preds = %63
+  %70 = bitcast %"class.net::SocketPosix"* %66 to void (%"class.net::SocketPosix"*)***
+  %71 = load void (%"class.net::SocketPosix"*)**, void (%"class.net::SocketPosix"*)*** %70, align 8
+  %72 = getelementptr inbounds void (%"class.net::SocketPosix"*)*, void (%"class.net::SocketPosix"*)** %71, i64 3
+  %73 = load void (%"class.net::SocketPosix"*)*, void (%"class.net::SocketPosix"*)** %72, align 8
+  call void %73(%"class.net::SocketPosix"* nonnull %66) #10
+  br label %79
+
+74:                                               ; preds = %30
+  %75 = bitcast i8* %31 to void (%"class.net::SocketPosix"*)***
+  %76 = load void (%"class.net::SocketPosix"*)**, void (%"class.net::SocketPosix"*)*** %75, align 8
+  %77 = getelementptr inbounds void (%"class.net::SocketPosix"*)*, void (%"class.net::SocketPosix"*)** %76, i64 3
+  %78 = load void (%"class.net::SocketPosix"*)*, void (%"class.net::SocketPosix"*)** %77, align 8
+  call void %78(%"class.net::SocketPosix"* nonnull %32) #10
+  br label %79
+
+79:                                               ; preds = %69, %63, %74, %28, %25
+  %80 = phi i32 [ %29, %28 ], [ -1, %25 ], [ %61, %74 ], [ 0, %63 ], [ 0, %69 ]
+  call void @llvm.lifetime.end.p0i8(i64 144, i8* nonnull %7) #10
+  ret i32 %80
+}
+
+declare %"class.base::sequence_manager::internal::SequenceManagerImpl"* @_ZN4base15CurrentIOThread3GetEv() local_unnamed_addr #2
+
+declare zeroext i1 @_ZN4base15CurrentIOThread19WatchFileDescriptorEibNS_27WatchableIOMessagePumpPosix4ModeEPNS_19MessagePumpLibevent17FdWatchControllerEPNS1_9FdWatcherE(%"class.base::CurrentIOThread"*, i32, i1 zeroext, i32, %"class.base::MessagePumpLibevent::FdWatchController"*, %"class.base::WatchableIOMessagePumpPosix::FdWatcher"*) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3net11SocketPosix7ConnectERKNS_15SockaddrStorageEN4base12OnceCallbackIFviEEE(%"class.net::SocketPosix"*, %"struct.net::SockaddrStorage"* dereferenceable(144), %"class.base::OnceCallback"*) local_unnamed_addr #0 align 2 {
+  %4 = alloca %"class.base::CurrentIOThread", align 8
+  %5 = alloca %"class.logging::ErrnoLogMessage", align 8
+  %6 = alloca i32, align 4
+  %7 = alloca i32, align 4
+  %8 = tail call i8* @_Znwm(i64 144) #11
+  %9 = bitcast i8* %8 to %"struct.net::SockaddrStorage"*
+  tail call void @_ZN3net15SockaddrStorageC1ERKS0_(%"struct.net::SockaddrStorage"* nonnull %9, %"struct.net::SockaddrStorage"* dereferenceable(144) %1) #10
+  %10 = ptrtoint i8* %8 to i64
+  %11 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 19
+  %12 = getelementptr inbounds %"class.std::__1::unique_ptr.10", %"class.std::__1::unique_ptr.10"* %11, i64 0, i32 0, i32 0, i32 0
+  %13 = load %"struct.net::SockaddrStorage"*, %"struct.net::SockaddrStorage"** %12, align 8
+  %14 = bitcast %"class.std::__1::unique_ptr.10"* %11 to i64*
+  store i64 %10, i64* %14, align 8
+  %15 = icmp eq %"struct.net::SockaddrStorage"* %13, null
+  br i1 %15, label %18, label %16
+
+16:                                               ; preds = %3
+  %17 = bitcast %"struct.net::SockaddrStorage"* %13 to i8*
+  tail call void @_ZdlPv(i8* %17) #11
+  br label %18
+
+18:                                               ; preds = %3, %16
+  %19 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  %20 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 19, i32 0, i32 0, i32 0
+  br label %21
+
+21:                                               ; preds = %32, %18
+  %22 = load i32, i32* %19, align 8
+  %23 = load %"struct.net::SockaddrStorage"*, %"struct.net::SockaddrStorage"** %20, align 8
+  %24 = getelementptr inbounds %"struct.net::SockaddrStorage", %"struct.net::SockaddrStorage"* %23, i64 0, i32 2
+  %25 = load %struct.sockaddr*, %struct.sockaddr** %24, align 8
+  %26 = getelementptr inbounds %"struct.net::SockaddrStorage", %"struct.net::SockaddrStorage"* %23, i64 0, i32 1
+  %27 = load i32, i32* %26, align 8
+  %28 = tail call i32 @connect(i32 %22, %struct.sockaddr* %25, i32 %27) #10
+  switch i32 %28, label %29 [
+    i32 -1, label %32
+    i32 0, label %93
+  ]
+
+29:                                               ; preds = %21
+  %30 = tail call i32* @__errno_location() #12
+  %31 = load i32, i32* %30, align 4
+  br label %36
+
+32:                                               ; preds = %21
+  %33 = tail call i32* @__errno_location() #12
+  %34 = load i32, i32* %33, align 4
+  %35 = icmp eq i32 %34, 4
+  br i1 %35, label %21, label %36
+
+36:                                               ; preds = %32, %29
+  %37 = phi i32 [ %31, %29 ], [ %34, %32 ]
+  switch i32 %37, label %39 [
+    i32 115, label %41
+    i32 13, label %93
+    i32 110, label %38
+  ]
+
+38:                                               ; preds = %36
+  br label %93
+
+39:                                               ; preds = %36
+  %40 = tail call i32 @_ZN3net14MapSystemErrorEi(i32 %37) #10
+  switch i32 %40, label %92 [
+    i32 -2, label %93
+    i32 -1, label %41
+  ]
+
+41:                                               ; preds = %39, %36
+  %42 = bitcast %"class.base::CurrentIOThread"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %42) #10
+  %43 = tail call %"class.base::sequence_manager::internal::SequenceManagerImpl"* @_ZN4base15CurrentIOThread3GetEv() #10
+  %44 = getelementptr inbounds %"class.base::CurrentIOThread", %"class.base::CurrentIOThread"* %4, i64 0, i32 0, i32 0
+  store %"class.base::sequence_manager::internal::SequenceManagerImpl"* %43, %"class.base::sequence_manager::internal::SequenceManagerImpl"** %44, align 8
+  %45 = load i32, i32* %19, align 8
+  %46 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 12
+  %47 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 0
+  %48 = call zeroext i1 @_ZN4base15CurrentIOThread19WatchFileDescriptorEibNS_27WatchableIOMessagePumpPosix4ModeEPNS_19MessagePumpLibevent17FdWatchControllerEPNS1_9FdWatcherE(%"class.base::CurrentIOThread"* nonnull %4, i32 %45, i1 zeroext true, i32 2, %"class.base::MessagePumpLibevent::FdWatchController"* %46, %"class.base::WatchableIOMessagePumpPosix::FdWatcher"* %47) #10
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %42) #10
+  br i1 %48, label %61, label %49
+
+49:                                               ; preds = %41
+  %50 = call zeroext i1 @_ZN7logging22ShouldCreateLogMessageEi(i32 2) #10
+  br i1 %50, label %51, label %57
+
+51:                                               ; preds = %49
+  %52 = bitcast %"class.logging::ErrnoLogMessage"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 312, i8* nonnull %52) #10
+  %53 = call i32 @_ZN7logging22GetLastSystemErrorCodeEv() #10
+  call void @_ZN7logging15ErrnoLogMessageC1EPKciii(%"class.logging::ErrnoLogMessage"* nonnull %5, i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.1, i64 0, i64 0), i32 211, i32 2, i32 %53) #10
+  %54 = getelementptr inbounds %"class.logging::ErrnoLogMessage", %"class.logging::ErrnoLogMessage"* %5, i64 0, i32 0, i32 2
+  %55 = bitcast %"class.std::__1::basic_ostringstream"* %54 to %"class.std::__1::basic_ostream"*
+  %56 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %55, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.6, i64 0, i64 0), i64 37) #10
+  call void @_ZN7logging15ErrnoLogMessageD1Ev(%"class.logging::ErrnoLogMessage"* nonnull %5) #10
+  call void @llvm.lifetime.end.p0i8(i64 312, i8* nonnull %52) #10
+  br label %57
+
+57:                                               ; preds = %49, %51
+  %58 = tail call i32* @__errno_location() #12
+  %59 = load i32, i32* %58, align 4
+  %60 = call i32 @_ZN3net14MapSystemErrorEi(i32 %59) #10
+  br label %93
+
+61:                                               ; preds = %41
+  %62 = bitcast i32* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %62) #10
+  store i32 0, i32* %6, align 4
+  %63 = bitcast i32* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %63) #10
+  store i32 4, i32* %7, align 4
+  %64 = load i32, i32* %19, align 8
+  %65 = call i32 @getsockopt(i32 %64, i32 1, i32 4, i8* nonnull %62, i32* nonnull %7) #10
+  %66 = icmp eq i32 %65, 0
+  br i1 %66, label %70, label %67
+
+67:                                               ; preds = %61
+  %68 = tail call i32* @__errno_location() #12
+  %69 = load i32, i32* %68, align 4
+  br label %73
+
+70:                                               ; preds = %61
+  %71 = load i32, i32* %6, align 4
+  %72 = tail call i32* @__errno_location() #12
+  store i32 %71, i32* %72, align 4
+  br label %73
+
+73:                                               ; preds = %67, %70
+  %74 = phi i32 [ %69, %67 ], [ %71, %70 ]
+  switch i32 %74, label %76 [
+    i32 115, label %85
+    i32 13, label %82
+    i32 110, label %75
+  ]
+
+75:                                               ; preds = %73
+  br label %82
+
+76:                                               ; preds = %73
+  %77 = call i32 @_ZN3net14MapSystemErrorEi(i32 %74) #10
+  %78 = icmp eq i32 %77, -2
+  %79 = select i1 %78, i32 -104, i32 %77
+  %80 = add i32 %79, 1
+  %81 = icmp ugt i32 %80, 1
+  br i1 %81, label %82, label %85
+
+82:                                               ; preds = %73, %75, %76
+  %83 = phi i32 [ %79, %76 ], [ -118, %75 ], [ -138, %73 ]
+  %84 = call zeroext i1 @_ZN4base19MessagePumpLibevent17FdWatchController26StopWatchingFileDescriptorEv(%"class.base::MessagePumpLibevent::FdWatchController"* %46) #10
+  br label %90
+
+85:                                               ; preds = %73, %76
+  %86 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 16, i32 0
+  %87 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %2, i64 0, i32 0
+  %88 = call dereferenceable(8) %"class.base::internal::CallbackBase"* @_ZN4base8internal12CallbackBaseaSEOS1_(%"class.base::internal::CallbackBase"* %86, %"class.base::internal::CallbackBase"* dereferenceable(8) %87) #10
+  %89 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 17
+  store i8 1, i8* %89, align 8
+  br label %90
+
+90:                                               ; preds = %85, %82
+  %91 = phi i32 [ %83, %82 ], [ -1, %85 ]
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %63) #10
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %62) #10
+  br label %93
+
+92:                                               ; preds = %39
+  br label %93
+
+93:                                               ; preds = %21, %39, %92, %36, %38, %90, %57
+  %94 = phi i32 [ %60, %57 ], [ %91, %90 ], [ -118, %38 ], [ -138, %36 ], [ -104, %39 ], [ %40, %92 ], [ %28, %21 ]
+  ret i32 %94
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3net11SocketPosix9DoConnectEv(%"class.net::SocketPosix"* nocapture readonly) local_unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  %3 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 19, i32 0, i32 0, i32 0
+  br label %4
+
+4:                                                ; preds = %15, %1
+  %5 = load i32, i32* %2, align 8
+  %6 = load %"struct.net::SockaddrStorage"*, %"struct.net::SockaddrStorage"** %3, align 8
+  %7 = getelementptr inbounds %"struct.net::SockaddrStorage", %"struct.net::SockaddrStorage"* %6, i64 0, i32 2
+  %8 = load %struct.sockaddr*, %struct.sockaddr** %7, align 8
+  %9 = getelementptr inbounds %"struct.net::SockaddrStorage", %"struct.net::SockaddrStorage"* %6, i64 0, i32 1
+  %10 = load i32, i32* %9, align 8
+  %11 = tail call i32 @connect(i32 %5, %struct.sockaddr* %8, i32 %10) #10
+  switch i32 %11, label %12 [
+    i32 -1, label %15
+    i32 0, label %27
+  ]
+
+12:                                               ; preds = %4
+  %13 = tail call i32* @__errno_location() #12
+  %14 = load i32, i32* %13, align 4
+  br label %19
+
+15:                                               ; preds = %4
+  %16 = tail call i32* @__errno_location() #12
+  %17 = load i32, i32* %16, align 4
+  %18 = icmp eq i32 %17, 4
+  br i1 %18, label %4, label %19
+
+19:                                               ; preds = %15, %12
+  %20 = phi i32 [ %14, %12 ], [ %17, %15 ]
+  switch i32 %20, label %23 [
+    i32 115, label %27
+    i32 13, label %21
+    i32 110, label %22
+  ]
+
+21:                                               ; preds = %19
+  br label %27
+
+22:                                               ; preds = %19
+  br label %27
+
+23:                                               ; preds = %19
+  %24 = tail call i32 @_ZN3net14MapSystemErrorEi(i32 %20) #10
+  %25 = icmp eq i32 %24, -2
+  %26 = select i1 %25, i32 -104, i32 %24
+  br label %27
+
+27:                                               ; preds = %4, %23, %22, %21, %19
+  %28 = phi i32 [ %26, %23 ], [ -118, %22 ], [ -138, %21 ], [ -1, %19 ], [ %11, %4 ]
+  ret i32 %28
+}
+
+; Function Attrs: nounwind
+declare i32 @getsockopt(i32, i32, i32, i8*, i32*) local_unnamed_addr #3
+
+declare zeroext i1 @_ZN4base19MessagePumpLibevent17FdWatchController26StopWatchingFileDescriptorEv(%"class.base::MessagePumpLibevent::FdWatchController"*) unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZNK3net11SocketPosix11IsConnectedEv(%"class.net::SocketPosix"* nocapture readonly) local_unnamed_addr #0 align 2 {
+  %2 = alloca i8, align 1
+  %3 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  %4 = load i32, i32* %3, align 8
+  %5 = icmp eq i32 %4, -1
+  br i1 %5, label %32, label %6
+
+6:                                                ; preds = %1
+  %7 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 17
+  %8 = load i8, i8* %7, align 8, !range !2
+  %9 = icmp eq i8 %8, 0
+  br i1 %9, label %10, label %32
+
+10:                                               ; preds = %6
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %2) #10
+  store i8 -86, i8* %2, align 1
+  %11 = call i64 @recv(i32 %4, i8* nonnull %2, i64 1, i32 2) #10
+  %12 = icmp eq i64 %11, -1
+  br i1 %12, label %13, label %22
+
+13:                                               ; preds = %10
+  %14 = tail call i32* @__errno_location() #12
+  br label %15
+
+15:                                               ; preds = %13, %18
+  %16 = load i32, i32* %14, align 4
+  %17 = icmp eq i32 %16, 4
+  br i1 %17, label %18, label %25
+
+18:                                               ; preds = %15
+  %19 = load i32, i32* %3, align 8
+  %20 = call i64 @recv(i32 %19, i8* nonnull %2, i64 1, i32 2) #10
+  %21 = icmp eq i64 %20, -1
+  br i1 %21, label %15, label %22
+
+22:                                               ; preds = %18, %10
+  %23 = phi i64 [ %11, %10 ], [ %20, %18 ]
+  %24 = trunc i64 %23 to i32
+  switch i32 %24, label %29 [
+    i32 0, label %30
+    i32 -1, label %25
+  ]
+
+25:                                               ; preds = %15, %22
+  %26 = tail call i32* @__errno_location() #12
+  %27 = load i32, i32* %26, align 4
+  %28 = icmp eq i32 %27, 11
+  br i1 %28, label %29, label %30
+
+29:                                               ; preds = %22, %25
+  br label %30
+
+30:                                               ; preds = %25, %22, %29
+  %31 = phi i1 [ true, %29 ], [ false, %22 ], [ false, %25 ]
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %2) #10
+  br label %32
+
+32:                                               ; preds = %1, %6, %30
+  %33 = phi i1 [ %31, %30 ], [ false, %6 ], [ false, %1 ]
+  ret i1 %33
+}
+
+declare i64 @recv(i32, i8*, i64, i32) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZNK3net11SocketPosix18IsConnectedAndIdleEv(%"class.net::SocketPosix"* nocapture readonly) local_unnamed_addr #0 align 2 {
+  %2 = alloca i8, align 1
+  %3 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  %4 = load i32, i32* %3, align 8
+  %5 = icmp eq i32 %4, -1
+  br i1 %5, label %32, label %6
+
+6:                                                ; preds = %1
+  %7 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 17
+  %8 = load i8, i8* %7, align 8, !range !2
+  %9 = icmp eq i8 %8, 0
+  br i1 %9, label %10, label %32
+
+10:                                               ; preds = %6
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %2) #10
+  store i8 -86, i8* %2, align 1
+  %11 = call i64 @recv(i32 %4, i8* nonnull %2, i64 1, i32 2) #10
+  %12 = icmp eq i64 %11, -1
+  br i1 %12, label %13, label %22
+
+13:                                               ; preds = %10
+  %14 = tail call i32* @__errno_location() #12
+  br label %15
+
+15:                                               ; preds = %13, %18
+  %16 = load i32, i32* %14, align 4
+  %17 = icmp eq i32 %16, 4
+  br i1 %17, label %18, label %26
+
+18:                                               ; preds = %15
+  %19 = load i32, i32* %3, align 8
+  %20 = call i64 @recv(i32 %19, i8* nonnull %2, i64 1, i32 2) #10
+  %21 = icmp eq i64 %20, -1
+  br i1 %21, label %15, label %22
+
+22:                                               ; preds = %18, %10
+  %23 = phi i64 [ %11, %10 ], [ %20, %18 ]
+  %24 = trunc i64 %23 to i32
+  %25 = icmp sgt i32 %24, -1
+  br i1 %25, label %30, label %26
+
+26:                                               ; preds = %15, %22
+  %27 = tail call i32* @__errno_location() #12
+  %28 = load i32, i32* %27, align 4
+  %29 = icmp eq i32 %28, 11
+  br label %30
+
+30:                                               ; preds = %26, %22
+  %31 = phi i1 [ false, %22 ], [ %29, %26 ]
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %2) #10
+  br label %32
+
+32:                                               ; preds = %1, %6, %30
+  %33 = phi i1 [ %31, %30 ], [ false, %6 ], [ false, %1 ]
+  ret i1 %33
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3net11SocketPosix4ReadEPNS_8IOBufferEiN4base12OnceCallbackIFviEEE(%"class.net::SocketPosix"*, %"class.net::IOBuffer"*, i32, %"class.base::OnceCallback"*) local_unnamed_addr #0 align 2 {
+  %5 = alloca %"class.base::OnceCallback", align 8
+  %6 = ptrtoint %"class.net::SocketPosix"* %0 to i64
+  %7 = tail call i8* @_Znwm(i64 56) #11, !noalias !3
+  %8 = bitcast i8* %7 to %"class.base::internal::BindStateBase"*
+  tail call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"* nonnull %8, void ()* bitcast (void (%"class.base::internal::BindStateBase"*, i32)* @_ZN4base8internal7InvokerINS0_9BindStateIMN3net11SocketPosixEFviEJNS0_17UnretainedWrapperIS4_EEEEEFviEE7RunOnceEPNS0_13BindStateBaseEi to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @_ZN4base8internal9BindStateIMN3net11SocketPosixEFviEJNS0_17UnretainedWrapperIS3_EEEE7DestroyEPKNS0_13BindStateBaseE) #10, !noalias !3
+  %9 = getelementptr inbounds i8, i8* %7, i64 32
+  %10 = bitcast i8* %9 to <2 x i64>*
+  store <2 x i64> <i64 ptrtoint (void (%"class.net::SocketPosix"*, i32)* @_ZN3net11SocketPosix9RetryReadEi to i64), i64 0>, <2 x i64>* %10, align 8, !noalias !3
+  %11 = getelementptr inbounds i8, i8* %7, i64 48
+  %12 = bitcast i8* %11 to i64*
+  store i64 %6, i64* %12, align 8, !noalias !3
+  %13 = bitcast %"class.base::OnceCallback"* %5 to i8**
+  store i8* %7, i8** %13, align 8, !alias.scope !3
+  %14 = call i32 @_ZN3net11SocketPosix11ReadIfReadyEPNS_8IOBufferEiN4base12OnceCallbackIFviEEE(%"class.net::SocketPosix"* %0, %"class.net::IOBuffer"* %1, i32 %2, %"class.base::OnceCallback"* nonnull %5)
+  %15 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %5, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %15) #10
+  %16 = icmp eq i32 %14, -1
+  br i1 %16, label %17, label %46
+
+17:                                               ; preds = %4
+  %18 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 7
+  %19 = icmp eq %"class.net::IOBuffer"* %1, null
+  br i1 %19, label %23, label %20
+
+20:                                               ; preds = %17
+  %21 = getelementptr inbounds %"class.net::IOBuffer", %"class.net::IOBuffer"* %1, i64 0, i32 1, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %22 = atomicrmw add i32* %21, i32 1 monotonic
+  br label %23
+
+23:                                               ; preds = %20, %17
+  %24 = ptrtoint %"class.net::IOBuffer"* %1 to i64
+  %25 = bitcast %class.scoped_refptr.8* %18 to i64*
+  %26 = getelementptr inbounds %class.scoped_refptr.8, %class.scoped_refptr.8* %18, i64 0, i32 0
+  %27 = load %"class.net::IOBuffer"*, %"class.net::IOBuffer"** %26, align 8
+  store i64 %24, i64* %25, align 8
+  %28 = icmp eq %"class.net::IOBuffer"* %27, null
+  br i1 %28, label %41, label %29
+
+29:                                               ; preds = %23
+  %30 = getelementptr inbounds %"class.net::IOBuffer", %"class.net::IOBuffer"* %27, i64 0, i32 1
+  %31 = getelementptr inbounds %"class.base::RefCountedThreadSafe.9", %"class.base::RefCountedThreadSafe.9"* %30, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %32 = atomicrmw sub i32* %31, i32 1 acq_rel
+  %33 = icmp eq i32 %32, 1
+  br i1 %33, label %34, label %41
+
+34:                                               ; preds = %29
+  %35 = getelementptr inbounds %"class.base::RefCountedThreadSafe.9", %"class.base::RefCountedThreadSafe.9"* %30, i64 -2
+  %36 = bitcast %"class.base::RefCountedThreadSafe.9"* %35 to %"class.net::IOBuffer"*
+  %37 = bitcast %"class.base::RefCountedThreadSafe.9"* %35 to void (%"class.net::IOBuffer"*)***
+  %38 = load void (%"class.net::IOBuffer"*)**, void (%"class.net::IOBuffer"*)*** %37, align 8
+  %39 = getelementptr inbounds void (%"class.net::IOBuffer"*)*, void (%"class.net::IOBuffer"*)** %38, i64 1
+  %40 = load void (%"class.net::IOBuffer"*)*, void (%"class.net::IOBuffer"*)** %39, align 8
+  call void %40(%"class.net::IOBuffer"* nonnull %36) #10
+  br label %41
+
+41:                                               ; preds = %23, %29, %34
+  %42 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 8
+  store i32 %2, i32* %42, align 8
+  %43 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 10, i32 0
+  %44 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %3, i64 0, i32 0
+  %45 = call dereferenceable(8) %"class.base::internal::CallbackBase"* @_ZN4base8internal12CallbackBaseaSEOS1_(%"class.base::internal::CallbackBase"* %43, %"class.base::internal::CallbackBase"* dereferenceable(8) %44) #10
+  br label %46
+
+46:                                               ; preds = %41, %4
+  ret i32 %14
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3net11SocketPosix11ReadIfReadyEPNS_8IOBufferEiN4base12OnceCallbackIFviEEE(%"class.net::SocketPosix"*, %"class.net::IOBuffer"* nocapture readonly, i32, %"class.base::OnceCallback"*) local_unnamed_addr #0 align 2 {
+  %5 = alloca %"class.logging::CheckError", align 8
+  %6 = alloca %"class.base::CurrentIOThread", align 8
+  %7 = alloca %"class.logging::ErrnoLogMessage", align 8
+  %8 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 11, i32 0
+  %9 = getelementptr inbounds %"class.base::internal::CallbackBase", %"class.base::internal::CallbackBase"* %8, i64 0, i32 0, i32 0
+  %10 = load %"class.base::internal::BindStateBase"*, %"class.base::internal::BindStateBase"** %9, align 8
+  %11 = icmp eq %"class.base::internal::BindStateBase"* %10, null
+  br i1 %11, label %15, label %12
+
+12:                                               ; preds = %4
+  %13 = bitcast %"class.logging::CheckError"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %13) #10
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %5, i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.1, i64 0, i64 0), i32 296, i8* getelementptr inbounds ([34 x i8], [34 x i8]* @.str.7, i64 0, i64 0)) #10
+  %14 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %5) #10
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %5) #10
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %13) #10
+  br label %15
+
+15:                                               ; preds = %4, %12
+  %16 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  %17 = getelementptr inbounds %"class.net::IOBuffer", %"class.net::IOBuffer"* %1, i64 0, i32 2
+  %18 = sext i32 %2 to i64
+  br label %19
+
+19:                                               ; preds = %24, %15
+  %20 = load i32, i32* %16, align 8
+  %21 = load i8*, i8** %17, align 8
+  %22 = call i64 @read(i32 %20, i8* %21, i64 %18) #10
+  %23 = icmp eq i64 %22, -1
+  br i1 %23, label %24, label %28
+
+24:                                               ; preds = %19
+  %25 = tail call i32* @__errno_location() #12
+  %26 = load i32, i32* %25, align 4
+  %27 = icmp eq i32 %26, 4
+  br i1 %27, label %19, label %33
+
+28:                                               ; preds = %19
+  %29 = trunc i64 %22 to i32
+  %30 = icmp sgt i32 %29, -1
+  br i1 %30, label %60, label %31
+
+31:                                               ; preds = %28
+  %32 = tail call i32* @__errno_location() #12
+  br label %33
+
+33:                                               ; preds = %24, %31
+  %34 = phi i32* [ %32, %31 ], [ %25, %24 ]
+  %35 = load i32, i32* %34, align 4
+  %36 = call i32 @_ZN3net14MapSystemErrorEi(i32 %35) #10
+  %37 = icmp eq i32 %36, -1
+  br i1 %37, label %38, label %60
+
+38:                                               ; preds = %33
+  %39 = bitcast %"class.base::CurrentIOThread"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %39) #10
+  %40 = call %"class.base::sequence_manager::internal::SequenceManagerImpl"* @_ZN4base15CurrentIOThread3GetEv() #10
+  %41 = getelementptr inbounds %"class.base::CurrentIOThread", %"class.base::CurrentIOThread"* %6, i64 0, i32 0, i32 0
+  store %"class.base::sequence_manager::internal::SequenceManagerImpl"* %40, %"class.base::sequence_manager::internal::SequenceManagerImpl"** %41, align 8
+  %42 = load i32, i32* %16, align 8
+  %43 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 6
+  %44 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 0
+  %45 = call zeroext i1 @_ZN4base15CurrentIOThread19WatchFileDescriptorEibNS_27WatchableIOMessagePumpPosix4ModeEPNS_19MessagePumpLibevent17FdWatchControllerEPNS1_9FdWatcherE(%"class.base::CurrentIOThread"* nonnull %6, i32 %42, i1 zeroext true, i32 1, %"class.base::MessagePumpLibevent::FdWatchController"* %43, %"class.base::WatchableIOMessagePumpPosix::FdWatcher"* %44) #10
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %39) #10
+  br i1 %45, label %57, label %46
+
+46:                                               ; preds = %38
+  %47 = call zeroext i1 @_ZN7logging22ShouldCreateLogMessageEi(i32 2) #10
+  br i1 %47, label %48, label %54
+
+48:                                               ; preds = %46
+  %49 = bitcast %"class.logging::ErrnoLogMessage"* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 312, i8* nonnull %49) #10
+  %50 = call i32 @_ZN7logging22GetLastSystemErrorCodeEv() #10
+  call void @_ZN7logging15ErrnoLogMessageC1EPKciii(%"class.logging::ErrnoLogMessage"* nonnull %7, i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.1, i64 0, i64 0), i32 307, i32 2, i32 %50) #10
+  %51 = getelementptr inbounds %"class.logging::ErrnoLogMessage", %"class.logging::ErrnoLogMessage"* %7, i64 0, i32 0, i32 2
+  %52 = bitcast %"class.std::__1::basic_ostringstream"* %51 to %"class.std::__1::basic_ostream"*
+  %53 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %52, i8* getelementptr inbounds ([35 x i8], [35 x i8]* @.str.8, i64 0, i64 0), i64 34) #10
+  call void @_ZN7logging15ErrnoLogMessageD1Ev(%"class.logging::ErrnoLogMessage"* nonnull %7) #10
+  call void @llvm.lifetime.end.p0i8(i64 312, i8* nonnull %49) #10
+  br label %54
+
+54:                                               ; preds = %46, %48
+  %55 = load i32, i32* %34, align 4
+  %56 = call i32 @_ZN3net14MapSystemErrorEi(i32 %55) #10
+  br label %60
+
+57:                                               ; preds = %38
+  %58 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %3, i64 0, i32 0
+  %59 = call dereferenceable(8) %"class.base::internal::CallbackBase"* @_ZN4base8internal12CallbackBaseaSEOS1_(%"class.base::internal::CallbackBase"* %8, %"class.base::internal::CallbackBase"* dereferenceable(8) %58) #10
+  br label %60
+
+60:                                               ; preds = %28, %33, %57, %54
+  %61 = phi i32 [ %56, %54 ], [ -1, %57 ], [ %36, %33 ], [ %29, %28 ]
+  ret i32 %61
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3net11SocketPosix9RetryReadEi(%"class.net::SocketPosix"*, i32) #0 align 2 {
+  %3 = alloca %"class.base::OnceCallback", align 8
+  %4 = alloca %"class.base::OnceCallback", align 8
+  %5 = icmp eq i32 %1, 0
+  br i1 %5, label %6, label %22
+
+6:                                                ; preds = %2
+  %7 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 7, i32 0
+  %8 = load %"class.net::IOBuffer"*, %"class.net::IOBuffer"** %7, align 8
+  %9 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 8
+  %10 = load i32, i32* %9, align 8
+  %11 = ptrtoint %"class.net::SocketPosix"* %0 to i64
+  %12 = tail call i8* @_Znwm(i64 56) #11, !noalias !8
+  %13 = bitcast i8* %12 to %"class.base::internal::BindStateBase"*
+  tail call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"* nonnull %13, void ()* bitcast (void (%"class.base::internal::BindStateBase"*, i32)* @_ZN4base8internal7InvokerINS0_9BindStateIMN3net11SocketPosixEFviEJNS0_17UnretainedWrapperIS4_EEEEEFviEE7RunOnceEPNS0_13BindStateBaseEi to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @_ZN4base8internal9BindStateIMN3net11SocketPosixEFviEJNS0_17UnretainedWrapperIS3_EEEE7DestroyEPKNS0_13BindStateBaseE) #10, !noalias !8
+  %14 = getelementptr inbounds i8, i8* %12, i64 32
+  %15 = bitcast i8* %14 to <2 x i64>*
+  store <2 x i64> <i64 ptrtoint (void (%"class.net::SocketPosix"*, i32)* @_ZN3net11SocketPosix9RetryReadEi to i64), i64 0>, <2 x i64>* %15, align 8, !noalias !8
+  %16 = getelementptr inbounds i8, i8* %12, i64 48
+  %17 = bitcast i8* %16 to i64*
+  store i64 %11, i64* %17, align 8, !noalias !8
+  %18 = bitcast %"class.base::OnceCallback"* %4 to i8**
+  store i8* %12, i8** %18, align 8, !alias.scope !8
+  %19 = call i32 @_ZN3net11SocketPosix11ReadIfReadyEPNS_8IOBufferEiN4base12OnceCallbackIFviEEE(%"class.net::SocketPosix"* %0, %"class.net::IOBuffer"* %8, i32 %10, %"class.base::OnceCallback"* nonnull %4)
+  %20 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %4, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %20) #10
+  %21 = icmp eq i32 %19, -1
+  br i1 %21, label %54, label %22
+
+22:                                               ; preds = %6, %2
+  %23 = phi i32 [ %19, %6 ], [ %1, %2 ]
+  %24 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 7
+  %25 = bitcast %class.scoped_refptr.8* %24 to i64*
+  %26 = getelementptr inbounds %class.scoped_refptr.8, %class.scoped_refptr.8* %24, i64 0, i32 0
+  %27 = load %"class.net::IOBuffer"*, %"class.net::IOBuffer"** %26, align 8
+  store i64 0, i64* %25, align 8
+  %28 = icmp eq %"class.net::IOBuffer"* %27, null
+  br i1 %28, label %41, label %29
+
+29:                                               ; preds = %22
+  %30 = getelementptr inbounds %"class.net::IOBuffer", %"class.net::IOBuffer"* %27, i64 0, i32 1
+  %31 = getelementptr inbounds %"class.base::RefCountedThreadSafe.9", %"class.base::RefCountedThreadSafe.9"* %30, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %32 = atomicrmw sub i32* %31, i32 1 acq_rel
+  %33 = icmp eq i32 %32, 1
+  br i1 %33, label %34, label %41
+
+34:                                               ; preds = %29
+  %35 = getelementptr inbounds %"class.base::RefCountedThreadSafe.9", %"class.base::RefCountedThreadSafe.9"* %30, i64 -2
+  %36 = bitcast %"class.base::RefCountedThreadSafe.9"* %35 to %"class.net::IOBuffer"*
+  %37 = bitcast %"class.base::RefCountedThreadSafe.9"* %35 to void (%"class.net::IOBuffer"*)***
+  %38 = load void (%"class.net::IOBuffer"*)**, void (%"class.net::IOBuffer"*)*** %37, align 8
+  %39 = getelementptr inbounds void (%"class.net::IOBuffer"*)*, void (%"class.net::IOBuffer"*)** %38, i64 1
+  %40 = load void (%"class.net::IOBuffer"*)*, void (%"class.net::IOBuffer"*)** %39, align 8
+  call void %40(%"class.net::IOBuffer"* nonnull %36) #10
+  br label %41
+
+41:                                               ; preds = %22, %29, %34
+  %42 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 8
+  store i32 0, i32* %42, align 8
+  %43 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 10
+  %44 = bitcast %"class.base::OnceCallback"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %44) #10
+  %45 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %43, i64 0, i32 0, i32 0, i32 0
+  %46 = bitcast %"class.base::OnceCallback"* %43 to i64*
+  %47 = load i64, i64* %46, align 8
+  %48 = bitcast %"class.base::OnceCallback"* %3 to i64*
+  store i64 %47, i64* %48, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %45, align 8
+  %49 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %3, i64 0, i32 0
+  %50 = inttoptr i64 %47 to %"class.base::internal::BindStateBase"*
+  %51 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %50, i64 0, i32 1
+  %52 = bitcast void ()** %51 to void (%"class.base::internal::BindStateBase"*, i32)**
+  %53 = load void (%"class.base::internal::BindStateBase"*, i32)*, void (%"class.base::internal::BindStateBase"*, i32)** %52, align 8
+  call void %53(%"class.base::internal::BindStateBase"* %50, i32 %23) #10
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %49) #10
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %44) #10
+  br label %54
+
+54:                                               ; preds = %6, %41
+  ret void
+}
+
+declare void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* sret, i8*, i32, i8*) local_unnamed_addr #2
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"*) local_unnamed_addr #2
+
+; Function Attrs: nounwind
+declare void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"*) unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3net11SocketPosix6DoReadEPNS_8IOBufferEi(%"class.net::SocketPosix"* nocapture readonly, %"class.net::IOBuffer"* nocapture readonly, i32) local_unnamed_addr #0 align 2 {
+  %4 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  %5 = getelementptr inbounds %"class.net::IOBuffer", %"class.net::IOBuffer"* %1, i64 0, i32 2
+  %6 = sext i32 %2 to i64
+  br label %7
+
+7:                                                ; preds = %12, %3
+  %8 = load i32, i32* %4, align 8
+  %9 = load i8*, i8** %5, align 8
+  %10 = tail call i64 @read(i32 %8, i8* %9, i64 %6) #10
+  %11 = icmp eq i64 %10, -1
+  br i1 %11, label %12, label %16
+
+12:                                               ; preds = %7
+  %13 = tail call i32* @__errno_location() #12
+  %14 = load i32, i32* %13, align 4
+  %15 = icmp eq i32 %14, 4
+  br i1 %15, label %7, label %19
+
+16:                                               ; preds = %7
+  %17 = trunc i64 %10 to i32
+  %18 = icmp sgt i32 %17, -1
+  br i1 %18, label %23, label %19
+
+19:                                               ; preds = %12, %16
+  %20 = tail call i32* @__errno_location() #12
+  %21 = load i32, i32* %20, align 4
+  %22 = tail call i32 @_ZN3net14MapSystemErrorEi(i32 %21) #10
+  br label %23
+
+23:                                               ; preds = %16, %19
+  %24 = phi i32 [ %22, %19 ], [ %17, %16 ]
+  ret i32 %24
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3net11SocketPosix17CancelReadIfReadyEv(%"class.net::SocketPosix"*) local_unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 6
+  %3 = tail call zeroext i1 @_ZN4base19MessagePumpLibevent17FdWatchController26StopWatchingFileDescriptorEv(%"class.base::MessagePumpLibevent::FdWatchController"* %2) #10
+  %4 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 11, i32 0
+  tail call void @_ZN4base8internal12CallbackBase5ResetEv(%"class.base::internal::CallbackBase"* %4) #10
+  ret i32 0
+}
+
+declare void @_ZN4base8internal12CallbackBase5ResetEv(%"class.base::internal::CallbackBase"*) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3net11SocketPosix5WriteEPNS_8IOBufferEiN4base12OnceCallbackIFviEEERKNS_27NetworkTrafficAnnotationTagE(%"class.net::SocketPosix"*, %"class.net::IOBuffer"*, i32, %"class.base::OnceCallback"* nocapture, %"struct.net::NetworkTrafficAnnotationTag"* nocapture readnone dereferenceable(4)) local_unnamed_addr #0 align 2 {
+  %6 = alloca %"class.logging::CheckError", align 8
+  %7 = alloca %"class.base::OnceCallback", align 8
+  %8 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 16, i32 0, i32 0, i32 0
+  %9 = load %"class.base::internal::BindStateBase"*, %"class.base::internal::BindStateBase"** %8, align 8
+  %10 = icmp eq %"class.base::internal::BindStateBase"* %9, null
+  br i1 %10, label %14, label %11
+
+11:                                               ; preds = %5
+  %12 = bitcast %"class.logging::CheckError"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %12) #10
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %6, i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.1, i64 0, i64 0), i32 333, i8* getelementptr inbounds ([26 x i8], [26 x i8]* @.str.9, i64 0, i64 0)) #10
+  %13 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %6) #10
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %6) #10
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %12) #10
+  br label %14
+
+14:                                               ; preds = %5, %11
+  %15 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  %16 = getelementptr inbounds %"class.net::IOBuffer", %"class.net::IOBuffer"* %1, i64 0, i32 2
+  %17 = sext i32 %2 to i64
+  br label %18
+
+18:                                               ; preds = %23, %14
+  %19 = load i32, i32* %15, align 8
+  %20 = load i8*, i8** %16, align 8
+  %21 = call i64 @send(i32 %19, i8* %20, i64 %17, i32 16384) #10
+  %22 = icmp eq i64 %21, -1
+  br i1 %22, label %23, label %27
+
+23:                                               ; preds = %18
+  %24 = tail call i32* @__errno_location() #12
+  %25 = load i32, i32* %24, align 4
+  %26 = icmp eq i32 %25, 4
+  br i1 %26, label %18, label %32
+
+27:                                               ; preds = %18
+  %28 = trunc i64 %21 to i32
+  %29 = icmp sgt i32 %28, -1
+  br i1 %29, label %44, label %30
+
+30:                                               ; preds = %27
+  %31 = tail call i32* @__errno_location() #12
+  br label %32
+
+32:                                               ; preds = %23, %30
+  %33 = phi i32* [ %31, %30 ], [ %24, %23 ]
+  %34 = load i32, i32* %33, align 4
+  %35 = call i32 @_ZN3net14MapSystemErrorEi(i32 %34) #10
+  %36 = icmp eq i32 %35, -1
+  br i1 %36, label %37, label %44
+
+37:                                               ; preds = %32
+  %38 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %3, i64 0, i32 0, i32 0, i32 0
+  %39 = bitcast %"class.base::OnceCallback"* %3 to i64*
+  %40 = load i64, i64* %39, align 8
+  %41 = bitcast %"class.base::OnceCallback"* %7 to i64*
+  store i64 %40, i64* %41, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %38, align 8
+  %42 = call i32 @_ZN3net11SocketPosix12WaitForWriteEPNS_8IOBufferEiN4base12OnceCallbackIFviEEE(%"class.net::SocketPosix"* %0, %"class.net::IOBuffer"* %1, i32 %2, %"class.base::OnceCallback"* nonnull %7)
+  %43 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %7, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %43) #10
+  br label %44
+
+44:                                               ; preds = %27, %37, %32
+  %45 = phi i32 [ %42, %37 ], [ %35, %32 ], [ %28, %27 ]
+  ret i32 %45
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3net11SocketPosix7DoWriteEPNS_8IOBufferEi(%"class.net::SocketPosix"* nocapture readonly, %"class.net::IOBuffer"* nocapture readonly, i32) local_unnamed_addr #0 align 2 {
+  %4 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  %5 = getelementptr inbounds %"class.net::IOBuffer", %"class.net::IOBuffer"* %1, i64 0, i32 2
+  %6 = sext i32 %2 to i64
+  br label %7
+
+7:                                                ; preds = %12, %3
+  %8 = load i32, i32* %4, align 8
+  %9 = load i8*, i8** %5, align 8
+  %10 = tail call i64 @send(i32 %8, i8* %9, i64 %6, i32 16384) #10
+  %11 = icmp eq i64 %10, -1
+  br i1 %11, label %12, label %16
+
+12:                                               ; preds = %7
+  %13 = tail call i32* @__errno_location() #12
+  %14 = load i32, i32* %13, align 4
+  %15 = icmp eq i32 %14, 4
+  br i1 %15, label %7, label %19
+
+16:                                               ; preds = %7
+  %17 = trunc i64 %10 to i32
+  %18 = icmp sgt i32 %17, -1
+  br i1 %18, label %23, label %19
+
+19:                                               ; preds = %12, %16
+  %20 = tail call i32* @__errno_location() #12
+  %21 = load i32, i32* %20, align 4
+  %22 = tail call i32 @_ZN3net14MapSystemErrorEi(i32 %21) #10
+  br label %23
+
+23:                                               ; preds = %16, %19
+  %24 = phi i32 [ %22, %19 ], [ %17, %16 ]
+  ret i32 %24
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3net11SocketPosix12WaitForWriteEPNS_8IOBufferEiN4base12OnceCallbackIFviEEE(%"class.net::SocketPosix"*, %"class.net::IOBuffer"*, i32, %"class.base::OnceCallback"*) local_unnamed_addr #0 align 2 {
+  %5 = alloca %"class.base::CurrentIOThread", align 8
+  %6 = alloca %"class.logging::ErrnoLogMessage", align 8
+  %7 = bitcast %"class.base::CurrentIOThread"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %7) #10
+  %8 = tail call %"class.base::sequence_manager::internal::SequenceManagerImpl"* @_ZN4base15CurrentIOThread3GetEv() #10
+  %9 = getelementptr inbounds %"class.base::CurrentIOThread", %"class.base::CurrentIOThread"* %5, i64 0, i32 0, i32 0
+  store %"class.base::sequence_manager::internal::SequenceManagerImpl"* %8, %"class.base::sequence_manager::internal::SequenceManagerImpl"** %9, align 8
+  %10 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  %11 = load i32, i32* %10, align 8
+  %12 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 12
+  %13 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 0
+  %14 = call zeroext i1 @_ZN4base15CurrentIOThread19WatchFileDescriptorEibNS_27WatchableIOMessagePumpPosix4ModeEPNS_19MessagePumpLibevent17FdWatchControllerEPNS1_9FdWatcherE(%"class.base::CurrentIOThread"* nonnull %5, i32 %11, i1 zeroext true, i32 2, %"class.base::MessagePumpLibevent::FdWatchController"* %12, %"class.base::WatchableIOMessagePumpPosix::FdWatcher"* %13) #10
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %7) #10
+  br i1 %14, label %27, label %15
+
+15:                                               ; preds = %4
+  %16 = call zeroext i1 @_ZN7logging22ShouldCreateLogMessageEi(i32 2) #10
+  br i1 %16, label %17, label %23
+
+17:                                               ; preds = %15
+  %18 = bitcast %"class.logging::ErrnoLogMessage"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 312, i8* nonnull %18) #10
+  %19 = call i32 @_ZN7logging22GetLastSystemErrorCodeEv() #10
+  call void @_ZN7logging15ErrnoLogMessageC1EPKciii(%"class.logging::ErrnoLogMessage"* nonnull %6, i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.1, i64 0, i64 0), i32 357, i32 2, i32 %19) #10
+  %20 = getelementptr inbounds %"class.logging::ErrnoLogMessage", %"class.logging::ErrnoLogMessage"* %6, i64 0, i32 0, i32 2
+  %21 = bitcast %"class.std::__1::basic_ostringstream"* %20 to %"class.std::__1::basic_ostream"*
+  %22 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %21, i8* getelementptr inbounds ([36 x i8], [36 x i8]* @.str.10, i64 0, i64 0), i64 35) #10
+  call void @_ZN7logging15ErrnoLogMessageD1Ev(%"class.logging::ErrnoLogMessage"* nonnull %6) #10
+  call void @llvm.lifetime.end.p0i8(i64 312, i8* nonnull %18) #10
+  br label %23
+
+23:                                               ; preds = %15, %17
+  %24 = tail call i32* @__errno_location() #12
+  %25 = load i32, i32* %24, align 4
+  %26 = call i32 @_ZN3net14MapSystemErrorEi(i32 %25) #10
+  br label %56
+
+27:                                               ; preds = %4
+  %28 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 13
+  %29 = icmp eq %"class.net::IOBuffer"* %1, null
+  br i1 %29, label %33, label %30
+
+30:                                               ; preds = %27
+  %31 = getelementptr inbounds %"class.net::IOBuffer", %"class.net::IOBuffer"* %1, i64 0, i32 1, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %32 = atomicrmw add i32* %31, i32 1 monotonic
+  br label %33
+
+33:                                               ; preds = %30, %27
+  %34 = ptrtoint %"class.net::IOBuffer"* %1 to i64
+  %35 = bitcast %class.scoped_refptr.8* %28 to i64*
+  %36 = getelementptr inbounds %class.scoped_refptr.8, %class.scoped_refptr.8* %28, i64 0, i32 0
+  %37 = load %"class.net::IOBuffer"*, %"class.net::IOBuffer"** %36, align 8
+  store i64 %34, i64* %35, align 8
+  %38 = icmp eq %"class.net::IOBuffer"* %37, null
+  br i1 %38, label %51, label %39
+
+39:                                               ; preds = %33
+  %40 = getelementptr inbounds %"class.net::IOBuffer", %"class.net::IOBuffer"* %37, i64 0, i32 1
+  %41 = getelementptr inbounds %"class.base::RefCountedThreadSafe.9", %"class.base::RefCountedThreadSafe.9"* %40, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %42 = atomicrmw sub i32* %41, i32 1 acq_rel
+  %43 = icmp eq i32 %42, 1
+  br i1 %43, label %44, label %51
+
+44:                                               ; preds = %39
+  %45 = getelementptr inbounds %"class.base::RefCountedThreadSafe.9", %"class.base::RefCountedThreadSafe.9"* %40, i64 -2
+  %46 = bitcast %"class.base::RefCountedThreadSafe.9"* %45 to %"class.net::IOBuffer"*
+  %47 = bitcast %"class.base::RefCountedThreadSafe.9"* %45 to void (%"class.net::IOBuffer"*)***
+  %48 = load void (%"class.net::IOBuffer"*)**, void (%"class.net::IOBuffer"*)*** %47, align 8
+  %49 = getelementptr inbounds void (%"class.net::IOBuffer"*)*, void (%"class.net::IOBuffer"*)** %48, i64 1
+  %50 = load void (%"class.net::IOBuffer"*)*, void (%"class.net::IOBuffer"*)** %49, align 8
+  call void %50(%"class.net::IOBuffer"* nonnull %46) #10
+  br label %51
+
+51:                                               ; preds = %33, %39, %44
+  %52 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 14
+  store i32 %2, i32* %52, align 8
+  %53 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 16, i32 0
+  %54 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %3, i64 0, i32 0
+  %55 = call dereferenceable(8) %"class.base::internal::CallbackBase"* @_ZN4base8internal12CallbackBaseaSEOS1_(%"class.base::internal::CallbackBase"* %53, %"class.base::internal::CallbackBase"* dereferenceable(8) %54) #10
+  br label %56
+
+56:                                               ; preds = %51, %23
+  %57 = phi i32 [ %26, %23 ], [ -1, %51 ]
+  ret i32 %57
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZNK3net11SocketPosix15GetLocalAddressEPNS_15SockaddrStorageE(%"class.net::SocketPosix"* nocapture readonly, %"struct.net::SockaddrStorage"*) local_unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  %4 = load i32, i32* %3, align 8
+  %5 = getelementptr inbounds %"struct.net::SockaddrStorage", %"struct.net::SockaddrStorage"* %1, i64 0, i32 2
+  %6 = load %struct.sockaddr*, %struct.sockaddr** %5, align 8
+  %7 = getelementptr inbounds %"struct.net::SockaddrStorage", %"struct.net::SockaddrStorage"* %1, i64 0, i32 1
+  %8 = tail call i32 @getsockname(i32 %4, %struct.sockaddr* %6, i32* %7) #10
+  %9 = icmp slt i32 %8, 0
+  br i1 %9, label %10, label %14
+
+10:                                               ; preds = %2
+  %11 = tail call i32* @__errno_location() #12
+  %12 = load i32, i32* %11, align 4
+  %13 = tail call i32 @_ZN3net14MapSystemErrorEi(i32 %12) #10
+  br label %14
+
+14:                                               ; preds = %2, %10
+  %15 = phi i32 [ %13, %10 ], [ 0, %2 ]
+  ret i32 %15
+}
+
+; Function Attrs: nounwind
+declare i32 @getsockname(i32, %struct.sockaddr*, i32*) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZNK3net11SocketPosix14GetPeerAddressEPNS_15SockaddrStorageE(%"class.net::SocketPosix"* nocapture readonly, %"struct.net::SockaddrStorage"*) local_unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 19, i32 0, i32 0, i32 0
+  %4 = load %"struct.net::SockaddrStorage"*, %"struct.net::SockaddrStorage"** %3, align 8
+  %5 = icmp eq %"struct.net::SockaddrStorage"* %4, null
+  br i1 %5, label %7, label %6
+
+6:                                                ; preds = %2
+  tail call void @_ZN3net15SockaddrStorageaSERKS0_(%"struct.net::SockaddrStorage"* %1, %"struct.net::SockaddrStorage"* nonnull dereferenceable(144) %4) #10
+  br label %7
+
+7:                                                ; preds = %2, %6
+  %8 = phi i32 [ 0, %6 ], [ -15, %2 ]
+  ret i32 %8
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden zeroext i1 @_ZNK3net11SocketPosix14HasPeerAddressEv(%"class.net::SocketPosix"* nocapture readonly) local_unnamed_addr #6 align 2 {
+  %2 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 19, i32 0, i32 0, i32 0
+  %3 = load %"struct.net::SockaddrStorage"*, %"struct.net::SockaddrStorage"** %2, align 8
+  %4 = icmp ne %"struct.net::SockaddrStorage"* %3, null
+  ret i1 %4
+}
+
+declare void @_ZN3net15SockaddrStorageaSERKS0_(%"struct.net::SockaddrStorage"*, %"struct.net::SockaddrStorage"* dereferenceable(144)) local_unnamed_addr #2
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden void @_ZN3net11SocketPosix16DetachFromThreadEv(%"class.net::SocketPosix"* nocapture) local_unnamed_addr #7 align 2 {
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3net11SocketPosix28OnFileCanReadWithoutBlockingEi(%"class.net::SocketPosix"*, i32) unnamed_addr #0 align 2 {
+  %3 = alloca %"class.base::OnceCallback", align 8
+  %4 = alloca %"class.base::OnceCallback", align 8
+  %5 = alloca %"class.base::TimeTicks", align 8
+  %6 = load i8, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 193, i32 0), align 16
+  %7 = and i8 %6, 25
+  %8 = icmp eq i8 %7, 0
+  br i1 %8, label %15, label %9, !prof !13
+
+9:                                                ; preds = %2
+  %10 = tail call i32 @_ZN4base14PlatformThread9CurrentIdEv() #10
+  %11 = bitcast %"class.base::TimeTicks"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %11) #10
+  %12 = getelementptr inbounds %"class.base::TimeTicks", %"class.base::TimeTicks"* %5, i64 0, i32 0, i32 0
+  %13 = tail call i64 @_ZN4base6subtle28TimeTicksNowIgnoringOverrideEv() #10
+  store i64 %13, i64* %12, align 8
+  %14 = call i64 @_ZN20trace_event_internal37AddTraceEventWithThreadIdAndTimestampEcPKhPKcS3_yyiRKN4base9TimeTicksEPNS4_11trace_event14TraceArgumentsEj(i8 signext 88, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 193, i32 0), i8* getelementptr inbounds ([42 x i8], [42 x i8]* @.str.11, i64 0, i64 0), i8* null, i64 0, i64 0, i32 %10, %"class.base::TimeTicks"* nonnull dereferenceable(8) %5, %"class.base::trace_event::TraceArguments"* null, i32 0) #10
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %11) #10
+  br label %15
+
+15:                                               ; preds = %2, %9
+  %16 = phi i64 [ -6148914691236517206, %2 ], [ %14, %9 ]
+  %17 = phi i8* [ inttoptr (i64 -6148914691236517206 to i8*), %2 ], [ getelementptr inbounds ([42 x i8], [42 x i8]* @.str.11, i64 0, i64 0), %9 ]
+  %18 = phi i8* [ null, %2 ], [ getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 193, i32 0), %9 ]
+  %19 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 5, i32 0, i32 0, i32 0
+  %20 = load %"class.base::internal::BindStateBase"*, %"class.base::internal::BindStateBase"** %19, align 8
+  %21 = icmp eq %"class.base::internal::BindStateBase"* %20, null
+  br i1 %21, label %41, label %22
+
+22:                                               ; preds = %15
+  %23 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 4
+  %24 = load %"class.std::__1::unique_ptr.1"*, %"class.std::__1::unique_ptr.1"** %23, align 8
+  %25 = call i32 @_ZN3net11SocketPosix8DoAcceptEPNSt3__110unique_ptrIS0_NS1_14default_deleteIS0_EEEE(%"class.net::SocketPosix"* %0, %"class.std::__1::unique_ptr.1"* %24) #10
+  %26 = icmp eq i32 %25, -1
+  br i1 %26, label %58, label %27
+
+27:                                               ; preds = %22
+  %28 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 3
+  %29 = call zeroext i1 @_ZN4base19MessagePumpLibevent17FdWatchController26StopWatchingFileDescriptorEv(%"class.base::MessagePumpLibevent::FdWatchController"* %28) #10
+  store %"class.std::__1::unique_ptr.1"* null, %"class.std::__1::unique_ptr.1"** %23, align 8
+  %30 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 5
+  %31 = bitcast %"class.base::OnceCallback"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %31) #10
+  %32 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %30, i64 0, i32 0, i32 0, i32 0
+  %33 = bitcast %"class.base::OnceCallback"* %30 to i64*
+  %34 = load i64, i64* %33, align 8
+  %35 = bitcast %"class.base::OnceCallback"* %4 to i64*
+  store i64 %34, i64* %35, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %32, align 8
+  %36 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %4, i64 0, i32 0
+  %37 = inttoptr i64 %34 to %"class.base::internal::BindStateBase"*
+  %38 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %37, i64 0, i32 1
+  %39 = bitcast void ()** %38 to void (%"class.base::internal::BindStateBase"*, i32)**
+  %40 = load void (%"class.base::internal::BindStateBase"*, i32)*, void (%"class.base::internal::BindStateBase"*, i32)** %39, align 8
+  call void %40(%"class.base::internal::BindStateBase"* %37, i32 %25) #10
+  br label %55
+
+41:                                               ; preds = %15
+  %42 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 6
+  %43 = call zeroext i1 @_ZN4base19MessagePumpLibevent17FdWatchController26StopWatchingFileDescriptorEv(%"class.base::MessagePumpLibevent::FdWatchController"* %42) #10
+  %44 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 11
+  %45 = bitcast %"class.base::OnceCallback"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %45) #10
+  %46 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %44, i64 0, i32 0, i32 0, i32 0
+  %47 = bitcast %"class.base::OnceCallback"* %44 to i64*
+  %48 = load i64, i64* %47, align 8
+  %49 = bitcast %"class.base::OnceCallback"* %3 to i64*
+  store i64 %48, i64* %49, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %46, align 8
+  %50 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %3, i64 0, i32 0
+  %51 = inttoptr i64 %48 to %"class.base::internal::BindStateBase"*
+  %52 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %51, i64 0, i32 1
+  %53 = bitcast void ()** %52 to void (%"class.base::internal::BindStateBase"*, i32)**
+  %54 = load void (%"class.base::internal::BindStateBase"*, i32)*, void (%"class.base::internal::BindStateBase"*, i32)** %53, align 8
+  call void %54(%"class.base::internal::BindStateBase"* %51, i32 0) #10
+  br label %55
+
+55:                                               ; preds = %41, %27
+  %56 = phi %"class.base::internal::CallbackBase"* [ %36, %27 ], [ %50, %41 ]
+  %57 = phi i8* [ %31, %27 ], [ %45, %41 ]
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %56) #10
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %57) #10
+  br label %58
+
+58:                                               ; preds = %55, %22
+  %59 = icmp eq i8* %18, null
+  br i1 %59, label %64, label %60
+
+60:                                               ; preds = %58
+  %61 = load i8, i8* %18, align 1
+  %62 = icmp eq i8 %61, 0
+  br i1 %62, label %64, label %63
+
+63:                                               ; preds = %60
+  call void @_ZN20trace_event_internal24UpdateTraceEventDurationEPKhPKcN4base11trace_event16TraceEventHandleE(i8* nonnull %18, i8* %17, i64 %16) #10
+  br label %64
+
+64:                                               ; preds = %58, %60, %63
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3net11SocketPosix15AcceptCompletedEv(%"class.net::SocketPosix"*) local_unnamed_addr #0 align 2 {
+  %2 = alloca %"class.base::OnceCallback", align 8
+  %3 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 4
+  %4 = load %"class.std::__1::unique_ptr.1"*, %"class.std::__1::unique_ptr.1"** %3, align 8
+  %5 = tail call i32 @_ZN3net11SocketPosix8DoAcceptEPNSt3__110unique_ptrIS0_NS1_14default_deleteIS0_EEEE(%"class.net::SocketPosix"* %0, %"class.std::__1::unique_ptr.1"* %4)
+  %6 = icmp eq i32 %5, -1
+  br i1 %6, label %21, label %7
+
+7:                                                ; preds = %1
+  %8 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 3
+  %9 = tail call zeroext i1 @_ZN4base19MessagePumpLibevent17FdWatchController26StopWatchingFileDescriptorEv(%"class.base::MessagePumpLibevent::FdWatchController"* %8) #10
+  store %"class.std::__1::unique_ptr.1"* null, %"class.std::__1::unique_ptr.1"** %3, align 8
+  %10 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 5
+  %11 = bitcast %"class.base::OnceCallback"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %11) #10
+  %12 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %10, i64 0, i32 0, i32 0, i32 0
+  %13 = bitcast %"class.base::OnceCallback"* %10 to i64*
+  %14 = load i64, i64* %13, align 8
+  %15 = bitcast %"class.base::OnceCallback"* %2 to i64*
+  store i64 %14, i64* %15, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %12, align 8
+  %16 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %2, i64 0, i32 0
+  %17 = inttoptr i64 %14 to %"class.base::internal::BindStateBase"*
+  %18 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %17, i64 0, i32 1
+  %19 = bitcast void ()** %18 to void (%"class.base::internal::BindStateBase"*, i32)**
+  %20 = load void (%"class.base::internal::BindStateBase"*, i32)*, void (%"class.base::internal::BindStateBase"*, i32)** %19, align 8
+  tail call void %20(%"class.base::internal::BindStateBase"* %17, i32 %5) #10
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %16) #10
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %11) #10
+  br label %21
+
+21:                                               ; preds = %1, %7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3net11SocketPosix13ReadCompletedEv(%"class.net::SocketPosix"*) local_unnamed_addr #0 align 2 {
+  %2 = alloca %"class.base::OnceCallback", align 8
+  %3 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 6
+  %4 = tail call zeroext i1 @_ZN4base19MessagePumpLibevent17FdWatchController26StopWatchingFileDescriptorEv(%"class.base::MessagePumpLibevent::FdWatchController"* %3) #10
+  %5 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 11
+  %6 = bitcast %"class.base::OnceCallback"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %6) #10
+  %7 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %5, i64 0, i32 0, i32 0, i32 0
+  %8 = bitcast %"class.base::OnceCallback"* %5 to i64*
+  %9 = load i64, i64* %8, align 8
+  %10 = bitcast %"class.base::OnceCallback"* %2 to i64*
+  store i64 %9, i64* %10, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %7, align 8
+  %11 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %2, i64 0, i32 0
+  %12 = inttoptr i64 %9 to %"class.base::internal::BindStateBase"*
+  %13 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %12, i64 0, i32 1
+  %14 = bitcast void ()** %13 to void (%"class.base::internal::BindStateBase"*, i32)**
+  %15 = load void (%"class.base::internal::BindStateBase"*, i32)*, void (%"class.base::internal::BindStateBase"*, i32)** %14, align 8
+  tail call void %15(%"class.base::internal::BindStateBase"* %12, i32 0) #10
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %11) #10
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %6) #10
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3net11SocketPosix29OnFileCanWriteWithoutBlockingEi(%"class.net::SocketPosix"*, i32) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 17
+  %4 = load i8, i8* %3, align 8, !range !2
+  %5 = icmp eq i8 %4, 0
+  br i1 %5, label %7, label %6
+
+6:                                                ; preds = %2
+  tail call void @_ZN3net11SocketPosix16ConnectCompletedEv(%"class.net::SocketPosix"* %0)
+  br label %8
+
+7:                                                ; preds = %2
+  tail call void @_ZN3net11SocketPosix14WriteCompletedEv(%"class.net::SocketPosix"* %0)
+  br label %8
+
+8:                                                ; preds = %7, %6
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3net11SocketPosix16ConnectCompletedEv(%"class.net::SocketPosix"*) local_unnamed_addr #0 align 2 {
+  %2 = alloca %"class.base::OnceCallback", align 8
+  %3 = alloca i32, align 4
+  %4 = alloca i32, align 4
+  %5 = bitcast i32* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %5) #10
+  store i32 0, i32* %3, align 4
+  %6 = bitcast i32* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %6) #10
+  store i32 4, i32* %4, align 4
+  %7 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  %8 = load i32, i32* %7, align 8
+  %9 = call i32 @getsockopt(i32 %8, i32 1, i32 4, i8* nonnull %5, i32* nonnull %4) #10
+  %10 = icmp eq i32 %9, 0
+  br i1 %10, label %14, label %11
+
+11:                                               ; preds = %1
+  %12 = tail call i32* @__errno_location() #12
+  %13 = load i32, i32* %12, align 4
+  br label %17
+
+14:                                               ; preds = %1
+  %15 = load i32, i32* %3, align 4
+  %16 = tail call i32* @__errno_location() #12
+  store i32 %15, i32* %16, align 4
+  br label %17
+
+17:                                               ; preds = %11, %14
+  %18 = phi i32 [ %13, %11 ], [ %15, %14 ]
+  switch i32 %18, label %20 [
+    i32 115, label %39
+    i32 13, label %23
+    i32 110, label %19
+  ]
+
+19:                                               ; preds = %17
+  br label %23
+
+20:                                               ; preds = %17
+  %21 = call i32 @_ZN3net14MapSystemErrorEi(i32 %18) #10
+  switch i32 %21, label %22 [
+    i32 -2, label %23
+    i32 -1, label %39
+  ]
+
+22:                                               ; preds = %20
+  br label %23
+
+23:                                               ; preds = %20, %22, %17, %19
+  %24 = phi i32 [ -118, %19 ], [ -138, %17 ], [ -104, %20 ], [ %21, %22 ]
+  %25 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 12
+  %26 = call zeroext i1 @_ZN4base19MessagePumpLibevent17FdWatchController26StopWatchingFileDescriptorEv(%"class.base::MessagePumpLibevent::FdWatchController"* %25) #10
+  %27 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 17
+  store i8 0, i8* %27, align 8
+  %28 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 16
+  %29 = bitcast %"class.base::OnceCallback"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %29) #10
+  %30 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %28, i64 0, i32 0, i32 0, i32 0
+  %31 = bitcast %"class.base::OnceCallback"* %28 to i64*
+  %32 = load i64, i64* %31, align 8
+  %33 = bitcast %"class.base::OnceCallback"* %2 to i64*
+  store i64 %32, i64* %33, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %30, align 8
+  %34 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %2, i64 0, i32 0
+  %35 = inttoptr i64 %32 to %"class.base::internal::BindStateBase"*
+  %36 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %35, i64 0, i32 1
+  %37 = bitcast void ()** %36 to void (%"class.base::internal::BindStateBase"*, i32)**
+  %38 = load void (%"class.base::internal::BindStateBase"*, i32)*, void (%"class.base::internal::BindStateBase"*, i32)** %37, align 8
+  call void %38(%"class.base::internal::BindStateBase"* %35, i32 %24) #10
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %34) #10
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %29) #10
+  br label %39
+
+39:                                               ; preds = %20, %17, %23
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %6) #10
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %5) #10
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3net11SocketPosix14WriteCompletedEv(%"class.net::SocketPosix"*) local_unnamed_addr #0 align 2 {
+  %2 = alloca %"class.base::OnceCallback", align 8
+  %3 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 13
+  %4 = getelementptr inbounds %class.scoped_refptr.8, %class.scoped_refptr.8* %3, i64 0, i32 0
+  %5 = load %"class.net::IOBuffer"*, %"class.net::IOBuffer"** %4, align 8
+  %6 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 14
+  %7 = load i32, i32* %6, align 8
+  %8 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 1
+  %9 = getelementptr inbounds %"class.net::IOBuffer", %"class.net::IOBuffer"* %5, i64 0, i32 2
+  %10 = sext i32 %7 to i64
+  br label %11
+
+11:                                               ; preds = %16, %1
+  %12 = load i32, i32* %8, align 8
+  %13 = load i8*, i8** %9, align 8
+  %14 = tail call i64 @send(i32 %12, i8* %13, i64 %10, i32 16384) #10
+  %15 = icmp eq i64 %14, -1
+  br i1 %15, label %16, label %20
+
+16:                                               ; preds = %11
+  %17 = tail call i32* @__errno_location() #12
+  %18 = load i32, i32* %17, align 4
+  %19 = icmp eq i32 %18, 4
+  br i1 %19, label %11, label %25
+
+20:                                               ; preds = %11
+  %21 = trunc i64 %14 to i32
+  %22 = icmp sgt i32 %21, -1
+  br i1 %22, label %30, label %23
+
+23:                                               ; preds = %20
+  %24 = tail call i32* @__errno_location() #12
+  br label %25
+
+25:                                               ; preds = %16, %23
+  %26 = phi i32* [ %24, %23 ], [ %17, %16 ]
+  %27 = load i32, i32* %26, align 4
+  %28 = tail call i32 @_ZN3net14MapSystemErrorEi(i32 %27) #10
+  %29 = icmp eq i32 %28, -1
+  br i1 %29, label %61, label %30
+
+30:                                               ; preds = %20, %25
+  %31 = phi i32 [ %28, %25 ], [ %21, %20 ]
+  %32 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 12
+  %33 = tail call zeroext i1 @_ZN4base19MessagePumpLibevent17FdWatchController26StopWatchingFileDescriptorEv(%"class.base::MessagePumpLibevent::FdWatchController"* %32) #10
+  %34 = bitcast %class.scoped_refptr.8* %3 to i64*
+  %35 = load %"class.net::IOBuffer"*, %"class.net::IOBuffer"** %4, align 8
+  store i64 0, i64* %34, align 8
+  %36 = icmp eq %"class.net::IOBuffer"* %35, null
+  br i1 %36, label %49, label %37
+
+37:                                               ; preds = %30
+  %38 = getelementptr inbounds %"class.net::IOBuffer", %"class.net::IOBuffer"* %35, i64 0, i32 1
+  %39 = getelementptr inbounds %"class.base::RefCountedThreadSafe.9", %"class.base::RefCountedThreadSafe.9"* %38, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %40 = atomicrmw sub i32* %39, i32 1 acq_rel
+  %41 = icmp eq i32 %40, 1
+  br i1 %41, label %42, label %49
+
+42:                                               ; preds = %37
+  %43 = getelementptr inbounds %"class.base::RefCountedThreadSafe.9", %"class.base::RefCountedThreadSafe.9"* %38, i64 -2
+  %44 = bitcast %"class.base::RefCountedThreadSafe.9"* %43 to %"class.net::IOBuffer"*
+  %45 = bitcast %"class.base::RefCountedThreadSafe.9"* %43 to void (%"class.net::IOBuffer"*)***
+  %46 = load void (%"class.net::IOBuffer"*)**, void (%"class.net::IOBuffer"*)*** %45, align 8
+  %47 = getelementptr inbounds void (%"class.net::IOBuffer"*)*, void (%"class.net::IOBuffer"*)** %46, i64 1
+  %48 = load void (%"class.net::IOBuffer"*)*, void (%"class.net::IOBuffer"*)** %47, align 8
+  tail call void %48(%"class.net::IOBuffer"* nonnull %44) #10
+  br label %49
+
+49:                                               ; preds = %30, %37, %42
+  store i32 0, i32* %6, align 8
+  %50 = getelementptr inbounds %"class.net::SocketPosix", %"class.net::SocketPosix"* %0, i64 0, i32 16
+  %51 = bitcast %"class.base::OnceCallback"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %51) #10
+  %52 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %50, i64 0, i32 0, i32 0, i32 0
+  %53 = bitcast %"class.base::OnceCallback"* %50 to i64*
+  %54 = load i64, i64* %53, align 8
+  %55 = bitcast %"class.base::OnceCallback"* %2 to i64*
+  store i64 %54, i64* %55, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %52, align 8
+  %56 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %2, i64 0, i32 0
+  %57 = inttoptr i64 %54 to %"class.base::internal::BindStateBase"*
+  %58 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %57, i64 0, i32 1
+  %59 = bitcast void ()** %58 to void (%"class.base::internal::BindStateBase"*, i32)**
+  %60 = load void (%"class.base::internal::BindStateBase"*, i32)*, void (%"class.base::internal::BindStateBase"*, i32)** %59, align 8
+  tail call void %60(%"class.base::internal::BindStateBase"* %57, i32 %31) #10
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %56) #10
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %51) #10
+  br label %61
+
+61:                                               ; preds = %25, %49
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1
+
+declare void @_ZN3net15SockaddrStorageC1Ev(%"struct.net::SockaddrStorage"*) unnamed_addr #2
+
+declare i32 @accept(i32, %struct.sockaddr*, i32*) local_unnamed_addr #2
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #8
+
+declare i32 @connect(i32, %struct.sockaddr*, i32) local_unnamed_addr #2
+
+; Function Attrs: nofree
+declare i64 @read(i32, i8* nocapture, i64) local_unnamed_addr #9
+
+declare i64 @send(i32, i8*, i64, i32) local_unnamed_addr #2
+
+declare i32 @close(i32) local_unnamed_addr #2
+
+; Function Attrs: nounwind
+declare dereferenceable(8) %"class.base::internal::CallbackBase"* @_ZN4base8internal12CallbackBaseaSEOS1_(%"class.base::internal::CallbackBase"*, %"class.base::internal::CallbackBase"* dereferenceable(8)) local_unnamed_addr #3
+
+declare i32 @_ZN4base14PlatformThread9CurrentIdEv() local_unnamed_addr #2
+
+declare i64 @_ZN4base6subtle28TimeTicksNowIgnoringOverrideEv() local_unnamed_addr #2
+
+declare i64 @_ZN20trace_event_internal37AddTraceEventWithThreadIdAndTimestampEcPKhPKcS3_yyiRKN4base9TimeTicksEPNS4_11trace_event14TraceArgumentsEj(i8 signext, i8*, i8*, i8*, i64, i64, i32, %"class.base::TimeTicks"* dereferenceable(8), %"class.base::trace_event::TraceArguments"*, i32) local_unnamed_addr #2
+
+declare void @_ZN20trace_event_internal24UpdateTraceEventDurationEPKhPKcN4base11trace_event16TraceEventHandleE(i8*, i8*, i64) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160), i8*, i64) local_unnamed_addr #0 comdat {
+  %4 = alloca %"class.std::__1::locale", align 8
+  %5 = alloca %"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry", align 8
+  %6 = getelementptr inbounds %"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry", %"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry"* %5, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %6) #10
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %6, i8 -86, i64 16, i1 false)
+  call void @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryC1ERS3_(%"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry"* nonnull %5, %"class.std::__1::basic_ostream"* dereferenceable(160) %0) #10
+  %7 = load i8, i8* %6, align 8, !range !2
+  %8 = icmp eq i8 %7, 0
+  br i1 %8, label %58, label %9
+
+9:                                                ; preds = %3
+  %10 = bitcast %"class.std::__1::basic_ostream"* %0 to i8**
+  %11 = load i8*, i8** %10, align 8
+  %12 = getelementptr i8, i8* %11, i64 -24
+  %13 = bitcast i8* %12 to i64*
+  %14 = load i64, i64* %13, align 8
+  %15 = bitcast %"class.std::__1::basic_ostream"* %0 to i8*
+  %16 = getelementptr inbounds i8, i8* %15, i64 %14
+  %17 = getelementptr inbounds i8, i8* %16, i64 40
+  %18 = bitcast i8* %17 to %"class.std::__1::basic_streambuf"**
+  %19 = load %"class.std::__1::basic_streambuf"*, %"class.std::__1::basic_streambuf"** %18, align 8
+  %20 = bitcast i8* %16 to %"class.std::__1::ios_base"*
+  %21 = getelementptr inbounds i8, i8* %16, i64 8
+  %22 = bitcast i8* %21 to i32*
+  %23 = load i32, i32* %22, align 8
+  %24 = and i32 %23, 176
+  %25 = icmp eq i32 %24, 32
+  %26 = getelementptr inbounds i8, i8* %1, i64 %2
+  %27 = select i1 %25, i8* %26, i8* %1
+  %28 = getelementptr inbounds i8, i8* %16, i64 144
+  %29 = bitcast i8* %28 to i32*
+  %30 = load i32, i32* %29, align 8
+  %31 = icmp eq i32 %30, -1
+  br i1 %31, label %32, label %42
+
+32:                                               ; preds = %9
+  %33 = bitcast %"class.std::__1::locale"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %33) #10
+  call void @_ZNKSt3__18ios_base6getlocEv(%"class.std::__1::locale"* nonnull sret %4, %"class.std::__1::ios_base"* %20) #10
+  %34 = call %"class.std::__1::locale::facet"* @_ZNKSt3__16locale9use_facetERNS0_2idE(%"class.std::__1::locale"* nonnull %4, %"class.std::__1::locale::id"* nonnull dereferenceable(16) @_ZNSt3__15ctypeIcE2idE) #10
+  %35 = bitcast %"class.std::__1::locale::facet"* %34 to %"class.std::__1::ctype"*
+  %36 = bitcast %"class.std::__1::locale::facet"* %34 to i8 (%"class.std::__1::ctype"*, i8)***
+  %37 = load i8 (%"class.std::__1::ctype"*, i8)**, i8 (%"class.std::__1::ctype"*, i8)*** %36, align 8
+  %38 = getelementptr inbounds i8 (%"class.std::__1::ctype"*, i8)*, i8 (%"class.std::__1::ctype"*, i8)** %37, i64 7
+  %39 = load i8 (%"class.std::__1::ctype"*, i8)*, i8 (%"class.std::__1::ctype"*, i8)** %38, align 8
+  %40 = call signext i8 %39(%"class.std::__1::ctype"* %35, i8 signext 32) #10
+  call void @_ZNSt3__16localeD1Ev(%"class.std::__1::locale"* nonnull %4) #10
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %33) #10
+  %41 = sext i8 %40 to i32
+  store i32 %41, i32* %29, align 8
+  br label %42
+
+42:                                               ; preds = %9, %32
+  %43 = phi i32 [ %41, %32 ], [ %30, %9 ]
+  %44 = trunc i32 %43 to i8
+  %45 = call %"class.std::__1::basic_streambuf"* @_ZNSt3__116__pad_and_outputIcNS_11char_traitsIcEEEENS_19ostreambuf_iteratorIT_T0_EES6_PKS4_S8_S8_RNS_8ios_baseES4_(%"class.std::__1::basic_streambuf"* %19, i8* %1, i8* %27, i8* %26, %"class.std::__1::ios_base"* dereferenceable(136) %20, i8 signext %44)
+  %46 = icmp eq %"class.std::__1::basic_streambuf"* %45, null
+  br i1 %46, label %47, label %58
+
+47:                                               ; preds = %42
+  %48 = load i8*, i8** %10, align 8
+  %49 = getelementptr i8, i8* %48, i64 -24
+  %50 = bitcast i8* %49 to i64*
+  %51 = load i64, i64* %50, align 8
+  %52 = getelementptr inbounds i8, i8* %15, i64 %51
+  %53 = bitcast i8* %52 to %"class.std::__1::ios_base"*
+  %54 = getelementptr inbounds i8, i8* %52, i64 32
+  %55 = bitcast i8* %54 to i32*
+  %56 = load i32, i32* %55, align 8
+  %57 = or i32 %56, 5
+  call void @_ZNSt3__18ios_base5clearEj(%"class.std::__1::ios_base"* %53, i32 %57) #10
+  br label %58
+
+58:                                               ; preds = %3, %42, %47
+  call void @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryD1Ev(%"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry"* nonnull %5) #10
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %6) #10
+  ret %"class.std::__1::basic_ostream"* %0
+}
+
+declare void @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryC1ERS3_(%"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry"*, %"class.std::__1::basic_ostream"* dereferenceable(160)) unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden %"class.std::__1::basic_streambuf"* @_ZNSt3__116__pad_and_outputIcNS_11char_traitsIcEEEENS_19ostreambuf_iteratorIT_T0_EES6_PKS4_S8_S8_RNS_8ios_baseES4_(%"class.std::__1::basic_streambuf"*, i8*, i8*, i8*, %"class.std::__1::ios_base"* dereferenceable(136), i8 signext) local_unnamed_addr #0 comdat {
+  %7 = alloca %"class.std::__1::basic_string", align 8
+  %8 = icmp eq %"class.std::__1::basic_streambuf"* %0, null
+  br i1 %8, label %78, label %9
+
+9:                                                ; preds = %6
+  %10 = ptrtoint i8* %3 to i64
+  %11 = ptrtoint i8* %1 to i64
+  %12 = sub i64 %10, %11
+  %13 = getelementptr inbounds %"class.std::__1::ios_base", %"class.std::__1::ios_base"* %4, i64 0, i32 3
+  %14 = load i64, i64* %13, align 8
+  %15 = icmp sgt i64 %14, %12
+  %16 = sub nsw i64 %14, %12
+  %17 = select i1 %15, i64 %16, i64 0
+  %18 = ptrtoint i8* %2 to i64
+  %19 = sub i64 %18, %11
+  %20 = icmp sgt i64 %19, 0
+  br i1 %20, label %21, label %28
+
+21:                                               ; preds = %9
+  %22 = bitcast %"class.std::__1::basic_streambuf"* %0 to i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)***
+  %23 = load i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)**, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*** %22, align 8
+  %24 = getelementptr inbounds i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)** %23, i64 12
+  %25 = load i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)** %24, align 8
+  %26 = tail call i64 %25(%"class.std::__1::basic_streambuf"* nonnull %0, i8* %1, i64 %19) #10
+  %27 = icmp eq i64 %26, %19
+  br i1 %27, label %28, label %78
+
+28:                                               ; preds = %21, %9
+  %29 = icmp sgt i64 %17, 0
+  br i1 %29, label %30, label %67
+
+30:                                               ; preds = %28
+  %31 = bitcast %"class.std::__1::basic_string"* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %31) #10
+  %32 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %7, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %33 = icmp ult i64 %17, 23
+  %34 = bitcast %"class.std::__1::basic_string"* %7 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %34, i8 -86, i64 24, i1 false)
+  br i1 %33, label %43, label %35
+
+35:                                               ; preds = %30
+  %36 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %7, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 2
+  %37 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %7, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %38 = add nuw i64 %17, 16
+  %39 = and i64 %38, -16
+  %40 = tail call i8* @_Znwm(i64 %39) #11
+  store i8* %40, i8** %32, align 8
+  %41 = or i64 %39, -9223372036854775808
+  store i64 %41, i64* %36, align 8
+  store i64 %17, i64* %37, align 8
+  %42 = bitcast %"class.std::__1::basic_string"* %7 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  br label %47
+
+43:                                               ; preds = %30
+  %44 = trunc i64 %17 to i8
+  %45 = bitcast %"class.std::__1::basic_string"* %7 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %46 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %45, i64 0, i32 1, i32 0
+  store i8 %44, i8* %46, align 1
+  br label %47
+
+47:                                               ; preds = %35, %43
+  %48 = phi %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* [ %42, %35 ], [ %45, %43 ]
+  %49 = phi i8* [ %40, %35 ], [ %31, %43 ]
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 1 %49, i8 %5, i64 %17, i1 false) #10
+  %50 = getelementptr inbounds i8, i8* %49, i64 %17
+  store i8 0, i8* %50, align 1
+  %51 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %48, i64 0, i32 1, i32 0
+  %52 = load i8, i8* %51, align 1
+  %53 = icmp slt i8 %52, 0
+  %54 = load i8*, i8** %32, align 8
+  %55 = select i1 %53, i8* %54, i8* %31
+  %56 = bitcast %"class.std::__1::basic_streambuf"* %0 to i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)***
+  %57 = load i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)**, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*** %56, align 8
+  %58 = getelementptr inbounds i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)** %57, i64 12
+  %59 = load i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)** %58, align 8
+  %60 = call i64 %59(%"class.std::__1::basic_streambuf"* nonnull %0, i8* %55, i64 %17) #10
+  %61 = icmp eq i64 %60, %17
+  %62 = load i8, i8* %51, align 1
+  %63 = icmp slt i8 %62, 0
+  br i1 %63, label %64, label %66
+
+64:                                               ; preds = %47
+  %65 = load i8*, i8** %32, align 8
+  call void @_ZdlPv(i8* %65) #11
+  br label %66
+
+66:                                               ; preds = %47, %64
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %31) #10
+  br i1 %61, label %67, label %78
+
+67:                                               ; preds = %66, %28
+  %68 = sub i64 %10, %18
+  %69 = icmp sgt i64 %68, 0
+  br i1 %69, label %70, label %77
+
+70:                                               ; preds = %67
+  %71 = bitcast %"class.std::__1::basic_streambuf"* %0 to i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)***
+  %72 = load i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)**, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*** %71, align 8
+  %73 = getelementptr inbounds i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)** %72, i64 12
+  %74 = load i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)** %73, align 8
+  %75 = call i64 %74(%"class.std::__1::basic_streambuf"* nonnull %0, i8* %2, i64 %68) #10
+  %76 = icmp eq i64 %75, %68
+  br i1 %76, label %77, label %78
+
+77:                                               ; preds = %70, %67
+  store i64 0, i64* %13, align 8
+  br label %78
+
+78:                                               ; preds = %77, %66, %21, %70, %6
+  %79 = phi %"class.std::__1::basic_streambuf"* [ null, %6 ], [ %0, %77 ], [ null, %66 ], [ null, %21 ], [ null, %70 ]
+  ret %"class.std::__1::basic_streambuf"* %79
+}
+
+; Function Attrs: nounwind
+declare void @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryD1Ev(%"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry"*) unnamed_addr #3
+
+declare void @_ZNKSt3__18ios_base6getlocEv(%"class.std::__1::locale"* sret, %"class.std::__1::ios_base"*) local_unnamed_addr #2
+
+; Function Attrs: nounwind
+declare void @_ZNSt3__16localeD1Ev(%"class.std::__1::locale"*) unnamed_addr #3
+
+declare %"class.std::__1::locale::facet"* @_ZNKSt3__16locale9use_facetERNS0_2idE(%"class.std::__1::locale"*, %"class.std::__1::locale::id"* dereferenceable(16)) local_unnamed_addr #2
+
+declare void @_ZNSt3__18ios_base5clearEj(%"class.std::__1::ios_base"*, i32) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal7InvokerINS0_9BindStateIMN3net11SocketPosixEFviEJNS0_17UnretainedWrapperIS4_EEEEEFviEE7RunOnceEPNS0_13BindStateBaseEi(%"class.base::internal::BindStateBase"*, i32) #0 comdat align 2 {
+  %3 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1
+  %4 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  %5 = bitcast void (%"class.base::internal::BindStateBase"*)** %4 to i8**
+  %6 = load i8*, i8** %5, align 8
+  %7 = bitcast %"class.base::internal::BindStateBase"* %3 to i64*
+  %8 = load i64, i64* %7, align 8
+  %9 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 1
+  %10 = bitcast void ()** %9 to i64*
+  %11 = load i64, i64* %10, align 8
+  %12 = getelementptr inbounds i8, i8* %6, i64 %11
+  %13 = bitcast i8* %12 to %"class.net::SocketPosix"*
+  %14 = and i64 %8, 1
+  %15 = icmp eq i64 %14, 0
+  br i1 %15, label %23, label %16
+
+16:                                               ; preds = %2
+  %17 = bitcast i8* %12 to i8**
+  %18 = load i8*, i8** %17, align 8
+  %19 = add i64 %8, -1
+  %20 = getelementptr i8, i8* %18, i64 %19
+  %21 = bitcast i8* %20 to void (%"class.net::SocketPosix"*, i32)**
+  %22 = load void (%"class.net::SocketPosix"*, i32)*, void (%"class.net::SocketPosix"*, i32)** %21, align 8
+  br label %25
+
+23:                                               ; preds = %2
+  %24 = inttoptr i64 %8 to void (%"class.net::SocketPosix"*, i32)*
+  br label %25
+
+25:                                               ; preds = %16, %23
+  %26 = phi void (%"class.net::SocketPosix"*, i32)* [ %22, %16 ], [ %24, %23 ]
+  tail call void %26(%"class.net::SocketPosix"* %13, i32 %1) #10
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal9BindStateIMN3net11SocketPosixEFviEJNS0_17UnretainedWrapperIS3_EEEE7DestroyEPKNS0_13BindStateBaseE(%"class.base::internal::BindStateBase"*) #0 comdat align 2 {
+  %2 = icmp eq %"class.base::internal::BindStateBase"* %0, null
+  br i1 %2, label %5, label %3
+
+3:                                                ; preds = %1
+  %4 = bitcast %"class.base::internal::BindStateBase"* %0 to i8*
+  tail call void @_ZdlPv(i8* %4) #11
+  br label %5
+
+5:                                                ; preds = %3, %1
+  ret void
+}
+
+declare void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"*, void ()*, void (%"class.base::internal::BindStateBase"*)*) unnamed_addr #2
+
+declare void @_ZN3net15SockaddrStorageC1ERKS0_(%"struct.net::SockaddrStorage"*, %"struct.net::SockaddrStorage"* dereferenceable(144)) unnamed_addr #2
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { argmemonly nounwind }
+attributes #2 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nounwind readnone "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { norecurse nounwind readonly ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { norecurse nounwind readnone ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #9 = { nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #10 = { nounwind }
+attributes #11 = { builtin nounwind }
+attributes #12 = { nounwind readnone }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{i8 0, i8 2}
+!3 = !{!4, !6}
+!4 = distinct !{!4, !5, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN3net11SocketPosixEFviEJNS0_17UnretainedWrapperIS4_EEEEEDcOT0_DpOT1_: argument 0"}
+!5 = distinct !{!5, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN3net11SocketPosixEFviEJNS0_17UnretainedWrapperIS4_EEEEEDcOT0_DpOT1_"}
+!6 = distinct !{!6, !7, !"_ZN4base8BindOnceIMN3net11SocketPosixEFviEJNS_8internal17UnretainedWrapperIS2_EEEEENS_12OnceCallbackINS5_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSA_DpOSB_: argument 0"}
+!7 = distinct !{!7, !"_ZN4base8BindOnceIMN3net11SocketPosixEFviEJNS_8internal17UnretainedWrapperIS2_EEEEENS_12OnceCallbackINS5_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSA_DpOSB_"}
+!8 = !{!9, !11}
+!9 = distinct !{!9, !10, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN3net11SocketPosixEFviEJNS0_17UnretainedWrapperIS4_EEEEEDcOT0_DpOT1_: argument 0"}
+!10 = distinct !{!10, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN3net11SocketPosixEFviEJNS0_17UnretainedWrapperIS4_EEEEEDcOT0_DpOT1_"}
+!11 = distinct !{!11, !12, !"_ZN4base8BindOnceIMN3net11SocketPosixEFviEJNS_8internal17UnretainedWrapperIS2_EEEEENS_12OnceCallbackINS5_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSA_DpOSB_: argument 0"}
+!12 = distinct !{!12, !"_ZN4base8BindOnceIMN3net11SocketPosixEFviEJNS_8internal17UnretainedWrapperIS2_EEEEENS_12OnceCallbackINS5_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSA_DpOSB_"}
+!13 = !{!"branch_weights", i32 2000, i32 1}

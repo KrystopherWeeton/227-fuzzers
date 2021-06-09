@@ -1,0 +1,1803 @@
+; ModuleID = '../../third_party/blink/renderer/platform/scheduler/common/throttling/cpu_time_budget_pool.cc'
+source_filename = "../../third_party/blink/renderer/platform/scheduler/common/throttling/cpu_time_budget_pool.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"struct.base::trace_event::TraceCategory" = type { i8, i32, i8* }
+%"class.blink::scheduler::CPUTimeBudgetPool" = type { %"class.blink::scheduler::BudgetPool.base", %"class.absl::optional.72", %"class.absl::optional.72", %"class.base::TimeDelta", %"class.blink::scheduler::TraceableCounter", %"class.base::TimeTicks", double, %"class.base::RepeatingCallback.96" }
+%"class.blink::scheduler::BudgetPool.base" = type <{ i32 (...)**, i8*, %"class.blink::scheduler::BudgetPoolController"*, %"class.WTF::HashSet", i8 }>
+%"class.WTF::HashSet" = type { %"class.WTF::HashTable" }
+%"class.WTF::HashTable" = type <{ %"class.base::sequence_manager::TaskQueue"**, i32, i32, i32, [4 x i8] }>
+%"class.base::sequence_manager::TaskQueue" = type { i32 (...)**, %"class.base::RefCountedThreadSafe", %"class.base::internal::CheckedLock", %"class.std::__1::unique_ptr", %"class.base::WeakPtr", %class.scoped_refptr, %class.scoped_refptr.70, i32, i32, i8*, %"class.base::WeakPtrFactory" }
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.0" }
+%"struct.std::__1::__atomic_base.0" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"class.base::internal::CheckedLock" = type { %"class.base::Lock" }
+%"class.base::Lock" = type { %"class.base::internal::LockImpl" }
+%"class.base::internal::LockImpl" = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%"class.std::__1::unique_ptr" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"class.base::sequence_manager::internal::TaskQueueImpl"* }
+%"class.base::sequence_manager::internal::TaskQueueImpl" = type <{ i8*, %"class.base::sequence_manager::internal::SequenceManagerImpl"*, %class.scoped_refptr, %class.scoped_refptr.2, %"class.base::internal::CheckedLock", %"struct.base::sequence_manager::internal::TaskQueueImpl::AnyThread", %"struct.base::sequence_manager::internal::TaskQueueImpl::MainThreadOnly", %"class.base::sequence_manager::internal::AtomicFlagSet::AtomicFlag", i8, i8, i8, [5 x i8] }>
+%"class.base::sequence_manager::internal::SequenceManagerImpl" = type opaque
+%class.scoped_refptr.2 = type { %"class.base::sequence_manager::internal::TaskQueueImpl::GuardedTaskPoster"* }
+%"class.base::sequence_manager::internal::TaskQueueImpl::GuardedTaskPoster" = type { %"class.base::RefCountedThreadSafe.3", [4 x i8], %"class.base::internal::OperationsController", %"class.base::sequence_manager::internal::TaskQueueImpl"* }
+%"class.base::RefCountedThreadSafe.3" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::internal::OperationsController" = type { %"struct.std::__1::atomic.4", [4 x i8], %"class.base::WaitableEvent" }
+%"struct.std::__1::atomic.4" = type { %"struct.std::__1::__atomic_base.5" }
+%"struct.std::__1::__atomic_base.5" = type { %"struct.std::__1::__atomic_base.6" }
+%"struct.std::__1::__atomic_base.6" = type { %"struct.std::__1::__cxx_atomic_impl.7" }
+%"struct.std::__1::__cxx_atomic_impl.7" = type { %"struct.std::__1::__cxx_atomic_base_impl.8" }
+%"struct.std::__1::__cxx_atomic_base_impl.8" = type { i32 }
+%"class.base::WaitableEvent" = type <{ %class.scoped_refptr.9, i8, [7 x i8] }>
+%class.scoped_refptr.9 = type { %"struct.base::WaitableEvent::WaitableEventKernel"* }
+%"struct.base::WaitableEvent::WaitableEventKernel" = type { %"class.base::RefCountedThreadSafe.10", %"class.base::Lock", i8, i8, %"class.std::__1::list" }
+%"class.base::RefCountedThreadSafe.10" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.std::__1::list" = type { %"class.std::__1::__list_imp" }
+%"class.std::__1::__list_imp" = type { %"struct.std::__1::__list_node_base", %"class.std::__1::__compressed_pair.11" }
+%"struct.std::__1::__list_node_base" = type { %"struct.std::__1::__list_node_base"*, %"struct.std::__1::__list_node_base"* }
+%"class.std::__1::__compressed_pair.11" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"struct.std::__1::__compressed_pair_elem.12" = type { i64 }
+%"struct.base::sequence_manager::internal::TaskQueueImpl::AnyThread" = type { %"class.base::sequence_manager::TimeDomain"*, %"class.base::sequence_manager::TaskQueue::Observer"*, %"class.base::sequence_manager::internal::LazilyDeallocatedDeque", i8, i8, i8, %"class.base::RepeatingCallback", %"struct.base::sequence_manager::internal::TaskQueueImpl::AnyThread::TracingOnly" }
+%"class.base::sequence_manager::TimeDomain" = type { i32 (...)**, %"class.base::sequence_manager::internal::SequenceManagerImpl"*, %"class.base::internal::IntrusiveHeap", i32, %class.scoped_refptr }
+%"class.base::internal::IntrusiveHeap" = type { %"class.base::IntrusiveHeap" }
+%"class.base::IntrusiveHeap" = type { %"struct.base::IntrusiveHeap<base::sequence_manager::TimeDomain::ScheduledDelayedWakeUp, base::internal::IntrusiveHeapImpl<base::sequence_manager::TimeDomain::ScheduledDelayedWakeUp>::GreaterUsingLessEqual, base::DefaultHeapHandleAccessor<base::sequence_manager::TimeDomain::ScheduledDelayedWakeUp> >::Impl" }
+%"struct.base::IntrusiveHeap<base::sequence_manager::TimeDomain::ScheduledDelayedWakeUp, base::internal::IntrusiveHeapImpl<base::sequence_manager::TimeDomain::ScheduledDelayedWakeUp>::GreaterUsingLessEqual, base::DefaultHeapHandleAccessor<base::sequence_manager::TimeDomain::ScheduledDelayedWakeUp> >::Impl" = type { %"class.std::__1::vector" }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"struct.base::sequence_manager::TimeDomain::ScheduledDelayedWakeUp"*, %"struct.base::sequence_manager::TimeDomain::ScheduledDelayedWakeUp"*, %"class.std::__1::__compressed_pair.14" }
+%"struct.base::sequence_manager::TimeDomain::ScheduledDelayedWakeUp" = type { %"struct.base::sequence_manager::internal::DelayedWakeUp", %"class.base::sequence_manager::internal::TaskQueueImpl"* }
+%"struct.base::sequence_manager::internal::DelayedWakeUp" = type { %"class.base::TimeTicks", i32, i32 }
+%"class.std::__1::__compressed_pair.14" = type { %"struct.std::__1::__compressed_pair_elem.15" }
+%"struct.std::__1::__compressed_pair_elem.15" = type { %"struct.base::sequence_manager::TimeDomain::ScheduledDelayedWakeUp"* }
+%"class.base::sequence_manager::TaskQueue::Observer" = type { i32 (...)** }
+%"class.base::sequence_manager::internal::LazilyDeallocatedDeque" = type { %"class.std::__1::unique_ptr.19", %"struct.base::sequence_manager::internal::LazilyDeallocatedDeque<base::sequence_manager::Task, &base::subtle::TimeTicksNowIgnoringOverride>::Ring"*, i64, i64, %"class.base::TimeTicks" }
+%"class.std::__1::unique_ptr.19" = type { %"class.std::__1::__compressed_pair.20" }
+%"class.std::__1::__compressed_pair.20" = type { %"struct.std::__1::__compressed_pair_elem.21" }
+%"struct.std::__1::__compressed_pair_elem.21" = type { %"struct.base::sequence_manager::internal::LazilyDeallocatedDeque<base::sequence_manager::Task, &base::subtle::TimeTicksNowIgnoringOverride>::Ring"* }
+%"struct.base::sequence_manager::internal::LazilyDeallocatedDeque<base::sequence_manager::Task, &base::subtle::TimeTicksNowIgnoringOverride>::Ring" = type opaque
+%"class.base::RepeatingCallback" = type { %"class.base::internal::CallbackBaseCopyable" }
+%"class.base::internal::CallbackBaseCopyable" = type { %"class.base::internal::CallbackBase" }
+%"class.base::internal::CallbackBase" = type { %class.scoped_refptr.23 }
+%class.scoped_refptr.23 = type { %"class.base::internal::BindStateBase"* }
+%"class.base::internal::BindStateBase" = type { %"class.base::RefCountedThreadSafe.24", void ()*, void (%"class.base::internal::BindStateBase"*)*, i1 (%"class.base::internal::BindStateBase"*, i32)* }
+%"class.base::RefCountedThreadSafe.24" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"struct.base::sequence_manager::internal::TaskQueueImpl::AnyThread::TracingOnly" = type <{ i8, [7 x i8], %"class.absl::optional", i8, [7 x i8] }>
+%"class.absl::optional" = type { %"class.absl::optional_internal::optional_data" }
+%"class.absl::optional_internal::optional_data" = type { %"class.absl::optional_internal::optional_data_base" }
+%"class.absl::optional_internal::optional_data_base" = type { %"class.absl::optional_internal::optional_data_dtor_base" }
+%"class.absl::optional_internal::optional_data_dtor_base" = type { i8, %union.anon }
+%union.anon = type { %"class.base::TimeTicks" }
+%"struct.base::sequence_manager::internal::TaskQueueImpl::MainThreadOnly" = type <{ %"class.base::sequence_manager::TimeDomain"*, %"class.base::sequence_manager::TaskQueue::Observer"*, %"class.std::__1::unique_ptr.25", %"class.std::__1::unique_ptr.25", %"struct.base::sequence_manager::internal::TaskQueueImpl::DelayedIncomingQueue", %"class.base::ObserverList", %"class.base::HeapHandle", i8, [7 x i8], %"class.base::trace_event::BlameContext"*, %"class.base::sequence_manager::EnqueueOrder", %"class.absl::optional", %"class.base::sequence_manager::EnqueueOrder", %"class.base::sequence_manager::EnqueueOrder", %"class.base::RepeatingCallback.47", %"class.base::RepeatingCallback.48", %"class.absl::optional.49", i8, [7 x i8], %"class.absl::optional", i8, [7 x i8] }>
+%"class.std::__1::unique_ptr.25" = type { %"class.std::__1::__compressed_pair.26" }
+%"class.std::__1::__compressed_pair.26" = type { %"struct.std::__1::__compressed_pair_elem.27" }
+%"struct.std::__1::__compressed_pair_elem.27" = type { %"class.base::sequence_manager::internal::WorkQueue"* }
+%"class.base::sequence_manager::internal::WorkQueue" = type opaque
+%"struct.base::sequence_manager::internal::TaskQueueImpl::DelayedIncomingQueue" = type { %"struct.base::sequence_manager::internal::TaskQueueImpl::DelayedIncomingQueue::PQueue", i32, [4 x i8] }
+%"struct.base::sequence_manager::internal::TaskQueueImpl::DelayedIncomingQueue::PQueue" = type { %"class.std::__1::priority_queue.base", [7 x i8] }
+%"class.std::__1::priority_queue.base" = type <{ %"class.std::__1::vector.31", %"struct.std::__1::less" }>
+%"class.std::__1::vector.31" = type { %"class.std::__1::__vector_base.32" }
+%"class.std::__1::__vector_base.32" = type { %"struct.base::sequence_manager::Task"*, %"struct.base::sequence_manager::Task"*, %"class.std::__1::__compressed_pair.35" }
+%"struct.base::sequence_manager::Task" = type { %"struct.base::PendingTask.base", i8, i8, i8, %class.scoped_refptr.33, %"class.base::sequence_manager::EnqueueOrder" }
+%"struct.base::PendingTask.base" = type <{ %"class.base::OnceCallback", %"class.base::Location", %"class.base::TimeTicks", %"class.base::TimeTicks", %"struct.std::__1::array", i32, [4 x i8], i8*, i32, i8 }>
+%"class.base::OnceCallback" = type { %"class.base::internal::CallbackBase" }
+%"class.base::Location" = type { i8*, i8*, i32, i8* }
+%"struct.std::__1::array" = type { [4 x i8*] }
+%class.scoped_refptr.33 = type { %"class.base::SequencedTaskRunner"* }
+%"class.base::SequencedTaskRunner" = type { %"class.base::TaskRunner.base", [4 x i8] }
+%"class.base::TaskRunner.base" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe.34" }>
+%"class.base::RefCountedThreadSafe.34" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.std::__1::__compressed_pair.35" = type { %"struct.std::__1::__compressed_pair_elem.36" }
+%"struct.std::__1::__compressed_pair_elem.36" = type { %"struct.base::sequence_manager::Task"* }
+%"struct.std::__1::less" = type { i8 }
+%"class.base::ObserverList" = type <{ %"class.std::__1::vector.40", %"class.base::LinkedList", i64, i32, [4 x i8] }>
+%"class.std::__1::vector.40" = type { %"class.std::__1::__vector_base.41" }
+%"class.std::__1::__vector_base.41" = type { %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"*, %"class.std::__1::__compressed_pair.42" }
+%"class.base::internal::UncheckedObserverAdapter" = type { i8* }
+%"class.std::__1::__compressed_pair.42" = type { %"struct.std::__1::__compressed_pair_elem.43" }
+%"struct.std::__1::__compressed_pair_elem.43" = type { %"class.base::internal::UncheckedObserverAdapter"* }
+%"class.base::LinkedList" = type { %"class.base::LinkNode" }
+%"class.base::LinkNode" = type { %"class.base::internal::LinkNodeBase" }
+%"class.base::internal::LinkNodeBase" = type { %"class.base::internal::LinkNodeBase"*, %"class.base::internal::LinkNodeBase"* }
+%"class.base::HeapHandle" = type { i64 }
+%"class.base::trace_event::BlameContext" = type opaque
+%"class.base::sequence_manager::EnqueueOrder" = type { i64 }
+%"class.base::RepeatingCallback.47" = type { %"class.base::internal::CallbackBaseCopyable" }
+%"class.base::RepeatingCallback.48" = type { %"class.base::internal::CallbackBaseCopyable" }
+%"class.absl::optional.49" = type { %"class.absl::optional_internal::optional_data.50" }
+%"class.absl::optional_internal::optional_data.50" = type { %"class.absl::optional_internal::optional_data_base.51" }
+%"class.absl::optional_internal::optional_data_base.51" = type { %"class.absl::optional_internal::optional_data_dtor_base.52" }
+%"class.absl::optional_internal::optional_data_dtor_base.52" = type { i8, %union.anon.53 }
+%union.anon.53 = type { %"struct.base::sequence_manager::internal::DelayedWakeUp" }
+%"class.base::sequence_manager::internal::AtomicFlagSet::AtomicFlag" = type { %"class.base::sequence_manager::internal::AtomicFlagSet"*, %"struct.base::sequence_manager::internal::AtomicFlagSet::Group"*, i64 }
+%"class.base::sequence_manager::internal::AtomicFlagSet" = type { %class.scoped_refptr, %"class.std::__1::unique_ptr.54", %"struct.base::sequence_manager::internal::AtomicFlagSet::Group"* }
+%"class.std::__1::unique_ptr.54" = type { %"class.std::__1::__compressed_pair.55" }
+%"class.std::__1::__compressed_pair.55" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"struct.std::__1::__compressed_pair_elem.56" = type { %"struct.base::sequence_manager::internal::AtomicFlagSet::Group"* }
+%"struct.base::sequence_manager::internal::AtomicFlagSet::Group" = type { %"struct.std::__1::atomic.97", i64, [64 x %"class.base::RepeatingCallback.102"], %"struct.base::sequence_manager::internal::AtomicFlagSet::Group"*, %"class.std::__1::unique_ptr.54", %"struct.base::sequence_manager::internal::AtomicFlagSet::Group"*, %"struct.base::sequence_manager::internal::AtomicFlagSet::Group"* }
+%"struct.std::__1::atomic.97" = type { %"struct.std::__1::__atomic_base.98" }
+%"struct.std::__1::__atomic_base.98" = type { %"struct.std::__1::__atomic_base.99" }
+%"struct.std::__1::__atomic_base.99" = type { %"struct.std::__1::__cxx_atomic_impl.100" }
+%"struct.std::__1::__cxx_atomic_impl.100" = type { %"struct.std::__1::__cxx_atomic_base_impl.101" }
+%"struct.std::__1::__cxx_atomic_base_impl.101" = type { i64 }
+%"class.base::RepeatingCallback.102" = type { %"class.base::internal::CallbackBaseCopyable" }
+%"class.base::WeakPtr" = type { %"class.base::internal::WeakPtrBase" }
+%"class.base::internal::WeakPtrBase" = type { %"class.base::internal::WeakReference", i64 }
+%"class.base::internal::WeakReference" = type { %class.scoped_refptr.63 }
+%class.scoped_refptr.63 = type { %"class.base::internal::WeakReference::Flag"* }
+%"class.base::internal::WeakReference::Flag" = type <{ %"class.base::RefCountedThreadSafe.64", %"class.base::AtomicFlag", [3 x i8] }>
+%"class.base::RefCountedThreadSafe.64" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::AtomicFlag" = type { %"struct.std::__1::atomic.65" }
+%"struct.std::__1::atomic.65" = type { %"struct.std::__1::__atomic_base.66" }
+%"struct.std::__1::__atomic_base.66" = type { %"struct.std::__1::__atomic_base.67" }
+%"struct.std::__1::__atomic_base.67" = type { %"struct.std::__1::__cxx_atomic_impl.68" }
+%"struct.std::__1::__cxx_atomic_impl.68" = type { %"struct.std::__1::__cxx_atomic_base_impl.69" }
+%"struct.std::__1::__cxx_atomic_base_impl.69" = type { i8 }
+%class.scoped_refptr = type { %"class.base::sequence_manager::internal::AssociatedThreadId"* }
+%"class.base::sequence_manager::internal::AssociatedThreadId" = type { %"class.base::RefCountedThreadSafe.1", %"struct.std::__1::atomic" }
+%"class.base::RefCountedThreadSafe.1" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%class.scoped_refptr.70 = type { %"class.base::SingleThreadTaskRunner"* }
+%"class.base::SingleThreadTaskRunner" = type { %"class.base::SequencedTaskRunner.base", [4 x i8] }
+%"class.base::SequencedTaskRunner.base" = type { %"class.base::TaskRunner.base" }
+%"class.base::WeakPtrFactory" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.base::internal::WeakPtrFactoryBase" = type { %"class.base::internal::WeakReferenceOwner", i64 }
+%"class.base::internal::WeakReferenceOwner" = type { %class.scoped_refptr.71 }
+%class.scoped_refptr.71 = type { %"class.base::internal::WeakReference::Flag"* }
+%"class.absl::optional.72" = type { %"class.absl::optional_internal::optional_data.73" }
+%"class.absl::optional_internal::optional_data.73" = type { %"class.absl::optional_internal::optional_data_base.74" }
+%"class.absl::optional_internal::optional_data_base.74" = type { %"class.absl::optional_internal::optional_data_dtor_base.75" }
+%"class.absl::optional_internal::optional_data_dtor_base.75" = type { i8, %union.anon.76 }
+%union.anon.76 = type { %"class.base::TimeDelta" }
+%"class.base::TimeDelta" = type { i64 }
+%"class.blink::scheduler::TraceableCounter" = type { %"class.blink::scheduler::TraceableVariable", i8*, double (%"class.base::TimeDelta"*)*, %"class.base::TimeDelta" }
+%"class.blink::scheduler::TraceableVariable" = type { i32 (...)**, %"class.blink::scheduler::TraceableVariableController"* }
+%"class.base::TimeTicks" = type { %"class.base::time_internal::TimeBase" }
+%"class.base::time_internal::TimeBase" = type { i64 }
+%"class.base::RepeatingCallback.96" = type { %"class.base::internal::CallbackBaseCopyable" }
+%"class.blink::scheduler::BudgetPoolController" = type { i32 (...)** }
+%"class.blink::scheduler::TraceableVariableController" = type { %"class.std::__1::unordered_set" }
+%"class.std::__1::unordered_set" = type { %"class.std::__1::__hash_table" }
+%"class.std::__1::__hash_table" = type <{ %"class.std::__1::unique_ptr.77", %"class.std::__1::__compressed_pair.85", %"class.std::__1::__compressed_pair.90", %"class.std::__1::__compressed_pair.92", [4 x i8] }>
+%"class.std::__1::unique_ptr.77" = type { %"class.std::__1::__compressed_pair.78" }
+%"class.std::__1::__compressed_pair.78" = type { %"struct.std::__1::__compressed_pair_elem.79", %"struct.std::__1::__compressed_pair_elem.80" }
+%"struct.std::__1::__compressed_pair_elem.79" = type { %"struct.std::__1::__hash_node_base"** }
+%"struct.std::__1::__hash_node_base" = type { %"struct.std::__1::__hash_node_base"* }
+%"struct.std::__1::__compressed_pair_elem.80" = type { %"class.std::__1::__bucket_list_deallocator" }
+%"class.std::__1::__bucket_list_deallocator" = type { %"class.std::__1::__compressed_pair.81" }
+%"class.std::__1::__compressed_pair.81" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"class.std::__1::__compressed_pair.85" = type { %"struct.std::__1::__compressed_pair_elem.86" }
+%"struct.std::__1::__compressed_pair_elem.86" = type { %"struct.std::__1::__hash_node_base" }
+%"class.std::__1::__compressed_pair.90" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"class.std::__1::__compressed_pair.92" = type { %"struct.std::__1::__compressed_pair_elem.93" }
+%"struct.std::__1::__compressed_pair_elem.93" = type { float }
+%"class.blink::scheduler::BudgetPool" = type <{ i32 (...)**, i8*, %"class.blink::scheduler::BudgetPoolController"*, %"class.WTF::HashSet", i8, [7 x i8] }>
+%"class.logging::CheckError" = type { %"class.logging::LogMessage"* }
+%"class.logging::LogMessage" = type { i32 (...)**, i32, %"class.std::__1::basic_ostringstream", i64, i8*, i32, %"class.base::ScopedClearLastErrorBase" }
+%"class.std::__1::basic_ostringstream" = type { %"class.std::__1::basic_ostream.base", %"class.std::__1::basic_stringbuf", %"class.std::__1::basic_ios.base" }
+%"class.std::__1::basic_ostream.base" = type { i32 (...)** }
+%"class.std::__1::basic_stringbuf" = type <{ %"class.std::__1::basic_streambuf", %"class.std::__1::basic_string", i8*, i32, [4 x i8] }>
+%"class.std::__1::basic_streambuf" = type { i32 (...)**, %"class.std::__1::locale", i8*, i8*, i8*, i8*, i8*, i8* }
+%"class.std::__1::locale" = type { %"class.std::__1::locale::__imp"* }
+%"class.std::__1::locale::__imp" = type opaque
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.110" }
+%"class.std::__1::__compressed_pair.110" = type { %"struct.std::__1::__compressed_pair_elem.111" }
+%"struct.std::__1::__compressed_pair_elem.111" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon.112 }
+%union.anon.112 = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.std::__1::basic_ios.base" = type <{ %"class.std::__1::ios_base", %"class.std::__1::basic_ostream"*, i32 }>
+%"class.std::__1::ios_base" = type { i32 (...)**, i32, i64, i64, i32, i32, i8*, i8*, void (i32, %"class.std::__1::ios_base"*, i32)**, i32*, i64, i64, i64*, i64, i64, i8**, i64, i64 }
+%"class.std::__1::basic_ostream" = type { i32 (...)**, %"class.std::__1::basic_ios.base" }
+%"class.base::ScopedClearLastErrorBase" = type { i32 }
+%"class.perfetto::TracedValue" = type <{ %"class.perfetto::protos::pbzero::DebugAnnotation"*, %"class.perfetto::internal::CheckedScope", [7 x i8] }>
+%"class.perfetto::protos::pbzero::DebugAnnotation" = type { %"class.protozero::Message.base", [7 x i8] }
+%"class.protozero::Message.base" = type <{ %"class.protozero::ScatteredStreamWriter"*, %"class.protozero::MessageArena"*, %"class.protozero::Message"*, i8*, i32, i32, i8 }>
+%"class.protozero::ScatteredStreamWriter" = type { %"class.protozero::ScatteredStreamWriter::Delegate"*, %"struct.protozero::ContiguousMemoryRange", i8*, i64 }
+%"class.protozero::ScatteredStreamWriter::Delegate" = type { i32 (...)** }
+%"struct.protozero::ContiguousMemoryRange" = type { i8*, i8* }
+%"class.protozero::MessageArena" = type { %"class.std::__1::list.103" }
+%"class.std::__1::list.103" = type { %"class.std::__1::__list_imp.104" }
+%"class.std::__1::__list_imp.104" = type { %"struct.std::__1::__list_node_base.105", %"class.std::__1::__compressed_pair.106" }
+%"struct.std::__1::__list_node_base.105" = type { %"struct.std::__1::__list_node_base.105"*, %"struct.std::__1::__list_node_base.105"* }
+%"class.std::__1::__compressed_pair.106" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"class.protozero::Message" = type <{ %"class.protozero::ScatteredStreamWriter"*, %"class.protozero::MessageArena"*, %"class.protozero::Message"*, i8*, i32, i32, i8, [7 x i8] }>
+%"class.perfetto::internal::CheckedScope" = type { i8 }
+%"class.perfetto::TracedDictionary" = type <{ %"class.protozero::Message"*, i32, %"class.perfetto::internal::CheckedScope", [3 x i8] }>
+%"class.base::trace_event::TraceArguments" = type { i8, [2 x i8], [2 x i8*], [2 x %"union.base::trace_event::TraceValue"] }
+%"union.base::trace_event::TraceValue" = type { i64 }
+%"class.base::trace_event::ConvertableToTraceFormat" = type { i32 (...)** }
+%"class.protozero::HeapBuffered" = type { %"class.protozero::ScatteredHeapBuffer", %"class.protozero::ScatteredStreamWriter", %"class.protozero::RootMessage" }
+%"class.protozero::ScatteredHeapBuffer" = type { %"class.protozero::ScatteredStreamWriter::Delegate", i64, i64, %"class.protozero::ScatteredStreamWriter"*, %"class.std::__1::vector.116", %"class.protozero::ScatteredHeapBuffer::Slice" }
+%"class.std::__1::vector.116" = type { %"class.std::__1::__vector_base.117" }
+%"class.std::__1::__vector_base.117" = type { %"class.protozero::ScatteredHeapBuffer::Slice"*, %"class.protozero::ScatteredHeapBuffer::Slice"*, %"class.std::__1::__compressed_pair.124" }
+%"class.std::__1::__compressed_pair.124" = type { %"struct.std::__1::__compressed_pair_elem.125" }
+%"struct.std::__1::__compressed_pair_elem.125" = type { %"class.protozero::ScatteredHeapBuffer::Slice"* }
+%"class.protozero::ScatteredHeapBuffer::Slice" = type { %"class.std::__1::unique_ptr.118", i64, i64 }
+%"class.std::__1::unique_ptr.118" = type { %"class.std::__1::__compressed_pair.119" }
+%"class.std::__1::__compressed_pair.119" = type { %"struct.std::__1::__compressed_pair_elem.120" }
+%"struct.std::__1::__compressed_pair_elem.120" = type { i8* }
+%"class.protozero::RootMessage" = type { %"class.perfetto::protos::pbzero::DebugAnnotation.base", %"class.protozero::MessageArena" }
+%"class.perfetto::protos::pbzero::DebugAnnotation.base" = type { %"class.protozero::Message.base" }
+%"class.logging::CheckOpResult" = type { i8* }
+
+$_ZN5blink9scheduler17TraceableVariableD2Ev = comdat any
+
+$_ZN5blink9scheduler16TraceableCounterIN4base9TimeDeltaEXadL_ZNS0_19TracingCategoryName5kInfoEEEEpLERKS3_ = comdat any
+
+$_ZN5blink9scheduler17TraceableVariableD0Ev = comdat any
+
+$_ZN5blink9scheduler16TraceableCounterIN4base9TimeDeltaEXadL_ZNS0_19TracingCategoryName5kInfoEEEED0Ev = comdat any
+
+$_ZN5blink9scheduler16TraceableCounterIN4base9TimeDeltaEXadL_ZNS0_19TracingCategoryName5kInfoEEEE17OnTraceLogEnabledEv = comdat any
+
+$_ZN20trace_event_internal13AddTraceEventIiEEN4base11trace_event16TraceEventHandleEcPKhPKcS7_yjyS7_OT_ = comdat any
+
+$_ZNK4base9TimeDeltamiES0_ = comdat any
+
+$_ZTVN5blink9scheduler17TraceableVariableE = comdat any
+
+$_ZTVN5blink9scheduler16TraceableCounterIN4base9TimeDeltaEXadL_ZNS0_19TracingCategoryName5kInfoEEEEE = comdat any
+
+@_ZTVN5blink9scheduler17CPUTimeBudgetPoolE = hidden unnamed_addr constant { [12 x i8*] } { [12 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.blink::scheduler::CPUTimeBudgetPool"*)* @_ZN5blink9scheduler17CPUTimeBudgetPoolD2Ev to i8*), i8* bitcast (void (%"class.blink::scheduler::CPUTimeBudgetPool"*)* @_ZN5blink9scheduler17CPUTimeBudgetPoolD0Ev to i8*), i8* bitcast (void (%"class.blink::scheduler::CPUTimeBudgetPool"*, %"class.base::sequence_manager::TaskQueue"*, i64, i64)* @_ZN5blink9scheduler17CPUTimeBudgetPool17RecordTaskRunTimeEPN4base16sequence_manager9TaskQueueENS2_9TimeTicksES6_ to i8*), i8* bitcast (i64 (%"class.blink::scheduler::CPUTimeBudgetPool"*, i64)* @_ZNK5blink9scheduler17CPUTimeBudgetPool21GetNextAllowedRunTimeEN4base9TimeTicksE to i8*), i8* bitcast (i1 (%"class.blink::scheduler::CPUTimeBudgetPool"*, i64, i1)* @_ZNK5blink9scheduler17CPUTimeBudgetPool13CanRunTasksAtEN4base9TimeTicksEb to i8*), i8* bitcast (i64 (%"class.blink::scheduler::CPUTimeBudgetPool"*, i64, i1)* @_ZNK5blink9scheduler17CPUTimeBudgetPool23GetTimeTasksCanRunUntilEN4base9TimeTicksEb to i8*), i8* bitcast (void (%"class.blink::scheduler::CPUTimeBudgetPool"*, %"class.base::sequence_manager::TaskQueue"*, i64, i64)* @_ZN5blink9scheduler17CPUTimeBudgetPool24OnQueueNextWakeUpChangedEPN4base16sequence_manager9TaskQueueENS2_9TimeTicksES6_ to i8*), i8* bitcast (void (%"class.blink::scheduler::CPUTimeBudgetPool"*, i64)* @_ZN5blink9scheduler17CPUTimeBudgetPool8OnWakeUpEN4base9TimeTicksE to i8*), i8* bitcast (i32 (%"class.blink::scheduler::CPUTimeBudgetPool"*)* @_ZNK5blink9scheduler17CPUTimeBudgetPool12GetBlockTypeEv to i8*), i8* bitcast (void (%"class.blink::scheduler::CPUTimeBudgetPool"*, %"class.perfetto::TracedValue"*, i64)* @_ZNK5blink9scheduler17CPUTimeBudgetPool14WriteIntoTraceEN8perfetto11TracedValueEN4base9TimeTicksE to i8*)] }, align 8
+@.str = private unnamed_addr constant [37 x i8] c"RendererScheduler.BackgroundBudgetMs\00", align 1
+@.str.1 = private unnamed_addr constant [5 x i8] c"name\00", align 1
+@.str.2 = private unnamed_addr constant [12 x i8] c"time_budget\00", align 1
+@.str.3 = private unnamed_addr constant [29 x i8] c"time_budget_level_in_seconds\00", align 1
+@.str.4 = private unnamed_addr constant [28 x i8] c"last_checkpoint_seconds_ago\00", align 1
+@.str.5 = private unnamed_addr constant [11 x i8] c"is_enabled\00", align 1
+@.str.6 = private unnamed_addr constant [35 x i8] c"min_budget_level_to_run_in_seconds\00", align 1
+@.str.7 = private unnamed_addr constant [32 x i8] c"max_throttling_delay_in_seconds\00", align 1
+@.str.8 = private unnamed_addr constant [28 x i8] c"max_budget_level_in_seconds\00", align 1
+@_ZTVN5blink9scheduler17TraceableVariableE = linkonce_odr hidden unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.blink::scheduler::TraceableVariable"*)* @_ZN5blink9scheduler17TraceableVariableD2Ev to i8*), i8* bitcast (void (%"class.blink::scheduler::TraceableVariable"*)* @_ZN5blink9scheduler17TraceableVariableD0Ev to i8*), i8* bitcast (void ()* @__cxa_pure_virtual to i8*)] }, comdat, align 8
+@.str.9 = private unnamed_addr constant [23 x i8] c"../../base/time/time.h\00", align 1
+@.str.10 = private unnamed_addr constant [38 x i8] c"!is_inf() || (delta_ == other.delta_)\00", align 1
+@_ZTVN5blink9scheduler16TraceableCounterIN4base9TimeDeltaEXadL_ZNS0_19TracingCategoryName5kInfoEEEEE = linkonce_odr hidden unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.blink::scheduler::TraceableVariable"*)* @_ZN5blink9scheduler17TraceableVariableD2Ev to i8*), i8* bitcast (void (%"class.blink::scheduler::TraceableCounter"*)* @_ZN5blink9scheduler16TraceableCounterIN4base9TimeDeltaEXadL_ZNS0_19TracingCategoryName5kInfoEEEED0Ev to i8*), i8* bitcast (void (%"class.blink::scheduler::TraceableCounter"*)* @_ZN5blink9scheduler16TraceableCounterIN4base9TimeDeltaEXadL_ZNS0_19TracingCategoryName5kInfoEEEE17OnTraceLogEnabledEv to i8*)] }, comdat, align 8
+@_ZN5blink9scheduler19TracingCategoryName5kInfoE = external constant [39 x i8], align 16
+@_ZN4base11trace_event16CategoryRegistry11categories_E = external global [300 x %"struct.base::trace_event::TraceCategory"], align 16
+@.str.11 = private unnamed_addr constant [6 x i8] c"value\00", align 1
+@.str.12 = private unnamed_addr constant [23 x i8] c"delta_ != other.delta_\00", align 1
+
+@_ZN5blink9scheduler17CPUTimeBudgetPoolC1EPKcPNS0_20BudgetPoolControllerEPNS0_27TraceableVariableControllerEN4base9TimeTicksE = hidden unnamed_addr alias void (%"class.blink::scheduler::CPUTimeBudgetPool"*, i8*, %"class.blink::scheduler::BudgetPoolController"*, %"class.blink::scheduler::TraceableVariableController"*, i64), void (%"class.blink::scheduler::CPUTimeBudgetPool"*, i8*, %"class.blink::scheduler::BudgetPoolController"*, %"class.blink::scheduler::TraceableVariableController"*, i64)* @_ZN5blink9scheduler17CPUTimeBudgetPoolC2EPKcPNS0_20BudgetPoolControllerEPNS0_27TraceableVariableControllerEN4base9TimeTicksE
+@_ZN5blink9scheduler17CPUTimeBudgetPoolD1Ev = hidden unnamed_addr alias void (%"class.blink::scheduler::CPUTimeBudgetPool"*), void (%"class.blink::scheduler::CPUTimeBudgetPool"*)* @_ZN5blink9scheduler17CPUTimeBudgetPoolD2Ev
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink9scheduler17CPUTimeBudgetPoolC2EPKcPNS0_20BudgetPoolControllerEPNS0_27TraceableVariableControllerEN4base9TimeTicksE(%"class.blink::scheduler::CPUTimeBudgetPool"*, i8*, %"class.blink::scheduler::BudgetPoolController"*, %"class.blink::scheduler::TraceableVariableController"*, i64) unnamed_addr #0 align 2 {
+  %6 = alloca i32, align 4
+  %7 = bitcast %"class.blink::scheduler::CPUTimeBudgetPool"* %0 to %"class.blink::scheduler::BudgetPool"*
+  tail call void @_ZN5blink9scheduler10BudgetPoolC2EPKcPNS0_20BudgetPoolControllerE(%"class.blink::scheduler::BudgetPool"* %7, i8* %1, %"class.blink::scheduler::BudgetPoolController"* %2) #9
+  %8 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [12 x i8*] }, { [12 x i8*] }* @_ZTVN5blink9scheduler17CPUTimeBudgetPoolE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %8, align 8
+  %9 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 1, i32 0, i32 0, i32 0, i32 0
+  store i8 0, i8* %9, align 8
+  %10 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 2, i32 0, i32 0, i32 0, i32 0
+  store i8 0, i8* %10, align 8
+  %11 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 3, i32 0
+  store i64 0, i64* %11, align 8
+  %12 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4
+  %13 = getelementptr inbounds %"class.blink::scheduler::TraceableCounter", %"class.blink::scheduler::TraceableCounter"* %12, i64 0, i32 0
+  %14 = getelementptr inbounds %"class.blink::scheduler::TraceableCounter", %"class.blink::scheduler::TraceableCounter"* %12, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_ZTVN5blink9scheduler17TraceableVariableE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %14, align 8
+  %15 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 0, i32 1
+  store %"class.blink::scheduler::TraceableVariableController"* %3, %"class.blink::scheduler::TraceableVariableController"** %15, align 8
+  tail call void @_ZN5blink9scheduler27TraceableVariableController25RegisterTraceableVariableEPNS0_17TraceableVariableE(%"class.blink::scheduler::TraceableVariableController"* %3, %"class.blink::scheduler::TraceableVariable"* %13) #9
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_ZTVN5blink9scheduler16TraceableCounterIN4base9TimeDeltaEXadL_ZNS0_19TracingCategoryName5kInfoEEEEE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %14, align 8
+  %16 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 1
+  store i8* getelementptr inbounds ([37 x i8], [37 x i8]* @.str, i64 0, i64 0), i8** %16, align 8
+  %17 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 2
+  store double (%"class.base::TimeDelta"*)* @_ZN5blink9scheduler23TimeDeltaToMillisecondsERKN4base9TimeDeltaE, double (%"class.base::TimeDelta"*)** %17, align 8
+  %18 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 3, i32 0
+  store i64 0, i64* %18, align 8
+  tail call void @_ZN5blink9scheduler8internal23ValidateTracingCategoryEPKc(i8* getelementptr inbounds ([39 x i8], [39 x i8]* @_ZN5blink9scheduler19TracingCategoryName5kInfoE, i64 0, i64 0)) #9
+  %19 = load i8, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 197, i32 0), align 16
+  %20 = and i8 %19, 25
+  %21 = icmp eq i8 %20, 0
+  br i1 %21, label %31, label %22, !prof !2
+
+22:                                               ; preds = %5
+  %23 = ptrtoint %"class.blink::scheduler::TraceableCounter"* %12 to i64
+  %24 = load i8*, i8** %16, align 8
+  %25 = bitcast i32* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %25) #9
+  %26 = load double (%"class.base::TimeDelta"*)*, double (%"class.base::TimeDelta"*)** %17, align 8
+  %27 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 3
+  %28 = tail call double %26(%"class.base::TimeDelta"* dereferenceable(8) %27) #9
+  %29 = fptosi double %28 to i32
+  store i32 %29, i32* %6, align 4
+  %30 = call i64 @_ZN20trace_event_internal13AddTraceEventIiEEN4base11trace_event16TraceEventHandleEcPKhPKcS7_yjyS7_OT_(i8 signext 67, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 197, i32 0), i8* %24, i8* null, i64 %23, i32 2048, i64 0, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @.str.11, i64 0, i64 0), i32* nonnull dereferenceable(4) %6) #9
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %25) #9
+  br label %31
+
+31:                                               ; preds = %5, %22
+  %32 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 5, i32 0, i32 0
+  store i64 %4, i64* %32, align 8
+  %33 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 6
+  store double 1.000000e+00, double* %33, align 8
+  %34 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 7, i32 0, i32 0, i32 0, i32 0
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %34, align 8
+  ret void
+}
+
+declare void @_ZN5blink9scheduler10BudgetPoolC2EPKcPNS0_20BudgetPoolControllerE(%"class.blink::scheduler::BudgetPool"*, i8*, %"class.blink::scheduler::BudgetPoolController"*) unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+declare double @_ZN5blink9scheduler23TimeDeltaToMillisecondsERKN4base9TimeDeltaE(%"class.base::TimeDelta"* dereferenceable(8)) #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink9scheduler17CPUTimeBudgetPoolD2Ev(%"class.blink::scheduler::CPUTimeBudgetPool"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [12 x i8*] }, { [12 x i8*] }* @_ZTVN5blink9scheduler17CPUTimeBudgetPoolE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 7, i32 0, i32 0
+  tail call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* %3) #9
+  %4 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 0
+  %5 = getelementptr inbounds %"class.blink::scheduler::TraceableVariable", %"class.blink::scheduler::TraceableVariable"* %4, i64 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_ZTVN5blink9scheduler17TraceableVariableE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %5, align 8
+  %6 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 0, i32 1
+  %7 = load %"class.blink::scheduler::TraceableVariableController"*, %"class.blink::scheduler::TraceableVariableController"** %6, align 8
+  tail call void @_ZN5blink9scheduler27TraceableVariableController27DeregisterTraceableVariableEPNS0_17TraceableVariableE(%"class.blink::scheduler::TraceableVariableController"* %7, %"class.blink::scheduler::TraceableVariable"* %4) #9
+  %8 = bitcast %"class.blink::scheduler::CPUTimeBudgetPool"* %0 to %"class.blink::scheduler::BudgetPool"*
+  tail call void @_ZN5blink9scheduler10BudgetPoolD2Ev(%"class.blink::scheduler::BudgetPool"* %8) #9
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"*) unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN5blink9scheduler17TraceableVariableD2Ev(%"class.blink::scheduler::TraceableVariable"*) unnamed_addr #0 comdat align 2 {
+  %2 = getelementptr inbounds %"class.blink::scheduler::TraceableVariable", %"class.blink::scheduler::TraceableVariable"* %0, i64 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_ZTVN5blink9scheduler17TraceableVariableE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.blink::scheduler::TraceableVariable", %"class.blink::scheduler::TraceableVariable"* %0, i64 0, i32 1
+  %4 = load %"class.blink::scheduler::TraceableVariableController"*, %"class.blink::scheduler::TraceableVariableController"** %3, align 8
+  tail call void @_ZN5blink9scheduler27TraceableVariableController27DeregisterTraceableVariableEPNS0_17TraceableVariableE(%"class.blink::scheduler::TraceableVariableController"* %4, %"class.blink::scheduler::TraceableVariable"* %0) #9
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @_ZN5blink9scheduler10BudgetPoolD2Ev(%"class.blink::scheduler::BudgetPool"*) unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink9scheduler17CPUTimeBudgetPoolD0Ev(%"class.blink::scheduler::CPUTimeBudgetPool"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [12 x i8*] }, { [12 x i8*] }* @_ZTVN5blink9scheduler17CPUTimeBudgetPoolE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 7, i32 0, i32 0
+  tail call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* %3) #9
+  %4 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 0
+  %5 = getelementptr inbounds %"class.blink::scheduler::TraceableVariable", %"class.blink::scheduler::TraceableVariable"* %4, i64 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_ZTVN5blink9scheduler17TraceableVariableE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %5, align 8
+  %6 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 0, i32 1
+  %7 = load %"class.blink::scheduler::TraceableVariableController"*, %"class.blink::scheduler::TraceableVariableController"** %6, align 8
+  tail call void @_ZN5blink9scheduler27TraceableVariableController27DeregisterTraceableVariableEPNS0_17TraceableVariableE(%"class.blink::scheduler::TraceableVariableController"* %7, %"class.blink::scheduler::TraceableVariable"* %4) #9
+  %8 = bitcast %"class.blink::scheduler::CPUTimeBudgetPool"* %0 to %"class.blink::scheduler::BudgetPool"*
+  tail call void @_ZN5blink9scheduler10BudgetPoolD2Ev(%"class.blink::scheduler::BudgetPool"* %8) #9
+  %9 = bitcast %"class.blink::scheduler::CPUTimeBudgetPool"* %0 to i8*
+  tail call void @free(i8* %9) #9
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden i32 @_ZNK5blink9scheduler17CPUTimeBudgetPool12GetBlockTypeEv(%"class.blink::scheduler::CPUTimeBudgetPool"* nocapture readnone) unnamed_addr #4 align 2 {
+  ret i32 0
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink9scheduler17CPUTimeBudgetPool17SetMaxBudgetLevelEN4base9TimeTicksEN4absl8optionalINS2_9TimeDeltaEEE(%"class.blink::scheduler::CPUTimeBudgetPool"*, i64, i8, i64) local_unnamed_addr #0 align 2 {
+  %5 = alloca %"class.base::TimeDelta", align 8
+  %6 = alloca [7 x i8], align 1
+  %7 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 5, i32 0, i32 0
+  %8 = load i64, i64* %7, align 8
+  %9 = icmp slt i64 %8, %1
+  br i1 %9, label %10, label %38
+
+10:                                               ; preds = %4
+  %11 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 0, i32 4
+  %12 = load i8, i8* %11, align 8, !range !3
+  %13 = icmp eq i8 %12, 0
+  br i1 %13, label %37, label %14
+
+14:                                               ; preds = %10
+  %15 = bitcast %"class.base::TimeDelta"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %15) #9
+  %16 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 6
+  %17 = load double, double* %16, align 8
+  %18 = sub nsw i64 %1, %8
+  %19 = sitofp i64 %18 to double
+  %20 = fmul double %17, %19
+  %21 = fcmp oge double %20, 0xC3E0000000000000
+  %22 = fcmp ole double %20, 0x43DFFFFFFFFFFFFF
+  %23 = and i1 %22, %21
+  %24 = fptosi double %20 to i64
+  br i1 %23, label %32, label %25
+
+25:                                               ; preds = %14
+  %26 = lshr i64 %18, 63
+  %27 = trunc i64 %26 to i32
+  %28 = fcmp olt double %17, 0.000000e+00
+  %29 = zext i1 %28 to i32
+  %30 = icmp eq i32 %27, %29
+  %31 = select i1 %30, i64 9223372036854775807, i64 -9223372036854775808
+  br label %32
+
+32:                                               ; preds = %25, %14
+  %33 = phi i64 [ %24, %14 ], [ %31, %25 ]
+  %34 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %5, i64 0, i32 0
+  store i64 %33, i64* %34, align 8
+  %35 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4
+  %36 = call dereferenceable(40) %"class.blink::scheduler::TraceableCounter"* @_ZN5blink9scheduler16TraceableCounterIN4base9TimeDeltaEXadL_ZNS0_19TracingCategoryName5kInfoEEEEpLERKS3_(%"class.blink::scheduler::TraceableCounter"* %35, %"class.base::TimeDelta"* nonnull dereferenceable(8) %5) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %15) #9
+  call void @_ZN5blink9scheduler17CPUTimeBudgetPool30EnforceBudgetLevelRestrictionsEv(%"class.blink::scheduler::CPUTimeBudgetPool"* %0) #9
+  br label %37
+
+37:                                               ; preds = %32, %10
+  store i64 %1, i64* %7, align 8
+  br label %38
+
+38:                                               ; preds = %4, %37
+  %39 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 1, i32 0, i32 0, i32 0, i32 0
+  store i8 %2, i8* %39, align 8
+  %40 = bitcast %"class.blink::scheduler::CPUTimeBudgetPool"* %0 to i8*
+  %41 = getelementptr inbounds i8, i8* %40, i64 57
+  %42 = getelementptr inbounds [7 x i8], [7 x i8]* %6, i64 0, i64 0
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %41, i8* nonnull align 1 %42, i64 7, i1 false)
+  %43 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 1, i32 0, i32 0, i32 0, i32 1, i32 0, i32 0
+  store i64 %3, i64* %43, align 8
+  call void @_ZN5blink9scheduler17CPUTimeBudgetPool30EnforceBudgetLevelRestrictionsEv(%"class.blink::scheduler::CPUTimeBudgetPool"* %0)
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink9scheduler17CPUTimeBudgetPool7AdvanceEN4base9TimeTicksE(%"class.blink::scheduler::CPUTimeBudgetPool"*, i64) local_unnamed_addr #0 align 2 {
+  %3 = alloca %"class.base::TimeDelta", align 8
+  %4 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 5, i32 0, i32 0
+  %5 = load i64, i64* %4, align 8
+  %6 = icmp slt i64 %5, %1
+  br i1 %6, label %7, label %35
+
+7:                                                ; preds = %2
+  %8 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 0, i32 4
+  %9 = load i8, i8* %8, align 8, !range !3
+  %10 = icmp eq i8 %9, 0
+  br i1 %10, label %34, label %11
+
+11:                                               ; preds = %7
+  %12 = bitcast %"class.base::TimeDelta"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %12) #9
+  %13 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 6
+  %14 = load double, double* %13, align 8
+  %15 = sub nsw i64 %1, %5
+  %16 = sitofp i64 %15 to double
+  %17 = fmul double %14, %16
+  %18 = fcmp oge double %17, 0xC3E0000000000000
+  %19 = fcmp ole double %17, 0x43DFFFFFFFFFFFFF
+  %20 = and i1 %19, %18
+  %21 = fptosi double %17 to i64
+  br i1 %20, label %29, label %22
+
+22:                                               ; preds = %11
+  %23 = lshr i64 %15, 63
+  %24 = trunc i64 %23 to i32
+  %25 = fcmp olt double %14, 0.000000e+00
+  %26 = zext i1 %25 to i32
+  %27 = icmp eq i32 %24, %26
+  %28 = select i1 %27, i64 9223372036854775807, i64 -9223372036854775808
+  br label %29
+
+29:                                               ; preds = %11, %22
+  %30 = phi i64 [ %21, %11 ], [ %28, %22 ]
+  %31 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %3, i64 0, i32 0
+  store i64 %30, i64* %31, align 8
+  %32 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4
+  %33 = call dereferenceable(40) %"class.blink::scheduler::TraceableCounter"* @_ZN5blink9scheduler16TraceableCounterIN4base9TimeDeltaEXadL_ZNS0_19TracingCategoryName5kInfoEEEEpLERKS3_(%"class.blink::scheduler::TraceableCounter"* %32, %"class.base::TimeDelta"* nonnull dereferenceable(8) %3)
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %12) #9
+  call void @_ZN5blink9scheduler17CPUTimeBudgetPool30EnforceBudgetLevelRestrictionsEv(%"class.blink::scheduler::CPUTimeBudgetPool"* %0)
+  br label %34
+
+34:                                               ; preds = %7, %29
+  store i64 %1, i64* %4, align 8
+  br label %35
+
+35:                                               ; preds = %34, %2
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink9scheduler17CPUTimeBudgetPool30EnforceBudgetLevelRestrictionsEv(%"class.blink::scheduler::CPUTimeBudgetPool"*) local_unnamed_addr #0 align 2 {
+  %2 = alloca i32, align 4
+  %3 = alloca i32, align 4
+  %4 = alloca i64, align 8
+  %5 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 1, i32 0, i32 0, i32 0, i32 0
+  %6 = load i8, i8* %5, align 8, !range !3
+  %7 = icmp eq i8 %6, 0
+  br i1 %7, label %34, label %8
+
+8:                                                ; preds = %1
+  %9 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 3
+  %10 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 1, i32 0, i32 0, i32 0, i32 1, i32 0
+  %11 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %9, i64 0, i32 0
+  %12 = load i64, i64* %11, align 8
+  %13 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %10, i64 0, i32 0
+  %14 = load i64, i64* %13, align 8
+  %15 = icmp slt i64 %14, %12
+  %16 = select i1 %15, %"class.base::TimeDelta"* %10, %"class.base::TimeDelta"* %9
+  %17 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %16, i64 0, i32 0
+  %18 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 3, i32 0
+  %19 = load i64, i64* %17, align 8
+  store i64 %19, i64* %18, align 8
+  %20 = load i8, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 197, i32 0), align 16
+  %21 = and i8 %20, 25
+  %22 = icmp eq i8 %21, 0
+  br i1 %22, label %34, label %23, !prof !2
+
+23:                                               ; preds = %8
+  %24 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4
+  %25 = ptrtoint %"class.blink::scheduler::TraceableCounter"* %24 to i64
+  %26 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 1
+  %27 = load i8*, i8** %26, align 8
+  %28 = bitcast i32* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %28) #9
+  %29 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 2
+  %30 = load double (%"class.base::TimeDelta"*)*, double (%"class.base::TimeDelta"*)** %29, align 8
+  %31 = tail call double %30(%"class.base::TimeDelta"* dereferenceable(8) %9) #9
+  %32 = fptosi double %31 to i32
+  store i32 %32, i32* %2, align 4
+  %33 = call i64 @_ZN20trace_event_internal13AddTraceEventIiEEN4base11trace_event16TraceEventHandleEcPKhPKcS7_yjyS7_OT_(i8 signext 67, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 197, i32 0), i8* %27, i8* null, i64 %25, i32 2048, i64 0, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @.str.11, i64 0, i64 0), i32* nonnull dereferenceable(4) %2) #9
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %28) #9
+  br label %34
+
+34:                                               ; preds = %1, %23, %8
+  %35 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 2, i32 0, i32 0, i32 0, i32 0
+  %36 = load i8, i8* %35, align 8, !range !3
+  %37 = icmp eq i8 %36, 0
+  br i1 %37, label %89, label %38
+
+38:                                               ; preds = %34
+  %39 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4
+  %40 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 3
+  %41 = bitcast i64* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %41)
+  %42 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 2, i32 0, i32 0, i32 0, i32 1, i32 0, i32 0
+  %43 = load i64, i64* %42, align 8
+  %44 = add i64 %43, -9223372036854775807
+  %45 = icmp ult i64 %44, 2
+  %46 = sub nsw i64 0, %43
+  %47 = icmp slt i64 %43, 0
+  %48 = select i1 %47, i64 9223372036854775807, i64 -9223372036854775808
+  %49 = select i1 %45, i64 %48, i64 %46
+  %50 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 6
+  %51 = load double, double* %50, align 8
+  %52 = sitofp i64 %49 to double
+  %53 = fmul double %51, %52
+  %54 = fcmp oge double %53, 0xC3E0000000000000
+  %55 = fcmp ole double %53, 0x43DFFFFFFFFFFFFF
+  %56 = and i1 %55, %54
+  %57 = fptosi double %53 to i64
+  br i1 %56, label %65, label %58
+
+58:                                               ; preds = %38
+  %59 = lshr i64 %49, 63
+  %60 = trunc i64 %59 to i32
+  %61 = fcmp olt double %51, 0.000000e+00
+  %62 = zext i1 %61 to i32
+  %63 = icmp eq i32 %60, %62
+  %64 = select i1 %63, i64 9223372036854775807, i64 -9223372036854775808
+  br label %65
+
+65:                                               ; preds = %38, %58
+  %66 = phi i64 [ %57, %38 ], [ %64, %58 ]
+  store i64 %66, i64* %4, align 8
+  %67 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %40, i64 0, i32 0
+  %68 = load i64, i64* %67, align 8
+  %69 = icmp slt i64 %68, %66
+  %70 = bitcast i64* %4 to %"class.base::TimeDelta"*
+  %71 = select i1 %69, %"class.base::TimeDelta"* %70, %"class.base::TimeDelta"* %40
+  %72 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %71, i64 0, i32 0
+  %73 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 3, i32 0
+  %74 = load i64, i64* %72, align 8
+  store i64 %74, i64* %73, align 8
+  %75 = load i8, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 197, i32 0), align 16
+  %76 = and i8 %75, 25
+  %77 = icmp eq i8 %76, 0
+  br i1 %77, label %88, label %78, !prof !2
+
+78:                                               ; preds = %65
+  %79 = ptrtoint %"class.blink::scheduler::TraceableCounter"* %39 to i64
+  %80 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 1
+  %81 = load i8*, i8** %80, align 8
+  %82 = bitcast i32* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %82) #9
+  %83 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 2
+  %84 = load double (%"class.base::TimeDelta"*)*, double (%"class.base::TimeDelta"*)** %83, align 8
+  %85 = call double %84(%"class.base::TimeDelta"* dereferenceable(8) %40) #9
+  %86 = fptosi double %85 to i32
+  store i32 %86, i32* %3, align 4
+  %87 = call i64 @_ZN20trace_event_internal13AddTraceEventIiEEN4base11trace_event16TraceEventHandleEcPKhPKcS7_yjyS7_OT_(i8 signext 67, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 197, i32 0), i8* %81, i8* null, i64 %79, i32 2048, i64 0, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @.str.11, i64 0, i64 0), i32* nonnull dereferenceable(4) %3) #9
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %82) #9
+  br label %88
+
+88:                                               ; preds = %65, %78
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %41)
+  br label %89
+
+89:                                               ; preds = %34, %88
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink9scheduler17CPUTimeBudgetPool21SetMaxThrottlingDelayEN4base9TimeTicksEN4absl8optionalINS2_9TimeDeltaEEE(%"class.blink::scheduler::CPUTimeBudgetPool"*, i64, i8, i64) local_unnamed_addr #0 align 2 {
+  %5 = alloca %"class.base::TimeDelta", align 8
+  %6 = alloca [7 x i8], align 1
+  %7 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 5, i32 0, i32 0
+  %8 = load i64, i64* %7, align 8
+  %9 = icmp slt i64 %8, %1
+  br i1 %9, label %10, label %38
+
+10:                                               ; preds = %4
+  %11 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 0, i32 4
+  %12 = load i8, i8* %11, align 8, !range !3
+  %13 = icmp eq i8 %12, 0
+  br i1 %13, label %37, label %14
+
+14:                                               ; preds = %10
+  %15 = bitcast %"class.base::TimeDelta"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %15) #9
+  %16 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 6
+  %17 = load double, double* %16, align 8
+  %18 = sub nsw i64 %1, %8
+  %19 = sitofp i64 %18 to double
+  %20 = fmul double %17, %19
+  %21 = fcmp oge double %20, 0xC3E0000000000000
+  %22 = fcmp ole double %20, 0x43DFFFFFFFFFFFFF
+  %23 = and i1 %22, %21
+  %24 = fptosi double %20 to i64
+  br i1 %23, label %32, label %25
+
+25:                                               ; preds = %14
+  %26 = lshr i64 %18, 63
+  %27 = trunc i64 %26 to i32
+  %28 = fcmp olt double %17, 0.000000e+00
+  %29 = zext i1 %28 to i32
+  %30 = icmp eq i32 %27, %29
+  %31 = select i1 %30, i64 9223372036854775807, i64 -9223372036854775808
+  br label %32
+
+32:                                               ; preds = %25, %14
+  %33 = phi i64 [ %24, %14 ], [ %31, %25 ]
+  %34 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %5, i64 0, i32 0
+  store i64 %33, i64* %34, align 8
+  %35 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4
+  %36 = call dereferenceable(40) %"class.blink::scheduler::TraceableCounter"* @_ZN5blink9scheduler16TraceableCounterIN4base9TimeDeltaEXadL_ZNS0_19TracingCategoryName5kInfoEEEEpLERKS3_(%"class.blink::scheduler::TraceableCounter"* %35, %"class.base::TimeDelta"* nonnull dereferenceable(8) %5) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %15) #9
+  call void @_ZN5blink9scheduler17CPUTimeBudgetPool30EnforceBudgetLevelRestrictionsEv(%"class.blink::scheduler::CPUTimeBudgetPool"* %0) #9
+  br label %37
+
+37:                                               ; preds = %32, %10
+  store i64 %1, i64* %7, align 8
+  br label %38
+
+38:                                               ; preds = %4, %37
+  %39 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 2, i32 0, i32 0, i32 0, i32 0
+  store i8 %2, i8* %39, align 8
+  %40 = bitcast %"class.blink::scheduler::CPUTimeBudgetPool"* %0 to i8*
+  %41 = getelementptr inbounds i8, i8* %40, i64 73
+  %42 = getelementptr inbounds [7 x i8], [7 x i8]* %6, i64 0, i64 0
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %41, i8* nonnull align 1 %42, i64 7, i1 false)
+  %43 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 2, i32 0, i32 0, i32 0, i32 1, i32 0, i32 0
+  store i64 %3, i64* %43, align 8
+  call void @_ZN5blink9scheduler17CPUTimeBudgetPool30EnforceBudgetLevelRestrictionsEv(%"class.blink::scheduler::CPUTimeBudgetPool"* %0)
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink9scheduler17CPUTimeBudgetPool22SetMinBudgetLevelToRunEN4base9TimeTicksENS2_9TimeDeltaE(%"class.blink::scheduler::CPUTimeBudgetPool"*, i64, i64) local_unnamed_addr #0 align 2 {
+  %4 = alloca %"class.base::TimeDelta", align 8
+  %5 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 5, i32 0, i32 0
+  %6 = load i64, i64* %5, align 8
+  %7 = icmp slt i64 %6, %1
+  br i1 %7, label %8, label %36
+
+8:                                                ; preds = %3
+  %9 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 0, i32 4
+  %10 = load i8, i8* %9, align 8, !range !3
+  %11 = icmp eq i8 %10, 0
+  br i1 %11, label %35, label %12
+
+12:                                               ; preds = %8
+  %13 = bitcast %"class.base::TimeDelta"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %13) #9
+  %14 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 6
+  %15 = load double, double* %14, align 8
+  %16 = sub nsw i64 %1, %6
+  %17 = sitofp i64 %16 to double
+  %18 = fmul double %15, %17
+  %19 = fcmp oge double %18, 0xC3E0000000000000
+  %20 = fcmp ole double %18, 0x43DFFFFFFFFFFFFF
+  %21 = and i1 %20, %19
+  %22 = fptosi double %18 to i64
+  br i1 %21, label %30, label %23
+
+23:                                               ; preds = %12
+  %24 = lshr i64 %16, 63
+  %25 = trunc i64 %24 to i32
+  %26 = fcmp olt double %15, 0.000000e+00
+  %27 = zext i1 %26 to i32
+  %28 = icmp eq i32 %25, %27
+  %29 = select i1 %28, i64 9223372036854775807, i64 -9223372036854775808
+  br label %30
+
+30:                                               ; preds = %23, %12
+  %31 = phi i64 [ %22, %12 ], [ %29, %23 ]
+  %32 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %4, i64 0, i32 0
+  store i64 %31, i64* %32, align 8
+  %33 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4
+  %34 = call dereferenceable(40) %"class.blink::scheduler::TraceableCounter"* @_ZN5blink9scheduler16TraceableCounterIN4base9TimeDeltaEXadL_ZNS0_19TracingCategoryName5kInfoEEEEpLERKS3_(%"class.blink::scheduler::TraceableCounter"* %33, %"class.base::TimeDelta"* nonnull dereferenceable(8) %4) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %13) #9
+  call void @_ZN5blink9scheduler17CPUTimeBudgetPool30EnforceBudgetLevelRestrictionsEv(%"class.blink::scheduler::CPUTimeBudgetPool"* %0) #9
+  br label %35
+
+35:                                               ; preds = %30, %8
+  store i64 %1, i64* %5, align 8
+  br label %36
+
+36:                                               ; preds = %3, %35
+  %37 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 3, i32 0
+  store i64 %2, i64* %37, align 8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink9scheduler17CPUTimeBudgetPool25SetTimeBudgetRecoveryRateEN4base9TimeTicksEd(%"class.blink::scheduler::CPUTimeBudgetPool"*, i64, double) local_unnamed_addr #0 align 2 {
+  %4 = alloca %"class.base::TimeDelta", align 8
+  %5 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 5, i32 0, i32 0
+  %6 = load i64, i64* %5, align 8
+  %7 = icmp slt i64 %6, %1
+  br i1 %7, label %8, label %36
+
+8:                                                ; preds = %3
+  %9 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 0, i32 4
+  %10 = load i8, i8* %9, align 8, !range !3
+  %11 = icmp eq i8 %10, 0
+  br i1 %11, label %35, label %12
+
+12:                                               ; preds = %8
+  %13 = bitcast %"class.base::TimeDelta"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %13) #9
+  %14 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 6
+  %15 = load double, double* %14, align 8
+  %16 = sub nsw i64 %1, %6
+  %17 = sitofp i64 %16 to double
+  %18 = fmul double %15, %17
+  %19 = fcmp oge double %18, 0xC3E0000000000000
+  %20 = fcmp ole double %18, 0x43DFFFFFFFFFFFFF
+  %21 = and i1 %20, %19
+  %22 = fptosi double %18 to i64
+  br i1 %21, label %30, label %23
+
+23:                                               ; preds = %12
+  %24 = lshr i64 %16, 63
+  %25 = trunc i64 %24 to i32
+  %26 = fcmp olt double %15, 0.000000e+00
+  %27 = zext i1 %26 to i32
+  %28 = icmp eq i32 %25, %27
+  %29 = select i1 %28, i64 9223372036854775807, i64 -9223372036854775808
+  br label %30
+
+30:                                               ; preds = %23, %12
+  %31 = phi i64 [ %22, %12 ], [ %29, %23 ]
+  %32 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %4, i64 0, i32 0
+  store i64 %31, i64* %32, align 8
+  %33 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4
+  %34 = call dereferenceable(40) %"class.blink::scheduler::TraceableCounter"* @_ZN5blink9scheduler16TraceableCounterIN4base9TimeDeltaEXadL_ZNS0_19TracingCategoryName5kInfoEEEEpLERKS3_(%"class.blink::scheduler::TraceableCounter"* %33, %"class.base::TimeDelta"* nonnull dereferenceable(8) %4) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %13) #9
+  call void @_ZN5blink9scheduler17CPUTimeBudgetPool30EnforceBudgetLevelRestrictionsEv(%"class.blink::scheduler::CPUTimeBudgetPool"* %0) #9
+  br label %35
+
+35:                                               ; preds = %30, %8
+  store i64 %1, i64* %5, align 8
+  br label %36
+
+36:                                               ; preds = %3, %35
+  %37 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 6
+  store double %2, double* %37, align 8
+  call void @_ZN5blink9scheduler17CPUTimeBudgetPool30EnforceBudgetLevelRestrictionsEv(%"class.blink::scheduler::CPUTimeBudgetPool"* %0)
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink9scheduler17CPUTimeBudgetPool21GrantAdditionalBudgetEN4base9TimeTicksENS2_9TimeDeltaE(%"class.blink::scheduler::CPUTimeBudgetPool"*, i64, i64) local_unnamed_addr #0 align 2 {
+  %4 = alloca %"class.base::TimeDelta", align 8
+  %5 = alloca %"class.base::TimeDelta", align 8
+  %6 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %5, i64 0, i32 0
+  store i64 %2, i64* %6, align 8
+  %7 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 5, i32 0, i32 0
+  %8 = load i64, i64* %7, align 8
+  %9 = icmp slt i64 %8, %1
+  br i1 %9, label %10, label %38
+
+10:                                               ; preds = %3
+  %11 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 0, i32 4
+  %12 = load i8, i8* %11, align 8, !range !3
+  %13 = icmp eq i8 %12, 0
+  br i1 %13, label %37, label %14
+
+14:                                               ; preds = %10
+  %15 = bitcast %"class.base::TimeDelta"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %15) #9
+  %16 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 6
+  %17 = load double, double* %16, align 8
+  %18 = sub nsw i64 %1, %8
+  %19 = sitofp i64 %18 to double
+  %20 = fmul double %17, %19
+  %21 = fcmp oge double %20, 0xC3E0000000000000
+  %22 = fcmp ole double %20, 0x43DFFFFFFFFFFFFF
+  %23 = and i1 %22, %21
+  %24 = fptosi double %20 to i64
+  br i1 %23, label %32, label %25
+
+25:                                               ; preds = %14
+  %26 = lshr i64 %18, 63
+  %27 = trunc i64 %26 to i32
+  %28 = fcmp olt double %17, 0.000000e+00
+  %29 = zext i1 %28 to i32
+  %30 = icmp eq i32 %27, %29
+  %31 = select i1 %30, i64 9223372036854775807, i64 -9223372036854775808
+  br label %32
+
+32:                                               ; preds = %25, %14
+  %33 = phi i64 [ %24, %14 ], [ %31, %25 ]
+  %34 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %4, i64 0, i32 0
+  store i64 %33, i64* %34, align 8
+  %35 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4
+  %36 = call dereferenceable(40) %"class.blink::scheduler::TraceableCounter"* @_ZN5blink9scheduler16TraceableCounterIN4base9TimeDeltaEXadL_ZNS0_19TracingCategoryName5kInfoEEEEpLERKS3_(%"class.blink::scheduler::TraceableCounter"* %35, %"class.base::TimeDelta"* nonnull dereferenceable(8) %4) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %15) #9
+  call void @_ZN5blink9scheduler17CPUTimeBudgetPool30EnforceBudgetLevelRestrictionsEv(%"class.blink::scheduler::CPUTimeBudgetPool"* %0) #9
+  br label %37
+
+37:                                               ; preds = %32, %10
+  store i64 %1, i64* %7, align 8
+  br label %38
+
+38:                                               ; preds = %3, %37
+  %39 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4
+  %40 = call dereferenceable(40) %"class.blink::scheduler::TraceableCounter"* @_ZN5blink9scheduler16TraceableCounterIN4base9TimeDeltaEXadL_ZNS0_19TracingCategoryName5kInfoEEEEpLERKS3_(%"class.blink::scheduler::TraceableCounter"* %39, %"class.base::TimeDelta"* nonnull dereferenceable(8) %5)
+  call void @_ZN5blink9scheduler17CPUTimeBudgetPool30EnforceBudgetLevelRestrictionsEv(%"class.blink::scheduler::CPUTimeBudgetPool"* %0)
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden dereferenceable(40) %"class.blink::scheduler::TraceableCounter"* @_ZN5blink9scheduler16TraceableCounterIN4base9TimeDeltaEXadL_ZNS0_19TracingCategoryName5kInfoEEEEpLERKS3_(%"class.blink::scheduler::TraceableCounter"*, %"class.base::TimeDelta"* dereferenceable(8)) local_unnamed_addr #0 comdat align 2 {
+  %3 = alloca i32, align 4
+  %4 = alloca %"class.logging::CheckError", align 8
+  %5 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %1, i64 0, i32 0
+  %6 = load i64, i64* %5, align 8
+  %7 = getelementptr inbounds %"class.blink::scheduler::TraceableCounter", %"class.blink::scheduler::TraceableCounter"* %0, i64 0, i32 3
+  %8 = add i64 %6, -9223372036854775807
+  %9 = icmp ult i64 %8, 2
+  %10 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %7, i64 0, i32 0
+  %11 = load i64, i64* %10, align 8
+  br i1 %9, label %19, label %12
+
+12:                                               ; preds = %2
+  %13 = icmp slt i64 %6, 0
+  %14 = select i1 %13, i64 -9223372036854775808, i64 9223372036854775807
+  %15 = tail call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %11, i64 %6) #9
+  %16 = extractvalue { i64, i1 } %15, 1
+  %17 = extractvalue { i64, i1 } %15, 0
+  %18 = select i1 %16, i64 %14, i64 %17, !prof !4
+  br label %27
+
+19:                                               ; preds = %2
+  %20 = add i64 %11, -9223372036854775807
+  %21 = icmp ugt i64 %20, 1
+  %22 = icmp eq i64 %11, %6
+  %23 = or i1 %22, %21
+  br i1 %23, label %27, label %24
+
+24:                                               ; preds = %19
+  %25 = bitcast %"class.logging::CheckError"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %25) #9
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %4, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.9, i64 0, i64 0), i32 378, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.10, i64 0, i64 0)) #9
+  %26 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %4) #9
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %4) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %25) #9
+  br label %27
+
+27:                                               ; preds = %12, %19, %24
+  %28 = phi i64 [ %18, %12 ], [ %6, %19 ], [ %6, %24 ]
+  store i64 %28, i64* %10, align 8
+  %29 = load i8, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 197, i32 0), align 16
+  %30 = and i8 %29, 25
+  %31 = icmp eq i8 %30, 0
+  br i1 %31, label %42, label %32, !prof !2
+
+32:                                               ; preds = %27
+  %33 = ptrtoint %"class.blink::scheduler::TraceableCounter"* %0 to i64
+  %34 = getelementptr inbounds %"class.blink::scheduler::TraceableCounter", %"class.blink::scheduler::TraceableCounter"* %0, i64 0, i32 1
+  %35 = load i8*, i8** %34, align 8
+  %36 = bitcast i32* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %36) #9
+  %37 = getelementptr inbounds %"class.blink::scheduler::TraceableCounter", %"class.blink::scheduler::TraceableCounter"* %0, i64 0, i32 2
+  %38 = load double (%"class.base::TimeDelta"*)*, double (%"class.base::TimeDelta"*)** %37, align 8
+  %39 = call double %38(%"class.base::TimeDelta"* dereferenceable(8) %7) #9
+  %40 = fptosi double %39 to i32
+  store i32 %40, i32* %3, align 4
+  %41 = call i64 @_ZN20trace_event_internal13AddTraceEventIiEEN4base11trace_event16TraceEventHandleEcPKhPKcS7_yjyS7_OT_(i8 signext 67, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 197, i32 0), i8* %35, i8* null, i64 %33, i32 2048, i64 0, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @.str.11, i64 0, i64 0), i32* nonnull dereferenceable(4) %3) #9
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %36) #9
+  br label %42
+
+42:                                               ; preds = %27, %32
+  ret %"class.blink::scheduler::TraceableCounter"* %0
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink9scheduler17CPUTimeBudgetPool20SetReportingCallbackEN4base17RepeatingCallbackIFvNS2_9TimeDeltaEEEE(%"class.blink::scheduler::CPUTimeBudgetPool"*, %"class.base::RepeatingCallback.96"*) local_unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 7, i32 0
+  %4 = getelementptr inbounds %"class.base::RepeatingCallback.96", %"class.base::RepeatingCallback.96"* %1, i64 0, i32 0
+  %5 = tail call dereferenceable(8) %"class.base::internal::CallbackBaseCopyable"* @_ZN4base8internal20CallbackBaseCopyableaSERKS1_(%"class.base::internal::CallbackBaseCopyable"* %3, %"class.base::internal::CallbackBaseCopyable"* dereferenceable(8) %4) #9
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZNK5blink9scheduler17CPUTimeBudgetPool13CanRunTasksAtEN4base9TimeTicksEb(%"class.blink::scheduler::CPUTimeBudgetPool"* nocapture readonly, i64, i1 zeroext) unnamed_addr #0 align 2 {
+  %4 = tail call i64 @_ZNK5blink9scheduler17CPUTimeBudgetPool21GetNextAllowedRunTimeEN4base9TimeTicksE(%"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 undef)
+  %5 = icmp sle i64 %4, %1
+  ret i1 %5
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i64 @_ZNK5blink9scheduler17CPUTimeBudgetPool21GetNextAllowedRunTimeEN4base9TimeTicksE(%"class.blink::scheduler::CPUTimeBudgetPool"* nocapture readonly, i64) unnamed_addr #0 align 2 {
+  %3 = alloca %"class.logging::CheckError", align 8
+  %4 = alloca %"class.logging::CheckError", align 8
+  %5 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 0, i32 4
+  %6 = load i8, i8* %5, align 8, !range !3
+  %7 = icmp eq i8 %6, 0
+  br i1 %7, label %12, label %8
+
+8:                                                ; preds = %2
+  %9 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 3, i32 0
+  %10 = load i64, i64* %9, align 8
+  %11 = icmp sgt i64 %10, -1
+  br i1 %11, label %12, label %15
+
+12:                                               ; preds = %2, %8
+  %13 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 5, i32 0, i32 0
+  %14 = load i64, i64* %13, align 8
+  br label %77
+
+15:                                               ; preds = %8
+  %16 = add i64 %10, -9223372036854775807
+  %17 = icmp ult i64 %16, 2
+  %18 = sub nsw i64 0, %10
+  %19 = select i1 %17, i64 9223372036854775807, i64 %18
+  %20 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 3, i32 0
+  %21 = load i64, i64* %20, align 8
+  %22 = add i64 %21, -9223372036854775807
+  %23 = icmp ult i64 %22, 2
+  br i1 %23, label %31, label %24
+
+24:                                               ; preds = %15
+  %25 = icmp slt i64 %21, 0
+  %26 = select i1 %25, i64 -9223372036854775808, i64 9223372036854775807
+  %27 = tail call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %19, i64 %21) #9
+  %28 = extractvalue { i64, i1 } %27, 1
+  %29 = extractvalue { i64, i1 } %27, 0
+  %30 = select i1 %28, i64 %26, i64 %29, !prof !4
+  br label %39
+
+31:                                               ; preds = %15
+  %32 = add i64 %19, -9223372036854775807
+  %33 = icmp ugt i64 %32, 1
+  %34 = icmp eq i64 %19, %21
+  %35 = or i1 %34, %33
+  br i1 %35, label %39, label %36
+
+36:                                               ; preds = %31
+  %37 = bitcast %"class.logging::CheckError"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %37) #9
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %3, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.9, i64 0, i64 0), i32 378, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.10, i64 0, i64 0)) #9
+  %38 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %3) #9
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %3) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %37) #9
+  br label %39
+
+39:                                               ; preds = %24, %31, %36
+  %40 = phi i64 [ %30, %24 ], [ %21, %31 ], [ %21, %36 ]
+  %41 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 6
+  %42 = load double, double* %41, align 8
+  %43 = sitofp i64 %40 to double
+  %44 = fdiv double %43, %42
+  %45 = fcmp oge double %44, 0xC3E0000000000000
+  %46 = fcmp ole double %44, 0x43DFFFFFFFFFFFFF
+  %47 = and i1 %46, %45
+  %48 = fptosi double %44 to i64
+  br i1 %47, label %56, label %49
+
+49:                                               ; preds = %39
+  %50 = lshr i64 %40, 63
+  %51 = trunc i64 %50 to i32
+  %52 = fcmp olt double %42, 0.000000e+00
+  %53 = zext i1 %52 to i32
+  %54 = icmp eq i32 %51, %53
+  %55 = select i1 %54, i64 9223372036854775807, i64 -9223372036854775808
+  br label %56
+
+56:                                               ; preds = %39, %49
+  %57 = phi i64 [ %48, %39 ], [ %55, %49 ]
+  %58 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 5, i32 0, i32 0
+  %59 = load i64, i64* %58, align 8
+  %60 = add i64 %57, -9223372036854775807
+  %61 = icmp ult i64 %60, 2
+  br i1 %61, label %69, label %62
+
+62:                                               ; preds = %56
+  %63 = icmp slt i64 %57, 0
+  %64 = select i1 %63, i64 -9223372036854775808, i64 9223372036854775807
+  %65 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %59, i64 %57) #9
+  %66 = extractvalue { i64, i1 } %65, 1
+  %67 = extractvalue { i64, i1 } %65, 0
+  %68 = select i1 %66, i64 %64, i64 %67, !prof !4
+  br label %77
+
+69:                                               ; preds = %56
+  %70 = add i64 %59, -9223372036854775807
+  %71 = icmp ugt i64 %70, 1
+  %72 = icmp eq i64 %59, %57
+  %73 = or i1 %72, %71
+  br i1 %73, label %77, label %74
+
+74:                                               ; preds = %69
+  %75 = bitcast %"class.logging::CheckError"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %75) #9
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %4, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.9, i64 0, i64 0), i32 378, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.10, i64 0, i64 0)) #9
+  %76 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %4) #9
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %4) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %75) #9
+  br label %77
+
+77:                                               ; preds = %74, %69, %62, %12
+  %78 = phi i64 [ %14, %12 ], [ %68, %62 ], [ %57, %69 ], [ %57, %74 ]
+  ret i64 %78
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i64 @_ZNK5blink9scheduler17CPUTimeBudgetPool23GetTimeTasksCanRunUntilEN4base9TimeTicksEb(%"class.blink::scheduler::CPUTimeBudgetPool"* nocapture readonly, i64, i1 zeroext) unnamed_addr #0 align 2 {
+  %4 = tail call i64 @_ZNK5blink9scheduler17CPUTimeBudgetPool21GetNextAllowedRunTimeEN4base9TimeTicksE(%"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 undef) #9
+  %5 = icmp sgt i64 %4, %1
+  %6 = select i1 %5, i64 0, i64 9223372036854775807
+  ret i64 %6
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink9scheduler17CPUTimeBudgetPool17RecordTaskRunTimeEPN4base16sequence_manager9TaskQueueENS2_9TimeTicksES6_(%"class.blink::scheduler::CPUTimeBudgetPool"*, %"class.base::sequence_manager::TaskQueue"* nocapture readnone, i64, i64) unnamed_addr #0 align 2 {
+  %5 = alloca i32, align 4
+  %6 = alloca %"class.base::TimeDelta", align 8
+  %7 = alloca %"class.base::TimeDelta", align 8
+  %8 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 5, i32 0, i32 0
+  %9 = load i64, i64* %8, align 8
+  %10 = icmp slt i64 %9, %3
+  br i1 %10, label %11, label %39
+
+11:                                               ; preds = %4
+  %12 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 0, i32 4
+  %13 = load i8, i8* %12, align 8, !range !3
+  %14 = icmp eq i8 %13, 0
+  br i1 %14, label %38, label %15
+
+15:                                               ; preds = %11
+  %16 = bitcast %"class.base::TimeDelta"* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %16) #9
+  %17 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 6
+  %18 = load double, double* %17, align 8
+  %19 = sub nsw i64 %3, %9
+  %20 = sitofp i64 %19 to double
+  %21 = fmul double %18, %20
+  %22 = fcmp oge double %21, 0xC3E0000000000000
+  %23 = fcmp ole double %21, 0x43DFFFFFFFFFFFFF
+  %24 = and i1 %23, %22
+  %25 = fptosi double %21 to i64
+  br i1 %24, label %33, label %26
+
+26:                                               ; preds = %15
+  %27 = lshr i64 %19, 63
+  %28 = trunc i64 %27 to i32
+  %29 = fcmp olt double %18, 0.000000e+00
+  %30 = zext i1 %29 to i32
+  %31 = icmp eq i32 %28, %30
+  %32 = select i1 %31, i64 9223372036854775807, i64 -9223372036854775808
+  br label %33
+
+33:                                               ; preds = %26, %15
+  %34 = phi i64 [ %25, %15 ], [ %32, %26 ]
+  %35 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %7, i64 0, i32 0
+  store i64 %34, i64* %35, align 8
+  %36 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4
+  %37 = call dereferenceable(40) %"class.blink::scheduler::TraceableCounter"* @_ZN5blink9scheduler16TraceableCounterIN4base9TimeDeltaEXadL_ZNS0_19TracingCategoryName5kInfoEEEEpLERKS3_(%"class.blink::scheduler::TraceableCounter"* %36, %"class.base::TimeDelta"* nonnull dereferenceable(8) %7) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %16) #9
+  call void @_ZN5blink9scheduler17CPUTimeBudgetPool30EnforceBudgetLevelRestrictionsEv(%"class.blink::scheduler::CPUTimeBudgetPool"* %0) #9
+  br label %38
+
+38:                                               ; preds = %33, %11
+  store i64 %3, i64* %8, align 8
+  br label %39
+
+39:                                               ; preds = %4, %38
+  %40 = bitcast %"class.blink::scheduler::CPUTimeBudgetPool"* %0 to %"class.blink::scheduler::BudgetPool"*
+  %41 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 0, i32 4
+  %42 = load i8, i8* %41, align 8, !range !3
+  %43 = icmp eq i8 %42, 0
+  br i1 %43, label %115, label %44
+
+44:                                               ; preds = %39
+  %45 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 3, i32 0
+  %46 = load i64, i64* %45, align 8
+  %47 = sub nsw i64 %3, %2
+  %48 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 3
+  %49 = call i64 @_ZNK4base9TimeDeltamiES0_(%"class.base::TimeDelta"* %48, i64 %47) #9
+  %50 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %48, i64 0, i32 0
+  store i64 %49, i64* %50, align 8
+  %51 = load i8, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 197, i32 0), align 16
+  %52 = and i8 %51, 25
+  %53 = icmp eq i8 %52, 0
+  br i1 %53, label %65, label %54, !prof !2
+
+54:                                               ; preds = %44
+  %55 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4
+  %56 = ptrtoint %"class.blink::scheduler::TraceableCounter"* %55 to i64
+  %57 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 1
+  %58 = load i8*, i8** %57, align 8
+  %59 = bitcast i32* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %59) #9
+  %60 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 2
+  %61 = load double (%"class.base::TimeDelta"*)*, double (%"class.base::TimeDelta"*)** %60, align 8
+  %62 = call double %61(%"class.base::TimeDelta"* dereferenceable(8) %48) #9
+  %63 = fptosi double %62 to i32
+  store i32 %63, i32* %5, align 4
+  %64 = call i64 @_ZN20trace_event_internal13AddTraceEventIiEEN4base11trace_event16TraceEventHandleEcPKhPKcS7_yjyS7_OT_(i8 signext 67, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 197, i32 0), i8* %58, i8* null, i64 %56, i32 2048, i64 0, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @.str.11, i64 0, i64 0), i32* nonnull dereferenceable(4) %5) #9
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %59) #9
+  br label %65
+
+65:                                               ; preds = %44, %54
+  call void @_ZN5blink9scheduler17CPUTimeBudgetPool30EnforceBudgetLevelRestrictionsEv(%"class.blink::scheduler::CPUTimeBudgetPool"* %0)
+  %66 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 7, i32 0, i32 0, i32 0, i32 0
+  %67 = load %"class.base::internal::BindStateBase"*, %"class.base::internal::BindStateBase"** %66, align 8
+  %68 = icmp eq %"class.base::internal::BindStateBase"* %67, null
+  br i1 %68, label %115, label %69
+
+69:                                               ; preds = %65
+  %70 = add i64 %46, -9223372036854775807
+  %71 = icmp ult i64 %70, 2
+  br i1 %71, label %72, label %74
+
+72:                                               ; preds = %69
+  %73 = icmp slt i64 %46, 0
+  br i1 %73, label %115, label %78
+
+74:                                               ; preds = %69
+  %75 = sitofp i64 %46 to double
+  %76 = fdiv double %75, 1.000000e+06
+  %77 = fcmp ogt double %76, 0.000000e+00
+  br i1 %77, label %78, label %115
+
+78:                                               ; preds = %72, %74
+  %79 = load i64, i64* %50, align 8
+  %80 = add i64 %79, -9223372036854775807
+  %81 = icmp ult i64 %80, 2
+  br i1 %81, label %82, label %84
+
+82:                                               ; preds = %78
+  %83 = icmp slt i64 %79, 0
+  br i1 %83, label %88, label %115
+
+84:                                               ; preds = %78
+  %85 = sitofp i64 %79 to double
+  %86 = fdiv double %85, 1.000000e+06
+  %87 = fcmp olt double %86, 0.000000e+00
+  br i1 %87, label %88, label %115
+
+88:                                               ; preds = %82, %84
+  %89 = sub nsw i64 0, %79
+  %90 = icmp slt i64 %79, 0
+  %91 = select i1 %90, i64 9223372036854775807, i64 -9223372036854775808
+  %92 = select i1 %81, i64 %91, i64 %89
+  %93 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 6
+  %94 = load double, double* %93, align 8
+  %95 = sitofp i64 %92 to double
+  %96 = fdiv double %95, %94
+  %97 = fcmp oge double %96, 0xC3E0000000000000
+  %98 = fcmp ole double %96, 0x43DFFFFFFFFFFFFF
+  %99 = and i1 %98, %97
+  %100 = fptosi double %96 to i64
+  br i1 %99, label %108, label %101
+
+101:                                              ; preds = %88
+  %102 = lshr i64 %92, 63
+  %103 = trunc i64 %102 to i32
+  %104 = fcmp olt double %94, 0.000000e+00
+  %105 = zext i1 %104 to i32
+  %106 = icmp eq i32 %103, %105
+  %107 = select i1 %106, i64 9223372036854775807, i64 -9223372036854775808
+  br label %108
+
+108:                                              ; preds = %88, %101
+  %109 = phi i64 [ %100, %88 ], [ %107, %101 ]
+  %110 = bitcast %"class.base::TimeDelta"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %110)
+  %111 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %6, i64 0, i32 0
+  store i64 %109, i64* %111, align 8
+  %112 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %67, i64 0, i32 1
+  %113 = bitcast void ()** %112 to void (%"class.base::internal::BindStateBase"*, %"class.base::TimeDelta"*)**
+  %114 = load void (%"class.base::internal::BindStateBase"*, %"class.base::TimeDelta"*)*, void (%"class.base::internal::BindStateBase"*, %"class.base::TimeDelta"*)** %113, align 8
+  call void %114(%"class.base::internal::BindStateBase"* nonnull %67, %"class.base::TimeDelta"* nonnull dereferenceable(8) %6) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %110)
+  br label %115
+
+115:                                              ; preds = %82, %72, %65, %74, %84, %108, %39
+  %116 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 3, i32 0
+  %117 = load i64, i64* %116, align 8
+  %118 = add i64 %117, -9223372036854775807
+  %119 = icmp ult i64 %118, 2
+  br i1 %119, label %120, label %122
+
+120:                                              ; preds = %115
+  %121 = icmp slt i64 %117, 0
+  br i1 %121, label %126, label %127
+
+122:                                              ; preds = %115
+  %123 = sitofp i64 %117 to double
+  %124 = fdiv double %123, 1.000000e+06
+  %125 = fcmp olt double %124, 0.000000e+00
+  br i1 %125, label %126, label %127
+
+126:                                              ; preds = %120, %122
+  call void @_ZN5blink9scheduler10BudgetPool33UpdateThrottlingStateForAllQueuesEN4base9TimeTicksE(%"class.blink::scheduler::BudgetPool"* %40, i64 %3) #9
+  br label %127
+
+127:                                              ; preds = %120, %126, %122
+  ret void
+}
+
+declare void @_ZN5blink9scheduler10BudgetPool33UpdateThrottlingStateForAllQueuesEN4base9TimeTicksE(%"class.blink::scheduler::BudgetPool"*, i64) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink9scheduler17CPUTimeBudgetPool24OnQueueNextWakeUpChangedEPN4base16sequence_manager9TaskQueueENS2_9TimeTicksES6_(%"class.blink::scheduler::CPUTimeBudgetPool"* nocapture readonly, %"class.base::sequence_manager::TaskQueue"*, i64, i64) unnamed_addr #0 align 2 {
+  %5 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 0, i32 2
+  %6 = load %"class.blink::scheduler::BudgetPoolController"*, %"class.blink::scheduler::BudgetPoolController"** %5, align 8
+  %7 = bitcast %"class.blink::scheduler::BudgetPoolController"* %6 to void (%"class.blink::scheduler::BudgetPoolController"*, i64, %"class.base::sequence_manager::TaskQueue"*)***
+  %8 = load void (%"class.blink::scheduler::BudgetPoolController"*, i64, %"class.base::sequence_manager::TaskQueue"*)**, void (%"class.blink::scheduler::BudgetPoolController"*, i64, %"class.base::sequence_manager::TaskQueue"*)*** %7, align 8
+  %9 = getelementptr inbounds void (%"class.blink::scheduler::BudgetPoolController"*, i64, %"class.base::sequence_manager::TaskQueue"*)*, void (%"class.blink::scheduler::BudgetPoolController"*, i64, %"class.base::sequence_manager::TaskQueue"*)** %8, i64 5
+  %10 = load void (%"class.blink::scheduler::BudgetPoolController"*, i64, %"class.base::sequence_manager::TaskQueue"*)*, void (%"class.blink::scheduler::BudgetPoolController"*, i64, %"class.base::sequence_manager::TaskQueue"*)** %9, align 8
+  tail call void %10(%"class.blink::scheduler::BudgetPoolController"* %6, i64 %2, %"class.base::sequence_manager::TaskQueue"* %1) #9
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden void @_ZN5blink9scheduler17CPUTimeBudgetPool8OnWakeUpEN4base9TimeTicksE(%"class.blink::scheduler::CPUTimeBudgetPool"* nocapture, i64) unnamed_addr #4 align 2 {
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZNK5blink9scheduler17CPUTimeBudgetPool14WriteIntoTraceEN8perfetto11TracedValueEN4base9TimeTicksE(%"class.blink::scheduler::CPUTimeBudgetPool"* nocapture readonly, %"class.perfetto::TracedValue"*, i64) unnamed_addr #0 align 2 {
+  %4 = alloca %"class.perfetto::TracedValue", align 8
+  %5 = alloca %"class.perfetto::TracedValue", align 8
+  %6 = alloca %"class.perfetto::TracedValue", align 8
+  %7 = alloca %"class.perfetto::TracedValue", align 8
+  %8 = alloca %"class.perfetto::TracedValue", align 8
+  %9 = alloca %"class.perfetto::TracedValue", align 8
+  %10 = alloca %"class.perfetto::TracedValue", align 8
+  %11 = alloca %"class.perfetto::TracedValue", align 8
+  %12 = alloca %"class.perfetto::TracedValue", align 8
+  %13 = alloca %"class.perfetto::TracedValue", align 8
+  %14 = alloca %"class.perfetto::TracedValue", align 8
+  %15 = alloca %"class.perfetto::TracedValue", align 8
+  %16 = alloca %"class.perfetto::TracedValue", align 8
+  %17 = alloca %"class.perfetto::TracedValue", align 8
+  %18 = alloca %"class.perfetto::TracedValue", align 8
+  %19 = alloca %"class.perfetto::TracedValue", align 8
+  %20 = alloca %"class.perfetto::TracedDictionary", align 8
+  %21 = bitcast %"class.perfetto::TracedDictionary"* %20 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %21) #9
+  %22 = bitcast %"class.perfetto::TracedDictionary"* %20 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %22, i8 -86, i64 16, i1 false)
+  call void @_ZNO8perfetto11TracedValue15WriteDictionaryEv(%"class.perfetto::TracedDictionary"* nonnull sret %20, %"class.perfetto::TracedValue"* %1) #9
+  %23 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 0, i32 1
+  %24 = bitcast %"class.perfetto::TracedValue"* %17 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %24)
+  call void @_ZN8perfetto16TracedDictionary7AddItemENS_12StaticStringE(%"class.perfetto::TracedValue"* nonnull sret %17, %"class.perfetto::TracedDictionary"* nonnull %20, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.1, i64 0, i64 0)) #9
+  %25 = bitcast %"class.perfetto::TracedValue"* %16 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %25) #9
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %25, i8* nonnull align 8 %24, i64 16, i1 false) #9
+  %26 = load i8*, i8** %23, align 8
+  call void @_ZNO8perfetto11TracedValue11WriteStringEPKc(%"class.perfetto::TracedValue"* nonnull %16, i8* %26) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %25) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %24)
+  %27 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 6
+  %28 = bitcast %"class.perfetto::TracedValue"* %15 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %28)
+  call void @_ZN8perfetto16TracedDictionary7AddItemENS_12StaticStringE(%"class.perfetto::TracedValue"* nonnull sret %15, %"class.perfetto::TracedDictionary"* nonnull %20, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @.str.2, i64 0, i64 0)) #9
+  %29 = bitcast %"class.perfetto::TracedValue"* %14 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %29) #9
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %29, i8* nonnull align 8 %28, i64 16, i1 false) #9
+  %30 = load double, double* %27, align 8
+  call void @_ZNO8perfetto11TracedValue11WriteDoubleEd(%"class.perfetto::TracedValue"* nonnull %14, double %30) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %29) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %28)
+  %31 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 4, i32 3, i32 0
+  %32 = load i64, i64* %31, align 8
+  %33 = add i64 %32, -9223372036854775807
+  %34 = icmp ult i64 %33, 2
+  br i1 %34, label %38, label %35
+
+35:                                               ; preds = %3
+  %36 = sitofp i64 %32 to double
+  %37 = fdiv double %36, 1.000000e+06
+  br label %41
+
+38:                                               ; preds = %3
+  %39 = icmp slt i64 %32, 0
+  %40 = select i1 %39, double 0xFFF0000000000000, double 0x7FF0000000000000
+  br label %41
+
+41:                                               ; preds = %35, %38
+  %42 = phi double [ %40, %38 ], [ %37, %35 ]
+  %43 = bitcast %"class.perfetto::TracedValue"* %11 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %43)
+  call void @_ZN8perfetto16TracedDictionary7AddItemENS_12StaticStringE(%"class.perfetto::TracedValue"* nonnull sret %11, %"class.perfetto::TracedDictionary"* nonnull %20, i8* getelementptr inbounds ([29 x i8], [29 x i8]* @.str.3, i64 0, i64 0)) #9
+  %44 = bitcast %"class.perfetto::TracedValue"* %10 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %44) #9
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %44, i8* nonnull align 8 %43, i64 16, i1 false) #9
+  call void @_ZNO8perfetto11TracedValue11WriteDoubleEd(%"class.perfetto::TracedValue"* nonnull %10, double %42) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %44) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %43)
+  %45 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 5, i32 0, i32 0
+  %46 = load i64, i64* %45, align 8
+  %47 = sub nsw i64 %2, %46
+  %48 = add i64 %47, -9223372036854775807
+  %49 = icmp ult i64 %48, 2
+  br i1 %49, label %53, label %50
+
+50:                                               ; preds = %41
+  %51 = sitofp i64 %47 to double
+  %52 = fdiv double %51, 1.000000e+06
+  br label %56
+
+53:                                               ; preds = %41
+  %54 = icmp slt i64 %47, 0
+  %55 = select i1 %54, double 0xFFF0000000000000, double 0x7FF0000000000000
+  br label %56
+
+56:                                               ; preds = %50, %53
+  %57 = phi double [ %55, %53 ], [ %52, %50 ]
+  %58 = bitcast %"class.perfetto::TracedValue"* %9 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %58)
+  call void @_ZN8perfetto16TracedDictionary7AddItemENS_12StaticStringE(%"class.perfetto::TracedValue"* nonnull sret %9, %"class.perfetto::TracedDictionary"* nonnull %20, i8* getelementptr inbounds ([28 x i8], [28 x i8]* @.str.4, i64 0, i64 0)) #9
+  %59 = bitcast %"class.perfetto::TracedValue"* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %59) #9
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %59, i8* nonnull align 8 %58, i64 16, i1 false) #9
+  call void @_ZNO8perfetto11TracedValue11WriteDoubleEd(%"class.perfetto::TracedValue"* nonnull %8, double %57) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %59) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %58)
+  %60 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 0, i32 4
+  %61 = bitcast %"class.perfetto::TracedValue"* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %61)
+  call void @_ZN8perfetto16TracedDictionary7AddItemENS_12StaticStringE(%"class.perfetto::TracedValue"* nonnull sret %7, %"class.perfetto::TracedDictionary"* nonnull %20, i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str.5, i64 0, i64 0)) #9
+  %62 = bitcast %"class.perfetto::TracedValue"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %62) #9
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %62, i8* nonnull align 8 %61, i64 16, i1 false) #9
+  %63 = load i8, i8* %60, align 1, !range !3
+  %64 = icmp ne i8 %63, 0
+  call void @_ZNO8perfetto11TracedValue12WriteBooleanEb(%"class.perfetto::TracedValue"* nonnull %6, i1 zeroext %64) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %62) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %61)
+  %65 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 3, i32 0
+  %66 = load i64, i64* %65, align 8
+  %67 = add i64 %66, -9223372036854775807
+  %68 = icmp ult i64 %67, 2
+  br i1 %68, label %72, label %69
+
+69:                                               ; preds = %56
+  %70 = sitofp i64 %66 to double
+  %71 = fdiv double %70, 1.000000e+06
+  br label %75
+
+72:                                               ; preds = %56
+  %73 = icmp slt i64 %66, 0
+  %74 = select i1 %73, double 0xFFF0000000000000, double 0x7FF0000000000000
+  br label %75
+
+75:                                               ; preds = %69, %72
+  %76 = phi double [ %74, %72 ], [ %71, %69 ]
+  %77 = bitcast %"class.perfetto::TracedValue"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %77)
+  call void @_ZN8perfetto16TracedDictionary7AddItemENS_12StaticStringE(%"class.perfetto::TracedValue"* nonnull sret %5, %"class.perfetto::TracedDictionary"* nonnull %20, i8* getelementptr inbounds ([35 x i8], [35 x i8]* @.str.6, i64 0, i64 0)) #9
+  %78 = bitcast %"class.perfetto::TracedValue"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %78) #9
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %78, i8* nonnull align 8 %77, i64 16, i1 false) #9
+  call void @_ZNO8perfetto11TracedValue11WriteDoubleEd(%"class.perfetto::TracedValue"* nonnull %4, double %76) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %78) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %77)
+  %79 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 2, i32 0, i32 0, i32 0, i32 0
+  %80 = load i8, i8* %79, align 8, !range !3
+  %81 = icmp eq i8 %80, 0
+  br i1 %81, label %97, label %82
+
+82:                                               ; preds = %75
+  %83 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 2, i32 0, i32 0, i32 0, i32 1, i32 0, i32 0
+  %84 = load i64, i64* %83, align 8
+  %85 = add i64 %84, -9223372036854775807
+  %86 = icmp ult i64 %85, 2
+  br i1 %86, label %90, label %87
+
+87:                                               ; preds = %82
+  %88 = sitofp i64 %84 to double
+  %89 = fdiv double %88, 1.000000e+06
+  br label %93
+
+90:                                               ; preds = %82
+  %91 = icmp slt i64 %84, 0
+  %92 = select i1 %91, double 0xFFF0000000000000, double 0x7FF0000000000000
+  br label %93
+
+93:                                               ; preds = %87, %90
+  %94 = phi double [ %92, %90 ], [ %89, %87 ]
+  %95 = bitcast %"class.perfetto::TracedValue"* %13 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %95)
+  call void @_ZN8perfetto16TracedDictionary7AddItemENS_12StaticStringE(%"class.perfetto::TracedValue"* nonnull sret %13, %"class.perfetto::TracedDictionary"* nonnull %20, i8* getelementptr inbounds ([32 x i8], [32 x i8]* @.str.7, i64 0, i64 0)) #9
+  %96 = bitcast %"class.perfetto::TracedValue"* %12 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %96) #9
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %96, i8* nonnull align 8 %95, i64 16, i1 false) #9
+  call void @_ZNO8perfetto11TracedValue11WriteDoubleEd(%"class.perfetto::TracedValue"* nonnull %12, double %94) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %96) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %95)
+  br label %97
+
+97:                                               ; preds = %75, %93
+  %98 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 1, i32 0, i32 0, i32 0, i32 0
+  %99 = load i8, i8* %98, align 8, !range !3
+  %100 = icmp eq i8 %99, 0
+  br i1 %100, label %116, label %101
+
+101:                                              ; preds = %97
+  %102 = getelementptr inbounds %"class.blink::scheduler::CPUTimeBudgetPool", %"class.blink::scheduler::CPUTimeBudgetPool"* %0, i64 0, i32 1, i32 0, i32 0, i32 0, i32 1, i32 0, i32 0
+  %103 = load i64, i64* %102, align 8
+  %104 = add i64 %103, -9223372036854775807
+  %105 = icmp ult i64 %104, 2
+  br i1 %105, label %109, label %106
+
+106:                                              ; preds = %101
+  %107 = sitofp i64 %103 to double
+  %108 = fdiv double %107, 1.000000e+06
+  br label %112
+
+109:                                              ; preds = %101
+  %110 = icmp slt i64 %103, 0
+  %111 = select i1 %110, double 0xFFF0000000000000, double 0x7FF0000000000000
+  br label %112
+
+112:                                              ; preds = %106, %109
+  %113 = phi double [ %111, %109 ], [ %108, %106 ]
+  %114 = bitcast %"class.perfetto::TracedValue"* %19 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %114)
+  call void @_ZN8perfetto16TracedDictionary7AddItemENS_12StaticStringE(%"class.perfetto::TracedValue"* nonnull sret %19, %"class.perfetto::TracedDictionary"* nonnull %20, i8* getelementptr inbounds ([28 x i8], [28 x i8]* @.str.8, i64 0, i64 0)) #9
+  %115 = bitcast %"class.perfetto::TracedValue"* %18 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %115) #9
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %115, i8* nonnull align 8 %114, i64 16, i1 false) #9
+  call void @_ZNO8perfetto11TracedValue11WriteDoubleEd(%"class.perfetto::TracedValue"* nonnull %18, double %113) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %115) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %114)
+  br label %116
+
+116:                                              ; preds = %97, %112
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %21) #9
+  ret void
+}
+
+declare void @_ZNO8perfetto11TracedValue15WriteDictionaryEv(%"class.perfetto::TracedDictionary"* sret, %"class.perfetto::TracedValue"*) local_unnamed_addr #1
+
+declare void @_ZN5blink9scheduler27TraceableVariableController27DeregisterTraceableVariableEPNS0_17TraceableVariableE(%"class.blink::scheduler::TraceableVariableController"*, %"class.blink::scheduler::TraceableVariable"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN5blink9scheduler17TraceableVariableD0Ev(%"class.blink::scheduler::TraceableVariable"*) unnamed_addr #0 comdat align 2 {
+  tail call void @llvm.trap() #10
+  unreachable
+}
+
+declare void @__cxa_pure_virtual() unnamed_addr
+
+; Function Attrs: cold noreturn nounwind
+declare void @llvm.trap() #5
+
+; Function Attrs: nounwind
+declare void @free(i8* nocapture) local_unnamed_addr #3
+
+declare dereferenceable(8) %"class.base::internal::CallbackBaseCopyable"* @_ZN4base8internal20CallbackBaseCopyableaSERKS1_(%"class.base::internal::CallbackBaseCopyable"*, %"class.base::internal::CallbackBaseCopyable"* dereferenceable(8)) local_unnamed_addr #1
+
+declare void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* sret, i8*, i32, i8*) local_unnamed_addr #1
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"*) unnamed_addr #3
+
+; Function Attrs: nounwind readnone speculatable
+declare { i64, i1 } @llvm.sadd.with.overflow.i64(i64, i64) #6
+
+declare void @_ZN5blink9scheduler8internal23ValidateTracingCategoryEPKc(i8*) local_unnamed_addr #1
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN5blink9scheduler16TraceableCounterIN4base9TimeDeltaEXadL_ZNS0_19TracingCategoryName5kInfoEEEED0Ev(%"class.blink::scheduler::TraceableCounter"*) unnamed_addr #7 comdat align 2 {
+  %2 = getelementptr inbounds %"class.blink::scheduler::TraceableCounter", %"class.blink::scheduler::TraceableCounter"* %0, i64 0, i32 0
+  %3 = getelementptr inbounds %"class.blink::scheduler::TraceableCounter", %"class.blink::scheduler::TraceableCounter"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_ZTVN5blink9scheduler17TraceableVariableE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %3, align 8
+  %4 = getelementptr inbounds %"class.blink::scheduler::TraceableCounter", %"class.blink::scheduler::TraceableCounter"* %0, i64 0, i32 0, i32 1
+  %5 = load %"class.blink::scheduler::TraceableVariableController"*, %"class.blink::scheduler::TraceableVariableController"** %4, align 8
+  tail call void @_ZN5blink9scheduler27TraceableVariableController27DeregisterTraceableVariableEPNS0_17TraceableVariableE(%"class.blink::scheduler::TraceableVariableController"* %5, %"class.blink::scheduler::TraceableVariable"* %2) #9
+  %6 = bitcast %"class.blink::scheduler::TraceableCounter"* %0 to i8*
+  tail call void @_ZdlPv(i8* %6) #11
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN5blink9scheduler16TraceableCounterIN4base9TimeDeltaEXadL_ZNS0_19TracingCategoryName5kInfoEEEE17OnTraceLogEnabledEv(%"class.blink::scheduler::TraceableCounter"*) unnamed_addr #0 comdat align 2 {
+  %2 = alloca i32, align 4
+  %3 = load i8, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 197, i32 0), align 16
+  %4 = and i8 %3, 25
+  %5 = icmp eq i8 %4, 0
+  br i1 %5, label %17, label %6, !prof !2
+
+6:                                                ; preds = %1
+  %7 = ptrtoint %"class.blink::scheduler::TraceableCounter"* %0 to i64
+  %8 = getelementptr inbounds %"class.blink::scheduler::TraceableCounter", %"class.blink::scheduler::TraceableCounter"* %0, i64 0, i32 1
+  %9 = load i8*, i8** %8, align 8
+  %10 = bitcast i32* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %10) #9
+  %11 = getelementptr inbounds %"class.blink::scheduler::TraceableCounter", %"class.blink::scheduler::TraceableCounter"* %0, i64 0, i32 2
+  %12 = load double (%"class.base::TimeDelta"*)*, double (%"class.base::TimeDelta"*)** %11, align 8
+  %13 = getelementptr inbounds %"class.blink::scheduler::TraceableCounter", %"class.blink::scheduler::TraceableCounter"* %0, i64 0, i32 3
+  %14 = tail call double %12(%"class.base::TimeDelta"* dereferenceable(8) %13) #9
+  %15 = fptosi double %14 to i32
+  store i32 %15, i32* %2, align 4
+  %16 = call i64 @_ZN20trace_event_internal13AddTraceEventIiEEN4base11trace_event16TraceEventHandleEcPKhPKcS7_yjyS7_OT_(i8 signext 67, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 197, i32 0), i8* %9, i8* null, i64 %7, i32 2048, i64 0, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @.str.11, i64 0, i64 0), i32* nonnull dereferenceable(4) %2) #9
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %10) #9
+  br label %17
+
+17:                                               ; preds = %1, %6
+  ret void
+}
+
+declare void @_ZN5blink9scheduler27TraceableVariableController25RegisterTraceableVariableEPNS0_17TraceableVariableE(%"class.blink::scheduler::TraceableVariableController"*, %"class.blink::scheduler::TraceableVariable"*) local_unnamed_addr #1
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden i64 @_ZN20trace_event_internal13AddTraceEventIiEEN4base11trace_event16TraceEventHandleEcPKhPKcS7_yjyS7_OT_(i8 signext, i8*, i8*, i8*, i64, i32, i64, i8*, i32* dereferenceable(4)) local_unnamed_addr #7 comdat {
+  %10 = alloca %"class.base::trace_event::TraceArguments", align 8
+  %11 = alloca %"class.base::TimeTicks", align 8
+  %12 = tail call i32 @_ZN4base14PlatformThread9CurrentIdEv() #9
+  %13 = bitcast %"class.base::TimeTicks"* %11 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %13) #9
+  %14 = getelementptr inbounds %"class.base::TimeTicks", %"class.base::TimeTicks"* %11, i64 0, i32 0, i32 0
+  %15 = tail call i64 @_ZN4base6subtle28TimeTicksNowIgnoringOverrideEv() #9
+  store i64 %15, i64* %14, align 8
+  %16 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %10, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 40, i8* nonnull %16) #9
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %16, i8 -86, i64 40, i1 false) #9
+  store i8 1, i8* %16, align 8
+  %17 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %10, i64 0, i32 1, i64 0
+  store i8 3, i8* %17, align 1
+  %18 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %10, i64 0, i32 2, i64 0
+  store i8* %7, i8** %18, align 8
+  %19 = load i32, i32* %8, align 4
+  %20 = sext i32 %19 to i64
+  %21 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %10, i64 0, i32 3, i64 0, i32 0
+  store i64 %20, i64* %21, align 8
+  %22 = call i64 @_ZN20trace_event_internal37AddTraceEventWithThreadIdAndTimestampEcPKhPKcS3_yyiRKN4base9TimeTicksEPNS4_11trace_event14TraceArgumentsEj(i8 signext %0, i8* %1, i8* %2, i8* %3, i64 %4, i64 %6, i32 %12, %"class.base::TimeTicks"* nonnull dereferenceable(8) %11, %"class.base::trace_event::TraceArguments"* nonnull %10, i32 %5) #9
+  %23 = load i8, i8* %16, align 8
+  %24 = icmp eq i8 %23, 0
+  br i1 %24, label %59, label %25
+
+25:                                               ; preds = %9, %54
+  %26 = phi i64 [ %55, %54 ], [ 0, %9 ]
+  %27 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %10, i64 0, i32 1, i64 %26
+  %28 = load i8, i8* %27, align 1
+  %29 = icmp eq i8 %28, 8
+  br i1 %29, label %30, label %41
+
+30:                                               ; preds = %25
+  %31 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %10, i64 0, i32 3, i64 %26
+  %32 = bitcast %"union.base::trace_event::TraceValue"* %31 to %"class.base::trace_event::ConvertableToTraceFormat"**
+  %33 = load %"class.base::trace_event::ConvertableToTraceFormat"*, %"class.base::trace_event::ConvertableToTraceFormat"** %32, align 8
+  %34 = icmp eq %"class.base::trace_event::ConvertableToTraceFormat"* %33, null
+  br i1 %34, label %54, label %35
+
+35:                                               ; preds = %30
+  %36 = bitcast %"class.base::trace_event::ConvertableToTraceFormat"* %33 to void (%"class.base::trace_event::ConvertableToTraceFormat"*)***
+  %37 = load void (%"class.base::trace_event::ConvertableToTraceFormat"*)**, void (%"class.base::trace_event::ConvertableToTraceFormat"*)*** %36, align 8
+  %38 = getelementptr inbounds void (%"class.base::trace_event::ConvertableToTraceFormat"*)*, void (%"class.base::trace_event::ConvertableToTraceFormat"*)** %37, i64 1
+  %39 = load void (%"class.base::trace_event::ConvertableToTraceFormat"*)*, void (%"class.base::trace_event::ConvertableToTraceFormat"*)** %38, align 8
+  call void %39(%"class.base::trace_event::ConvertableToTraceFormat"* nonnull %33) #9
+  %40 = load i8, i8* %27, align 1
+  br label %41
+
+41:                                               ; preds = %35, %25
+  %42 = phi i8 [ %28, %25 ], [ %40, %35 ]
+  %43 = icmp eq i8 %42, 9
+  br i1 %43, label %44, label %54
+
+44:                                               ; preds = %41
+  %45 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %10, i64 0, i32 3, i64 %26
+  %46 = bitcast %"union.base::trace_event::TraceValue"* %45 to %"class.protozero::HeapBuffered"**
+  %47 = load %"class.protozero::HeapBuffered"*, %"class.protozero::HeapBuffered"** %46, align 8
+  %48 = icmp eq %"class.protozero::HeapBuffered"* %47, null
+  br i1 %48, label %54, label %49
+
+49:                                               ; preds = %44
+  %50 = getelementptr inbounds %"class.protozero::HeapBuffered", %"class.protozero::HeapBuffered"* %47, i64 0, i32 2, i32 1
+  call void @_ZN9protozero12MessageArenaD1Ev(%"class.protozero::MessageArena"* %50) #9
+  %51 = getelementptr inbounds %"class.protozero::HeapBuffered", %"class.protozero::HeapBuffered"* %47, i64 0, i32 1
+  call void @_ZN9protozero21ScatteredStreamWriterD1Ev(%"class.protozero::ScatteredStreamWriter"* %51) #9
+  %52 = getelementptr inbounds %"class.protozero::HeapBuffered", %"class.protozero::HeapBuffered"* %47, i64 0, i32 0
+  call void @_ZN9protozero19ScatteredHeapBufferD1Ev(%"class.protozero::ScatteredHeapBuffer"* %52) #9
+  %53 = bitcast %"class.protozero::HeapBuffered"* %47 to i8*
+  call void @_ZdlPv(i8* %53) #11
+  br label %54
+
+54:                                               ; preds = %49, %44, %41, %30
+  %55 = add nuw nsw i64 %26, 1
+  %56 = load i8, i8* %16, align 8
+  %57 = zext i8 %56 to i64
+  %58 = icmp ult i64 %55, %57
+  br i1 %58, label %25, label %59
+
+59:                                               ; preds = %54, %9
+  call void @llvm.lifetime.end.p0i8(i64 40, i8* nonnull %16) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %13) #9
+  ret i64 %22
+}
+
+declare i32 @_ZN4base14PlatformThread9CurrentIdEv() local_unnamed_addr #1
+
+declare i64 @_ZN4base6subtle28TimeTicksNowIgnoringOverrideEv() local_unnamed_addr #1
+
+declare i64 @_ZN20trace_event_internal37AddTraceEventWithThreadIdAndTimestampEcPKhPKcS3_yyiRKN4base9TimeTicksEPNS4_11trace_event14TraceArgumentsEj(i8 signext, i8*, i8*, i8*, i64, i64, i32, %"class.base::TimeTicks"* dereferenceable(8), %"class.base::trace_event::TraceArguments"*, i32) local_unnamed_addr #1
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #8
+
+; Function Attrs: nounwind
+declare void @_ZN9protozero21ScatteredStreamWriterD1Ev(%"class.protozero::ScatteredStreamWriter"*) unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN9protozero19ScatteredHeapBufferD1Ev(%"class.protozero::ScatteredHeapBuffer"*) unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN9protozero12MessageArenaD1Ev(%"class.protozero::MessageArena"*) unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden i64 @_ZNK4base9TimeDeltamiES0_(%"class.base::TimeDelta"*, i64) local_unnamed_addr #0 comdat align 2 {
+  %3 = alloca %"class.logging::CheckOpResult", align 8
+  %4 = alloca %"class.logging::CheckOpResult", align 8
+  %5 = alloca %"class.logging::CheckError", align 8
+  %6 = add i64 %1, -9223372036854775807
+  %7 = icmp ult i64 %6, 2
+  br i1 %7, label %17, label %8
+
+8:                                                ; preds = %2
+  %9 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %0, i64 0, i32 0
+  %10 = load i64, i64* %9, align 8
+  %11 = icmp sgt i64 %1, -1
+  %12 = select i1 %11, i64 -9223372036854775808, i64 9223372036854775807
+  %13 = tail call { i64, i1 } @llvm.ssub.with.overflow.i64(i64 %10, i64 %1) #9
+  %14 = extractvalue { i64, i1 } %13, 1
+  %15 = extractvalue { i64, i1 } %13, 0
+  %16 = select i1 %14, i64 %12, i64 %15, !prof !4
+  ret i64 %16
+
+17:                                               ; preds = %2
+  %18 = bitcast %"class.logging::CheckOpResult"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %18) #9
+  %19 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %4, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %19, align 8
+  %20 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %0, i64 0, i32 0
+  %21 = load i64, i64* %20, align 8
+  %22 = bitcast %"class.logging::CheckOpResult"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %22)
+  %23 = icmp eq i64 %21, %1
+  br i1 %23, label %25, label %24
+
+24:                                               ; preds = %17
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %22)
+  store i8* null, i8** %19, align 8
+  br label %34
+
+25:                                               ; preds = %17
+  %26 = tail call i8* @_ZN7logging15CheckOpValueStrEl(i64 %1) #9
+  %27 = tail call i8* @_ZN7logging15CheckOpValueStrEl(i64 %1) #9
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %3, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.12, i64 0, i64 0), i8* %26, i8* %27) #9
+  %28 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %3, i64 0, i32 0
+  %29 = load i8*, i8** %28, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %22)
+  store i8* %29, i8** %19, align 8
+  %30 = icmp eq i8* %29, null
+  br i1 %30, label %34, label %31
+
+31:                                               ; preds = %25
+  %32 = bitcast %"class.logging::CheckError"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %32) #9
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %5, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.9, i64 0, i64 0), i32 387, %"class.logging::CheckOpResult"* nonnull %4) #9
+  %33 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %5) #9
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %5) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %32) #9
+  br label %34
+
+34:                                               ; preds = %24, %25, %31
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %18) #9
+  %35 = icmp slt i64 %1, 0
+  %36 = select i1 %35, i64 9223372036854775807, i64 -9223372036854775808
+  ret i64 %36
+}
+
+declare void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* sret, i8*, i32, %"class.logging::CheckOpResult"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind readnone speculatable
+declare { i64, i1 } @llvm.ssub.with.overflow.i64(i64, i64) #6
+
+declare i8* @_ZN7logging15CheckOpValueStrEl(i64) local_unnamed_addr #1
+
+declare void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"*, i8*, i8*, i8*) unnamed_addr #1
+
+declare void @_ZN8perfetto16TracedDictionary7AddItemENS_12StaticStringE(%"class.perfetto::TracedValue"* sret, %"class.perfetto::TracedDictionary"*, i8*) local_unnamed_addr #1
+
+declare void @_ZNO8perfetto11TracedValue11WriteStringEPKc(%"class.perfetto::TracedValue"*, i8*) local_unnamed_addr #1
+
+declare void @_ZNO8perfetto11TracedValue11WriteDoubleEd(%"class.perfetto::TracedValue"*, double) local_unnamed_addr #1
+
+declare void @_ZNO8perfetto11TracedValue12WriteBooleanEb(%"class.perfetto::TracedValue"*, i1 zeroext) local_unnamed_addr #1
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { norecurse nounwind readnone ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { cold noreturn nounwind }
+attributes #6 = { nounwind readnone speculatable }
+attributes #7 = { inlinehint nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #9 = { nounwind }
+attributes #10 = { noreturn nounwind }
+attributes #11 = { builtin nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{!"branch_weights", i32 2000, i32 1}
+!3 = !{i8 0, i8 2}
+!4 = !{!"branch_weights", i32 1, i32 2000}

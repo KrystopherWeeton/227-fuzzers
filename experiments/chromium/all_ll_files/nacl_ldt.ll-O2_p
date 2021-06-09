@@ -1,0 +1,406 @@
+; ModuleID = '../../native_client/src/trusted/service_runtime/linux/x86/nacl_ldt.c'
+source_filename = "../../native_client/src/trusted/service_runtime/linux/x86/nacl_ldt.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.NaClMutex = type { %union.pthread_mutex_t, i32 }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%struct.user_desc = type { i32, i32, i32, i8 }
+%struct.LdtEntry = type { i16, i16, i32 }
+
+@nacl_ldt_mutex = internal global %struct.NaClMutex zeroinitializer, align 8
+@NaClLdtPrintSelector.type_name = internal unnamed_addr constant [16 x i8*] [i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str, i32 0, i32 0), i8* getelementptr inbounds ([24 x i8], [24 x i8]* @.str.1, i32 0, i32 0), i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str.2, i32 0, i32 0), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @.str.3, i32 0, i32 0), i8* getelementptr inbounds ([17 x i8], [17 x i8]* @.str.4, i32 0, i32 0), i8* getelementptr inbounds ([26 x i8], [26 x i8]* @.str.5, i32 0, i32 0), i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.6, i32 0, i32 0), i8* getelementptr inbounds ([32 x i8], [32 x i8]* @.str.7, i32 0, i32 0), i8* getelementptr inbounds ([13 x i8], [13 x i8]* @.str.8, i32 0, i32 0), i8* getelementptr inbounds ([22 x i8], [22 x i8]* @.str.9, i32 0, i32 0), i8* getelementptr inbounds ([18 x i8], [18 x i8]* @.str.10, i32 0, i32 0), i8* getelementptr inbounds ([27 x i8], [27 x i8]* @.str.11, i32 0, i32 0), i8* getelementptr inbounds ([24 x i8], [24 x i8]* @.str.12, i32 0, i32 0), i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.13, i32 0, i32 0), i8* getelementptr inbounds ([29 x i8], [29 x i8]* @.str.14, i32 0, i32 0), i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.15, i32 0, i32 0)], align 16
+@.str = private unnamed_addr constant [15 x i8] c"data read only\00", align 1
+@.str.1 = private unnamed_addr constant [24 x i8] c"data read_only accessed\00", align 1
+@.str.2 = private unnamed_addr constant [16 x i8] c"data read write\00", align 1
+@.str.3 = private unnamed_addr constant [25 x i8] c"data read write accessed\00", align 1
+@.str.4 = private unnamed_addr constant [17 x i8] c"data read expand\00", align 1
+@.str.5 = private unnamed_addr constant [26 x i8] c"data read expand accessed\00", align 1
+@.str.6 = private unnamed_addr constant [23 x i8] c"data read write expand\00", align 1
+@.str.7 = private unnamed_addr constant [32 x i8] c"data read write expand accessed\00", align 1
+@.str.8 = private unnamed_addr constant [13 x i8] c"code execute\00", align 1
+@.str.9 = private unnamed_addr constant [22 x i8] c"code execute accessed\00", align 1
+@.str.10 = private unnamed_addr constant [18 x i8] c"code execute read\00", align 1
+@.str.11 = private unnamed_addr constant [27 x i8] c"code execute read accessed\00", align 1
+@.str.12 = private unnamed_addr constant [24 x i8] c"code execute conforming\00", align 1
+@.str.13 = private unnamed_addr constant [33 x i8] c"code execute conforming accessed\00", align 1
+@.str.14 = private unnamed_addr constant [29 x i8] c"code execute read conforming\00", align 1
+@.str.15 = private unnamed_addr constant [38 x i8] c"code execute read conforming accessed\00", align 1
+@.str.16 = private unnamed_addr constant [30 x i8] c"DESCRIPTOR for selector %04x\0A\00", align 1
+@.str.17 = private unnamed_addr constant [20 x i8] c"  base        %08x\0A\00", align 1
+@.str.18 = private unnamed_addr constant [22 x i8] c"  limit       %08x%s\0A\00", align 1
+@.str.19 = private unnamed_addr constant [20 x i8] c" (page granularity)\00", align 1
+@.str.20 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@.str.21 = private unnamed_addr constant [22 x i8] c"  type        %s, %s\0A\00", align 1
+@.str.22 = private unnamed_addr constant [5 x i8] c"user\00", align 1
+@.str.23 = private unnamed_addr constant [7 x i8] c"system\00", align 1
+@.str.24 = private unnamed_addr constant [18 x i8] c"  privilege   %d\0A\00", align 1
+@.str.25 = private unnamed_addr constant [14 x i8] c"  present %s\0A\00", align 1
+@.str.26 = private unnamed_addr constant [4 x i8] c"yes\00", align 1
+@.str.27 = private unnamed_addr constant [3 x i8] c"no\00", align 1
+@.str.28 = private unnamed_addr constant [16 x i8] c"  available %s\0A\00", align 1
+@.str.29 = private unnamed_addr constant [18 x i8] c"  64-bit code %s\0A\00", align 1
+@.str.30 = private unnamed_addr constant [14 x i8] c"  op size %s\0A\00", align 1
+@.str.31 = private unnamed_addr constant [3 x i8] c"32\00", align 1
+@.str.32 = private unnamed_addr constant [3 x i8] c"16\00", align 1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClLdtInitPlatformSpecific() local_unnamed_addr #0 {
+  %1 = alloca %struct.user_desc, align 4
+  %2 = tail call i32 @NaClMutexCtor(%struct.NaClMutex* nonnull @nacl_ldt_mutex) #5
+  %3 = icmp eq i32 %2, 0
+  br i1 %3, label %19, label %4
+
+4:                                                ; preds = %0
+  %5 = bitcast %struct.user_desc* %1 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %5) #5
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 4 %5, i8 -86, i64 16, i1 false) #5
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @nacl_ldt_mutex) #5
+  %6 = getelementptr inbounds %struct.user_desc, %struct.user_desc* %1, i64 0, i32 0
+  store i32 8191, i32* %6, align 4
+  %7 = getelementptr inbounds %struct.user_desc, %struct.user_desc* %1, i64 0, i32 3
+  %8 = getelementptr inbounds %struct.user_desc, %struct.user_desc* %1, i64 0, i32 1
+  store i32 0, i32* %8, align 4
+  %9 = getelementptr inbounds %struct.user_desc, %struct.user_desc* %1, i64 0, i32 2
+  store i32 0, i32* %9, align 4
+  store i8 -63, i8* %7, align 4
+  %10 = call i32 @modify_ldt(i32 1, i8* nonnull %5, i64 16) #5
+  %11 = icmp eq i32 %10, -1
+  call void @NaClXMutexUnlock(%struct.NaClMutex* nonnull @nacl_ldt_mutex) #5
+  br i1 %11, label %17, label %12
+
+12:                                               ; preds = %4
+  %13 = load i32, i32* %6, align 4
+  %14 = shl i32 %13, 3
+  %15 = and i32 %14, 65528
+  %16 = or i32 %15, 7
+  br label %17
+
+17:                                               ; preds = %4, %12
+  %18 = phi i32 [ %16, %12 ], [ 0, %4 ]
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %5) #5
+  br label %19
+
+19:                                               ; preds = %0, %17
+  %20 = phi i32 [ %18, %17 ], [ 0, %0 ]
+  ret i32 %20
+}
+
+declare i32 @NaClMutexCtor(%struct.NaClMutex*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i16 @NaClLdtAllocateSelector(i32, i32, i32, i32, i8*, i32) local_unnamed_addr #0 {
+  %7 = alloca %struct.user_desc, align 4
+  %8 = bitcast %struct.user_desc* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %8) #5
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 4 %8, i8 -86, i64 16, i1 false)
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @nacl_ldt_mutex) #5
+  %9 = icmp eq i32 %0, -1
+  br i1 %9, label %10, label %32
+
+10:                                               ; preds = %6
+  %11 = tail call noalias i8* @malloc(i64 65536) #5
+  %12 = bitcast i8* %11 to %struct.LdtEntry*
+  %13 = tail call i32 @modify_ldt(i32 0, i8* %11, i64 65536) #5
+  %14 = icmp eq i32 %13, -1
+  br i1 %14, label %27, label %15
+
+15:                                               ; preds = %10, %83
+  %16 = phi i64 [ %84, %83 ], [ 0, %10 ]
+  %17 = getelementptr inbounds %struct.LdtEntry, %struct.LdtEntry* %12, i64 %16, i32 2
+  %18 = load i32, i32* %17, align 4
+  %19 = trunc i32 %18 to i16
+  %20 = icmp slt i16 %19, 0
+  br i1 %20, label %21, label %28
+
+21:                                               ; preds = %15
+  %22 = or i64 %16, 1
+  %23 = getelementptr inbounds %struct.LdtEntry, %struct.LdtEntry* %12, i64 %22, i32 2
+  %24 = load i32, i32* %23, align 4
+  %25 = trunc i32 %24 to i16
+  %26 = icmp slt i16 %25, 0
+  br i1 %26, label %71, label %28
+
+27:                                               ; preds = %83, %10
+  tail call void @free(i8* %11) #5
+  br label %68
+
+28:                                               ; preds = %77, %71, %21, %15
+  %29 = phi i64 [ %16, %15 ], [ %22, %21 ], [ %72, %71 ], [ %78, %77 ]
+  %30 = trunc i64 %29 to i32
+  tail call void @free(i8* %11) #5
+  %31 = icmp eq i32 %30, -1
+  br i1 %31, label %68, label %32
+
+32:                                               ; preds = %28, %6
+  %33 = phi i32 [ %30, %28 ], [ %0, %6 ]
+  %34 = getelementptr inbounds %struct.user_desc, %struct.user_desc* %7, i64 0, i32 0
+  store i32 %33, i32* %34, align 4
+  switch i32 %2, label %68 [
+    i32 0, label %36
+    i32 1, label %35
+  ]
+
+35:                                               ; preds = %32
+  br label %36
+
+36:                                               ; preds = %32, %35
+  %37 = phi i8 [ -84, %35 ], [ -88, %32 ]
+  %38 = phi i8 [ -124, %35 ], [ -128, %32 ]
+  %39 = getelementptr inbounds %struct.user_desc, %struct.user_desc* %7, i64 0, i32 3
+  store i8 %37, i8* %39, align 4
+  %40 = getelementptr inbounds %struct.user_desc, %struct.user_desc* %7, i64 0, i32 3
+  %41 = trunc i32 %3 to i8
+  %42 = shl i8 %41, 3
+  %43 = and i8 %42, 8
+  %44 = or i8 %43, %38
+  %45 = or i8 %44, 65
+  store i8 %45, i8* %40, align 4
+  %46 = icmp eq i32 %1, 0
+  %47 = ptrtoint i8* %4 to i64
+  %48 = and i64 %47, 4095
+  %49 = icmp eq i64 %48, 0
+  %50 = or i1 %46, %49
+  br i1 %50, label %51, label %68
+
+51:                                               ; preds = %36
+  %52 = trunc i64 %47 to i32
+  %53 = getelementptr inbounds %struct.user_desc, %struct.user_desc* %7, i64 0, i32 1
+  store i32 %52, i32* %53, align 4
+  %54 = icmp ugt i32 %5, 1048575
+  br i1 %54, label %68, label %55
+
+55:                                               ; preds = %51
+  %56 = getelementptr inbounds %struct.user_desc, %struct.user_desc* %7, i64 0, i32 2
+  store i32 %5, i32* %56, align 4
+  %57 = trunc i32 %1 to i8
+  %58 = shl i8 %57, 4
+  %59 = and i8 %58, 16
+  %60 = or i8 %45, %59
+  store i8 %60, i8* %40, align 4
+  %61 = call i32 @modify_ldt(i32 1, i8* nonnull %8, i64 16) #5
+  %62 = icmp eq i32 %61, -1
+  br i1 %62, label %68, label %63
+
+63:                                               ; preds = %55
+  call void @NaClXMutexUnlock(%struct.NaClMutex* nonnull @nacl_ldt_mutex) #5
+  %64 = load i32, i32* %34, align 4
+  %65 = trunc i32 %64 to i16
+  %66 = shl i16 %65, 3
+  %67 = or i16 %66, 7
+  br label %69
+
+68:                                               ; preds = %36, %27, %55, %51, %32, %28
+  call void @NaClXMutexUnlock(%struct.NaClMutex* nonnull @nacl_ldt_mutex) #5
+  br label %69
+
+69:                                               ; preds = %68, %63
+  %70 = phi i16 [ 0, %68 ], [ %67, %63 ]
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %8) #5
+  ret i16 %70
+
+71:                                               ; preds = %21
+  %72 = or i64 %16, 2
+  %73 = getelementptr inbounds %struct.LdtEntry, %struct.LdtEntry* %12, i64 %72, i32 2
+  %74 = load i32, i32* %73, align 4
+  %75 = trunc i32 %74 to i16
+  %76 = icmp slt i16 %75, 0
+  br i1 %76, label %77, label %28
+
+77:                                               ; preds = %71
+  %78 = or i64 %16, 3
+  %79 = getelementptr inbounds %struct.LdtEntry, %struct.LdtEntry* %12, i64 %78, i32 2
+  %80 = load i32, i32* %79, align 4
+  %81 = trunc i32 %80 to i16
+  %82 = icmp slt i16 %81, 0
+  br i1 %82, label %83, label %28
+
+83:                                               ; preds = %77
+  %84 = add nuw nsw i64 %16, 4
+  %85 = icmp eq i64 %84, 8192
+  br i1 %85, label %27, label %15
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLdtFiniPlatformSpecific() local_unnamed_addr #0 {
+  tail call void @NaClMutexDtor(%struct.NaClMutex* nonnull @nacl_ldt_mutex) #5
+  ret void
+}
+
+declare void @NaClMutexDtor(%struct.NaClMutex*) local_unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+declare void @NaClXMutexLock(%struct.NaClMutex*) local_unnamed_addr #1
+
+declare i32 @modify_ldt(i32, i8*, i64) local_unnamed_addr #1
+
+declare void @NaClXMutexUnlock(%struct.NaClMutex*) local_unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i16 @NaClLdtAllocatePageSelector(i32, i32, i8*, i32) local_unnamed_addr #0 {
+  %5 = add i32 %3, -1
+  %6 = tail call zeroext i16 @NaClLdtAllocateSelector(i32 -1, i32 1, i32 %0, i32 %1, i8* %2, i32 %5)
+  ret i16 %6
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i16 @NaClLdtAllocateByteSelector(i32, i32, i8*, i32) local_unnamed_addr #0 {
+  %5 = add i32 %3, -1
+  %6 = tail call zeroext i16 @NaClLdtAllocateSelector(i32 -1, i32 0, i32 %0, i32 %1, i8* %2, i32 %5)
+  ret i16 %6
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i16 @NaClLdtChangePageSelector(i32, i32, i32, i8*, i32) local_unnamed_addr #0 {
+  %6 = icmp ugt i32 %0, 8191
+  br i1 %6, label %10, label %7
+
+7:                                                ; preds = %5
+  %8 = add i32 %4, -1
+  %9 = tail call zeroext i16 @NaClLdtAllocateSelector(i32 %0, i32 1, i32 %1, i32 %2, i8* %3, i32 %8)
+  br label %10
+
+10:                                               ; preds = %5, %7
+  %11 = phi i16 [ %9, %7 ], [ 0, %5 ]
+  ret i16 %11
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i16 @NaClLdtChangeByteSelector(i32, i32, i32, i8*, i32) local_unnamed_addr #0 {
+  %6 = icmp ugt i32 %0, 8191
+  br i1 %6, label %10, label %7
+
+7:                                                ; preds = %5
+  %8 = add i32 %4, -1
+  %9 = tail call zeroext i16 @NaClLdtAllocateSelector(i32 %0, i32 0, i32 %1, i32 %2, i8* %3, i32 %8)
+  br label %10
+
+10:                                               ; preds = %5, %7
+  %11 = phi i16 [ %9, %7 ], [ 0, %5 ]
+  ret i16 %11
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLdtPrintSelector(i16 zeroext) local_unnamed_addr #0 {
+  %2 = alloca [8192 x %struct.LdtEntry], align 16
+  %3 = bitcast [8192 x %struct.LdtEntry]* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 65536, i8* nonnull %3) #5
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %3, i8 -86, i64 65536, i1 false)
+  %4 = call i32 @modify_ldt(i32 0, i8* nonnull %3, i64 65536) #5
+  %5 = icmp eq i32 %4, -1
+  br i1 %5, label %61, label %6
+
+6:                                                ; preds = %1
+  %7 = zext i16 %0 to i32
+  %8 = lshr i32 %7, 3
+  %9 = zext i32 %8 to i64
+  %10 = getelementptr inbounds [8192 x %struct.LdtEntry], [8192 x %struct.LdtEntry]* %2, i64 0, i64 %9, i32 0
+  %11 = load i16, i16* %10, align 8
+  %12 = getelementptr inbounds [8192 x %struct.LdtEntry], [8192 x %struct.LdtEntry]* %2, i64 0, i64 %9, i32 1
+  %13 = load i16, i16* %12, align 2
+  %14 = getelementptr inbounds [8192 x %struct.LdtEntry], [8192 x %struct.LdtEntry]* %2, i64 0, i64 %9, i32 2
+  %15 = load i32, i32* %14, align 4
+  %16 = call i32 (i32, i8*, ...) @__printf_chk(i32 1, i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.16, i64 0, i64 0), i32 %7) #5
+  %17 = and i32 %15, -16777216
+  %18 = shl i32 %15, 16
+  %19 = and i32 %18, 16711680
+  %20 = zext i16 %13 to i32
+  %21 = or i32 %17, %20
+  %22 = or i32 %21, %19
+  %23 = call i32 (i32, i8*, ...) @__printf_chk(i32 1, i8* getelementptr inbounds ([20 x i8], [20 x i8]* @.str.17, i64 0, i64 0), i32 %22) #5
+  %24 = and i32 %15, 983040
+  %25 = zext i16 %11 to i32
+  %26 = or i32 %24, %25
+  %27 = and i32 %15, 8388608
+  %28 = icmp ne i32 %27, 0
+  %29 = select i1 %28, i32 12, i32 0
+  %30 = shl i32 %26, %29
+  %31 = select i1 %28, i8* getelementptr inbounds ([20 x i8], [20 x i8]* @.str.19, i64 0, i64 0), i8* getelementptr inbounds ([1 x i8], [1 x i8]* @.str.20, i64 0, i64 0)
+  %32 = call i32 (i32, i8*, ...) @__printf_chk(i32 1, i8* getelementptr inbounds ([22 x i8], [22 x i8]* @.str.18, i64 0, i64 0), i32 %30, i8* %31) #5
+  %33 = lshr i32 %15, 8
+  %34 = and i32 %15, 4096
+  %35 = icmp eq i32 %34, 0
+  %36 = select i1 %35, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @.str.23, i64 0, i64 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.22, i64 0, i64 0)
+  %37 = and i32 %33, 15
+  %38 = zext i32 %37 to i64
+  %39 = getelementptr inbounds [16 x i8*], [16 x i8*]* @NaClLdtPrintSelector.type_name, i64 0, i64 %38
+  %40 = load i8*, i8** %39, align 8
+  %41 = call i32 (i32, i8*, ...) @__printf_chk(i32 1, i8* getelementptr inbounds ([22 x i8], [22 x i8]* @.str.21, i64 0, i64 0), i8* %36, i8* %40) #5
+  %42 = lshr i32 %15, 13
+  %43 = and i32 %42, 3
+  %44 = call i32 (i32, i8*, ...) @__printf_chk(i32 1, i8* getelementptr inbounds ([18 x i8], [18 x i8]* @.str.24, i64 0, i64 0), i32 %43) #5
+  %45 = trunc i32 %15 to i16
+  %46 = icmp slt i16 %45, 0
+  %47 = select i1 %46, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.26, i64 0, i64 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str.27, i64 0, i64 0)
+  %48 = call i32 (i32, i8*, ...) @__printf_chk(i32 1, i8* getelementptr inbounds ([14 x i8], [14 x i8]* @.str.25, i64 0, i64 0), i8* %47) #5
+  %49 = and i32 %15, 1048576
+  %50 = icmp eq i32 %49, 0
+  %51 = select i1 %50, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str.27, i64 0, i64 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.26, i64 0, i64 0)
+  %52 = call i32 (i32, i8*, ...) @__printf_chk(i32 1, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str.28, i64 0, i64 0), i8* %51) #5
+  %53 = and i32 %15, 2097152
+  %54 = icmp eq i32 %53, 0
+  %55 = select i1 %54, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str.27, i64 0, i64 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.26, i64 0, i64 0)
+  %56 = call i32 (i32, i8*, ...) @__printf_chk(i32 1, i8* getelementptr inbounds ([18 x i8], [18 x i8]* @.str.29, i64 0, i64 0), i8* %55) #5
+  %57 = and i32 %15, 4194304
+  %58 = icmp eq i32 %57, 0
+  %59 = select i1 %58, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str.32, i64 0, i64 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str.31, i64 0, i64 0)
+  %60 = call i32 (i32, i8*, ...) @__printf_chk(i32 1, i8* getelementptr inbounds ([14 x i8], [14 x i8]* @.str.30, i64 0, i64 0), i8* %59) #5
+  br label %61
+
+61:                                               ; preds = %1, %6
+  call void @llvm.lifetime.end.p0i8(i64 65536, i8* nonnull %3) #5
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+declare i32 @__printf_chk(i32, i8*, ...) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLdtDeleteSelector(i16 zeroext) local_unnamed_addr #0 {
+  %2 = alloca %struct.user_desc, align 4
+  %3 = bitcast %struct.user_desc* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %3) #5
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 4 %3, i8 -86, i64 16, i1 false)
+  %4 = lshr i16 %0, 3
+  %5 = zext i16 %4 to i32
+  %6 = getelementptr inbounds %struct.user_desc, %struct.user_desc* %2, i64 0, i32 0
+  store i32 %5, i32* %6, align 4
+  %7 = getelementptr inbounds %struct.user_desc, %struct.user_desc* %2, i64 0, i32 3
+  %8 = getelementptr inbounds %struct.user_desc, %struct.user_desc* %2, i64 0, i32 1
+  store i32 0, i32* %8, align 4
+  %9 = getelementptr inbounds %struct.user_desc, %struct.user_desc* %2, i64 0, i32 2
+  store i32 0, i32* %9, align 4
+  store i8 -96, i8* %7, align 4
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @nacl_ldt_mutex) #5
+  %10 = call i32 @modify_ldt(i32 1, i8* nonnull %3, i64 16) #5
+  call void @NaClXMutexUnlock(%struct.NaClMutex* nonnull @nacl_ldt_mutex) #5
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %3) #5
+  ret void
+}
+
+; Function Attrs: nofree nounwind
+declare noalias i8* @malloc(i64) local_unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @free(i8* nocapture) local_unnamed_addr #4
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { nofree nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}

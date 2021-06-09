@@ -1,0 +1,970 @@
+; ModuleID = '../../chrome/browser/reputation/local_heuristics.cc'
+source_filename = "../../chrome/browser/reputation/local_heuristics.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"struct.base::Feature" = type { i8*, i32 }
+%struct.DomainInfo = type { %"class.std::__1::basic_string", %"class.std::__1::basic_string", %"class.std::__1::basic_string", %"struct.url_formatter::IDNConversionResult", %"class.base::internal::flat_tree" }
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon }
+%union.anon = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"struct.url_formatter::IDNConversionResult" = type <{ %"class.std::__1::basic_string.4", i8, [7 x i8], %"struct.url_formatter::TopDomainEntry", i32, [4 x i8] }>
+%"class.std::__1::basic_string.4" = type { %"class.std::__1::__compressed_pair.5" }
+%"class.std::__1::__compressed_pair.5" = type { %"struct.std::__1::__compressed_pair_elem.6" }
+%"struct.std::__1::__compressed_pair_elem.6" = type { %"struct.std::__1::basic_string<char16_t, std::__1::char_traits<char16_t>, std::__1::allocator<char16_t> >::__rep" }
+%"struct.std::__1::basic_string<char16_t, std::__1::char_traits<char16_t>, std::__1::allocator<char16_t> >::__rep" = type { %union.anon.7 }
+%union.anon.7 = type { %"struct.std::__1::basic_string<char16_t, std::__1::char_traits<char16_t>, std::__1::allocator<char16_t> >::__long" }
+%"struct.std::__1::basic_string<char16_t, std::__1::char_traits<char16_t>, std::__1::allocator<char16_t> >::__long" = type { i16*, i64, i64 }
+%"struct.url_formatter::TopDomainEntry" = type { %"class.std::__1::basic_string", i8, i32 }
+%"class.base::internal::flat_tree" = type { %"class.std::__1::vector" }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"class.std::__1::basic_string"*, %"class.std::__1::basic_string"*, %"class.std::__1::__compressed_pair.13" }
+%"class.std::__1::__compressed_pair.13" = type { %"struct.std::__1::__compressed_pair_elem.14" }
+%"struct.std::__1::__compressed_pair_elem.14" = type { %"class.std::__1::basic_string"* }
+%"class.std::__1::vector.18" = type { %"class.std::__1::__vector_base.19" }
+%"class.std::__1::__vector_base.19" = type { %struct.DomainInfo*, %struct.DomainInfo*, %"class.std::__1::__compressed_pair.20" }
+%"class.std::__1::__compressed_pair.20" = type { %"struct.std::__1::__compressed_pair_elem.21" }
+%"struct.std::__1::__compressed_pair_elem.21" = type { %struct.DomainInfo* }
+%class.GURL = type { %"class.std::__1::basic_string", i8, %"struct.url::Parsed", %"class.std::__1::unique_ptr" }
+%"struct.url::Parsed" = type { %"struct.url::Component", %"struct.url::Component", %"struct.url::Component", %"struct.url::Component", %"struct.url::Component", %"struct.url::Component", %"struct.url::Component", %"struct.url::Component", i8, %"struct.url::Parsed"* }
+%"struct.url::Component" = type { i32, i32 }
+%"class.std::__1::unique_ptr" = type { %"class.std::__1::__compressed_pair.1" }
+%"class.std::__1::__compressed_pair.1" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"struct.std::__1::__compressed_pair_elem.2" = type { %class.GURL* }
+%"class.std::__1::allocator" = type { i8 }
+%"class.base::RepeatingCallback" = type { %"class.base::internal::CallbackBaseCopyable" }
+%"class.base::internal::CallbackBaseCopyable" = type { %"class.base::internal::CallbackBase" }
+%"class.base::internal::CallbackBase" = type { %class.scoped_refptr }
+%class.scoped_refptr = type { %"class.base::internal::BindStateBase"* }
+%"class.base::internal::BindStateBase" = type { %"class.base::RefCountedThreadSafe", void ()*, void (%"class.base::internal::BindStateBase"*)*, i1 (%"class.base::internal::BindStateBase"*, i32)* }
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.25" }
+%"struct.std::__1::__atomic_base.25" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short" = type { [23 x i8], %struct.anon }
+%struct.anon = type { i8 }
+%"class.reputation::SafetyTipsConfig" = type <{ %"class.google::protobuf::MessageLite", %"class.google::protobuf::internal::HasBits", %"class.google::protobuf::internal::CachedSize", %"class.google::protobuf::RepeatedPtrField", %"class.google::protobuf::RepeatedPtrField.35", %"class.google::protobuf::RepeatedPtrField.36", %"class.google::protobuf::RepeatedPtrField.37", i32, [4 x i8] }>
+%"class.google::protobuf::MessageLite" = type { i32 (...)**, %"class.google::protobuf::internal::InternalMetadata" }
+%"class.google::protobuf::internal::InternalMetadata" = type { i8* }
+%"class.google::protobuf::internal::HasBits" = type { [1 x i32] }
+%"class.google::protobuf::internal::CachedSize" = type { %"struct.std::__1::atomic" }
+%"class.google::protobuf::RepeatedPtrField" = type { %"class.google::protobuf::internal::RepeatedPtrFieldBase" }
+%"class.google::protobuf::internal::RepeatedPtrFieldBase" = type { %"class.google::protobuf::Arena"*, i32, i32, %"struct.google::protobuf::internal::RepeatedPtrFieldBase::Rep"* }
+%"class.google::protobuf::Arena" = type { %"class.google::protobuf::internal::ArenaImpl", void (%"class.std::type_info"*, i64, i8*)*, void (%"class.google::protobuf::Arena"*, i8*, i64)*, void (%"class.google::protobuf::Arena"*, i8*, i64)*, i8* }
+%"class.google::protobuf::internal::ArenaImpl" = type { %"struct.std::__1::atomic.26", %"struct.std::__1::atomic.26", %"struct.std::__1::atomic.30", %"class.google::protobuf::internal::ArenaImpl::Block"*, i64, %"struct.google::protobuf::internal::ArenaImpl::Options" }
+%"struct.std::__1::atomic.26" = type { %"struct.std::__1::__atomic_base.27" }
+%"struct.std::__1::__atomic_base.27" = type { %"struct.std::__1::__cxx_atomic_impl.28" }
+%"struct.std::__1::__cxx_atomic_impl.28" = type { %"struct.std::__1::__cxx_atomic_base_impl.29" }
+%"struct.std::__1::__cxx_atomic_base_impl.29" = type { %"class.google::protobuf::internal::ArenaImpl::SerialArena"* }
+%"class.google::protobuf::internal::ArenaImpl::SerialArena" = type { %"class.google::protobuf::internal::ArenaImpl"*, i8*, %"class.google::protobuf::internal::ArenaImpl::Block"*, %"struct.google::protobuf::internal::ArenaImpl::CleanupChunk"*, %"class.google::protobuf::internal::ArenaImpl::SerialArena"*, i8*, i8*, %"struct.google::protobuf::internal::ArenaImpl::CleanupNode"*, %"struct.google::protobuf::internal::ArenaImpl::CleanupNode"* }
+%"struct.google::protobuf::internal::ArenaImpl::CleanupChunk" = type { i64, %"struct.google::protobuf::internal::ArenaImpl::CleanupChunk"*, [1 x %"struct.google::protobuf::internal::ArenaImpl::CleanupNode"] }
+%"struct.google::protobuf::internal::ArenaImpl::CleanupNode" = type { i8*, void (i8*)* }
+%"struct.std::__1::atomic.30" = type { %"struct.std::__1::__atomic_base.31" }
+%"struct.std::__1::__atomic_base.31" = type { %"struct.std::__1::__atomic_base.32" }
+%"struct.std::__1::__atomic_base.32" = type { %"struct.std::__1::__cxx_atomic_impl.33" }
+%"struct.std::__1::__cxx_atomic_impl.33" = type { %"struct.std::__1::__cxx_atomic_base_impl.34" }
+%"struct.std::__1::__cxx_atomic_base_impl.34" = type { i64 }
+%"class.google::protobuf::internal::ArenaImpl::Block" = type { %"class.google::protobuf::internal::ArenaImpl::Block"*, i64, i64 }
+%"struct.google::protobuf::internal::ArenaImpl::Options" = type { i64, i64, i8*, i64, i8* (i64)*, void (i8*, i64)* }
+%"class.std::type_info" = type { i32 (...)**, i8* }
+%"struct.google::protobuf::internal::RepeatedPtrFieldBase::Rep" = type { i32, [268435454 x i8*] }
+%"class.google::protobuf::RepeatedPtrField.35" = type { %"class.google::protobuf::internal::RepeatedPtrFieldBase" }
+%"class.google::protobuf::RepeatedPtrField.36" = type { %"class.google::protobuf::internal::RepeatedPtrFieldBase" }
+%"class.google::protobuf::RepeatedPtrField.37" = type { %"class.google::protobuf::internal::RepeatedPtrFieldBase" }
+%"class.std::__1::__basic_string_common" = type { i8 }
+%"struct.base::FeatureParam" = type <{ %"struct.base::Feature"*, i8*, i8, [7 x i8] }>
+
+$_ZN4base8internal7InvokerINS0_9BindStateIPFbPKN10reputation16SafetyTipsConfigERKNSt3__112basic_stringIcNS7_11char_traitsIcEENS7_9allocatorIcEEEEEJS6_EEEFbSF_EE3RunEPNS0_13BindStateBaseESF_ = comdat any
+
+$_ZN4base8internal9BindStateIPFbPKN10reputation16SafetyTipsConfigERKNSt3__112basic_stringIcNS6_11char_traitsIcEENS6_9allocatorIcEEEEEJS5_EE7DestroyEPKNS0_13BindStateBaseE = comdat any
+
+@_ZN3url12kHttpsSchemeE = external constant [0 x i8], align 1
+@_ZN3url24kStandardSchemeSeparatorE = external constant [0 x i8], align 1
+@_ZN14security_state8features38kSafetyTipUIForSimplifiedDomainDisplayE = external global %"struct.base::Feature", align 8
+@_ZN10lookalikes8features32kDetectTargetEmbeddingLookalikesE = external global %"struct.base::Feature", align 8
+@.str = private unnamed_addr constant [3 x i8] c".-\00", align 1
+@_ZN14security_state8features12kSafetyTipUIE = external global %"struct.base::Feature", align 8
+@.str.1 = private unnamed_addr constant [13 x i8] c"editdistance\00", align 1
+@_ZN12_GLOBAL__N_128kEnableLookalikeEditDistanceE = internal constant { %"struct.base::Feature"*, i8*, i8 } { %"struct.base::Feature"* @_ZN14security_state8features12kSafetyTipUIE, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @.str.1, i32 0, i32 0), i8 0 }, align 8
+@.str.3 = private unnamed_addr constant [28 x i8] c"editdistance_siteengagement\00", align 1
+@_ZN12_GLOBAL__N_142kEnableLookalikeEditDistanceSiteEngagementE = internal constant { %"struct.base::Feature"*, i8*, i8 } { %"struct.base::Feature"* @_ZN14security_state8features12kSafetyTipUIE, i8* getelementptr inbounds ([28 x i8], [28 x i8]* @.str.3, i32 0, i32 0), i8 1 }, align 8
+@.str.5 = private unnamed_addr constant [12 x i8] c"safety_tips\00", align 1
+@_ZN12_GLOBAL__N_132kEnableTargetEmbeddingSafetyTipsE = internal constant { %"struct.base::Feature"*, i8*, i8 } { %"struct.base::Feature"* @_ZN10lookalikes8features32kDetectTargetEmbeddingLookalikesE, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @.str.5, i32 0, i32 0), i8 1 }, align 8
+@.str.7 = private unnamed_addr constant [9 x i8] c"topsites\00", align 1
+@_ZN12_GLOBAL__N_124kEnableLookalikeTopSitesE = internal constant { %"struct.base::Feature"*, i8*, i8 } { %"struct.base::Feature"* @_ZN14security_state8features12kSafetyTipUIE, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.7, i32 0, i32 0), i8 1 }, align 8
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_Z35ShouldTriggerSafetyTipFromLookalikeRK4GURLRK10DomainInfoRKNSt3__16vectorIS2_NS5_9allocatorIS2_EEEEPS_(%class.GURL* dereferenceable(120), %struct.DomainInfo* dereferenceable(168), %"class.std::__1::vector.18"* dereferenceable(24), %class.GURL*) local_unnamed_addr #0 {
+  %5 = alloca %"class.std::__1::allocator", align 1
+  %6 = alloca %"class.std::__1::basic_string", align 8
+  %7 = alloca i32, align 4
+  %8 = alloca %"class.base::RepeatingCallback", align 8
+  %9 = alloca %"class.std::__1::basic_string", align 8
+  %10 = alloca %class.GURL, align 8
+  %11 = alloca %"class.std::__1::basic_string", align 8
+  %12 = alloca %"class.std::__1::basic_string", align 8
+  %13 = bitcast %"class.std::__1::basic_string"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %13) #9
+  %14 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %6, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %15 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %6, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %13, i8 0, i64 24, i1 false) #9
+  %16 = bitcast i32* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %16) #9
+  store i32 -1431655766, i32* %7, align 4
+  %17 = getelementptr inbounds %struct.DomainInfo, %struct.DomainInfo* %1, i64 0, i32 1
+  %18 = bitcast %"class.std::__1::basic_string"* %17 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %19 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %18, i64 0, i32 1, i32 0
+  %20 = load i8, i8* %19, align 1
+  %21 = icmp slt i8 %20, 0
+  %22 = getelementptr inbounds %struct.DomainInfo, %struct.DomainInfo* %1, i64 0, i32 1, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %23 = load i64, i64* %22, align 8
+  %24 = zext i8 %20 to i64
+  %25 = select i1 %21, i64 %23, i64 %24
+  %26 = icmp eq i64 %25, 0
+  br i1 %26, label %27, label %28
+
+27:                                               ; preds = %4
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %16) #9
+  br label %194
+
+28:                                               ; preds = %4
+  %29 = tail call %"class.reputation::SafetyTipsConfig"* @_ZN10reputation30GetSafetyTipsRemoteConfigProtoEv() #9
+  %30 = ptrtoint %"class.reputation::SafetyTipsConfig"* %29 to i64
+  %31 = bitcast %"class.base::RepeatingCallback"* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %31) #9
+  %32 = tail call i8* @_Znwm(i64 48) #10, !noalias !2
+  %33 = bitcast i8* %32 to %"class.base::internal::BindStateBase"*
+  tail call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"* nonnull %33, void ()* bitcast (i1 (%"class.base::internal::BindStateBase"*, %"class.std::__1::basic_string"*)* @_ZN4base8internal7InvokerINS0_9BindStateIPFbPKN10reputation16SafetyTipsConfigERKNSt3__112basic_stringIcNS7_11char_traitsIcEENS7_9allocatorIcEEEEEJS6_EEEFbSF_EE3RunEPNS0_13BindStateBaseESF_ to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @_ZN4base8internal9BindStateIPFbPKN10reputation16SafetyTipsConfigERKNSt3__112basic_stringIcNS6_11char_traitsIcEENS6_9allocatorIcEEEEEJS5_EE7DestroyEPKNS0_13BindStateBaseE) #9, !noalias !2
+  %34 = getelementptr inbounds i8, i8* %32, i64 32
+  %35 = bitcast i8* %34 to i64*
+  store i64 ptrtoint (i1 (%"class.reputation::SafetyTipsConfig"*, %"class.std::__1::basic_string"*)* @_ZN10reputation44IsTargetHostAllowlistedBySafetyTipsComponentEPKNS_16SafetyTipsConfigERKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEE to i64), i64* %35, align 8, !noalias !2
+  %36 = getelementptr inbounds i8, i8* %32, i64 40
+  %37 = bitcast i8* %36 to i64*
+  store i64 %30, i64* %37, align 8, !noalias !2
+  %38 = bitcast %"class.base::RepeatingCallback"* %8 to i8**
+  store i8* %32, i8** %38, align 8, !alias.scope !2
+  %39 = call zeroext i1 @_Z17GetMatchingDomainRK10DomainInfoRKNSt3__16vectorIS_NS2_9allocatorIS_EEEERKN4base17RepeatingCallbackIFbRKNS2_12basic_stringIcNS2_11char_traitsIcEENS4_IcEEEEEEEPKN10reputation16SafetyTipsConfigEPSF_P21LookalikeUrlMatchType(%struct.DomainInfo* dereferenceable(168) %1, %"class.std::__1::vector.18"* dereferenceable(24) %2, %"class.base::RepeatingCallback"* nonnull dereferenceable(8) %8, %"class.reputation::SafetyTipsConfig"* %29, %"class.std::__1::basic_string"* nonnull %6, i32* nonnull %7) #9
+  br i1 %39, label %40, label %185
+
+40:                                               ; preds = %28
+  %41 = load i32, i32* %7, align 4
+  %42 = call zeroext i1 @_Z33ShouldBlockLookalikeUrlNavigation21LookalikeUrlMatchType(i32 %41) #9
+  br i1 %42, label %185, label %43
+
+43:                                               ; preds = %40
+  %44 = bitcast %"class.std::__1::basic_string"* %9 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %44) #9
+  %45 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %9, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %46 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %9, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %47 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %9, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 2
+  %48 = bitcast %"class.std::__1::basic_string"* %9 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %48, i8 -86, i64 24, i1 false)
+  %49 = load i32, i32* %7, align 4
+  switch i32 %49, label %72 [
+    i32 7, label %50
+    i32 6, label %50
+    i32 3, label %50
+  ]
+
+50:                                               ; preds = %43, %43, %43
+  %51 = call i64 @strlen(i8* getelementptr inbounds ([0 x i8], [0 x i8]* @_ZN3url12kHttpsSchemeE, i64 0, i64 0)) #9
+  %52 = icmp ugt i64 %51, -17
+  br i1 %52, label %53, label %55
+
+53:                                               ; preds = %50
+  %54 = bitcast %"class.std::__1::basic_string"* %9 to %"class.std::__1::__basic_string_common"*
+  call void @_ZNKSt3__121__basic_string_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__basic_string_common"* nonnull %54) #11
+  unreachable
+
+55:                                               ; preds = %50
+  %56 = icmp ult i64 %51, 23
+  br i1 %56, label %62, label %57
+
+57:                                               ; preds = %55
+  %58 = add nuw i64 %51, 16
+  %59 = and i64 %58, -16
+  %60 = call i8* @_Znwm(i64 %59) #10
+  store i8* %60, i8** %45, align 8
+  %61 = or i64 %59, -9223372036854775808
+  store i64 %61, i64* %47, align 8
+  store i64 %51, i64* %46, align 8
+  br label %67
+
+62:                                               ; preds = %55
+  %63 = trunc i64 %51 to i8
+  %64 = bitcast %"class.std::__1::basic_string"* %9 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %65 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %64, i64 0, i32 1, i32 0
+  store i8 %63, i8* %65, align 1
+  %66 = icmp eq i64 %51, 0
+  br i1 %66, label %69, label %67
+
+67:                                               ; preds = %62, %57
+  %68 = phi i8* [ %60, %57 ], [ %44, %62 ]
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 1 %68, i8* align 1 getelementptr inbounds ([0 x i8], [0 x i8]* @_ZN3url12kHttpsSchemeE, i64 0, i64 0), i64 %51, i1 false) #9
+  br label %69
+
+69:                                               ; preds = %62, %67
+  %70 = phi i8* [ %44, %62 ], [ %68, %67 ]
+  %71 = getelementptr inbounds i8, i8* %70, i64 %51
+  store i8 0, i8* %71, align 1
+  br label %84
+
+72:                                               ; preds = %43
+  %73 = getelementptr inbounds %class.GURL, %class.GURL* %0, i64 0, i32 2, i32 0, i32 1
+  %74 = load i32, i32* %73, align 4, !noalias !7
+  %75 = icmp slt i32 %74, 1
+  br i1 %75, label %76, label %77
+
+76:                                               ; preds = %72
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %44, i8 0, i64 24, i1 false) #9, !alias.scope !7
+  br label %84
+
+77:                                               ; preds = %72
+  %78 = getelementptr inbounds %class.GURL, %class.GURL* %0, i64 0, i32 0
+  %79 = getelementptr inbounds %class.GURL, %class.GURL* %0, i64 0, i32 2, i32 0, i32 0
+  %80 = load i32, i32* %79, align 4, !noalias !7
+  %81 = sext i32 %80 to i64
+  %82 = sext i32 %74 to i64
+  %83 = getelementptr inbounds %"class.std::__1::allocator", %"class.std::__1::allocator"* %5, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %83) #9, !noalias !7
+  call void @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1ERKS5_mmRKS4_(%"class.std::__1::basic_string"* nonnull %9, %"class.std::__1::basic_string"* dereferenceable(24) %78, i64 %81, i64 %82, %"class.std::__1::allocator"* nonnull dereferenceable(1) %5) #9
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %83) #9, !noalias !7
+  br label %84
+
+84:                                               ; preds = %77, %76, %69
+  %85 = bitcast %class.GURL* %10 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 120, i8* nonnull %85) #9
+  %86 = bitcast %"class.std::__1::basic_string"* %11 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %86) #9
+  %87 = bitcast %"class.std::__1::basic_string"* %12 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %87) #9
+  %88 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %12, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %89 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %12, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %90 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %12, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 2
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %87, i8 0, i64 24, i1 false) #9, !alias.scope !12
+  %91 = bitcast %"class.std::__1::basic_string"* %9 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %92 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %91, i64 0, i32 1, i32 0
+  %93 = load i8, i8* %92, align 1, !noalias !12
+  %94 = icmp slt i8 %93, 0
+  br i1 %94, label %95, label %99
+
+95:                                               ; preds = %84
+  %96 = load i64, i64* %46, align 8, !noalias !12
+  %97 = call i64 @strlen(i8* getelementptr inbounds ([0 x i8], [0 x i8]* @_ZN3url24kStandardSchemeSeparatorE, i64 0, i64 0)) #9, !noalias !12
+  %98 = load i8*, i8** %45, align 8, !noalias !12
+  br label %102
+
+99:                                               ; preds = %84
+  %100 = zext i8 %93 to i64
+  %101 = call i64 @strlen(i8* getelementptr inbounds ([0 x i8], [0 x i8]* @_ZN3url24kStandardSchemeSeparatorE, i64 0, i64 0)) #9, !noalias !12
+  br label %102
+
+102:                                              ; preds = %99, %95
+  %103 = phi i64 [ %97, %95 ], [ %101, %99 ]
+  %104 = phi i64 [ %96, %95 ], [ %100, %99 ]
+  %105 = phi i8* [ %98, %95 ], [ %44, %99 ]
+  %106 = add i64 %104, %103
+  %107 = icmp ugt i64 %106, -17
+  br i1 %107, label %108, label %110
+
+108:                                              ; preds = %102
+  %109 = bitcast %"class.std::__1::basic_string"* %12 to %"class.std::__1::__basic_string_common"*
+  call void @_ZNKSt3__121__basic_string_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__basic_string_common"* nonnull %109) #11
+  unreachable
+
+110:                                              ; preds = %102
+  %111 = icmp ult i64 %106, 23
+  br i1 %111, label %112, label %116
+
+112:                                              ; preds = %110
+  %113 = trunc i64 %104 to i8
+  %114 = bitcast %"class.std::__1::basic_string"* %12 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %115 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %114, i64 0, i32 1, i32 0
+  store i8 %113, i8* %115, align 1, !alias.scope !12
+  br label %121
+
+116:                                              ; preds = %110
+  %117 = add nuw i64 %106, 16
+  %118 = and i64 %117, -16
+  %119 = call i8* @_Znwm(i64 %118) #10
+  store i8* %119, i8** %88, align 8, !alias.scope !12
+  %120 = or i64 %118, -9223372036854775808
+  store i64 %120, i64* %90, align 8, !alias.scope !12
+  store i64 %104, i64* %89, align 8, !alias.scope !12
+  br label %121
+
+121:                                              ; preds = %116, %112
+  %122 = phi i8* [ %87, %112 ], [ %119, %116 ]
+  %123 = icmp eq i64 %104, 0
+  br i1 %123, label %125, label %124
+
+124:                                              ; preds = %121
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 1 %122, i8* align 1 %105, i64 %104, i1 false) #9
+  br label %125
+
+125:                                              ; preds = %121, %124
+  %126 = getelementptr inbounds i8, i8* %122, i64 %104
+  store i8 0, i8* %126, align 1
+  %127 = call dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKcm(%"class.std::__1::basic_string"* nonnull %12, i8* getelementptr inbounds ([0 x i8], [0 x i8]* @_ZN3url24kStandardSchemeSeparatorE, i64 0, i64 0), i64 %103) #9
+  %128 = bitcast %"class.std::__1::basic_string"* %6 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %129 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %128, i64 0, i32 1, i32 0
+  %130 = load i8, i8* %129, align 1, !noalias !15
+  %131 = icmp slt i8 %130, 0
+  %132 = load i8*, i8** %14, align 8, !noalias !15
+  %133 = load i64, i64* %15, align 8, !noalias !15
+  %134 = zext i8 %130 to i64
+  %135 = select i1 %131, i8* %132, i8* %13
+  %136 = select i1 %131, i64 %133, i64 %134
+  %137 = call dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKcm(%"class.std::__1::basic_string"* nonnull %12, i8* %135, i64 %136) #9, !noalias !15
+  %138 = bitcast %"class.std::__1::basic_string"* %137 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %86, i8* align 8 %138, i64 24, i1 false) #9
+  call void @llvm.memset.p0i8.i64(i8* align 8 %138, i8 0, i64 24, i1 false) #9, !noalias !15
+  %139 = bitcast %"class.std::__1::basic_string"* %11 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %140 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %139, i64 0, i32 1, i32 0
+  %141 = load i8, i8* %140, align 1
+  %142 = icmp slt i8 %141, 0
+  %143 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %11, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %144 = load i8*, i8** %143, align 8
+  %145 = select i1 %142, i8* %144, i8* %86
+  %146 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %11, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %147 = load i64, i64* %146, align 8
+  %148 = zext i8 %141 to i64
+  %149 = select i1 %142, i64 %147, i64 %148
+  call void @_ZN4GURLC1EN4base16BasicStringPieceIcNSt3__111char_traitsIcEEEE(%class.GURL* nonnull %10, i8* %145, i64 %149) #9
+  %150 = call dereferenceable(120) %class.GURL* @_ZN4GURLaSEOS_(%class.GURL* %3, %class.GURL* nonnull dereferenceable(120) %10) #9
+  call void @_ZN4GURLD1Ev(%class.GURL* nonnull %10) #9
+  %151 = load i8, i8* %140, align 1
+  %152 = icmp slt i8 %151, 0
+  br i1 %152, label %153, label %155
+
+153:                                              ; preds = %125
+  %154 = load i8*, i8** %143, align 8
+  call void @_ZdlPv(i8* %154) #10
+  br label %155
+
+155:                                              ; preds = %125, %153
+  %156 = bitcast %"class.std::__1::basic_string"* %12 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %157 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %156, i64 0, i32 1, i32 0
+  %158 = load i8, i8* %157, align 1
+  %159 = icmp slt i8 %158, 0
+  br i1 %159, label %160, label %162
+
+160:                                              ; preds = %155
+  %161 = load i8*, i8** %88, align 8
+  call void @_ZdlPv(i8* %161) #10
+  br label %162
+
+162:                                              ; preds = %155, %160
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %87) #9
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %86) #9
+  call void @llvm.lifetime.end.p0i8(i64 120, i8* nonnull %85) #9
+  %163 = call zeroext i1 @_ZN4base11FeatureList9IsEnabledERKNS_7FeatureE(%"struct.base::Feature"* nonnull dereferenceable(16) @_ZN14security_state8features38kSafetyTipUIForSimplifiedDomainDisplayE) #9
+  %164 = load i32, i32* %7, align 4
+  switch i32 %164, label %178 [
+    i32 3, label %165
+    i32 4, label %168
+    i32 7, label %175
+    i32 8, label %171
+  ]
+
+165:                                              ; preds = %162
+  br i1 %163, label %178, label %166
+
+166:                                              ; preds = %165
+  %167 = call zeroext i1 @_ZNK4base12FeatureParamIbLb0EE3GetEv(%"struct.base::FeatureParam"* bitcast ({ %"struct.base::Feature"*, i8*, i8 }* @_ZN12_GLOBAL__N_128kEnableLookalikeEditDistanceE to %"struct.base::FeatureParam"*)) #9
+  br label %178
+
+168:                                              ; preds = %162
+  br i1 %163, label %178, label %169
+
+169:                                              ; preds = %168
+  %170 = call zeroext i1 @_ZNK4base12FeatureParamIbLb0EE3GetEv(%"struct.base::FeatureParam"* bitcast ({ %"struct.base::Feature"*, i8*, i8 }* @_ZN12_GLOBAL__N_142kEnableLookalikeEditDistanceSiteEngagementE to %"struct.base::FeatureParam"*)) #9
+  br label %178
+
+171:                                              ; preds = %162
+  %172 = call zeroext i1 @_ZN4base11FeatureList9IsEnabledERKNS_7FeatureE(%"struct.base::Feature"* nonnull dereferenceable(16) @_ZN10lookalikes8features32kDetectTargetEmbeddingLookalikesE) #9
+  br i1 %172, label %173, label %178
+
+173:                                              ; preds = %171
+  %174 = call zeroext i1 @_ZNK4base12FeatureParamIbLb0EE3GetEv(%"struct.base::FeatureParam"* bitcast ({ %"struct.base::Feature"*, i8*, i8 }* @_ZN12_GLOBAL__N_132kEnableTargetEmbeddingSafetyTipsE to %"struct.base::FeatureParam"*)) #9
+  br label %178
+
+175:                                              ; preds = %162
+  br i1 %163, label %178, label %176
+
+176:                                              ; preds = %175
+  %177 = call zeroext i1 @_ZNK4base12FeatureParamIbLb0EE3GetEv(%"struct.base::FeatureParam"* bitcast ({ %"struct.base::Feature"*, i8*, i8 }* @_ZN12_GLOBAL__N_124kEnableLookalikeTopSitesE to %"struct.base::FeatureParam"*)) #9
+  br label %178
+
+178:                                              ; preds = %162, %175, %176, %171, %173, %168, %169, %165, %166
+  %179 = phi i1 [ true, %165 ], [ %167, %166 ], [ true, %168 ], [ %170, %169 ], [ false, %171 ], [ %174, %173 ], [ true, %175 ], [ %177, %176 ], [ false, %162 ]
+  %180 = load i8, i8* %92, align 1
+  %181 = icmp slt i8 %180, 0
+  br i1 %181, label %182, label %184
+
+182:                                              ; preds = %178
+  %183 = load i8*, i8** %45, align 8
+  call void @_ZdlPv(i8* %183) #10
+  br label %184
+
+184:                                              ; preds = %178, %182
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %44) #9
+  br label %185
+
+185:                                              ; preds = %184, %28, %40
+  %186 = phi i1 [ %179, %184 ], [ false, %28 ], [ false, %40 ]
+  %187 = getelementptr inbounds %"class.base::RepeatingCallback", %"class.base::RepeatingCallback"* %8, i64 0, i32 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %187) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %31) #9
+  %188 = bitcast %"class.std::__1::basic_string"* %6 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %189 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %188, i64 0, i32 1, i32 0
+  %190 = load i8, i8* %189, align 1
+  %191 = icmp slt i8 %190, 0
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %16) #9
+  br i1 %191, label %192, label %194
+
+192:                                              ; preds = %185
+  %193 = load i8*, i8** %14, align 8
+  call void @_ZdlPv(i8* %193) #10
+  br label %194
+
+194:                                              ; preds = %27, %185, %192
+  %195 = phi i1 [ false, %27 ], [ %186, %185 ], [ %186, %192 ]
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %13) #9
+  ret i1 %195
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #1
+
+declare %"class.reputation::SafetyTipsConfig"* @_ZN10reputation30GetSafetyTipsRemoteConfigProtoEv() local_unnamed_addr #2
+
+declare zeroext i1 @_ZN10reputation44IsTargetHostAllowlistedBySafetyTipsComponentEPKNS_16SafetyTipsConfigERKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEE(%"class.reputation::SafetyTipsConfig"*, %"class.std::__1::basic_string"* dereferenceable(24)) #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #1
+
+declare zeroext i1 @_Z17GetMatchingDomainRK10DomainInfoRKNSt3__16vectorIS_NS2_9allocatorIS_EEEERKN4base17RepeatingCallbackIFbRKNS2_12basic_stringIcNS2_11char_traitsIcEENS4_IcEEEEEEEPKN10reputation16SafetyTipsConfigEPSF_P21LookalikeUrlMatchType(%struct.DomainInfo* dereferenceable(168), %"class.std::__1::vector.18"* dereferenceable(24), %"class.base::RepeatingCallback"* dereferenceable(8), %"class.reputation::SafetyTipsConfig"*, %"class.std::__1::basic_string"*, i32*) local_unnamed_addr #2
+
+declare zeroext i1 @_Z33ShouldBlockLookalikeUrlNavigation21LookalikeUrlMatchType(i32) local_unnamed_addr #2
+
+declare void @_ZN4GURLC1EN4base16BasicStringPieceIcNSt3__111char_traitsIcEEEE(%class.GURL*, i8*, i64) unnamed_addr #2
+
+; Function Attrs: nounwind
+declare dereferenceable(120) %class.GURL* @_ZN4GURLaSEOS_(%class.GURL*, %class.GURL* dereferenceable(120)) local_unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN4GURLD1Ev(%class.GURL*) unnamed_addr #3
+
+declare zeroext i1 @_ZN4base11FeatureList9IsEnabledERKNS_7FeatureE(%"struct.base::Feature"* dereferenceable(16)) local_unnamed_addr #2
+
+declare zeroext i1 @_ZNK4base12FeatureParamIbLb0EE3GetEv(%"struct.base::FeatureParam"*) local_unnamed_addr #2
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"*) unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_Z38ShouldTriggerSafetyTipFromKeywordInURLRK4GURLRK10DomainInfoPKPKcm(%class.GURL* dereferenceable(120), %struct.DomainInfo* dereferenceable(168), i8** readonly, i64) local_unnamed_addr #0 {
+  %5 = getelementptr inbounds %struct.DomainInfo, %struct.DomainInfo* %1, i64 0, i32 1
+  %6 = tail call zeroext i1 @_Z23HostnameContainsKeywordRK4GURLRKNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEEPKPKcmb(%class.GURL* dereferenceable(120) %0, %"class.std::__1::basic_string"* dereferenceable(24) %5, i8** %2, i64 %3, i1 zeroext true)
+  ret i1 %6
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_Z23HostnameContainsKeywordRK4GURLRKNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEEPKPKcmb(%class.GURL* dereferenceable(120), %"class.std::__1::basic_string"* dereferenceable(24), i8** readonly, i64, i1 zeroext) local_unnamed_addr #0 {
+  %6 = alloca %"class.std::__1::allocator", align 1
+  %7 = alloca %"class.std::__1::allocator", align 1
+  %8 = alloca %"class.std::__1::basic_string", align 8
+  %9 = alloca %"class.std::__1::basic_string", align 8
+  %10 = alloca %"class.std::__1::basic_string", align 8
+  %11 = alloca %"class.std::__1::basic_string", align 8
+  %12 = alloca %"class.std::__1::basic_string", align 8
+  %13 = alloca %"class.std::__1::vector", align 8
+  %14 = tail call zeroext i1 @_ZNK4GURL19SchemeIsHTTPOrHTTPSEv(%class.GURL* %0) #9
+  br i1 %14, label %15, label %249
+
+15:                                               ; preds = %5
+  %16 = bitcast %"class.std::__1::basic_string"* %1 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %17 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %16, i64 0, i32 1, i32 0
+  %18 = load i8, i8* %17, align 1
+  %19 = icmp slt i8 %18, 0
+  %20 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %1, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %21 = load i64, i64* %20, align 8
+  %22 = zext i8 %18 to i64
+  %23 = select i1 %19, i64 %21, i64 %22
+  %24 = icmp eq i64 %23, 0
+  br i1 %24, label %249, label %25
+
+25:                                               ; preds = %15
+  %26 = tail call i64 @_ZN3net27registry_controlled_domains17GetRegistryLengthERK4GURLNS0_21UnknownRegistryFilterENS0_21PrivateRegistryFilterE(%class.GURL* dereferenceable(120) %0, i32 0, i32 0) #9
+  %27 = icmp eq i64 %26, 0
+  br i1 %27, label %249, label %28
+
+28:                                               ; preds = %25
+  %29 = bitcast %"class.std::__1::basic_string"* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %29) #9
+  %30 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %8, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %31 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %8, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %32 = bitcast %"class.std::__1::basic_string"* %8 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %32, i8 -86, i64 24, i1 false)
+  %33 = load i8, i8* %17, align 1
+  %34 = icmp slt i8 %33, 0
+  %35 = load i64, i64* %20, align 8
+  %36 = zext i8 %33 to i64
+  %37 = select i1 %34, i64 %35, i64 %36
+  %38 = xor i64 %26, -1
+  %39 = add i64 %37, %38
+  %40 = bitcast %"class.std::__1::basic_string"* %1 to %"class.std::__1::allocator"*
+  call void @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1ERKS5_mmRKS4_(%"class.std::__1::basic_string"* nonnull %8, %"class.std::__1::basic_string"* dereferenceable(24) %1, i64 0, i64 %39, %"class.std::__1::allocator"* dereferenceable(1) %40) #9
+  %41 = bitcast %"class.std::__1::basic_string"* %9 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %41) #9
+  %42 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %9, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %43 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %9, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %44 = bitcast %"class.std::__1::basic_string"* %10 to i8*
+  %45 = bitcast %"class.std::__1::basic_string"* %9 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %45, i8 -86, i64 24, i1 false)
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %44) #9
+  %46 = getelementptr inbounds %class.GURL, %class.GURL* %0, i64 0, i32 2, i32 3, i32 1
+  %47 = load i32, i32* %46, align 4, !noalias !18
+  %48 = icmp slt i32 %47, 1
+  br i1 %48, label %49, label %51
+
+49:                                               ; preds = %28
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %44, i8 0, i64 24, i1 false) #9, !alias.scope !19
+  %50 = bitcast %"class.std::__1::basic_string"* %11 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %50) #9
+  br label %61
+
+51:                                               ; preds = %28
+  %52 = getelementptr inbounds %class.GURL, %class.GURL* %0, i64 0, i32 0
+  %53 = getelementptr inbounds %class.GURL, %class.GURL* %0, i64 0, i32 2, i32 3, i32 0
+  %54 = load i32, i32* %53, align 4, !noalias !19
+  %55 = sext i32 %54 to i64
+  %56 = sext i32 %47 to i64
+  %57 = getelementptr inbounds %"class.std::__1::allocator", %"class.std::__1::allocator"* %7, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %57) #9, !noalias !19
+  call void @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1ERKS5_mmRKS4_(%"class.std::__1::basic_string"* nonnull %10, %"class.std::__1::basic_string"* dereferenceable(24) %52, i64 %55, i64 %56, %"class.std::__1::allocator"* nonnull dereferenceable(1) %7) #9
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %57) #9, !noalias !19
+  %58 = load i32, i32* %46, align 4, !noalias !24
+  %59 = bitcast %"class.std::__1::basic_string"* %11 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %59) #9
+  %60 = icmp slt i32 %58, 1
+  br i1 %60, label %61, label %63
+
+61:                                               ; preds = %49, %51
+  %62 = phi i8* [ %50, %49 ], [ %59, %51 ]
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %62, i8 0, i64 24, i1 false) #9, !alias.scope !24
+  br label %68
+
+63:                                               ; preds = %51
+  %64 = load i32, i32* %53, align 4, !noalias !24
+  %65 = sext i32 %64 to i64
+  %66 = sext i32 %58 to i64
+  %67 = getelementptr inbounds %"class.std::__1::allocator", %"class.std::__1::allocator"* %6, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %67) #9, !noalias !24
+  call void @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1ERKS5_mmRKS4_(%"class.std::__1::basic_string"* nonnull %11, %"class.std::__1::basic_string"* dereferenceable(24) %52, i64 %65, i64 %66, %"class.std::__1::allocator"* nonnull dereferenceable(1) %6) #9
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %67) #9, !noalias !24
+  br label %68
+
+68:                                               ; preds = %61, %63
+  %69 = phi i8* [ %62, %61 ], [ %59, %63 ]
+  %70 = bitcast %"class.std::__1::basic_string"* %11 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %71 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %70, i64 0, i32 1, i32 0
+  %72 = load i8, i8* %71, align 1
+  %73 = icmp slt i8 %72, 0
+  %74 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %11, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %75 = load i64, i64* %74, align 8
+  %76 = zext i8 %72 to i64
+  %77 = select i1 %73, i64 %75, i64 %76
+  %78 = add i64 %77, %38
+  %79 = bitcast %"class.std::__1::basic_string"* %10 to %"class.std::__1::allocator"*
+  call void @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1ERKS5_mmRKS4_(%"class.std::__1::basic_string"* nonnull %9, %"class.std::__1::basic_string"* nonnull dereferenceable(24) %10, i64 0, i64 %78, %"class.std::__1::allocator"* nonnull dereferenceable(1) %79) #9
+  %80 = load i8, i8* %71, align 1
+  %81 = icmp slt i8 %80, 0
+  br i1 %81, label %82, label %85
+
+82:                                               ; preds = %68
+  %83 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %11, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %84 = load i8*, i8** %83, align 8
+  call void @_ZdlPv(i8* %84) #10
+  br label %85
+
+85:                                               ; preds = %68, %82
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %69) #9
+  %86 = bitcast %"class.std::__1::basic_string"* %10 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %87 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %86, i64 0, i32 1, i32 0
+  %88 = load i8, i8* %87, align 1
+  %89 = icmp slt i8 %88, 0
+  br i1 %89, label %90, label %93
+
+90:                                               ; preds = %85
+  %91 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %10, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %92 = load i8*, i8** %91, align 8
+  call void @_ZdlPv(i8* %92) #10
+  br label %93
+
+93:                                               ; preds = %85, %90
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %44) #9
+  br i1 %4, label %98, label %94
+
+94:                                               ; preds = %93
+  %95 = bitcast %"class.std::__1::basic_string"* %8 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %96 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %95, i64 0, i32 1, i32 0
+  %97 = load i8, i8* %96, align 1
+  br label %131
+
+98:                                               ; preds = %93
+  %99 = getelementptr inbounds i8*, i8** %2, i64 %3
+  %100 = bitcast %"class.std::__1::basic_string"* %8 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %101 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %100, i64 0, i32 1, i32 0
+  %102 = load i8, i8* %101, align 1
+  %103 = icmp slt i8 %102, 0
+  %104 = load i8*, i8** %30, align 8
+  %105 = select i1 %103, i8* %104, i8* %29
+  %106 = icmp eq i64 %3, 0
+  br i1 %106, label %124, label %107
+
+107:                                              ; preds = %98
+  %108 = shl nuw i64 %3, 3
+  %109 = ashr exact i64 %108, 3
+  br label %110
+
+110:                                              ; preds = %110, %107
+  %111 = phi i64 [ %109, %107 ], [ %122, %110 ]
+  %112 = phi i8** [ %2, %107 ], [ %121, %110 ]
+  %113 = lshr i64 %111, 1
+  %114 = getelementptr inbounds i8*, i8** %112, i64 %113
+  %115 = load i8*, i8** %114, align 8
+  %116 = call i32 @strcmp(i8* %115, i8* %105) #12
+  %117 = icmp slt i32 %116, 0
+  %118 = getelementptr inbounds i8*, i8** %114, i64 1
+  %119 = xor i64 %113, -1
+  %120 = add i64 %111, %119
+  %121 = select i1 %117, i8** %118, i8** %112
+  %122 = select i1 %117, i64 %120, i64 %113
+  %123 = icmp eq i64 %122, 0
+  br i1 %123, label %124, label %110
+
+124:                                              ; preds = %110, %98
+  %125 = phi i8** [ %2, %98 ], [ %121, %110 ]
+  %126 = icmp eq i8** %125, %99
+  br i1 %126, label %155, label %127
+
+127:                                              ; preds = %124
+  %128 = load i8*, i8** %125, align 8
+  %129 = call i32 @strcmp(i8* %105, i8* %128) #12
+  %130 = icmp sgt i32 %129, -1
+  br i1 %130, label %131, label %155
+
+131:                                              ; preds = %94, %127
+  %132 = phi i8 [ %97, %94 ], [ %102, %127 ]
+  %133 = bitcast %"class.std::__1::basic_string"* %9 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %134 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %133, i64 0, i32 1, i32 0
+  %135 = load i8, i8* %134, align 1
+  %136 = icmp slt i8 %135, 0
+  %137 = load i64, i64* %43, align 8
+  %138 = zext i8 %135 to i64
+  %139 = select i1 %136, i64 %137, i64 %138
+  %140 = icmp slt i8 %132, 0
+  %141 = load i64, i64* %31, align 8
+  %142 = zext i8 %132 to i64
+  %143 = select i1 %140, i64 %141, i64 %142
+  %144 = icmp eq i64 %139, %143
+  br i1 %144, label %235, label %145
+
+145:                                              ; preds = %131
+  %146 = bitcast %"class.std::__1::basic_string"* %12 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %146) #9
+  %147 = xor i64 %143, -1
+  %148 = add i64 %139, %147
+  %149 = bitcast %"class.std::__1::basic_string"* %9 to %"class.std::__1::allocator"*
+  call void @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1ERKS5_mmRKS4_(%"class.std::__1::basic_string"* nonnull %12, %"class.std::__1::basic_string"* nonnull dereferenceable(24) %9, i64 0, i64 %148, %"class.std::__1::allocator"* nonnull dereferenceable(1) %149) #9
+  %150 = load i8, i8* %134, align 1
+  %151 = icmp slt i8 %150, 0
+  br i1 %151, label %152, label %154
+
+152:                                              ; preds = %145
+  %153 = load i8*, i8** %42, align 8
+  call void @_ZdlPv(i8* %153) #10
+  br label %154
+
+154:                                              ; preds = %152, %145
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %41, i8* nonnull align 8 %146, i64 24, i1 false) #9
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %146) #9
+  br label %155
+
+155:                                              ; preds = %124, %154, %127
+  %156 = bitcast %"class.std::__1::vector"* %13 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %156) #9
+  %157 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %13, i64 0, i32 0, i32 0
+  %158 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %13, i64 0, i32 0, i32 1
+  %159 = bitcast %"class.std::__1::basic_string"* %9 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %160 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %159, i64 0, i32 1, i32 0
+  %161 = bitcast %"class.std::__1::vector"* %13 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %161, i8 -86, i64 24, i1 false)
+  %162 = load i8, i8* %160, align 1
+  %163 = icmp slt i8 %162, 0
+  %164 = load i8*, i8** %42, align 8
+  %165 = select i1 %163, i8* %164, i8* %41
+  %166 = load i64, i64* %43, align 8
+  %167 = zext i8 %162 to i64
+  %168 = select i1 %163, i64 %166, i64 %167
+  call void @_ZN4base11SplitStringENS_16BasicStringPieceIcNSt3__111char_traitsIcEEEES4_NS_18WhitespaceHandlingENS_11SplitResultE(%"class.std::__1::vector"* nonnull sret %13, i8* %165, i64 %168, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str, i64 0, i64 0), i64 2, i32 1, i32 1) #9
+  %169 = load %"class.std::__1::basic_string"*, %"class.std::__1::basic_string"** %157, align 8
+  %170 = load %"class.std::__1::basic_string"*, %"class.std::__1::basic_string"** %158, align 8
+  %171 = icmp eq %"class.std::__1::basic_string"* %169, %170
+  br i1 %171, label %211, label %172
+
+172:                                              ; preds = %155
+  %173 = getelementptr inbounds i8*, i8** %2, i64 %3
+  %174 = icmp eq i64 %3, 0
+  %175 = shl nuw i64 %3, 3
+  %176 = ashr exact i64 %175, 3
+  br label %177
+
+177:                                              ; preds = %172, %208
+  %178 = phi %"class.std::__1::basic_string"* [ %169, %172 ], [ %209, %208 ]
+  %179 = bitcast %"class.std::__1::basic_string"* %178 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %180 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %179, i64 0, i32 1, i32 0
+  %181 = load i8, i8* %180, align 1
+  %182 = icmp slt i8 %181, 0
+  %183 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %178, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %184 = load i8*, i8** %183, align 8
+  %185 = bitcast %"class.std::__1::basic_string"* %178 to i8*
+  %186 = select i1 %182, i8* %184, i8* %185
+  br i1 %174, label %201, label %187
+
+187:                                              ; preds = %177, %187
+  %188 = phi i64 [ %199, %187 ], [ %176, %177 ]
+  %189 = phi i8** [ %198, %187 ], [ %2, %177 ]
+  %190 = lshr i64 %188, 1
+  %191 = getelementptr inbounds i8*, i8** %189, i64 %190
+  %192 = load i8*, i8** %191, align 8
+  %193 = call i32 @strcmp(i8* %192, i8* %186) #12
+  %194 = icmp slt i32 %193, 0
+  %195 = getelementptr inbounds i8*, i8** %191, i64 1
+  %196 = xor i64 %190, -1
+  %197 = add i64 %188, %196
+  %198 = select i1 %194, i8** %195, i8** %189
+  %199 = select i1 %194, i64 %197, i64 %190
+  %200 = icmp eq i64 %199, 0
+  br i1 %200, label %201, label %187
+
+201:                                              ; preds = %187, %177
+  %202 = phi i8** [ %2, %177 ], [ %198, %187 ]
+  %203 = icmp eq i8** %202, %173
+  br i1 %203, label %208, label %204
+
+204:                                              ; preds = %201
+  %205 = load i8*, i8** %202, align 8
+  %206 = call i32 @strcmp(i8* %186, i8* %205) #12
+  %207 = icmp sgt i32 %206, -1
+  br i1 %207, label %211, label %208
+
+208:                                              ; preds = %201, %204
+  %209 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %178, i64 1
+  %210 = icmp eq %"class.std::__1::basic_string"* %209, %170
+  br i1 %210, label %211, label %177
+
+211:                                              ; preds = %204, %208, %155
+  %212 = phi i1 [ false, %155 ], [ false, %208 ], [ true, %204 ]
+  %213 = icmp eq %"class.std::__1::basic_string"* %169, null
+  br i1 %213, label %233, label %214
+
+214:                                              ; preds = %211
+  %215 = bitcast %"class.std::__1::basic_string"* %169 to i8*
+  br i1 %171, label %231, label %216
+
+216:                                              ; preds = %214, %226
+  %217 = phi %"class.std::__1::basic_string"* [ %218, %226 ], [ %170, %214 ]
+  %218 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %217, i64 -1
+  %219 = bitcast %"class.std::__1::basic_string"* %218 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %220 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %219, i64 0, i32 1, i32 0
+  %221 = load i8, i8* %220, align 1
+  %222 = icmp slt i8 %221, 0
+  br i1 %222, label %223, label %226
+
+223:                                              ; preds = %216
+  %224 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %218, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %225 = load i8*, i8** %224, align 8
+  call void @_ZdlPv(i8* %225) #10
+  br label %226
+
+226:                                              ; preds = %223, %216
+  %227 = icmp eq %"class.std::__1::basic_string"* %218, %169
+  br i1 %227, label %228, label %216
+
+228:                                              ; preds = %226
+  %229 = bitcast %"class.std::__1::vector"* %13 to i8**
+  %230 = load i8*, i8** %229, align 8
+  br label %231
+
+231:                                              ; preds = %228, %214
+  %232 = phi i8* [ %230, %228 ], [ %215, %214 ]
+  store %"class.std::__1::basic_string"* %169, %"class.std::__1::basic_string"** %158, align 8
+  call void @_ZdlPv(i8* %232) #10
+  br label %233
+
+233:                                              ; preds = %211, %231
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %156) #9
+  %234 = load i8, i8* %160, align 1
+  br label %235
+
+235:                                              ; preds = %131, %233
+  %236 = phi i8 [ %234, %233 ], [ %135, %131 ]
+  %237 = phi i1 [ %212, %233 ], [ false, %131 ]
+  %238 = icmp slt i8 %236, 0
+  br i1 %238, label %239, label %241
+
+239:                                              ; preds = %235
+  %240 = load i8*, i8** %42, align 8
+  call void @_ZdlPv(i8* %240) #10
+  br label %241
+
+241:                                              ; preds = %235, %239
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %41) #9
+  %242 = bitcast %"class.std::__1::basic_string"* %8 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %243 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %242, i64 0, i32 1, i32 0
+  %244 = load i8, i8* %243, align 1
+  %245 = icmp slt i8 %244, 0
+  br i1 %245, label %246, label %248
+
+246:                                              ; preds = %241
+  %247 = load i8*, i8** %30, align 8
+  call void @_ZdlPv(i8* %247) #10
+  br label %248
+
+248:                                              ; preds = %241, %246
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %29) #9
+  br label %249
+
+249:                                              ; preds = %248, %25, %15, %5
+  %250 = phi i1 [ false, %5 ], [ false, %15 ], [ %237, %248 ], [ false, %25 ]
+  ret i1 %250
+}
+
+declare zeroext i1 @_ZNK4GURL19SchemeIsHTTPOrHTTPSEv(%class.GURL*) local_unnamed_addr #2
+
+declare i64 @_ZN3net27registry_controlled_domains17GetRegistryLengthERK4GURLNS0_21UnknownRegistryFilterENS0_21PrivateRegistryFilterE(%class.GURL* dereferenceable(120), i32, i32) local_unnamed_addr #2
+
+declare void @_ZN4base11SplitStringENS_16BasicStringPieceIcNSt3__111char_traitsIcEEEES4_NS_18WhitespaceHandlingENS_11SplitResultE(%"class.std::__1::vector"* sret, i8*, i64, i8*, i64, i32, i32) local_unnamed_addr #2
+
+declare void @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1ERKS5_mmRKS4_(%"class.std::__1::basic_string"*, %"class.std::__1::basic_string"* dereferenceable(24), i64, i64, %"class.std::__1::allocator"* dereferenceable(1)) unnamed_addr #2
+
+; Function Attrs: nofree nounwind readonly
+declare i32 @strcmp(i8* nocapture, i8* nocapture) local_unnamed_addr #4
+
+; Function Attrs: argmemonly nofree nounwind readonly
+declare i64 @strlen(i8* nocapture) local_unnamed_addr #5
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #6
+
+; Function Attrs: noreturn
+declare void @_ZNKSt3__121__basic_string_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__basic_string_common"*) local_unnamed_addr #7
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #8
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #1
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden zeroext i1 @_ZN4base8internal7InvokerINS0_9BindStateIPFbPKN10reputation16SafetyTipsConfigERKNSt3__112basic_stringIcNS7_11char_traitsIcEENS7_9allocatorIcEEEEEJS6_EEEFbSF_EE3RunEPNS0_13BindStateBaseESF_(%"class.base::internal::BindStateBase"*, %"class.std::__1::basic_string"* dereferenceable(24)) #0 comdat align 2 {
+  %3 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1
+  %4 = bitcast %"class.base::internal::BindStateBase"* %3 to i1 (%"class.reputation::SafetyTipsConfig"*, %"class.std::__1::basic_string"*)**
+  %5 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 1
+  %6 = bitcast void ()** %5 to %"class.reputation::SafetyTipsConfig"**
+  %7 = load i1 (%"class.reputation::SafetyTipsConfig"*, %"class.std::__1::basic_string"*)*, i1 (%"class.reputation::SafetyTipsConfig"*, %"class.std::__1::basic_string"*)** %4, align 8
+  %8 = load %"class.reputation::SafetyTipsConfig"*, %"class.reputation::SafetyTipsConfig"** %6, align 8
+  %9 = tail call zeroext i1 %7(%"class.reputation::SafetyTipsConfig"* %8, %"class.std::__1::basic_string"* dereferenceable(24) %1) #9
+  ret i1 %9
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal9BindStateIPFbPKN10reputation16SafetyTipsConfigERKNSt3__112basic_stringIcNS6_11char_traitsIcEENS6_9allocatorIcEEEEEJS5_EE7DestroyEPKNS0_13BindStateBaseE(%"class.base::internal::BindStateBase"*) #0 comdat align 2 {
+  %2 = icmp eq %"class.base::internal::BindStateBase"* %0, null
+  br i1 %2, label %5, label %3
+
+3:                                                ; preds = %1
+  %4 = bitcast %"class.base::internal::BindStateBase"* %0 to i8*
+  tail call void @_ZdlPv(i8* %4) #10
+  br label %5
+
+5:                                                ; preds = %3, %1
+  ret void
+}
+
+declare void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"*, void ()*, void (%"class.base::internal::BindStateBase"*)*) unnamed_addr #2
+
+declare dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKcm(%"class.std::__1::basic_string"*, i8*, i64) local_unnamed_addr #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { argmemonly nounwind }
+attributes #2 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nofree nounwind readonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { argmemonly nofree nounwind readonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { noreturn "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #9 = { nounwind }
+attributes #10 = { builtin nounwind }
+attributes #11 = { noreturn nounwind }
+attributes #12 = { nounwind readonly }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{!3, !5}
+!3 = distinct !{!3, !4, !"_ZN4base8internal8BindImplINS_17RepeatingCallbackEPFbPKN10reputation16SafetyTipsConfigERKNSt3__112basic_stringIcNS7_11char_traitsIcEENS7_9allocatorIcEEEEEJRS6_EEEDcOT0_DpOT1_: argument 0"}
+!4 = distinct !{!4, !"_ZN4base8internal8BindImplINS_17RepeatingCallbackEPFbPKN10reputation16SafetyTipsConfigERKNSt3__112basic_stringIcNS7_11char_traitsIcEENS7_9allocatorIcEEEEEJRS6_EEEDcOT0_DpOT1_"}
+!5 = distinct !{!5, !6, !"_ZN4base13BindRepeatingIPFbPKN10reputation16SafetyTipsConfigERKNSt3__112basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEEEJRS4_EEENS_17RepeatingCallbackINS_8internal14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSK_DpOSL_: argument 0"}
+!6 = distinct !{!6, !"_ZN4base13BindRepeatingIPFbPKN10reputation16SafetyTipsConfigERKNSt3__112basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEEEJRS4_EEENS_17RepeatingCallbackINS_8internal14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSK_DpOSL_"}
+!7 = !{!8, !10}
+!8 = distinct !{!8, !9, !"_ZNK4GURL15ComponentStringERKN3url9ComponentE: argument 0"}
+!9 = distinct !{!9, !"_ZNK4GURL15ComponentStringERKN3url9ComponentE"}
+!10 = distinct !{!10, !11, !"_ZNK4GURL6schemeEv: argument 0"}
+!11 = distinct !{!11, !"_ZNK4GURL6schemeEv"}
+!12 = !{!13}
+!13 = distinct !{!13, !14, !"_ZNSt3__1plIcNS_11char_traitsIcEENS_9allocatorIcEEEENS_12basic_stringIT_T0_T1_EERKS9_PKS6_: argument 0"}
+!14 = distinct !{!14, !"_ZNSt3__1plIcNS_11char_traitsIcEENS_9allocatorIcEEEENS_12basic_stringIT_T0_T1_EERKS9_PKS6_"}
+!15 = !{!16}
+!16 = distinct !{!16, !17, !"_ZNSt3__1plIcNS_11char_traitsIcEENS_9allocatorIcEEEENS_12basic_stringIT_T0_T1_EEOS9_RKS9_: argument 0"}
+!17 = distinct !{!17, !"_ZNSt3__1plIcNS_11char_traitsIcEENS_9allocatorIcEEEENS_12basic_stringIT_T0_T1_EEOS9_RKS9_"}
+!18 = !{}
+!19 = !{!20, !22}
+!20 = distinct !{!20, !21, !"_ZNK4GURL15ComponentStringERKN3url9ComponentE: argument 0"}
+!21 = distinct !{!21, !"_ZNK4GURL15ComponentStringERKN3url9ComponentE"}
+!22 = distinct !{!22, !23, !"_ZNK4GURL4hostEv: argument 0"}
+!23 = distinct !{!23, !"_ZNK4GURL4hostEv"}
+!24 = !{!25, !27}
+!25 = distinct !{!25, !26, !"_ZNK4GURL15ComponentStringERKN3url9ComponentE: argument 0"}
+!26 = distinct !{!26, !"_ZNK4GURL15ComponentStringERKN3url9ComponentE"}
+!27 = distinct !{!27, !28, !"_ZNK4GURL4hostEv: argument 0"}
+!28 = distinct !{!28, !"_ZNK4GURL4hostEv"}

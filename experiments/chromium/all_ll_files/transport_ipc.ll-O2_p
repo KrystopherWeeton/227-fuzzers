@@ -1,0 +1,858 @@
+; ModuleID = '../../native_client/src/trusted/debug_stub/transport_ipc.cc'
+source_filename = "../../native_client/src/trusted/debug_stub/transport_ipc.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%"class.port::ITransport" = type { i32 (...)** }
+%"class.port::TransportIPC" = type <{ %"class.port::ITransport", %"class.nacl::scoped_array", i32, i32, i32, [4 x i8] }>
+%"class.nacl::scoped_array" = type { i8* }
+%struct.fd_set = type { [16 x i64] }
+%struct.timeval = type { i64, i64 }
+%struct.NaClApp = type { i8, i64, i32, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i32, i32, %struct.NaClMutex, %struct.NaClCondVar, [151 x %struct.NaClSyscallTableEntry], %struct.NaClResourceNaClApp, i32, i32, %struct.NaClVmmap, %struct.NaClIntervalMultiset*, %struct.NaClDescEffector*, i32, i32, %struct.NaClDesc*, %struct.NaClMutex, i8*, %struct.NaClDynamicRegion*, i32, i32, i32, i32, i64, i32, i32, i32, %struct.NaClCPUFeaturesAbstract*, %struct.NaClValidationCache*, i32, i32, i32, i32, i32, i64, %struct.NaClMutex, %struct.DynArray, i32, %struct.NaClFastMutex, %struct.DynArray, %struct.NaClDebugCallbacks*, %struct.NaClDesc*, %struct.NaClDesc*, %struct.NaClMutex, i32, i32, i32, i32, i32, i32, i32, %struct.NaClValidatorInterface* }
+%struct.NaClCondVar = type { %union.pthread_cond_t }
+%union.pthread_cond_t = type { %struct.__pthread_cond_s }
+%struct.__pthread_cond_s = type { %union.anon, %union.anon.0, [2 x i32], [2 x i32], i32, i32, [2 x i32] }
+%union.anon = type { i64 }
+%union.anon.0 = type { i64 }
+%struct.NaClSyscallTableEntry = type { i32 (%struct.NaClAppThread*)* }
+%struct.NaClAppThread = type opaque
+%struct.NaClResourceNaClApp = type { %struct.NaClResource, %struct.NaClApp* }
+%struct.NaClResource = type { %struct.NaClResourceSchemes*, i64 }
+%struct.NaClResourceSchemes = type { i8*, i32, %struct.NaClDesc* (%struct.NaClResource*, i8*, i32, i32, i32)* }
+%struct.NaClVmmap = type { %struct.NaClVmmapEntry**, i64, i64, i32 }
+%struct.NaClVmmapEntry = type { i64, i64, i32, i32, i32, %struct.NaClDesc*, i64, i64 }
+%struct.NaClIntervalMultiset = type { %struct.NaClIntervalMultisetVtbl* }
+%struct.NaClIntervalMultisetVtbl = type { void (%struct.NaClIntervalMultiset*)*, void (%struct.NaClIntervalMultiset*, i32, i32)*, void (%struct.NaClIntervalMultiset*, i32, i32)*, i32 (%struct.NaClIntervalMultiset*, i32, i32)* }
+%struct.NaClDescEffector = type opaque
+%struct.NaClDynamicRegion = type opaque
+%struct.NaClCPUFeaturesAbstract = type opaque
+%struct.NaClValidationCache = type opaque
+%struct.NaClFastMutex = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%struct.DynArray = type { i64, i8**, i64, i32*, i64 }
+%struct.NaClDebugCallbacks = type { void (%struct.NaClAppThread*)*, void (%struct.NaClAppThread*)*, void ()* }
+%struct.NaClDesc = type opaque
+%struct.NaClMutex = type { %union.pthread_mutex_t, i32 }
+%struct.NaClValidatorInterface = type { i32, i32, i32, i32 (i64, i8*, i64, i32, i32, i32, %struct.NaClCPUFeaturesAbstract*, %struct.NaClValidationMetadata*, %struct.NaClValidationCache*)*, i32 (i64, i8*, i8*, i64, %struct.NaClCPUFeaturesAbstract*, i32 (i8*, i8*, i8)*)*, i32 (i64, i8*, i8*, i64, %struct.NaClCPUFeaturesAbstract*)*, i64, void (%struct.NaClCPUFeaturesAbstract*)*, void (%struct.NaClCPUFeaturesAbstract*)*, i32 (i64, i64, i8*, i64, %struct.NaClCPUFeaturesAbstract*)* }
+%struct.NaClValidationMetadata = type opaque
+
+$_ZN4port12TransportIPCD2Ev = comdat any
+
+$_ZN4port12TransportIPCD0Ev = comdat any
+
+$_ZN4port12TransportIPC4ReadEPvi = comdat any
+
+$_ZN4port12TransportIPC5WriteEPKvi = comdat any
+
+$_ZN4port12TransportIPC15IsDataAvailableEv = comdat any
+
+$_ZN4port12TransportIPC21WaitForDebugStubEventEP7NaClAppb = comdat any
+
+$_ZN4port12TransportIPC10DisconnectEv = comdat any
+
+$_ZN4port12TransportIPC16AcceptConnectionEv = comdat any
+
+$_ZN4port12TransportIPC17FillBufferIfEmptyEv = comdat any
+
+$_ZTVN4port12TransportIPCE = comdat any
+
+@_ZN4port12TransportIPC8kBufSizeE = hidden local_unnamed_addr constant i32 4096, align 4
+@_ZTVN4port12TransportIPCE = linkonce_odr hidden unnamed_addr constant { [10 x i8*] } { [10 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.port::TransportIPC"*)* @_ZN4port12TransportIPCD2Ev to i8*), i8* bitcast (void (%"class.port::TransportIPC"*)* @_ZN4port12TransportIPCD0Ev to i8*), i8* bitcast (i1 (%"class.port::TransportIPC"*, i8*, i32)* @_ZN4port12TransportIPC4ReadEPvi to i8*), i8* bitcast (i1 (%"class.port::TransportIPC"*, i8*, i32)* @_ZN4port12TransportIPC5WriteEPKvi to i8*), i8* bitcast (i1 (%"class.port::TransportIPC"*)* @_ZN4port12TransportIPC15IsDataAvailableEv to i8*), i8* bitcast (void (%"class.port::TransportIPC"*, %struct.NaClApp*, i1)* @_ZN4port12TransportIPC21WaitForDebugStubEventEP7NaClAppb to i8*), i8* bitcast (void (%"class.port::TransportIPC"*)* @_ZN4port12TransportIPC10DisconnectEv to i8*), i8* bitcast (i1 (%"class.port::TransportIPC"*)* @_ZN4port12TransportIPC16AcceptConnectionEv to i8*)] }, comdat, align 8
+@.str = private unnamed_addr constant [51 x i8] c"TransportIPC::Disconnect: Failed to close handle.\0A\00", align 1
+@.str.1 = private unnamed_addr constant [40 x i8] c"Fatal error in file %s, line %d: !(%s)\0A\00", align 1
+@.str.2 = private unnamed_addr constant [60 x i8] c"../../native_client/src/trusted/debug_stub/transport_ipc.cc\00", align 1
+@.str.3 = private unnamed_addr constant [14 x i8] c"IsConnected()\00", align 1
+@.str.4 = private unnamed_addr constant [16 x i8] c"ptr && len >= 0\00", align 1
+@.str.5 = private unnamed_addr constant [66 x i8] c"TransportIPC::FillBufferIfEmpty: Pipe closed from other process.\0A\00", align 1
+@.str.6 = private unnamed_addr constant [54 x i8] c"TransportIPC::Write: Pipe closed from other process.\0A\00", align 1
+@.str.7 = private unnamed_addr constant [75 x i8] c"TransportIPC::WaitForDebugStubEvent: Failed to wait for debug stub event.\0A\00", align 1
+@.str.8 = private unnamed_addr constant [84 x i8] c"TransportIPC::WaitForDebugStubEvent: Failed to read from debug stub event pipe fd.\0A\00", align 1
+@.str.9 = private unnamed_addr constant [15 x i8] c"!IsConnected()\00", align 1
+
+; Function Attrs: nofree nounwind ssp uwtable
+define hidden noalias nonnull %"class.port::ITransport"* @_ZN4port18CreateTransportIPCEi(i32) local_unnamed_addr #0 {
+  %2 = tail call i8* @_Znwm(i64 32) #9
+  %3 = bitcast i8* %2 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [10 x i8*] }, { [10 x i8*] }* @_ZTVN4port12TransportIPCE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %3, align 8
+  %4 = tail call i8* @_Znam(i64 4096) #9
+  %5 = getelementptr inbounds i8, i8* %2, i64 8
+  %6 = bitcast i8* %5 to i8**
+  store i8* %4, i8** %6, align 8
+  %7 = getelementptr inbounds i8, i8* %2, i64 16
+  %8 = bitcast i8* %7 to i32*
+  store i32 0, i32* %8, align 8
+  %9 = getelementptr inbounds i8, i8* %2, i64 20
+  %10 = bitcast i8* %9 to i32*
+  store i32 -1, i32* %10, align 4
+  %11 = getelementptr inbounds i8, i8* %2, i64 24
+  %12 = bitcast i8* %11 to i32*
+  store i32 %0, i32* %12, align 8
+  %13 = bitcast i8* %2 to %"class.port::ITransport"*
+  ret %"class.port::ITransport"* %13
+}
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #1
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znam(i64) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4port12TransportIPCD2Ev(%"class.port::TransportIPC"*) unnamed_addr #2 comdat align 2 {
+  %2 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [10 x i8*] }, { [10 x i8*] }* @_ZTVN4port12TransportIPCE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 4
+  %4 = load i32, i32* %3, align 8
+  %5 = icmp eq i32 %4, -1
+  br i1 %5, label %10, label %6
+
+6:                                                ; preds = %1
+  %7 = tail call i32 @close(i32 %4) #10
+  %8 = icmp eq i32 %7, 0
+  br i1 %8, label %10, label %9
+
+9:                                                ; preds = %6
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @.str, i64 0, i64 0)) #10
+  br label %10
+
+10:                                               ; preds = %6, %1, %9
+  %11 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 1, i32 0
+  %12 = load i8*, i8** %11, align 8
+  %13 = icmp eq i8* %12, null
+  br i1 %13, label %15, label %14
+
+14:                                               ; preds = %10
+  tail call void @_ZdaPv(i8* nonnull %12) #9
+  br label %15
+
+15:                                               ; preds = %10, %14
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4port12TransportIPCD0Ev(%"class.port::TransportIPC"*) unnamed_addr #2 comdat align 2 {
+  %2 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [10 x i8*] }, { [10 x i8*] }* @_ZTVN4port12TransportIPCE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 4
+  %4 = load i32, i32* %3, align 8
+  %5 = icmp eq i32 %4, -1
+  br i1 %5, label %10, label %6
+
+6:                                                ; preds = %1
+  %7 = tail call i32 @close(i32 %4) #10
+  %8 = icmp eq i32 %7, 0
+  br i1 %8, label %10, label %9
+
+9:                                                ; preds = %6
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([51 x i8], [51 x i8]* @.str, i64 0, i64 0)) #10
+  br label %10
+
+10:                                               ; preds = %9, %6, %1
+  %11 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 1, i32 0
+  %12 = load i8*, i8** %11, align 8
+  %13 = icmp eq i8* %12, null
+  br i1 %13, label %15, label %14
+
+14:                                               ; preds = %10
+  tail call void @_ZdaPv(i8* nonnull %12) #9
+  br label %15
+
+15:                                               ; preds = %10, %14
+  %16 = bitcast %"class.port::TransportIPC"* %0 to i8*
+  tail call void @_ZdlPv(i8* %16) #9
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden zeroext i1 @_ZN4port12TransportIPC4ReadEPvi(%"class.port::TransportIPC"*, i8*, i32) unnamed_addr #2 comdat align 2 {
+  %4 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 3
+  %5 = load i32, i32* %4, align 4
+  %6 = icmp eq i32 %5, -1
+  br i1 %6, label %7, label %8
+
+7:                                                ; preds = %3
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.1, i64 0, i64 0), i8* getelementptr inbounds ([60 x i8], [60 x i8]* @.str.2, i64 0, i64 0), i32 64, i8* getelementptr inbounds ([14 x i8], [14 x i8]* @.str.3, i64 0, i64 0)) #10
+  br label %8
+
+8:                                                ; preds = %3, %7
+  %9 = icmp ne i8* %1, null
+  %10 = icmp sgt i32 %2, -1
+  %11 = and i1 %9, %10
+  br i1 %11, label %13, label %12
+
+12:                                               ; preds = %8
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.1, i64 0, i64 0), i8* getelementptr inbounds ([60 x i8], [60 x i8]* @.str.2, i64 0, i64 0), i32 65, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str.4, i64 0, i64 0)) #10
+  br label %13
+
+13:                                               ; preds = %12, %8
+  %14 = icmp sgt i32 %2, 0
+  br i1 %14, label %15, label %38
+
+15:                                               ; preds = %13
+  %16 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 2
+  %17 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 1, i32 0
+  br label %18
+
+18:                                               ; preds = %15, %22
+  %19 = phi i8* [ %1, %15 ], [ %36, %22 ]
+  %20 = phi i32 [ %2, %15 ], [ %35, %22 ]
+  %21 = tail call zeroext i1 @_ZN4port12TransportIPC17FillBufferIfEmptyEv(%"class.port::TransportIPC"* %0)
+  br i1 %21, label %22, label %38
+
+22:                                               ; preds = %18
+  %23 = load i32, i32* %16, align 4
+  %24 = icmp slt i32 %23, %20
+  %25 = select i1 %24, i32 %23, i32 %20
+  %26 = load i8*, i8** %17, align 8
+  %27 = sext i32 %25 to i64
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %19, i8* align 1 %26, i64 %27, i1 false) #10
+  %28 = load i8*, i8** %17, align 8
+  %29 = getelementptr inbounds i8, i8* %28, i64 %27
+  %30 = load i32, i32* %16, align 8
+  %31 = sub nsw i32 %30, %25
+  %32 = sext i32 %31 to i64
+  tail call void @llvm.memmove.p0i8.p0i8.i64(i8* align 1 %28, i8* align 1 %29, i64 %32, i1 false) #10
+  %33 = load i32, i32* %16, align 8
+  %34 = sub nsw i32 %33, %25
+  store i32 %34, i32* %16, align 8
+  %35 = sub nsw i32 %20, %25
+  %36 = getelementptr inbounds i8, i8* %19, i64 %27
+  %37 = icmp sgt i32 %35, 0
+  br i1 %37, label %18, label %38
+
+38:                                               ; preds = %18, %22, %13
+  %39 = phi i1 [ true, %13 ], [ true, %22 ], [ false, %18 ]
+  ret i1 %39
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden zeroext i1 @_ZN4port12TransportIPC5WriteEPKvi(%"class.port::TransportIPC"*, i8*, i32) unnamed_addr #2 comdat align 2 {
+  %4 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 3
+  %5 = load i32, i32* %4, align 4
+  %6 = icmp eq i32 %5, -1
+  br i1 %6, label %7, label %8
+
+7:                                                ; preds = %3
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.1, i64 0, i64 0), i8* getelementptr inbounds ([60 x i8], [60 x i8]* @.str.2, i64 0, i64 0), i32 77, i8* getelementptr inbounds ([14 x i8], [14 x i8]* @.str.3, i64 0, i64 0)) #10
+  br label %8
+
+8:                                                ; preds = %3, %7
+  %9 = icmp ne i8* %1, null
+  %10 = icmp sgt i32 %2, -1
+  %11 = and i1 %9, %10
+  br i1 %11, label %13, label %12
+
+12:                                               ; preds = %8
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.1, i64 0, i64 0), i8* getelementptr inbounds ([60 x i8], [60 x i8]* @.str.2, i64 0, i64 0), i32 78, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str.4, i64 0, i64 0)) #10
+  br label %13
+
+13:                                               ; preds = %12, %8
+  %14 = icmp sgt i32 %2, 0
+  br i1 %14, label %15, label %41
+
+15:                                               ; preds = %13
+  %16 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 4
+  br label %17
+
+17:                                               ; preds = %15, %37
+  %18 = phi i8* [ %1, %15 ], [ %39, %37 ]
+  %19 = phi i32 [ %2, %15 ], [ %38, %37 ]
+  %20 = load i32, i32* %16, align 8
+  %21 = sext i32 %19 to i64
+  %22 = tail call i64 @write(i32 %20, i8* %18, i64 %21) #10
+  %23 = trunc i64 %22 to i32
+  %24 = icmp sgt i32 %23, 0
+  br i1 %24, label %25, label %30
+
+25:                                               ; preds = %17
+  %26 = shl i64 %22, 32
+  %27 = ashr exact i64 %26, 32
+  %28 = getelementptr inbounds i8, i8* %18, i64 %27
+  %29 = sub nsw i32 %19, %23
+  br label %37
+
+30:                                               ; preds = %17
+  %31 = icmp eq i32 %23, 0
+  br i1 %31, label %36, label %32
+
+32:                                               ; preds = %30
+  %33 = tail call i32* @__errno_location() #8
+  %34 = load i32, i32* %33, align 4
+  %35 = icmp eq i32 %34, 4
+  br i1 %35, label %37, label %36
+
+36:                                               ; preds = %32, %30
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([54 x i8], [54 x i8]* @.str.6, i64 0, i64 0)) #10
+  br label %37
+
+37:                                               ; preds = %32, %36, %25
+  %38 = phi i32 [ %29, %25 ], [ %19, %36 ], [ %19, %32 ]
+  %39 = phi i8* [ %28, %25 ], [ %18, %36 ], [ %18, %32 ]
+  %40 = icmp sgt i32 %38, 0
+  br i1 %40, label %17, label %41
+
+41:                                               ; preds = %37, %13
+  ret i1 true
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden zeroext i1 @_ZN4port12TransportIPC15IsDataAvailableEv(%"class.port::TransportIPC"*) unnamed_addr #2 comdat align 2 {
+  %2 = alloca %struct.fd_set, align 8
+  %3 = alloca %struct.timeval, align 8
+  %4 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 3
+  %5 = load i32, i32* %4, align 4
+  %6 = icmp eq i32 %5, -1
+  br i1 %6, label %7, label %8
+
+7:                                                ; preds = %1
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.1, i64 0, i64 0), i8* getelementptr inbounds ([60 x i8], [60 x i8]* @.str.2, i64 0, i64 0), i32 95, i8* getelementptr inbounds ([14 x i8], [14 x i8]* @.str.3, i64 0, i64 0)) #10
+  br label %8
+
+8:                                                ; preds = %1, %7
+  %9 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 2
+  %10 = load i32, i32* %9, align 8
+  %11 = icmp sgt i32 %10, 0
+  br i1 %11, label %42, label %12
+
+12:                                               ; preds = %8
+  %13 = bitcast %struct.fd_set* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 128, i8* nonnull %13) #10
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %13, i8 -86, i64 128, i1 false)
+  %14 = getelementptr inbounds %struct.fd_set, %struct.fd_set* %2, i64 0, i32 0, i64 0
+  %15 = call { i64, i64* } asm sideeffect "cld; rep; stosq", "={cx},={di},{ax},0,1,~{memory},~{dirflag},~{fpsr},~{flags}"(i32 0, i64 16, i64* nonnull %14) #10, !srcloc !2
+  %16 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 4
+  %17 = load i32, i32* %16, align 8
+  %18 = srem i32 %17, 64
+  %19 = zext i32 %18 to i64
+  %20 = shl i64 1, %19
+  %21 = sext i32 %17 to i64
+  %22 = call i1 @llvm.is.constant.i64(i64 %21)
+  br i1 %22, label %23, label %29
+
+23:                                               ; preds = %12
+  %24 = icmp ult i32 %17, 1024
+  br i1 %24, label %25, label %27
+
+25:                                               ; preds = %23
+  %26 = sdiv i64 %21, 64
+  br label %31
+
+27:                                               ; preds = %23
+  %28 = call i64 @__fdelt_warn(i64 %21) #10
+  br label %31
+
+29:                                               ; preds = %12
+  %30 = call i64 @__fdelt_chk(i64 %21) #10
+  br label %31
+
+31:                                               ; preds = %25, %27, %29
+  %32 = phi i64 [ %30, %29 ], [ %26, %25 ], [ %28, %27 ]
+  %33 = getelementptr inbounds %struct.fd_set, %struct.fd_set* %2, i64 0, i32 0, i64 %32
+  %34 = load i64, i64* %33, align 8
+  %35 = or i64 %34, %20
+  store i64 %35, i64* %33, align 8
+  %36 = bitcast %struct.timeval* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %36) #10
+  %37 = bitcast %struct.timeval* %3 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %37, i8 0, i64 16, i1 false)
+  %38 = load i32, i32* %16, align 8
+  %39 = add nsw i32 %38, 1
+  %40 = call i32 @select(i32 %39, %struct.fd_set* nonnull %2, %struct.fd_set* null, %struct.fd_set* null, %struct.timeval* nonnull %3) #10
+  %41 = icmp ne i32 %40, 0
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %36) #10
+  call void @llvm.lifetime.end.p0i8(i64 128, i8* nonnull %13) #10
+  br label %42
+
+42:                                               ; preds = %8, %31
+  %43 = phi i1 [ %41, %31 ], [ true, %8 ]
+  ret i1 %43
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4port12TransportIPC21WaitForDebugStubEventEP7NaClAppb(%"class.port::TransportIPC"*, %struct.NaClApp*, i1 zeroext) unnamed_addr #2 comdat align 2 {
+  %4 = alloca %struct.fd_set, align 8
+  %5 = alloca %struct.timeval, align 8
+  %6 = alloca [16 x i8], align 16
+  %7 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 2
+  %8 = load i32, i32* %7, align 8
+  %9 = icmp slt i32 %8, 1
+  %10 = or i1 %9, %2
+  br i1 %10, label %11, label %15
+
+11:                                               ; preds = %3
+  %12 = getelementptr inbounds %struct.NaClApp, %struct.NaClApp* %1, i64 0, i32 60
+  %13 = load i32, i32* %12, align 4
+  %14 = icmp sgt i32 %13, 0
+  br i1 %14, label %15, label %16
+
+15:                                               ; preds = %3, %11
+  br label %16
+
+16:                                               ; preds = %15, %11
+  %17 = phi i1 [ false, %15 ], [ true, %11 ]
+  %18 = bitcast %struct.fd_set* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 128, i8* nonnull %18) #10
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %18, i8 -86, i64 128, i1 false)
+  %19 = getelementptr inbounds %struct.fd_set, %struct.fd_set* %4, i64 0, i32 0, i64 0
+  %20 = call { i64, i64* } asm sideeffect "cld; rep; stosq", "={cx},={di},{ax},0,1,~{memory},~{dirflag},~{fpsr},~{flags}"(i32 0, i64 16, i64* nonnull %19) #10, !srcloc !3
+  %21 = getelementptr inbounds %struct.NaClApp, %struct.NaClApp* %1, i64 0, i32 61
+  %22 = load i32, i32* %21, align 8
+  %23 = srem i32 %22, 64
+  %24 = zext i32 %23 to i64
+  %25 = shl i64 1, %24
+  %26 = sext i32 %22 to i64
+  %27 = call i1 @llvm.is.constant.i64(i64 %26)
+  br i1 %27, label %28, label %34
+
+28:                                               ; preds = %16
+  %29 = icmp ult i32 %22, 1024
+  br i1 %29, label %30, label %32
+
+30:                                               ; preds = %28
+  %31 = sdiv i64 %26, 64
+  br label %36
+
+32:                                               ; preds = %28
+  %33 = call i64 @__fdelt_warn(i64 %26) #10
+  br label %36
+
+34:                                               ; preds = %16
+  %35 = call i64 @__fdelt_chk(i64 %26) #10
+  br label %36
+
+36:                                               ; preds = %30, %32, %34
+  %37 = phi i64 [ %35, %34 ], [ %31, %30 ], [ %33, %32 ]
+  %38 = getelementptr inbounds %struct.fd_set, %struct.fd_set* %4, i64 0, i32 0, i64 %37
+  %39 = load i64, i64* %38, align 8
+  %40 = or i64 %39, %25
+  store i64 %40, i64* %38, align 8
+  %41 = load i32, i32* %21, align 8
+  %42 = load i32, i32* %7, align 8
+  %43 = icmp slt i32 %42, 4096
+  br i1 %43, label %44, label %68
+
+44:                                               ; preds = %36
+  %45 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 4
+  %46 = load i32, i32* %45, align 8
+  %47 = srem i32 %46, 64
+  %48 = zext i32 %47 to i64
+  %49 = shl i64 1, %48
+  %50 = sext i32 %46 to i64
+  %51 = call i1 @llvm.is.constant.i64(i64 %50)
+  br i1 %51, label %52, label %58
+
+52:                                               ; preds = %44
+  %53 = icmp ult i32 %46, 1024
+  br i1 %53, label %54, label %56
+
+54:                                               ; preds = %52
+  %55 = sdiv i64 %50, 64
+  br label %60
+
+56:                                               ; preds = %52
+  %57 = call i64 @__fdelt_warn(i64 %50) #10
+  br label %60
+
+58:                                               ; preds = %44
+  %59 = call i64 @__fdelt_chk(i64 %50) #10
+  br label %60
+
+60:                                               ; preds = %54, %56, %58
+  %61 = phi i64 [ %59, %58 ], [ %55, %54 ], [ %57, %56 ]
+  %62 = getelementptr inbounds %struct.fd_set, %struct.fd_set* %4, i64 0, i32 0, i64 %61
+  %63 = load i64, i64* %62, align 8
+  %64 = or i64 %63, %49
+  store i64 %64, i64* %62, align 8
+  %65 = load i32, i32* %45, align 4
+  %66 = icmp slt i32 %41, %65
+  %67 = select i1 %66, i32 %65, i32 %41
+  br label %68
+
+68:                                               ; preds = %60, %36
+  %69 = phi i32 [ %67, %60 ], [ %41, %36 ]
+  br i1 %17, label %70, label %73
+
+70:                                               ; preds = %68
+  %71 = add nsw i32 %69, 1
+  %72 = call i32 @select(i32 %71, %struct.fd_set* nonnull %4, %struct.fd_set* null, %struct.fd_set* null, %struct.timeval* null) #10
+  br label %78
+
+73:                                               ; preds = %68
+  %74 = bitcast %struct.timeval* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %74) #10
+  %75 = add nsw i32 %69, 1
+  %76 = bitcast %struct.timeval* %5 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %76, i8 0, i64 16, i1 false)
+  %77 = call i32 @select(i32 %75, %struct.fd_set* nonnull %4, %struct.fd_set* null, %struct.fd_set* null, %struct.timeval* nonnull %5) #10
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %74) #10
+  br label %78
+
+78:                                               ; preds = %73, %70
+  %79 = phi i32 [ %72, %70 ], [ %77, %73 ]
+  %80 = icmp slt i32 %79, 0
+  br i1 %80, label %81, label %82
+
+81:                                               ; preds = %78
+  call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([75 x i8], [75 x i8]* @.str.7, i64 0, i64 0)) #10
+  br label %137
+
+82:                                               ; preds = %78
+  %83 = icmp eq i32 %79, 0
+  br i1 %83, label %137, label %84
+
+84:                                               ; preds = %82
+  %85 = load i32, i32* %21, align 8
+  %86 = sext i32 %85 to i64
+  %87 = call i1 @llvm.is.constant.i64(i64 %86)
+  br i1 %87, label %88, label %94
+
+88:                                               ; preds = %84
+  %89 = icmp ult i32 %85, 1024
+  br i1 %89, label %90, label %92
+
+90:                                               ; preds = %88
+  %91 = sdiv i64 %86, 64
+  br label %96
+
+92:                                               ; preds = %88
+  %93 = call i64 @__fdelt_warn(i64 %86) #10
+  br label %96
+
+94:                                               ; preds = %84
+  %95 = call i64 @__fdelt_chk(i64 %86) #10
+  br label %96
+
+96:                                               ; preds = %90, %92, %94
+  %97 = phi i64 [ %95, %94 ], [ %91, %90 ], [ %93, %92 ]
+  %98 = getelementptr inbounds %struct.fd_set, %struct.fd_set* %4, i64 0, i32 0, i64 %97
+  %99 = load i64, i64* %98, align 8
+  %100 = load i32, i32* %21, align 8
+  %101 = srem i32 %100, 64
+  %102 = zext i32 %101 to i64
+  %103 = shl i64 1, %102
+  %104 = and i64 %103, %99
+  %105 = icmp eq i64 %104, 0
+  br i1 %105, label %112, label %106
+
+106:                                              ; preds = %96
+  %107 = getelementptr inbounds [16 x i8], [16 x i8]* %6, i64 0, i64 0
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %107) #10
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %107, i8 -86, i64 16, i1 false)
+  %108 = call i64 @read(i32 %100, i8* nonnull %107, i64 16) #10
+  %109 = icmp slt i64 %108, 0
+  br i1 %109, label %110, label %111
+
+110:                                              ; preds = %106
+  call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([84 x i8], [84 x i8]* @.str.8, i64 0, i64 0)) #10
+  br label %111
+
+111:                                              ; preds = %110, %106
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %107) #10
+  br label %112
+
+112:                                              ; preds = %96, %111
+  %113 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 4
+  %114 = load i32, i32* %113, align 8
+  %115 = sext i32 %114 to i64
+  %116 = call i1 @llvm.is.constant.i64(i64 %115)
+  br i1 %116, label %117, label %123
+
+117:                                              ; preds = %112
+  %118 = icmp ult i32 %114, 1024
+  br i1 %118, label %119, label %121
+
+119:                                              ; preds = %117
+  %120 = sdiv i64 %115, 64
+  br label %125
+
+121:                                              ; preds = %117
+  %122 = call i64 @__fdelt_warn(i64 %115) #10
+  br label %125
+
+123:                                              ; preds = %112
+  %124 = call i64 @__fdelt_chk(i64 %115) #10
+  br label %125
+
+125:                                              ; preds = %119, %121, %123
+  %126 = phi i64 [ %124, %123 ], [ %120, %119 ], [ %122, %121 ]
+  %127 = getelementptr inbounds %struct.fd_set, %struct.fd_set* %4, i64 0, i32 0, i64 %126
+  %128 = load i64, i64* %127, align 8
+  %129 = load i32, i32* %113, align 8
+  %130 = srem i32 %129, 64
+  %131 = zext i32 %130 to i64
+  %132 = shl i64 1, %131
+  %133 = and i64 %132, %128
+  %134 = icmp eq i64 %133, 0
+  br i1 %134, label %137, label %135
+
+135:                                              ; preds = %125
+  %136 = call zeroext i1 @_ZN4port12TransportIPC17FillBufferIfEmptyEv(%"class.port::TransportIPC"* %0)
+  br label %137
+
+137:                                              ; preds = %82, %81, %125, %135
+  call void @llvm.lifetime.end.p0i8(i64 128, i8* nonnull %18) #10
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4port12TransportIPC10DisconnectEv(%"class.port::TransportIPC"*) unnamed_addr #2 comdat align 2 {
+  %2 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 3
+  %3 = load i32, i32* %2, align 4
+  %4 = icmp eq i32 %3, -1
+  br i1 %4, label %9, label %5
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 2
+  br label %7
+
+7:                                                ; preds = %5, %7
+  store i32 0, i32* %6, align 8
+  %8 = tail call zeroext i1 @_ZN4port12TransportIPC17FillBufferIfEmptyEv(%"class.port::TransportIPC"* %0)
+  br i1 %8, label %7, label %9
+
+9:                                                ; preds = %7, %1
+  %10 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 2
+  store i32 0, i32* %10, align 8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden zeroext i1 @_ZN4port12TransportIPC16AcceptConnectionEv(%"class.port::TransportIPC"*) unnamed_addr #2 comdat align 2 {
+  %2 = alloca %struct.fd_set, align 8
+  %3 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 3
+  %4 = load i32, i32* %3, align 4
+  %5 = icmp eq i32 %4, -1
+  br i1 %5, label %7, label %6
+
+6:                                                ; preds = %1
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.1, i64 0, i64 0), i8* getelementptr inbounds ([60 x i8], [60 x i8]* @.str.2, i64 0, i64 0), i32 188, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.9, i64 0, i64 0)) #10
+  br label %7
+
+7:                                                ; preds = %1, %6
+  %8 = bitcast %struct.fd_set* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 128, i8* nonnull %8) #10
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %8, i8 -86, i64 128, i1 false)
+  %9 = getelementptr inbounds %struct.fd_set, %struct.fd_set* %2, i64 0, i32 0, i64 0
+  %10 = call { i64, i64* } asm sideeffect "cld; rep; stosq", "={cx},={di},{ax},0,1,~{memory},~{dirflag},~{fpsr},~{flags}"(i32 0, i64 16, i64* nonnull %9) #10, !srcloc !4
+  %11 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 4
+  %12 = load i32, i32* %11, align 8
+  %13 = srem i32 %12, 64
+  %14 = zext i32 %13 to i64
+  %15 = shl i64 1, %14
+  %16 = sext i32 %12 to i64
+  %17 = call i1 @llvm.is.constant.i64(i64 %16)
+  br i1 %17, label %18, label %24
+
+18:                                               ; preds = %7
+  %19 = icmp ult i32 %12, 1024
+  br i1 %19, label %20, label %22
+
+20:                                               ; preds = %18
+  %21 = sdiv i64 %16, 64
+  br label %26
+
+22:                                               ; preds = %18
+  %23 = call i64 @__fdelt_warn(i64 %16) #10
+  br label %26
+
+24:                                               ; preds = %7
+  %25 = call i64 @__fdelt_chk(i64 %16) #10
+  br label %26
+
+26:                                               ; preds = %20, %22, %24
+  %27 = phi i64 [ %25, %24 ], [ %21, %20 ], [ %23, %22 ]
+  %28 = getelementptr inbounds %struct.fd_set, %struct.fd_set* %2, i64 0, i32 0, i64 %27
+  %29 = load i64, i64* %28, align 8
+  %30 = or i64 %29, %15
+  store i64 %30, i64* %28, align 8
+  %31 = load i32, i32* %11, align 8
+  %32 = add nsw i32 %31, 1
+  %33 = call i32 @select(i32 %32, %struct.fd_set* nonnull %2, %struct.fd_set* null, %struct.fd_set* null, %struct.timeval* null) #10
+  %34 = icmp eq i32 %33, 0
+  br i1 %34, label %36, label %35
+
+35:                                               ; preds = %26
+  store i32 0, i32* %3, align 4
+  br label %36
+
+36:                                               ; preds = %26, %35
+  %37 = phi i1 [ true, %35 ], [ false, %26 ]
+  call void @llvm.lifetime.end.p0i8(i64 128, i8* nonnull %8) #10
+  ret i1 %37
+}
+
+declare i32 @close(i32) local_unnamed_addr #3
+
+declare void @NaClLog(i32, i8*, ...) local_unnamed_addr #3
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdaPv(i8*) local_unnamed_addr #4
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #4
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #5
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden zeroext i1 @_ZN4port12TransportIPC17FillBufferIfEmptyEv(%"class.port::TransportIPC"*) local_unnamed_addr #2 comdat align 2 {
+  %2 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 2
+  %3 = load i32, i32* %2, align 8
+  %4 = icmp sgt i32 %3, 0
+  br i1 %4, label %68, label %5
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 3
+  %7 = load i32, i32* %6, align 4
+  %8 = icmp eq i32 %7, 0
+  br i1 %8, label %9, label %41
+
+9:                                                ; preds = %5
+  %10 = bitcast i32* %6 to i8*
+  %11 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 4
+  br label %12
+
+12:                                               ; preds = %31, %9
+  %13 = phi i32 [ 0, %9 ], [ %33, %31 ]
+  %14 = phi i32 [ 4, %9 ], [ %32, %31 ]
+  %15 = load i32, i32* %11, align 8
+  %16 = zext i32 %13 to i64
+  %17 = getelementptr inbounds i8, i8* %10, i64 %16
+  %18 = zext i32 %14 to i64
+  %19 = tail call i64 @read(i32 %15, i8* %17, i64 %18) #10
+  %20 = trunc i64 %19 to i32
+  %21 = icmp sgt i32 %20, 0
+  br i1 %21, label %22, label %25
+
+22:                                               ; preds = %12
+  %23 = add i32 %13, %20
+  %24 = sub i32 %14, %20
+  br label %31
+
+25:                                               ; preds = %12
+  %26 = icmp eq i32 %20, 0
+  br i1 %26, label %35, label %27
+
+27:                                               ; preds = %25
+  %28 = tail call i32* @__errno_location() #8
+  %29 = load i32, i32* %28, align 4
+  %30 = icmp eq i32 %29, 4
+  br i1 %30, label %31, label %35
+
+31:                                               ; preds = %27, %22
+  %32 = phi i32 [ %24, %22 ], [ %14, %27 ]
+  %33 = phi i32 [ %23, %22 ], [ %13, %27 ]
+  %34 = icmp eq i32 %32, 0
+  br i1 %34, label %36, label %12
+
+35:                                               ; preds = %25, %27
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([66 x i8], [66 x i8]* @.str.5, i64 0, i64 0)) #10
+  store i32 -1, i32* %6, align 4
+  br label %68
+
+36:                                               ; preds = %31
+  %37 = load i32, i32* %6, align 4
+  %38 = icmp eq i32 %37, -1
+  br i1 %38, label %68, label %39
+
+39:                                               ; preds = %36
+  %40 = load i32, i32* %2, align 8
+  br label %41
+
+41:                                               ; preds = %39, %5
+  %42 = phi i32 [ %37, %39 ], [ %7, %5 ]
+  %43 = phi i32 [ %40, %39 ], [ %3, %5 ]
+  %44 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 4
+  %45 = load i32, i32* %44, align 8
+  %46 = getelementptr inbounds %"class.port::TransportIPC", %"class.port::TransportIPC"* %0, i64 0, i32 1, i32 0
+  %47 = load i8*, i8** %46, align 8
+  %48 = sext i32 %43 to i64
+  %49 = getelementptr inbounds i8, i8* %47, i64 %48
+  %50 = icmp slt i32 %42, 4096
+  %51 = select i1 %50, i32 %42, i32 4096
+  %52 = sext i32 %51 to i64
+  %53 = tail call i64 @read(i32 %45, i8* %49, i64 %52) #10
+  %54 = trunc i64 %53 to i32
+  %55 = icmp sgt i32 %54, 0
+  br i1 %55, label %56, label %61
+
+56:                                               ; preds = %41
+  %57 = load i32, i32* %2, align 8
+  %58 = add nsw i32 %57, %54
+  store i32 %58, i32* %2, align 8
+  %59 = load i32, i32* %6, align 4
+  %60 = sub nsw i32 %59, %54
+  store i32 %60, i32* %6, align 4
+  br label %68
+
+61:                                               ; preds = %41
+  %62 = icmp eq i32 %54, 0
+  br i1 %62, label %67, label %63
+
+63:                                               ; preds = %61
+  %64 = tail call i32* @__errno_location() #8
+  %65 = load i32, i32* %64, align 4
+  %66 = icmp eq i32 %65, 4
+  br i1 %66, label %68, label %67
+
+67:                                               ; preds = %63, %61
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([66 x i8], [66 x i8]* @.str.5, i64 0, i64 0)) #10
+  store i32 -1, i32* %6, align 4
+  br label %68
+
+68:                                               ; preds = %67, %63, %56, %36, %1, %35
+  %69 = phi i1 [ false, %35 ], [ true, %1 ], [ false, %36 ], [ false, %67 ], [ true, %63 ], [ true, %56 ]
+  ret i1 %69
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #5
+
+; Function Attrs: nofree
+declare i64 @read(i32, i8* nocapture, i64) local_unnamed_addr #6
+
+; Function Attrs: nounwind readnone
+declare i32* @__errno_location() local_unnamed_addr #7
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #5
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memmove.p0i8.p0i8.i64(i8* nocapture, i8* nocapture readonly, i64, i1 immarg) #5
+
+; Function Attrs: nofree
+declare i64 @write(i32, i8* nocapture readonly, i64) local_unnamed_addr #6
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #5
+
+; Function Attrs: nounwind readnone
+declare i1 @llvm.is.constant.i64(i64) #8
+
+declare i64 @__fdelt_warn(i64) local_unnamed_addr #3
+
+declare i64 @__fdelt_chk(i64) local_unnamed_addr #3
+
+declare i32 @select(i32, %struct.fd_set*, %struct.fd_set*, %struct.fd_set*, %struct.timeval*) local_unnamed_addr #3
+
+attributes #0 = { nofree nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { argmemonly nounwind }
+attributes #6 = { nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { nounwind readnone "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { nounwind readnone }
+attributes #9 = { builtin nounwind }
+attributes #10 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{i32 -2143993742}
+!3 = !{i32 -2143992831}
+!4 = !{i32 -2143989679}

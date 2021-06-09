@@ -1,0 +1,1556 @@
+; ModuleID = '../../content/browser/renderer_host/input/fling_scheduler.cc'
+source_filename = "../../content/browser/renderer_host/input/fling_scheduler.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.content::FlingScheduler" = type { %"class.content::FlingSchedulerBase", %"class.ui::CompositorAnimationObserver", %"class.content::RenderWidgetHostImpl"*, %"class.base::WeakPtr.431", %"class.ui::Compositor"* }
+%"class.content::FlingSchedulerBase" = type { %"class.content::FlingControllerSchedulerClient" }
+%"class.content::FlingControllerSchedulerClient" = type { i32 (...)** }
+%"class.ui::CompositorAnimationObserver" = type { i32 (...)** }
+%"class.base::WeakPtr.431" = type { %"class.base::internal::WeakPtrBase" }
+%"class.base::internal::WeakPtrBase" = type { %"class.base::internal::WeakReference", i64 }
+%"class.base::internal::WeakReference" = type { %class.scoped_refptr.6 }
+%class.scoped_refptr.6 = type { %"class.base::internal::WeakReference::Flag"* }
+%"class.base::internal::WeakReference::Flag" = type <{ %"class.base::RefCountedThreadSafe", %"class.base::AtomicFlag", [3 x i8] }>
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.0" }
+%"struct.std::__1::__atomic_base.0" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"class.base::AtomicFlag" = type { %"struct.std::__1::atomic.1" }
+%"struct.std::__1::atomic.1" = type { %"struct.std::__1::__atomic_base.2" }
+%"struct.std::__1::__atomic_base.2" = type { %"struct.std::__1::__atomic_base.3" }
+%"struct.std::__1::__atomic_base.3" = type { %"struct.std::__1::__cxx_atomic_impl.4" }
+%"struct.std::__1::__cxx_atomic_impl.4" = type { %"struct.std::__1::__cxx_atomic_base_impl.5" }
+%"struct.std::__1::__cxx_atomic_base_impl.5" = type { i8 }
+%"class.ui::Compositor" = type { %"class.cc::LayerTreeHostClient", %"class.cc::LayerTreeHostSingleThreadClient", %"class.viz::HostFrameSinkClient", %"class.ui::ThroughputTrackerHost", %"class.gfx::Size", %"class.ui::ContextFactory"*, %"class.viz::mojom::DisplayPrivate"*, %"class.viz::mojom::ExternalBeginFrameController"*, %"class.std::__1::unique_ptr.432", %"class.ui::Layer"*, %"class.base::ObserverList.438", %"class.base::ObserverList.442", i32, i32, float, [4 x i8], %"class.std::__1::unordered_set", i8, i8, %"class.viz::FrameSinkId", %class.scoped_refptr.465, %"class.std::__1::unique_ptr.466", %"class.std::__1::unique_ptr.472", %"class.base::WeakPtr.842", %class.scoped_refptr.365, %"class.base::TimeTicks", %"class.base::TimeDelta", i8, i8, i8, float, %"class.ui::LayerAnimatorCollection", %class.scoped_refptr.853, %"class.std::__1::unique_ptr.854", %class.SkMatrix44, %"class.gfx::DisplayColorSpaces", i8, i8, %"class.ui::CompositorLockManager", %"class.std::__1::unique_ptr.876", i8, i64, %"class.base::flat_map.882", %"class.base::WeakPtrFactory.892", %"class.base::WeakPtrFactory.892" }
+%"class.cc::LayerTreeHostClient" = type { i32 (...)** }
+%"class.cc::LayerTreeHostSingleThreadClient" = type { i32 (...)** }
+%"class.viz::HostFrameSinkClient" = type { i32 (...)** }
+%"class.ui::ThroughputTrackerHost" = type { i32 (...)** }
+%"class.gfx::Size" = type { i32, i32 }
+%"class.ui::ContextFactory" = type { i32 (...)** }
+%"class.viz::mojom::DisplayPrivate" = type opaque
+%"class.viz::mojom::ExternalBeginFrameController" = type opaque
+%"class.std::__1::unique_ptr.432" = type { %"class.std::__1::__compressed_pair.433" }
+%"class.std::__1::__compressed_pair.433" = type { %"struct.std::__1::__compressed_pair_elem.434" }
+%"struct.std::__1::__compressed_pair_elem.434" = type { %"struct.ui::PendingBeginFrameArgs"* }
+%"struct.ui::PendingBeginFrameArgs" = type opaque
+%"class.ui::Layer" = type opaque
+%"class.base::ObserverList.438" = type <{ %"class.std::__1::vector.220", %"class.base::LinkedList.439", i64, i32, [4 x i8] }>
+%"class.std::__1::vector.220" = type { %"class.std::__1::__vector_base.221" }
+%"class.std::__1::__vector_base.221" = type { %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"*, %"class.std::__1::__compressed_pair.222" }
+%"class.base::internal::UncheckedObserverAdapter" = type { i8* }
+%"class.std::__1::__compressed_pair.222" = type { %"struct.std::__1::__compressed_pair_elem.223" }
+%"struct.std::__1::__compressed_pair_elem.223" = type { %"class.base::internal::UncheckedObserverAdapter"* }
+%"class.base::LinkedList.439" = type { %"class.base::LinkNode.440" }
+%"class.base::LinkNode.440" = type { %"class.base::internal::LinkNodeBase" }
+%"class.base::internal::LinkNodeBase" = type { %"class.base::internal::LinkNodeBase"*, %"class.base::internal::LinkNodeBase"* }
+%"class.base::ObserverList.442" = type <{ %"class.std::__1::vector.220", %"class.base::LinkedList.443", i64, i32, [4 x i8] }>
+%"class.base::LinkedList.443" = type { %"class.base::LinkNode.444" }
+%"class.base::LinkNode.444" = type { %"class.base::internal::LinkNodeBase" }
+%"class.std::__1::unordered_set" = type { %"class.std::__1::__hash_table" }
+%"class.std::__1::__hash_table" = type <{ %"class.std::__1::unique_ptr.446", %"class.std::__1::__compressed_pair.454", %"class.std::__1::__compressed_pair.459", %"class.std::__1::__compressed_pair.461", [4 x i8] }>
+%"class.std::__1::unique_ptr.446" = type { %"class.std::__1::__compressed_pair.447" }
+%"class.std::__1::__compressed_pair.447" = type { %"struct.std::__1::__compressed_pair_elem.448", %"struct.std::__1::__compressed_pair_elem.449" }
+%"struct.std::__1::__compressed_pair_elem.448" = type { %"struct.std::__1::__hash_node_base"** }
+%"struct.std::__1::__hash_node_base" = type { %"struct.std::__1::__hash_node_base"* }
+%"struct.std::__1::__compressed_pair_elem.449" = type { %"class.std::__1::__bucket_list_deallocator" }
+%"class.std::__1::__bucket_list_deallocator" = type { %"class.std::__1::__compressed_pair.450" }
+%"class.std::__1::__compressed_pair.450" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"struct.std::__1::__compressed_pair_elem.56" = type { i64 }
+%"class.std::__1::__compressed_pair.454" = type { %"struct.std::__1::__compressed_pair_elem.455" }
+%"struct.std::__1::__compressed_pair_elem.455" = type { %"struct.std::__1::__hash_node_base" }
+%"class.std::__1::__compressed_pair.459" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.std::__1::__compressed_pair.461" = type { %"struct.std::__1::__compressed_pair_elem.462" }
+%"struct.std::__1::__compressed_pair_elem.462" = type { float }
+%"class.viz::FrameSinkId" = type { i32, i32 }
+%class.scoped_refptr.465 = type { %"class.cc::Layer"* }
+%"class.cc::Layer" = type opaque
+%"class.std::__1::unique_ptr.466" = type { %"class.std::__1::__compressed_pair.467" }
+%"class.std::__1::__compressed_pair.467" = type { %"struct.std::__1::__compressed_pair_elem.468" }
+%"struct.std::__1::__compressed_pair_elem.468" = type { %"class.cc::AnimationHost"* }
+%"class.cc::AnimationHost" = type opaque
+%"class.std::__1::unique_ptr.472" = type { %"class.std::__1::__compressed_pair.473" }
+%"class.std::__1::__compressed_pair.473" = type { %"struct.std::__1::__compressed_pair_elem.474" }
+%"struct.std::__1::__compressed_pair_elem.474" = type { %"class.cc::LayerTreeHost"* }
+%"class.cc::LayerTreeHost" = type { %"class.cc::MutatorHostClient", %"class.cc::MicroBenchmarkController", %"class.base::WeakPtr.483", %class.scoped_refptr.9, %"class.std::__1::unique_ptr.484", i32, %"class.std::__1::unique_ptr.490", %"class.cc::LayerTreeHostClient"*, %"class.cc::LayerTreeHostSchedulingClient"*, %"class.std::__1::unique_ptr.496", %"class.std::__1::unique_ptr.502", i32, %"class.std::__1::unique_ptr.508", %"class.cc::SwapPromiseManager", %"class.std::__1::unique_ptr.531", %"class.std::__1::unique_ptr.531", %"class.cc::LayerTreeSettings", %"class.cc::LayerTreeDebugState", i8, i8, i8, i32, i8, i8, i8, %"class.cc::TaskGraphRunner"*, %"class.gfx::RenderingPipeline"*, %"class.gfx::RenderingPipeline"*, i32, %class.scoped_refptr.465, %"struct.cc::LayerTreeHost::ViewportPropertyIds", %"struct.cc::OverscrollBehavior", %"struct.cc::BrowserControlsParams", float, float, float, float, float, float, float, float, float, i8, i8, %"class.gfx::DisplayColorSpaces", i8, %"class.viz::LocalSurfaceId", i8, i32, i32, i32, %"struct.viz::Selection.546", %"class.gfx::Rect", %"class.gfx::Rect", %"class.gfx::Size", i8, i8, [4 x i32], %"class.std::__1::unique_ptr.547", i8, %"class.cc::PropertyTrees", i8, i8, %"class.gfx::Vector2dF", %class.scoped_refptr.685, %"class.base::flat_map.686", %"class.base::internal::flat_tree.696", %"class.std::__1::unordered_map", %"class.std::__1::unordered_map.727", i8, i8, %"class.cc::MutatorHost"*, %"class.cc::RasterDarkModeFilter"*, %"class.std::__1::vector.753", %"class.std::__1::unordered_map.761", %"class.std::__1::vector.785", %"struct.cc::LayerTreeHost::ScrollAnimationState", %"class.std::__1::unique_ptr.793", %"class.base::TimeTicks", %"class.cc::EventsMetricsManager", %"class.std::__1::unique_ptr.814", %"class.std::__1::vector.820", %"class.base::flat_map.828", %"class.base::WeakPtrFactory.838" }
+%"class.cc::MutatorHostClient" = type { i32 (...)** }
+%"class.cc::MicroBenchmarkController" = type { %"class.cc::LayerTreeHost"*, %"class.std::__1::vector.475", %class.scoped_refptr.365 }
+%"class.std::__1::vector.475" = type { %"class.std::__1::__vector_base.476" }
+%"class.std::__1::__vector_base.476" = type { %"class.std::__1::unique_ptr.477"*, %"class.std::__1::unique_ptr.477"*, %"class.std::__1::__compressed_pair.478" }
+%"class.std::__1::unique_ptr.477" = type opaque
+%"class.std::__1::__compressed_pair.478" = type { %"struct.std::__1::__compressed_pair_elem.479" }
+%"struct.std::__1::__compressed_pair_elem.479" = type { %"class.std::__1::unique_ptr.477"* }
+%"class.base::WeakPtr.483" = type { %"class.base::internal::WeakPtrBase" }
+%class.scoped_refptr.9 = type { %"class.base::SequencedTaskRunner"* }
+%"class.base::SequencedTaskRunner" = type { %"class.base::TaskRunner.base", [4 x i8] }
+%"class.base::TaskRunner.base" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe.10" }>
+%"class.base::RefCountedThreadSafe.10" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.std::__1::unique_ptr.484" = type { %"class.std::__1::__compressed_pair.485" }
+%"class.std::__1::__compressed_pair.485" = type { %"struct.std::__1::__compressed_pair_elem.486" }
+%"struct.std::__1::__compressed_pair_elem.486" = type { %"class.cc::UkmRecorderFactory"* }
+%"class.cc::UkmRecorderFactory" = type opaque
+%"class.std::__1::unique_ptr.490" = type { %"class.std::__1::__compressed_pair.491" }
+%"class.std::__1::__compressed_pair.491" = type { %"struct.std::__1::__compressed_pair_elem.492" }
+%"struct.std::__1::__compressed_pair_elem.492" = type { %"class.cc::UIResourceManager"* }
+%"class.cc::UIResourceManager" = type opaque
+%"class.cc::LayerTreeHostSchedulingClient" = type { i32 (...)** }
+%"class.std::__1::unique_ptr.496" = type { %"class.std::__1::__compressed_pair.497" }
+%"class.std::__1::__compressed_pair.497" = type { %"struct.std::__1::__compressed_pair_elem.498" }
+%"struct.std::__1::__compressed_pair_elem.498" = type { %"class.cc::Proxy"* }
+%"class.cc::Proxy" = type { i32 (...)** }
+%"class.std::__1::unique_ptr.502" = type { %"class.std::__1::__compressed_pair.503" }
+%"class.std::__1::__compressed_pair.503" = type { %"struct.std::__1::__compressed_pair_elem.504" }
+%"struct.std::__1::__compressed_pair_elem.504" = type { %"class.cc::TaskRunnerProvider"* }
+%"class.cc::TaskRunnerProvider" = type { i32 (...)**, %class.scoped_refptr.365, %class.scoped_refptr.365 }
+%"class.std::__1::unique_ptr.508" = type { %"class.std::__1::__compressed_pair.509" }
+%"class.std::__1::__compressed_pair.509" = type { %"struct.std::__1::__compressed_pair_elem.510" }
+%"struct.std::__1::__compressed_pair_elem.510" = type { %"class.cc::RenderingStatsInstrumentation"* }
+%"class.cc::RenderingStatsInstrumentation" = type opaque
+%"class.cc::SwapPromiseManager" = type { %"class.std::__1::vector.514", %"class.std::__1::set" }
+%"class.std::__1::vector.514" = type { %"class.std::__1::__vector_base.515" }
+%"class.std::__1::__vector_base.515" = type { %"class.std::__1::unique_ptr.516"*, %"class.std::__1::unique_ptr.516"*, %"class.std::__1::__compressed_pair.517" }
+%"class.std::__1::unique_ptr.516" = type { %"class.std::__1::__compressed_pair.1091" }
+%"class.std::__1::__compressed_pair.1091" = type { %"struct.std::__1::__compressed_pair_elem.1092" }
+%"struct.std::__1::__compressed_pair_elem.1092" = type { %"class.cc::SwapPromise"* }
+%"class.cc::SwapPromise" = type { i32 (...)** }
+%"class.std::__1::__compressed_pair.517" = type { %"struct.std::__1::__compressed_pair_elem.518" }
+%"struct.std::__1::__compressed_pair_elem.518" = type { %"class.std::__1::unique_ptr.516"* }
+%"class.std::__1::set" = type { %"class.std::__1::__tree.522" }
+%"class.std::__1::__tree.522" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.523", %"class.std::__1::__compressed_pair.527" }
+%"class.std::__1::__tree_end_node" = type { %"class.std::__1::__tree_node_base"* }
+%"class.std::__1::__tree_node_base" = type <{ %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_end_node"*, i8, [7 x i8] }>
+%"class.std::__1::__compressed_pair.523" = type { %"struct.std::__1::__compressed_pair_elem.51" }
+%"struct.std::__1::__compressed_pair_elem.51" = type { %"class.std::__1::__tree_end_node" }
+%"class.std::__1::__compressed_pair.527" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.std::__1::unique_ptr.531" = type { %"class.std::__1::__compressed_pair.532" }
+%"class.std::__1::__compressed_pair.532" = type { %"struct.std::__1::__compressed_pair_elem.533" }
+%"struct.std::__1::__compressed_pair_elem.533" = type { %"class.cc::LayerTreeFrameSink"* }
+%"class.cc::LayerTreeFrameSink" = type { %"class.viz::SharedBitmapReporter", %"class.viz::ContextLostObserver", %"class.cc::LayerTreeFrameSinkClient"*, %class.scoped_refptr.534, %class.scoped_refptr.535, %class.scoped_refptr.365, %"class.gpu::GpuMemoryBufferManager"*, %"class.std::__1::unique_ptr.536", i64, %"class.base::WeakPtrFactory.542" }
+%"class.viz::SharedBitmapReporter" = type { i32 (...)** }
+%"class.viz::ContextLostObserver" = type { i32 (...)** }
+%"class.cc::LayerTreeFrameSinkClient" = type opaque
+%class.scoped_refptr.534 = type { %"class.viz::ContextProvider"* }
+%"class.viz::ContextProvider" = type { i32 (...)** }
+%class.scoped_refptr.535 = type { %"class.viz::RasterContextProvider"* }
+%"class.viz::RasterContextProvider" = type { i32 (...)** }
+%"class.gpu::GpuMemoryBufferManager" = type opaque
+%"class.std::__1::unique_ptr.536" = type { %"class.std::__1::__compressed_pair.537" }
+%"class.std::__1::__compressed_pair.537" = type { %"struct.std::__1::__compressed_pair_elem.538" }
+%"struct.std::__1::__compressed_pair_elem.538" = type { %"class.cc::LayerTreeFrameSink::ContextLostForwarder"* }
+%"class.cc::LayerTreeFrameSink::ContextLostForwarder" = type opaque
+%"class.base::WeakPtrFactory.542" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.base::internal::WeakPtrFactoryBase" = type { %"class.base::internal::WeakReferenceOwner", i64 }
+%"class.base::internal::WeakReferenceOwner" = type { %class.scoped_refptr }
+%class.scoped_refptr = type { %"class.base::internal::WeakReference::Flag"* }
+%"class.cc::LayerTreeSettings" = type <{ i32 (...)**, %"class.viz::ResourceSettings", i8, i8, i8, i8, [2 x i8], i32, i8, i8, i8, i8, i32, float, i8, i8, [2 x i8], i32, %"class.base::TimeDelta", %"class.base::TimeDelta", %"class.base::TimeDelta", i8, [3 x i8], i32, %"class.base::TimeDelta", i8, i8, [2 x i8], float, float, float, %"class.gfx::Size", %"class.gfx::Size", %"class.gfx::Size", i32, %"class.gfx::Size", i32, float, i32, i64, i8, i8, i8, [5 x i8], i64, i8, i8, [2 x i8], i32, %"struct.cc::ManagedMemoryPolicy", i64, i32, i8, i8, i8, i8, i64, i8, [7 x i8], %"class.cc::LayerTreeDebugState", i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, [6 x i8] }>
+%"class.viz::ResourceSettings" = type { i8, i8 }
+%"struct.cc::ManagedMemoryPolicy" = type { i64, i32, i64 }
+%"class.cc::LayerTreeDebugState" = type <{ i8, [7 x i8], %"class.std::__1::bitset", i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i32, i8, i8, i8, i8, i8, i8, [2 x i8] }>
+%"class.std::__1::bitset" = type { %"class.std::__1::__bitset" }
+%"class.std::__1::__bitset" = type { i64 }
+%"class.cc::TaskGraphRunner" = type opaque
+%"class.gfx::RenderingPipeline" = type { i32 (...)** }
+%"struct.cc::LayerTreeHost::ViewportPropertyIds" = type { i32, i32, i32, i32, i32 }
+%"struct.cc::OverscrollBehavior" = type { i32, i32 }
+%"struct.cc::BrowserControlsParams" = type <{ float, float, float, float, i8, i8, i8, i8 }>
+%"class.viz::LocalSurfaceId" = type { i32, i32, %"class.base::UnguessableToken" }
+%"class.base::UnguessableToken" = type { %"class.base::Token" }
+%"class.base::Token" = type { i64, i64 }
+%"struct.viz::Selection.546" = type { %"struct.cc::LayerSelectionBound", %"struct.cc::LayerSelectionBound" }
+%"struct.cc::LayerSelectionBound" = type <{ i32, %"class.gfx::Point", %"class.gfx::Point", i32, i8, [3 x i8] }>
+%"class.gfx::Point" = type { i32, i32 }
+%"class.gfx::Rect" = type { %"class.gfx::Point", %"class.gfx::Size" }
+%"class.std::__1::unique_ptr.547" = type { %"class.std::__1::__compressed_pair.548" }
+%"class.std::__1::__compressed_pair.548" = type { %"struct.std::__1::__compressed_pair_elem.549" }
+%"struct.std::__1::__compressed_pair_elem.549" = type { %"struct.cc::PendingPageScaleAnimation"* }
+%"struct.cc::PendingPageScaleAnimation" = type opaque
+%"class.cc::PropertyTrees" = type { %"class.base::flat_map", %"class.base::flat_map", %"class.base::flat_map", %"class.cc::TransformTree", %"class.cc::EffectTree", %"class.cc::ClipTree", %"class.cc::ScrollTree", i8, i8, i8, i32, i8, i8, %"class.gfx::Vector2dF", %"class.gfx::Vector2dF", %"struct.cc::PropertyTreesCachedData" }
+%"class.base::flat_map" = type { %"class.base::internal::flat_tree.553" }
+%"class.base::internal::flat_tree.553" = type { %"class.std::__1::vector.554" }
+%"class.std::__1::vector.554" = type { %"class.std::__1::__vector_base.555" }
+%"class.std::__1::__vector_base.555" = type { %"struct.std::__1::pair.556"*, %"struct.std::__1::pair.556"*, %"class.std::__1::__compressed_pair.557" }
+%"struct.std::__1::pair.556" = type opaque
+%"class.std::__1::__compressed_pair.557" = type { %"struct.std::__1::__compressed_pair_elem.558" }
+%"struct.std::__1::__compressed_pair_elem.558" = type { %"struct.std::__1::pair.556"* }
+%"class.cc::TransformTree" = type { %"class.cc::PropertyTree", float, float, float, %"class.std::__1::vector.569", %"class.std::__1::vector.576", %"class.std::__1::vector.583" }
+%"class.cc::PropertyTree" = type { i32 (...)**, %"class.std::__1::vector.562", i8, %"class.cc::PropertyTrees"* }
+%"class.std::__1::vector.562" = type { %"class.std::__1::__vector_base.563" }
+%"class.std::__1::__vector_base.563" = type { %"struct.cc::TransformNode"*, %"struct.cc::TransformNode"*, %"class.std::__1::__compressed_pair.564" }
+%"struct.cc::TransformNode" = type opaque
+%"class.std::__1::__compressed_pair.564" = type { %"struct.std::__1::__compressed_pair_elem.565" }
+%"struct.std::__1::__compressed_pair_elem.565" = type { %"struct.cc::TransformNode"* }
+%"class.std::__1::vector.569" = type { %"class.std::__1::__vector_base.570" }
+%"class.std::__1::__vector_base.570" = type { i32*, i32*, %"class.std::__1::__compressed_pair.571" }
+%"class.std::__1::__compressed_pair.571" = type { %"struct.std::__1::__compressed_pair_elem.572" }
+%"struct.std::__1::__compressed_pair_elem.572" = type { i32* }
+%"class.std::__1::vector.576" = type { %"class.std::__1::__vector_base.577" }
+%"class.std::__1::__vector_base.577" = type { %"struct.cc::TransformCachedNodeData"*, %"struct.cc::TransformCachedNodeData"*, %"class.std::__1::__compressed_pair.578" }
+%"struct.cc::TransformCachedNodeData" = type opaque
+%"class.std::__1::__compressed_pair.578" = type { %"struct.std::__1::__compressed_pair_elem.579" }
+%"struct.std::__1::__compressed_pair_elem.579" = type { %"struct.cc::TransformCachedNodeData"* }
+%"class.std::__1::vector.583" = type { %"class.std::__1::__vector_base.584" }
+%"class.std::__1::__vector_base.584" = type { %"struct.cc::StickyPositionNodeData"*, %"struct.cc::StickyPositionNodeData"*, %"class.std::__1::__compressed_pair.585" }
+%"struct.cc::StickyPositionNodeData" = type { i32, %"struct.cc::StickyPositionConstraint", i32, i32, %"class.gfx::Vector2dF", %"class.gfx::Vector2dF" }
+%"struct.cc::StickyPositionConstraint" = type { i8, float, float, float, float, %"class.gfx::RectF", %"class.gfx::RectF", %"class.gfx::RectF", %"struct.cc::ElementId", %"struct.cc::ElementId" }
+%"class.gfx::RectF" = type { %"class.gfx::PointF", %"class.gfx::SizeF" }
+%"class.gfx::PointF" = type { float, float }
+%"class.gfx::SizeF" = type { float, float }
+%"struct.cc::ElementId" = type { i64 }
+%"class.std::__1::__compressed_pair.585" = type { %"struct.std::__1::__compressed_pair_elem.586" }
+%"struct.std::__1::__compressed_pair_elem.586" = type { %"struct.cc::StickyPositionNodeData"* }
+%"class.cc::EffectTree" = type { %"class.cc::PropertyTree.590", %"class.std::__1::unordered_multimap", %"class.std::__1::vector.620" }
+%"class.cc::PropertyTree.590" = type { i32 (...)**, %"class.std::__1::vector.591", i8, %"class.cc::PropertyTrees"* }
+%"class.std::__1::vector.591" = type { %"class.std::__1::__vector_base.592" }
+%"class.std::__1::__vector_base.592" = type { %"struct.cc::EffectNode"*, %"struct.cc::EffectNode"*, %"class.std::__1::__compressed_pair.593" }
+%"struct.cc::EffectNode" = type opaque
+%"class.std::__1::__compressed_pair.593" = type { %"struct.std::__1::__compressed_pair_elem.594" }
+%"struct.std::__1::__compressed_pair_elem.594" = type { %"struct.cc::EffectNode"* }
+%"class.std::__1::unordered_multimap" = type { %"class.std::__1::__hash_table.598" }
+%"class.std::__1::__hash_table.598" = type <{ %"class.std::__1::unique_ptr.599", %"class.std::__1::__compressed_pair.609", %"class.std::__1::__compressed_pair.614", %"class.std::__1::__compressed_pair.616", [4 x i8] }>
+%"class.std::__1::unique_ptr.599" = type { %"class.std::__1::__compressed_pair.600" }
+%"class.std::__1::__compressed_pair.600" = type { %"struct.std::__1::__compressed_pair_elem.601", %"struct.std::__1::__compressed_pair_elem.603" }
+%"struct.std::__1::__compressed_pair_elem.601" = type { %"struct.std::__1::__hash_node_base.602"** }
+%"struct.std::__1::__hash_node_base.602" = type { %"struct.std::__1::__hash_node_base.602"* }
+%"struct.std::__1::__compressed_pair_elem.603" = type { %"class.std::__1::__bucket_list_deallocator.604" }
+%"class.std::__1::__bucket_list_deallocator.604" = type { %"class.std::__1::__compressed_pair.605" }
+%"class.std::__1::__compressed_pair.605" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.std::__1::__compressed_pair.609" = type { %"struct.std::__1::__compressed_pair_elem.610" }
+%"struct.std::__1::__compressed_pair_elem.610" = type { %"struct.std::__1::__hash_node_base.602" }
+%"class.std::__1::__compressed_pair.614" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.std::__1::__compressed_pair.616" = type { %"struct.std::__1::__compressed_pair_elem.462" }
+%"class.std::__1::vector.620" = type { %"class.std::__1::__vector_base.621" }
+%"class.std::__1::__vector_base.621" = type { %"class.std::__1::unique_ptr.622"*, %"class.std::__1::unique_ptr.622"*, %"class.std::__1::__compressed_pair.628" }
+%"class.std::__1::unique_ptr.622" = type { %"class.std::__1::__compressed_pair.623" }
+%"class.std::__1::__compressed_pair.623" = type { %"struct.std::__1::__compressed_pair_elem.624" }
+%"struct.std::__1::__compressed_pair_elem.624" = type { %"class.cc::RenderSurfaceImpl"* }
+%"class.cc::RenderSurfaceImpl" = type opaque
+%"class.std::__1::__compressed_pair.628" = type { %"struct.std::__1::__compressed_pair_elem.629" }
+%"struct.std::__1::__compressed_pair_elem.629" = type { %"class.std::__1::unique_ptr.622"* }
+%"class.cc::ClipTree" = type { %"class.cc::PropertyTree.633" }
+%"class.cc::PropertyTree.633" = type { i32 (...)**, %"class.std::__1::vector.634", i8, %"class.cc::PropertyTrees"* }
+%"class.std::__1::vector.634" = type { %"class.std::__1::__vector_base.635" }
+%"class.std::__1::__vector_base.635" = type { %"struct.cc::ClipNode"*, %"struct.cc::ClipNode"*, %"class.std::__1::__compressed_pair.636" }
+%"struct.cc::ClipNode" = type opaque
+%"class.std::__1::__compressed_pair.636" = type { %"struct.std::__1::__compressed_pair_elem.637" }
+%"struct.std::__1::__compressed_pair_elem.637" = type { %"struct.cc::ClipNode"* }
+%"class.cc::ScrollTree" = type { %"class.cc::PropertyTree.641", i32, %"class.base::flat_map.649", %"class.base::flat_map.659", %"class.base::WeakPtr.669" }
+%"class.cc::PropertyTree.641" = type { i32 (...)**, %"class.std::__1::vector.642", i8, %"class.cc::PropertyTrees"* }
+%"class.std::__1::vector.642" = type { %"class.std::__1::__vector_base.643" }
+%"class.std::__1::__vector_base.643" = type { %"struct.cc::ScrollNode"*, %"struct.cc::ScrollNode"*, %"class.std::__1::__compressed_pair.644" }
+%"struct.cc::ScrollNode" = type opaque
+%"class.std::__1::__compressed_pair.644" = type { %"struct.std::__1::__compressed_pair_elem.645" }
+%"struct.std::__1::__compressed_pair_elem.645" = type { %"struct.cc::ScrollNode"* }
+%"class.base::flat_map.649" = type { %"class.base::internal::flat_tree.650" }
+%"class.base::internal::flat_tree.650" = type { %"class.std::__1::vector.651" }
+%"class.std::__1::vector.651" = type { %"class.std::__1::__vector_base.652" }
+%"class.std::__1::__vector_base.652" = type { %"struct.std::__1::pair.653"*, %"struct.std::__1::pair.653"*, %"class.std::__1::__compressed_pair.654" }
+%"struct.std::__1::pair.653" = type opaque
+%"class.std::__1::__compressed_pair.654" = type { %"struct.std::__1::__compressed_pair_elem.655" }
+%"struct.std::__1::__compressed_pair_elem.655" = type { %"struct.std::__1::pair.653"* }
+%"class.base::flat_map.659" = type { %"class.base::internal::flat_tree.660" }
+%"class.base::internal::flat_tree.660" = type { %"class.std::__1::vector.661" }
+%"class.std::__1::vector.661" = type { %"class.std::__1::__vector_base.662" }
+%"class.std::__1::__vector_base.662" = type { %"struct.std::__1::pair.663"*, %"struct.std::__1::pair.663"*, %"class.std::__1::__compressed_pair.664" }
+%"struct.std::__1::pair.663" = type opaque
+%"class.std::__1::__compressed_pair.664" = type { %"struct.std::__1::__compressed_pair_elem.665" }
+%"struct.std::__1::__compressed_pair_elem.665" = type { %"struct.std::__1::pair.663"* }
+%"class.base::WeakPtr.669" = type { %"class.base::internal::WeakPtrBase" }
+%"struct.cc::PropertyTreesCachedData" = type { i32, %"class.std::__1::vector.670", %"class.std::__1::vector.677" }
+%"class.std::__1::vector.670" = type { %"class.std::__1::__vector_base.671" }
+%"class.std::__1::__vector_base.671" = type { %"struct.cc::AnimationScaleData"*, %"struct.cc::AnimationScaleData"*, %"class.std::__1::__compressed_pair.672" }
+%"struct.cc::AnimationScaleData" = type <{ i32, float, i8, i8, [2 x i8] }>
+%"class.std::__1::__compressed_pair.672" = type { %"struct.std::__1::__compressed_pair_elem.673" }
+%"struct.std::__1::__compressed_pair_elem.673" = type { %"struct.cc::AnimationScaleData"* }
+%"class.std::__1::vector.677" = type { %"class.std::__1::__vector_base.678" }
+%"class.std::__1::__vector_base.678" = type { %"class.std::__1::vector.679"*, %"class.std::__1::vector.679"*, %"class.std::__1::__compressed_pair.680" }
+%"class.std::__1::vector.679" = type opaque
+%"class.std::__1::__compressed_pair.680" = type { %"struct.std::__1::__compressed_pair_elem.681" }
+%"struct.std::__1::__compressed_pair_elem.681" = type { %"class.std::__1::vector.679"* }
+%"class.gfx::Vector2dF" = type { float, float }
+%class.scoped_refptr.685 = type { %"class.cc::HeadsUpDisplayLayer"* }
+%"class.cc::HeadsUpDisplayLayer" = type opaque
+%"class.base::flat_map.686" = type { %"class.base::internal::flat_tree.687" }
+%"class.base::internal::flat_tree.687" = type { %"class.std::__1::vector.688" }
+%"class.std::__1::vector.688" = type { %"class.std::__1::__vector_base.689" }
+%"class.std::__1::__vector_base.689" = type { %"struct.std::__1::pair.690"*, %"struct.std::__1::pair.690"*, %"class.std::__1::__compressed_pair.691" }
+%"struct.std::__1::pair.690" = type opaque
+%"class.std::__1::__compressed_pair.691" = type { %"struct.std::__1::__compressed_pair_elem.692" }
+%"struct.std::__1::__compressed_pair_elem.692" = type { %"struct.std::__1::pair.690"* }
+%"class.base::internal::flat_tree.696" = type { %"class.std::__1::vector.697" }
+%"class.std::__1::vector.697" = type { %"class.std::__1::__vector_base.698" }
+%"class.std::__1::__vector_base.698" = type { %"class.cc::Layer"**, %"class.cc::Layer"**, %"class.std::__1::__compressed_pair.699" }
+%"class.std::__1::__compressed_pair.699" = type { %"struct.std::__1::__compressed_pair_elem.700" }
+%"struct.std::__1::__compressed_pair_elem.700" = type { %"class.cc::Layer"** }
+%"class.std::__1::unordered_map" = type { %"class.std::__1::__hash_table.704" }
+%"class.std::__1::__hash_table.704" = type <{ %"class.std::__1::unique_ptr.705", %"class.std::__1::__compressed_pair.715", %"class.std::__1::__compressed_pair.720", %"class.std::__1::__compressed_pair.723", [4 x i8] }>
+%"class.std::__1::unique_ptr.705" = type { %"class.std::__1::__compressed_pair.706" }
+%"class.std::__1::__compressed_pair.706" = type { %"struct.std::__1::__compressed_pair_elem.707", %"struct.std::__1::__compressed_pair_elem.709" }
+%"struct.std::__1::__compressed_pair_elem.707" = type { %"struct.std::__1::__hash_node_base.708"** }
+%"struct.std::__1::__hash_node_base.708" = type { %"struct.std::__1::__hash_node_base.708"* }
+%"struct.std::__1::__compressed_pair_elem.709" = type { %"class.std::__1::__bucket_list_deallocator.710" }
+%"class.std::__1::__bucket_list_deallocator.710" = type { %"class.std::__1::__compressed_pair.711" }
+%"class.std::__1::__compressed_pair.711" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.std::__1::__compressed_pair.715" = type { %"struct.std::__1::__compressed_pair_elem.716" }
+%"struct.std::__1::__compressed_pair_elem.716" = type { %"struct.std::__1::__hash_node_base.708" }
+%"class.std::__1::__compressed_pair.720" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.std::__1::__compressed_pair.723" = type { %"struct.std::__1::__compressed_pair_elem.462" }
+%"class.std::__1::unordered_map.727" = type { %"class.std::__1::__hash_table.728" }
+%"class.std::__1::__hash_table.728" = type <{ %"class.std::__1::unique_ptr.729", %"class.std::__1::__compressed_pair.739", %"class.std::__1::__compressed_pair.744", %"class.std::__1::__compressed_pair.747", [4 x i8] }>
+%"class.std::__1::unique_ptr.729" = type { %"class.std::__1::__compressed_pair.730" }
+%"class.std::__1::__compressed_pair.730" = type { %"struct.std::__1::__compressed_pair_elem.731", %"struct.std::__1::__compressed_pair_elem.733" }
+%"struct.std::__1::__compressed_pair_elem.731" = type { %"struct.std::__1::__hash_node_base.732"** }
+%"struct.std::__1::__hash_node_base.732" = type { %"struct.std::__1::__hash_node_base.732"* }
+%"struct.std::__1::__compressed_pair_elem.733" = type { %"class.std::__1::__bucket_list_deallocator.734" }
+%"class.std::__1::__bucket_list_deallocator.734" = type { %"class.std::__1::__compressed_pair.735" }
+%"class.std::__1::__compressed_pair.735" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.std::__1::__compressed_pair.739" = type { %"struct.std::__1::__compressed_pair_elem.740" }
+%"struct.std::__1::__compressed_pair_elem.740" = type { %"struct.std::__1::__hash_node_base.732" }
+%"class.std::__1::__compressed_pair.744" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.std::__1::__compressed_pair.747" = type { %"struct.std::__1::__compressed_pair_elem.462" }
+%"class.cc::MutatorHost" = type { i32 (...)** }
+%"class.cc::RasterDarkModeFilter" = type opaque
+%"class.std::__1::vector.753" = type { %"class.std::__1::__vector_base.754" }
+%"class.std::__1::__vector_base.754" = type { %"struct.std::__1::pair.755"*, %"struct.std::__1::pair.755"*, %"class.std::__1::__compressed_pair.756" }
+%"struct.std::__1::pair.755" = type opaque
+%"class.std::__1::__compressed_pair.756" = type { %"struct.std::__1::__compressed_pair_elem.757" }
+%"struct.std::__1::__compressed_pair_elem.757" = type { %"struct.std::__1::pair.755"* }
+%"class.std::__1::unordered_map.761" = type { %"class.std::__1::__hash_table.762" }
+%"class.std::__1::__hash_table.762" = type <{ %"class.std::__1::unique_ptr.763", %"class.std::__1::__compressed_pair.773", %"class.std::__1::__compressed_pair.778", %"class.std::__1::__compressed_pair.781", [4 x i8] }>
+%"class.std::__1::unique_ptr.763" = type { %"class.std::__1::__compressed_pair.764" }
+%"class.std::__1::__compressed_pair.764" = type { %"struct.std::__1::__compressed_pair_elem.765", %"struct.std::__1::__compressed_pair_elem.767" }
+%"struct.std::__1::__compressed_pair_elem.765" = type { %"struct.std::__1::__hash_node_base.766"** }
+%"struct.std::__1::__hash_node_base.766" = type { %"struct.std::__1::__hash_node_base.766"* }
+%"struct.std::__1::__compressed_pair_elem.767" = type { %"class.std::__1::__bucket_list_deallocator.768" }
+%"class.std::__1::__bucket_list_deallocator.768" = type { %"class.std::__1::__compressed_pair.769" }
+%"class.std::__1::__compressed_pair.769" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.std::__1::__compressed_pair.773" = type { %"struct.std::__1::__compressed_pair_elem.774" }
+%"struct.std::__1::__compressed_pair_elem.774" = type { %"struct.std::__1::__hash_node_base.766" }
+%"class.std::__1::__compressed_pair.778" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.std::__1::__compressed_pair.781" = type { %"struct.std::__1::__compressed_pair_elem.462" }
+%"class.std::__1::vector.785" = type { %"class.std::__1::__vector_base.786" }
+%"class.std::__1::__vector_base.786" = type { %"class.base::OnceCallback.787"*, %"class.base::OnceCallback.787"*, %"class.std::__1::__compressed_pair.788" }
+%"class.base::OnceCallback.787" = type opaque
+%"class.std::__1::__compressed_pair.788" = type { %"struct.std::__1::__compressed_pair_elem.789" }
+%"struct.std::__1::__compressed_pair_elem.789" = type { %"class.base::OnceCallback.787"* }
+%"struct.cc::LayerTreeHost::ScrollAnimationState" = type { i8, %"class.base::OnceCallback" }
+%"class.base::OnceCallback" = type { %"class.base::internal::CallbackBase" }
+%"class.base::internal::CallbackBase" = type { %class.scoped_refptr.22 }
+%class.scoped_refptr.22 = type { %"class.base::internal::BindStateBase"* }
+%"class.base::internal::BindStateBase" = type { %"class.base::RefCountedThreadSafe.23", void ()*, void (%"class.base::internal::BindStateBase"*)*, i1 (%"class.base::internal::BindStateBase"*, i32)* }
+%"class.base::RefCountedThreadSafe.23" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.std::__1::unique_ptr.793" = type { %"class.std::__1::__compressed_pair.794" }
+%"class.std::__1::__compressed_pair.794" = type { %"struct.std::__1::__compressed_pair_elem.795" }
+%"struct.std::__1::__compressed_pair_elem.795" = type { %"struct.cc::BeginMainFrameMetrics"* }
+%"struct.cc::BeginMainFrameMetrics" = type <{ %"class.base::TimeDelta", %"class.base::TimeDelta", %"class.base::TimeDelta", %"class.base::TimeDelta", %"class.base::TimeDelta", %"class.base::TimeDelta", %"class.base::TimeDelta", %"class.base::TimeDelta", %"class.base::TimeDelta", %"class.base::TimeDelta", i8, [7 x i8] }>
+%"class.cc::EventsMetricsManager" = type { %"class.std::__1::vector.799", %"class.std::__1::vector.806" }
+%"class.std::__1::vector.799" = type { %"class.std::__1::__vector_base.800" }
+%"class.std::__1::__vector_base.800" = type { %"class.cc::EventsMetricsManager::ScopedMonitorImpl"**, %"class.cc::EventsMetricsManager::ScopedMonitorImpl"**, %"class.std::__1::__compressed_pair.801" }
+%"class.cc::EventsMetricsManager::ScopedMonitorImpl" = type opaque
+%"class.std::__1::__compressed_pair.801" = type { %"struct.std::__1::__compressed_pair_elem.802" }
+%"struct.std::__1::__compressed_pair_elem.802" = type { %"class.cc::EventsMetricsManager::ScopedMonitorImpl"** }
+%"class.std::__1::vector.806" = type { %"class.std::__1::__vector_base.807" }
+%"class.std::__1::__vector_base.807" = type { %"class.std::__1::unique_ptr.808"*, %"class.std::__1::unique_ptr.808"*, %"class.std::__1::__compressed_pair.809" }
+%"class.std::__1::unique_ptr.808" = type { %"class.std::__1::__compressed_pair.1081" }
+%"class.std::__1::__compressed_pair.1081" = type { %"struct.std::__1::__compressed_pair_elem.1082" }
+%"struct.std::__1::__compressed_pair_elem.1082" = type { %"class.cc::EventMetrics"* }
+%"class.cc::EventMetrics" = type { i32, %"class.absl::optional.1083", %"class.base::TickClock"*, [6 x %"class.base::TimeTicks"] }
+%"class.absl::optional.1083" = type { %"class.absl::optional_internal::optional_data.1084" }
+%"class.absl::optional_internal::optional_data.1084" = type { %"class.absl::optional_internal::optional_data_base.1085" }
+%"class.absl::optional_internal::optional_data_base.1085" = type { %"class.absl::optional_internal::optional_data_dtor_base.1086" }
+%"class.absl::optional_internal::optional_data_dtor_base.1086" = type { i8, %union.anon.1087 }
+%union.anon.1087 = type { i32 }
+%"class.base::TickClock" = type { i32 (...)** }
+%"class.std::__1::__compressed_pair.809" = type { %"struct.std::__1::__compressed_pair_elem.810" }
+%"struct.std::__1::__compressed_pair_elem.810" = type { %"class.std::__1::unique_ptr.808"* }
+%"class.std::__1::unique_ptr.814" = type { %"class.std::__1::__compressed_pair.815" }
+%"class.std::__1::__compressed_pair.815" = type { %"struct.std::__1::__compressed_pair_elem.816" }
+%"struct.std::__1::__compressed_pair_elem.816" = type { %"class.gfx::DelegatedInkMetadata"* }
+%"class.gfx::DelegatedInkMetadata" = type <{ %"class.gfx::PointF", double, i32, [4 x i8], %"class.base::TimeTicks", %"class.gfx::RectF", %"class.base::TimeTicks", i8, [7 x i8] }>
+%"class.std::__1::vector.820" = type { %"class.std::__1::__vector_base.821" }
+%"class.std::__1::__vector_base.821" = type { %"class.std::__1::unique_ptr.822"*, %"class.std::__1::unique_ptr.822"*, %"class.std::__1::__compressed_pair.823" }
+%"class.std::__1::unique_ptr.822" = type opaque
+%"class.std::__1::__compressed_pair.823" = type { %"struct.std::__1::__compressed_pair_elem.824" }
+%"struct.std::__1::__compressed_pair_elem.824" = type { %"class.std::__1::unique_ptr.822"* }
+%"class.base::flat_map.828" = type { %"class.base::internal::flat_tree.829" }
+%"class.base::internal::flat_tree.829" = type { %"class.std::__1::vector.830" }
+%"class.std::__1::vector.830" = type { %"class.std::__1::__vector_base.831" }
+%"class.std::__1::__vector_base.831" = type { %"struct.std::__1::pair.832"*, %"struct.std::__1::pair.832"*, %"class.std::__1::__compressed_pair.833" }
+%"struct.std::__1::pair.832" = type opaque
+%"class.std::__1::__compressed_pair.833" = type { %"struct.std::__1::__compressed_pair_elem.834" }
+%"struct.std::__1::__compressed_pair_elem.834" = type { %"struct.std::__1::pair.832"* }
+%"class.base::WeakPtrFactory.838" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.base::WeakPtr.842" = type { %"class.base::internal::WeakPtrBase" }
+%class.scoped_refptr.365 = type { %"class.base::SingleThreadTaskRunner"* }
+%"class.base::SingleThreadTaskRunner" = type { %"class.base::SequencedTaskRunner.base", [4 x i8] }
+%"class.base::SequencedTaskRunner.base" = type { %"class.base::TaskRunner.base" }
+%"class.base::TimeTicks" = type { %"class.base::time_internal::TimeBase" }
+%"class.base::time_internal::TimeBase" = type { i64 }
+%"class.base::TimeDelta" = type { i64 }
+%"class.ui::LayerAnimatorCollection" = type { %"class.ui::CompositorAnimationObserver", %"class.ui::Compositor"*, %"class.base::TimeTicks", %"class.std::__1::set.843" }
+%"class.std::__1::set.843" = type { %"class.std::__1::__tree.844" }
+%"class.std::__1::__tree.844" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.845", %"class.std::__1::__compressed_pair.849" }
+%"class.std::__1::__compressed_pair.845" = type { %"struct.std::__1::__compressed_pair_elem.51" }
+%"class.std::__1::__compressed_pair.849" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%class.scoped_refptr.853 = type { %"class.cc::AnimationTimeline"* }
+%"class.cc::AnimationTimeline" = type opaque
+%"class.std::__1::unique_ptr.854" = type { %"class.std::__1::__compressed_pair.855" }
+%"class.std::__1::__compressed_pair.855" = type { %"struct.std::__1::__compressed_pair_elem.856" }
+%"struct.std::__1::__compressed_pair_elem.856" = type { %"class.ui::ScopedAnimationDurationScaleMode"* }
+%"class.ui::ScopedAnimationDurationScaleMode" = type opaque
+%class.SkMatrix44 = type <{ [4 x [4 x float]], i8, [3 x i8] }>
+%"class.gfx::DisplayColorSpaces" = type { [6 x %"class.gfx::ColorSpace"], [6 x i32], float, %"class.absl::optional.179" }
+%"class.gfx::ColorSpace" = type { i8, i8, i8, i8, [9 x float], [7 x float] }
+%"class.absl::optional.179" = type { %"class.absl::optional_internal::optional_data.180" }
+%"class.absl::optional_internal::optional_data.180" = type { %"class.absl::optional_internal::optional_data_base.181" }
+%"class.absl::optional_internal::optional_data_base.181" = type { %"class.absl::optional_internal::optional_data_dtor_base.182" }
+%"class.absl::optional_internal::optional_data_dtor_base.182" = type { i8, %union.anon.183 }
+%union.anon.183 = type { %"struct.gfx::HDRStaticMetadata" }
+%"struct.gfx::HDRStaticMetadata" = type { double, double, double }
+%"class.ui::CompositorLockManager" = type { %class.scoped_refptr.365, %"class.base::TimeTicks", i8, %"class.std::__1::vector.860", %"class.base::WeakPtrFactory.875", %"class.base::WeakPtrFactory.875" }
+%"class.std::__1::vector.860" = type { %"class.std::__1::__vector_base.861" }
+%"class.std::__1::__vector_base.861" = type { %"class.ui::CompositorLock"**, %"class.ui::CompositorLock"**, %"class.std::__1::__compressed_pair.870" }
+%"class.ui::CompositorLock" = type { %"class.ui::CompositorLockClient"*, %"class.std::__1::unique_ptr.862", %"class.base::WeakPtr.869" }
+%"class.ui::CompositorLockClient" = type { i32 (...)** }
+%"class.std::__1::unique_ptr.862" = type { %"class.std::__1::__compressed_pair.863" }
+%"class.std::__1::__compressed_pair.863" = type { %"struct.std::__1::__compressed_pair_elem.864" }
+%"struct.std::__1::__compressed_pair_elem.864" = type { %"class.cc::ScopedDeferMainFrameUpdate"* }
+%"class.cc::ScopedDeferMainFrameUpdate" = type { %"class.base::WeakPtr.865" }
+%"class.base::WeakPtr.865" = type { %"class.base::internal::WeakPtrBase" }
+%"class.base::WeakPtr.869" = type { %"class.base::internal::WeakPtrBase" }
+%"class.std::__1::__compressed_pair.870" = type { %"struct.std::__1::__compressed_pair_elem.871" }
+%"struct.std::__1::__compressed_pair_elem.871" = type { %"class.ui::CompositorLock"** }
+%"class.base::WeakPtrFactory.875" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.std::__1::unique_ptr.876" = type { %"class.std::__1::__compressed_pair.877" }
+%"class.std::__1::__compressed_pair.877" = type { %"struct.std::__1::__compressed_pair_elem.878" }
+%"struct.std::__1::__compressed_pair_elem.878" = type { %"class.ui::ScrollInputHandler"* }
+%"class.ui::ScrollInputHandler" = type opaque
+%"class.base::flat_map.882" = type { %"class.base::internal::flat_tree.883" }
+%"class.base::internal::flat_tree.883" = type { %"class.std::__1::vector.884" }
+%"class.std::__1::vector.884" = type { %"class.std::__1::__vector_base.885" }
+%"class.std::__1::__vector_base.885" = type { %"struct.std::__1::pair.886"*, %"struct.std::__1::pair.886"*, %"class.std::__1::__compressed_pair.887" }
+%"struct.std::__1::pair.886" = type opaque
+%"class.std::__1::__compressed_pair.887" = type { %"struct.std::__1::__compressed_pair_elem.888" }
+%"struct.std::__1::__compressed_pair_elem.888" = type { %"struct.std::__1::pair.886"* }
+%"class.base::WeakPtrFactory.892" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.content::RenderWidgetHostImpl" = type { %"class.content::RenderWidgetHost", %"class.content::FrameTokenMessageQueue::Client", %"class.content::InputRouterImplClient", %"class.content::InputDispositionHandler", %"class.content::RenderProcessHost::PriorityClient", %"class.content::RenderProcessHostObserver", %"class.content::SyntheticGestureController::Delegate", %"class.content::RenderFrameMetadataProvider::Observer", %"class.blink::mojom::FrameWidgetHost", %"class.blink::mojom::PopupWidgetHost", %"class.blink::mojom::WidgetHost", %"class.blink::mojom::PointerLockContext", %"class.base::WeakPtr", %"class.content::FrameTree"*, i8, i8, i8, i8, %"class.content::RenderWidgetHostDelegate"*, %"class.content::RenderWidgetHostOwnerDelegate"*, %"class.content::AgentSchedulingGroupHost"*, i32, %"class.base::TickClock"*, i8, i8, i32, i8, %"class.mojo::Receiver", i8, %"class.std::__1::unique_ptr.176", i8, %"class.gfx::Size", %"class.gfx::Size", %"struct.content::RenderWidgetHostImpl::MainFramePropagationProperties", i8, %"class.gfx::Rect", %"class.gfx::Rect", %"class.std::__1::vector.204", %"class.std::__1::vector.212", %"class.base::ObserverList", %"class.base::ObserverList.227", i8, i32, i8, %"class.base::TimeTicks", i8, i32, i8, i8, i8, %"class.absl::optional.239", i8, i8, i8, [5 x i8], i8, %"class.std::__1::unique_ptr.251", %"class.std::__1::unique_ptr.283", %"class.base::OneShotTimer", %"class.base::CallbackListSubscription", %"class.std::__1::unique_ptr.289", %"class.content::RenderWidgetHostLatencyTracker", i32, %"class.std::__1::map.295", %"class.std::__1::map.295", i8, %"class.base::TimeDelta", %"class.base::TimeDelta", i8, %"class.base::OnceCallback.306", %"class.std::__1::unique_ptr.307", %"class.mojo::Remote", %"class.mojo::AssociatedRemote", %"class.mojo::Remote.333", %"class.absl::optional.341", %"class.absl::optional.346", i8, %"class.content::RenderFrameMetadataProviderImpl", i8, %"class.viz::FrameSinkId", %"class.std::__1::unique_ptr.382", i8, %"class.gfx::PointF", i8, i32, %"class.base::OneShotTimer", %"class.std::__1::unique_ptr.388", %"class.base::OnceCallback.394", %"class.base::OnceCallback", %"class.mojo::AssociatedReceiver", %"class.mojo::AssociatedRemote.396", %"class.mojo::AssociatedReceiver.404", %"class.mojo::AssociatedReceiver.406", %"class.mojo::AssociatedRemote.408", %"class.mojo::Remote.416", %"class.std::__1::unique_ptr.424", %"class.std::__1::unique_ptr.424", %"class.base::WeakPtrFactory.430" }
+%"class.content::RenderWidgetHost" = type { i32 (...)** }
+%"class.content::FrameTokenMessageQueue::Client" = type { i32 (...)** }
+%"class.content::InputRouterImplClient" = type { %"class.content::InputRouterClient" }
+%"class.content::InputRouterClient" = type { i32 (...)** }
+%"class.content::InputDispositionHandler" = type { i32 (...)** }
+%"class.content::RenderProcessHost::PriorityClient" = type { i32 (...)** }
+%"class.content::RenderProcessHostObserver" = type { %"class.base::CheckedObserver" }
+%"class.base::CheckedObserver" = type { i32 (...)**, %"class.base::WeakPtrFactory" }
+%"class.base::WeakPtrFactory" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.content::SyntheticGestureController::Delegate" = type { i32 (...)** }
+%"class.content::RenderFrameMetadataProvider::Observer" = type { i32 (...)** }
+%"class.blink::mojom::FrameWidgetHost" = type { i32 (...)** }
+%"class.blink::mojom::PopupWidgetHost" = type { i32 (...)** }
+%"class.blink::mojom::WidgetHost" = type { i32 (...)** }
+%"class.blink::mojom::PointerLockContext" = type { i32 (...)** }
+%"class.base::WeakPtr" = type { %"class.base::internal::WeakPtrBase" }
+%"class.content::FrameTree" = type opaque
+%"class.content::RenderWidgetHostDelegate" = type { i32 (...)** }
+%"class.content::RenderWidgetHostOwnerDelegate" = type opaque
+%"class.content::AgentSchedulingGroupHost" = type opaque
+%"class.mojo::Receiver" = type { %"class.mojo::internal::BindingState" }
+%"class.mojo::internal::BindingState" = type { %"class.mojo::internal::BindingStateBase", %"class.blink::mojom::PointerLockContextStub" }
+%"class.mojo::internal::BindingStateBase" = type { %class.scoped_refptr.7, %"class.std::__1::unique_ptr.125", %"class.base::WeakPtrFactory.175" }
+%class.scoped_refptr.7 = type { %"class.mojo::internal::MultiplexRouter"* }
+%"class.mojo::internal::MultiplexRouter" = type <{ %"class.mojo::MessageReceiver", %"class.mojo::AssociatedGroupController.base", [4 x i8], %"class.mojo::PipeControlMessageHandlerDelegate", i32, i8, [3 x i8], %class.scoped_refptr.9, %"class.mojo::MessageHeaderValidator"*, %"class.mojo::MessageDispatcher", %"class.mojo::Connector", %"class.mojo::ScopedHandleBase", [4 x i8], %"class.absl::optional.92", %"class.absl::optional.97", %"class.absl::optional.39", %"class.mojo::PipeControlMessageHandler", %"class.mojo::PipeControlMessageProxy", %"class.base::small_map", i32, [4 x i8], %"class.base::circular_deque", %"class.std::__1::map.116", i8, [7 x i8], %class.scoped_refptr.9, i8, i8, i8, i8, i8, [3 x i8] }>
+%"class.mojo::MessageReceiver" = type { i32 (...)** }
+%"class.mojo::AssociatedGroupController.base" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe.8" }>
+%"class.base::RefCountedThreadSafe.8" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.mojo::PipeControlMessageHandlerDelegate" = type { i32 (...)** }
+%"class.mojo::MessageHeaderValidator" = type { %"class.mojo::MessageReceiver", %"class.std::__1::basic_string" }
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon }
+%union.anon = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.mojo::MessageDispatcher" = type { %"class.mojo::MessageReceiver", %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr.15", %"class.mojo::MessageReceiver"*, %"class.base::WeakPtrFactory.21" }
+%"class.std::__1::unique_ptr" = type { %"class.std::__1::__compressed_pair.12" }
+%"class.std::__1::__compressed_pair.12" = type { %"struct.std::__1::__compressed_pair_elem.13" }
+%"struct.std::__1::__compressed_pair_elem.13" = type { %"class.mojo::MessageReceiver"* }
+%"class.std::__1::unique_ptr.15" = type { %"class.std::__1::__compressed_pair.16" }
+%"class.std::__1::__compressed_pair.16" = type { %"struct.std::__1::__compressed_pair_elem.17" }
+%"struct.std::__1::__compressed_pair_elem.17" = type { %"class.mojo::MessageFilter"* }
+%"class.mojo::MessageFilter" = type { i32 (...)** }
+%"class.base::WeakPtrFactory.21" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.mojo::Connector" = type { %"class.mojo::MessageReceiver", %"class.base::OnceCallback", %"class.mojo::ScopedHandleBase", %"class.mojo::MessageReceiver"*, %class.scoped_refptr.9, %"class.std::__1::unique_ptr.24", %"class.absl::optional", %"struct.std::__1::atomic.35", i8, i8, i8, i8, i32, i32, %"class.absl::optional.39", %"class.std::__1::unique_ptr.44", i8, i64, %class.scoped_refptr.73, %"class.base::Lock", i8, i8*, %"class.mojo::Connector::RunLoopNestingObserver"*, i8, i64, %"class.mojo::ConnectionGroup::Ref", %"class.base::WeakPtr.90", %"class.base::WeakPtrFactory.91" }
+%"class.std::__1::unique_ptr.24" = type { %"class.std::__1::__compressed_pair.25" }
+%"class.std::__1::__compressed_pair.25" = type { %"struct.std::__1::__compressed_pair_elem.26" }
+%"struct.std::__1::__compressed_pair_elem.26" = type { %"class.mojo::SimpleWatcher"* }
+%"class.mojo::SimpleWatcher" = type { i32, %class.scoped_refptr.9, i8, %"class.mojo::ScopedHandleBase.27", %class.scoped_refptr.28, %"class.mojo::Handle", i32, %"class.base::RepeatingCallback", i8*, %"class.base::WeakPtrFactory.29" }
+%"class.mojo::ScopedHandleBase.27" = type { %"class.mojo::TrapHandle" }
+%"class.mojo::TrapHandle" = type { %"class.mojo::Handle" }
+%class.scoped_refptr.28 = type { %"class.mojo::SimpleWatcher::Context"* }
+%"class.mojo::SimpleWatcher::Context" = type opaque
+%"class.mojo::Handle" = type { i32 }
+%"class.base::RepeatingCallback" = type { %"class.base::internal::CallbackBaseCopyable" }
+%"class.base::internal::CallbackBaseCopyable" = type { %"class.base::internal::CallbackBase" }
+%"class.base::WeakPtrFactory.29" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.absl::optional" = type { %"class.absl::optional_internal::optional_data" }
+%"class.absl::optional_internal::optional_data" = type { %"class.absl::optional_internal::optional_data_base" }
+%"class.absl::optional_internal::optional_data_base" = type { %"class.absl::optional_internal::optional_data_dtor_base" }
+%"class.absl::optional_internal::optional_data_dtor_base" = type { i8, %union.anon.33 }
+%union.anon.33 = type { %"class.mojo::HandleSignalTracker" }
+%"class.mojo::HandleSignalTracker" = type { %"class.base::RepeatingCallback.34", %"struct.mojo::HandleSignalsState", %"class.mojo::SimpleWatcher", %"class.mojo::SimpleWatcher" }
+%"class.base::RepeatingCallback.34" = type { %"class.base::internal::CallbackBaseCopyable" }
+%"struct.mojo::HandleSignalsState" = type { %struct.MojoHandleSignalsState }
+%struct.MojoHandleSignalsState = type { i32, i32 }
+%"struct.std::__1::atomic.35" = type { %"struct.std::__1::__atomic_base.36" }
+%"struct.std::__1::__atomic_base.36" = type { %"struct.std::__1::__cxx_atomic_impl.37" }
+%"struct.std::__1::__cxx_atomic_impl.37" = type { %"struct.std::__1::__cxx_atomic_base_impl.38" }
+%"struct.std::__1::__cxx_atomic_base_impl.38" = type { i8 }
+%"class.std::__1::unique_ptr.44" = type { %"class.std::__1::__compressed_pair.45" }
+%"class.std::__1::__compressed_pair.45" = type { %"struct.std::__1::__compressed_pair_elem.46" }
+%"struct.std::__1::__compressed_pair_elem.46" = type { %"class.mojo::SyncHandleWatcher"* }
+%"class.mojo::SyncHandleWatcher" = type { %"class.mojo::Handle", i32, %"class.base::RepeatingCallback.47", i8, i64, %class.scoped_refptr.48, %class.scoped_refptr.69 }
+%"class.base::RepeatingCallback.47" = type { %"class.base::internal::CallbackBaseCopyable" }
+%class.scoped_refptr.48 = type { %"class.mojo::SyncHandleRegistry"* }
+%"class.mojo::SyncHandleRegistry" = type <{ %"class.base::RefCounted", [4 x i8], %"class.mojo::WaitSet", %"class.std::__1::map", %"class.std::__1::map.58", i8, [7 x i8] }>
+%"class.base::RefCounted" = type { %"class.base::subtle::RefCountedBase" }
+%"class.base::subtle::RefCountedBase" = type { i32 }
+%"class.mojo::WaitSet" = type { %class.scoped_refptr.49 }
+%class.scoped_refptr.49 = type { %"class.mojo::WaitSet::State"* }
+%"class.mojo::WaitSet::State" = type opaque
+%"class.std::__1::map" = type { %"class.std::__1::__tree" }
+%"class.std::__1::__tree" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.50", %"class.std::__1::__compressed_pair.55" }
+%"class.std::__1::__compressed_pair.50" = type { %"struct.std::__1::__compressed_pair_elem.51" }
+%"class.std::__1::__compressed_pair.55" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.std::__1::map.58" = type { %"class.std::__1::__tree.59" }
+%"class.std::__1::__tree.59" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.60", %"class.std::__1::__compressed_pair.64" }
+%"class.std::__1::__compressed_pair.60" = type { %"struct.std::__1::__compressed_pair_elem.51" }
+%"class.std::__1::__compressed_pair.64" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%class.scoped_refptr.69 = type { %"class.base::RefCountedData"* }
+%"class.base::RefCountedData" = type opaque
+%class.scoped_refptr.73 = type { %"class.mojo::internal::MessageQuotaChecker"* }
+%"class.mojo::internal::MessageQuotaChecker" = type <{ %"class.base::RefCountedThreadSafe.74", [4 x i8], %"struct.mojo::internal::MessageQuotaChecker::Configuration"*, %"class.base::TimeTicks", %"struct.std::__1::atomic.84", %"struct.std::__1::atomic.84", %"struct.std::__1::atomic.84", %"class.base::Lock", %"class.mojo::internal::MessageQuotaChecker::DecayingRateAverage", i64, i64, %"class.mojo::MessagePipeHandle", [4 x i8] }>
+%"class.base::RefCountedThreadSafe.74" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"struct.mojo::internal::MessageQuotaChecker::Configuration" = type { i8, i64, i64, i64, void (i64, i8, i64, i64, double, i64, i64, i64)* }
+%"struct.std::__1::atomic.84" = type { %"struct.std::__1::__atomic_base.85" }
+%"struct.std::__1::__atomic_base.85" = type { %"struct.std::__1::__atomic_base.86" }
+%"struct.std::__1::__atomic_base.86" = type { %"struct.std::__1::__cxx_atomic_impl.87" }
+%"struct.std::__1::__cxx_atomic_impl.87" = type { %"struct.std::__1::__cxx_atomic_base_impl.88" }
+%"struct.std::__1::__cxx_atomic_base_impl.88" = type { i64 }
+%"class.mojo::internal::MessageQuotaChecker::DecayingRateAverage" = type { i64, i64, double }
+%"class.mojo::MessagePipeHandle" = type { %"class.mojo::Handle" }
+%"class.base::Lock" = type { %"class.base::internal::LockImpl" }
+%"class.base::internal::LockImpl" = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%"class.mojo::Connector::RunLoopNestingObserver" = type opaque
+%"class.mojo::ConnectionGroup::Ref" = type { i32, %class.scoped_refptr.89 }
+%class.scoped_refptr.89 = type { %"class.mojo::ConnectionGroup"* }
+%"class.mojo::ConnectionGroup" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe.893", [4 x i8], %"class.base::RepeatingCallback.128", %class.scoped_refptr.9, %"class.mojo::ConnectionGroup::Ref", %"struct.std::__1::atomic.894", [4 x i8] }>
+%"class.base::RefCountedThreadSafe.893" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::RepeatingCallback.128" = type { %"class.base::internal::CallbackBaseCopyable" }
+%"struct.std::__1::atomic.894" = type { %"struct.std::__1::__atomic_base.895" }
+%"struct.std::__1::__atomic_base.895" = type { %"struct.std::__1::__atomic_base.896" }
+%"struct.std::__1::__atomic_base.896" = type { %"struct.std::__1::__cxx_atomic_impl.897" }
+%"struct.std::__1::__cxx_atomic_impl.897" = type { %"struct.std::__1::__cxx_atomic_base_impl.898" }
+%"struct.std::__1::__cxx_atomic_base_impl.898" = type { i32 }
+%"class.base::WeakPtr.90" = type { %"class.base::internal::WeakPtrBase" }
+%"class.base::WeakPtrFactory.91" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.mojo::ScopedHandleBase" = type { %"class.mojo::MessagePipeHandle" }
+%"class.absl::optional.92" = type { %"class.absl::optional_internal::optional_data.93" }
+%"class.absl::optional_internal::optional_data.93" = type { %"class.absl::optional_internal::optional_data_base.94" }
+%"class.absl::optional_internal::optional_data_base.94" = type { %"class.absl::optional_internal::optional_data_dtor_base.95" }
+%"class.absl::optional_internal::optional_data_dtor_base.95" = type { i8, %union.anon.96 }
+%union.anon.96 = type { %"class.mojo::SimpleWatcher" }
+%"class.absl::optional.97" = type { %"class.absl::optional_internal::optional_data.98" }
+%"class.absl::optional_internal::optional_data.98" = type { %"class.absl::optional_internal::optional_data_base.99" }
+%"class.absl::optional_internal::optional_data_base.99" = type { %"class.absl::optional_internal::optional_data_dtor_base.100" }
+%"class.absl::optional_internal::optional_data_dtor_base.100" = type { i8, [7 x i8], %union.anon.101 }
+%union.anon.101 = type { %"struct.mojo::internal::MultiplexRouter::ExclusiveSyncWaitInfo" }
+%"struct.mojo::internal::MultiplexRouter::ExclusiveSyncWaitInfo" = type <{ i32, [4 x i8], i64, i8, [7 x i8] }>
+%"class.absl::optional.39" = type { %"class.absl::optional_internal::optional_data.40" }
+%"class.absl::optional_internal::optional_data.40" = type { %"class.absl::optional_internal::optional_data_base.41" }
+%"class.absl::optional_internal::optional_data_base.41" = type { %"class.absl::optional_internal::optional_data_dtor_base.42" }
+%"class.absl::optional_internal::optional_data_dtor_base.42" = type { i8, %union.anon.43 }
+%union.anon.43 = type { %"class.base::Lock" }
+%"class.mojo::PipeControlMessageHandler" = type { %"class.mojo::MessageReceiver", %"class.std::__1::basic_string", %"class.mojo::PipeControlMessageHandlerDelegate"* }
+%"class.mojo::PipeControlMessageProxy" = type { %"class.mojo::MessageReceiver"* }
+%"class.base::small_map" = type { i64, %"class.base::internal::small_map_default_init", %union.anon.102 }
+%"class.base::internal::small_map_default_init" = type { i8 }
+%union.anon.102 = type { %"class.std::__1::map.104" }
+%"class.std::__1::map.104" = type { %"class.std::__1::__tree.105" }
+%"class.std::__1::__tree.105" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.106", %"class.std::__1::__compressed_pair.110" }
+%"class.std::__1::__compressed_pair.106" = type { %"struct.std::__1::__compressed_pair_elem.51" }
+%"class.std::__1::__compressed_pair.110" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.base::circular_deque" = type { %"class.base::internal::VectorBuffer", i64, i64 }
+%"class.base::internal::VectorBuffer" = type { %"class.std::__1::unique_ptr.115"*, i64 }
+%"class.std::__1::unique_ptr.115" = type opaque
+%"class.std::__1::map.116" = type { %"class.std::__1::__tree.117" }
+%"class.std::__1::__tree.117" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.118", %"class.std::__1::__compressed_pair.122" }
+%"class.std::__1::__compressed_pair.118" = type { %"struct.std::__1::__compressed_pair_elem.51" }
+%"class.std::__1::__compressed_pair.122" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.std::__1::unique_ptr.125" = type { %"class.std::__1::__compressed_pair.126" }
+%"class.std::__1::__compressed_pair.126" = type { %"struct.std::__1::__compressed_pair_elem.127" }
+%"struct.std::__1::__compressed_pair_elem.127" = type { %"class.mojo::InterfaceEndpointClient"* }
+%"class.mojo::InterfaceEndpointClient" = type { %"class.mojo::MessageReceiverWithResponder", i8, %"class.base::RepeatingCallback.128", %"class.base::OnceCallback.129", %"class.absl::optional.130", %"class.absl::optional.135", %"class.mojo::ConnectionGroup::Ref", i32, %"class.mojo::ScopedInterfaceEndpointHandle", %"class.std::__1::unique_ptr.142", %"class.mojo::InterfaceEndpointController"*, %"class.mojo::MessageReceiverWithResponderStatus"*, %"class.mojo::InterfaceEndpointClient::HandleIncomingMessageThunk", %"class.mojo::MessageDispatcher", %"class.std::__1::map.150", %"class.std::__1::map.161", i64, %"class.base::OnceCallback", %"class.base::OnceCallback.170", i8, %class.scoped_refptr.9, %"class.mojo::internal::ControlMessageProxy", %"class.mojo::internal::ControlMessageHandler", i8*, %"class.base::WeakPtrFactory.171" }
+%"class.mojo::MessageReceiverWithResponder" = type { %"class.mojo::MessageReceiver" }
+%"class.base::OnceCallback.129" = type { %"class.base::internal::CallbackBase" }
+%"class.absl::optional.130" = type { %"class.absl::optional_internal::optional_data.131" }
+%"class.absl::optional_internal::optional_data.131" = type { %"class.absl::optional_internal::optional_data_base.132" }
+%"class.absl::optional_internal::optional_data_base.132" = type { %"class.absl::optional_internal::optional_data_dtor_base.133" }
+%"class.absl::optional_internal::optional_data_dtor_base.133" = type { i8, %union.anon.134 }
+%union.anon.134 = type { %"class.base::TimeDelta" }
+%"class.absl::optional.135" = type { %"class.absl::optional_internal::optional_data.136" }
+%"class.absl::optional_internal::optional_data.136" = type { %"class.absl::optional_internal::optional_data_base.137" }
+%"class.absl::optional_internal::optional_data_base.137" = type { %"class.absl::optional_internal::optional_data_dtor_base.138" }
+%"class.absl::optional_internal::optional_data_dtor_base.138" = type { i8, %union.anon.139 }
+%union.anon.139 = type { %"class.base::OneShotTimer" }
+%"class.mojo::ScopedInterfaceEndpointHandle" = type { %class.scoped_refptr.141 }
+%class.scoped_refptr.141 = type { %"class.mojo::ScopedInterfaceEndpointHandle::State"* }
+%"class.mojo::ScopedInterfaceEndpointHandle::State" = type opaque
+%"class.std::__1::unique_ptr.142" = type { %"class.std::__1::__compressed_pair.143" }
+%"class.std::__1::__compressed_pair.143" = type { %"struct.std::__1::__compressed_pair_elem.144" }
+%"struct.std::__1::__compressed_pair_elem.144" = type { %"class.mojo::AssociatedGroup"* }
+%"class.mojo::AssociatedGroup" = type { %"class.base::RepeatingCallback.145", %class.scoped_refptr.146 }
+%"class.base::RepeatingCallback.145" = type { %"class.base::internal::CallbackBaseCopyable" }
+%class.scoped_refptr.146 = type { %"class.mojo::AssociatedGroupController"* }
+%"class.mojo::AssociatedGroupController" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe.8", [4 x i8] }>
+%"class.mojo::InterfaceEndpointController" = type opaque
+%"class.mojo::MessageReceiverWithResponderStatus" = type { %"class.mojo::MessageReceiver" }
+%"class.mojo::InterfaceEndpointClient::HandleIncomingMessageThunk" = type { %"class.mojo::MessageReceiver", %"class.mojo::InterfaceEndpointClient"* }
+%"class.std::__1::map.150" = type { %"class.std::__1::__tree.151" }
+%"class.std::__1::__tree.151" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.152", %"class.std::__1::__compressed_pair.156" }
+%"class.std::__1::__compressed_pair.152" = type { %"struct.std::__1::__compressed_pair_elem.51" }
+%"class.std::__1::__compressed_pair.156" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.std::__1::map.161" = type { %"class.std::__1::__tree.162" }
+%"class.std::__1::__tree.162" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.163", %"class.std::__1::__compressed_pair.167" }
+%"class.std::__1::__compressed_pair.163" = type { %"struct.std::__1::__compressed_pair_elem.51" }
+%"class.std::__1::__compressed_pair.167" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.base::OnceCallback.170" = type { %"class.base::internal::CallbackBase" }
+%"class.mojo::internal::ControlMessageProxy" = type { %"class.mojo::InterfaceEndpointClient"*, i8, %"class.base::OnceCallback" }
+%"class.mojo::internal::ControlMessageHandler" = type <{ %"class.mojo::MessageReceiverWithResponderStatus", %"class.mojo::InterfaceEndpointClient"*, i32, [4 x i8] }>
+%"class.base::WeakPtrFactory.171" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.base::WeakPtrFactory.175" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.blink::mojom::PointerLockContextStub" = type { %"class.mojo::MessageReceiverWithResponderStatus", %"class.blink::mojom::PointerLockContext"* }
+%"class.std::__1::unique_ptr.176" = type { %"class.std::__1::__compressed_pair.177" }
+%"class.std::__1::__compressed_pair.177" = type { %"struct.std::__1::__compressed_pair_elem.178" }
+%"struct.std::__1::__compressed_pair_elem.178" = type { %"struct.blink::VisualProperties"* }
+%"struct.blink::VisualProperties" = type <{ %"struct.blink::ScreenInfos", i8, [3 x i8], %"class.gfx::Size", %"class.gfx::Size", %"class.gfx::Size", %"class.gfx::Size", %"class.gfx::Rect", %"struct.cc::BrowserControlsParams", i8, [7 x i8], %"class.absl::optional.189", i8, [3 x i8], i32, i32, [4 x i8], double, float, float, %"class.std::__1::vector.194", i8, [7 x i8] }>
+%"struct.blink::ScreenInfos" = type { %"class.std::__1::vector", i64 }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"struct.blink::ScreenInfo"*, %"struct.blink::ScreenInfo"*, %"class.std::__1::__compressed_pair.184" }
+%"struct.blink::ScreenInfo" = type { float, %"class.gfx::DisplayColorSpaces", i32, i32, i8, i32, %"class.gfx::Rect", %"class.gfx::Rect", i32, i16, i8, i8, i8, i64 }
+%"class.std::__1::__compressed_pair.184" = type { %"struct.std::__1::__compressed_pair_elem.185" }
+%"struct.std::__1::__compressed_pair_elem.185" = type { %"struct.blink::ScreenInfo"* }
+%"class.absl::optional.189" = type { %"class.absl::optional_internal::optional_data.190" }
+%"class.absl::optional_internal::optional_data.190" = type { %"class.absl::optional_internal::optional_data_base.191" }
+%"class.absl::optional_internal::optional_data_base.191" = type { %"class.absl::optional_internal::optional_data_dtor_base.192" }
+%"class.absl::optional_internal::optional_data_dtor_base.192" = type { i8, %union.anon.193 }
+%union.anon.193 = type { %"class.viz::LocalSurfaceId" }
+%"class.std::__1::vector.194" = type { %"class.std::__1::__vector_base.195" }
+%"class.std::__1::__vector_base.195" = type { %"class.gfx::Rect"*, %"class.gfx::Rect"*, %"class.std::__1::__compressed_pair.196" }
+%"class.std::__1::__compressed_pair.196" = type { %"struct.std::__1::__compressed_pair_elem.197" }
+%"struct.std::__1::__compressed_pair_elem.197" = type { %"class.gfx::Rect"* }
+%"struct.content::RenderWidgetHostImpl::MainFramePropagationProperties" = type { float, float, i8, %"class.gfx::Size", %"class.gfx::Rect", %"class.std::__1::vector.194" }
+%"class.std::__1::vector.204" = type { %"class.std::__1::__vector_base.205" }
+%"class.std::__1::__vector_base.205" = type { %"class.base::RepeatingCallback.206"*, %"class.base::RepeatingCallback.206"*, %"class.std::__1::__compressed_pair.207" }
+%"class.base::RepeatingCallback.206" = type opaque
+%"class.std::__1::__compressed_pair.207" = type { %"struct.std::__1::__compressed_pair_elem.208" }
+%"struct.std::__1::__compressed_pair_elem.208" = type { %"class.base::RepeatingCallback.206"* }
+%"class.std::__1::vector.212" = type { %"class.std::__1::__vector_base.213" }
+%"class.std::__1::__vector_base.213" = type { %"class.base::RepeatingCallback.214"*, %"class.base::RepeatingCallback.214"*, %"class.std::__1::__compressed_pair.215" }
+%"class.base::RepeatingCallback.214" = type opaque
+%"class.std::__1::__compressed_pair.215" = type { %"struct.std::__1::__compressed_pair_elem.216" }
+%"struct.std::__1::__compressed_pair_elem.216" = type { %"class.base::RepeatingCallback.214"* }
+%"class.base::ObserverList" = type <{ %"class.std::__1::vector.220", %"class.base::LinkedList", i64, i32, [4 x i8] }>
+%"class.base::LinkedList" = type { %"class.base::LinkNode" }
+%"class.base::LinkNode" = type { %"class.base::internal::LinkNodeBase" }
+%"class.base::ObserverList.227" = type <{ %"class.std::__1::vector.228", %"class.base::LinkedList.236", i64, i32, [4 x i8] }>
+%"class.std::__1::vector.228" = type { %"class.std::__1::__vector_base.229" }
+%"class.std::__1::__vector_base.229" = type { %"class.base::internal::CheckedObserverAdapter"*, %"class.base::internal::CheckedObserverAdapter"*, %"class.std::__1::__compressed_pair.231" }
+%"class.base::internal::CheckedObserverAdapter" = type { %"class.base::WeakPtr.230" }
+%"class.base::WeakPtr.230" = type { %"class.base::internal::WeakPtrBase" }
+%"class.std::__1::__compressed_pair.231" = type { %"struct.std::__1::__compressed_pair_elem.232" }
+%"struct.std::__1::__compressed_pair_elem.232" = type { %"class.base::internal::CheckedObserverAdapter"* }
+%"class.base::LinkedList.236" = type { %"class.base::LinkNode.237" }
+%"class.base::LinkNode.237" = type { %"class.base::internal::LinkNodeBase" }
+%"class.absl::optional.239" = type { %"class.absl::optional_internal::optional_data.240" }
+%"class.absl::optional_internal::optional_data.240" = type { %"class.absl::optional_internal::optional_data_base.241" }
+%"class.absl::optional_internal::optional_data_base.241" = type { %"class.absl::optional_internal::optional_data_dtor_base.242" }
+%"class.absl::optional_internal::optional_data_dtor_base.242" = type { i8, %union.anon.243 }
+%union.anon.243 = type { %"class.base::internal::flat_tree" }
+%"class.base::internal::flat_tree" = type { %"class.std::__1::vector.244" }
+%"class.std::__1::vector.244" = type { %"class.std::__1::__vector_base.245" }
+%"class.std::__1::__vector_base.245" = type { i32*, i32*, %"class.std::__1::__compressed_pair.246" }
+%"class.std::__1::__compressed_pair.246" = type { %"struct.std::__1::__compressed_pair_elem.247" }
+%"struct.std::__1::__compressed_pair_elem.247" = type { i32* }
+%"class.std::__1::unique_ptr.251" = type { %"class.std::__1::__compressed_pair.252" }
+%"class.std::__1::__compressed_pair.252" = type { %"struct.std::__1::__compressed_pair_elem.253" }
+%"struct.std::__1::__compressed_pair_elem.253" = type { %"class.content::SyntheticGestureController"* }
+%"class.content::SyntheticGestureController" = type { i32 (...)**, %"class.content::SyntheticGestureController::Delegate"*, %"class.std::__1::unique_ptr.254", %"class.content::SyntheticGestureController::GestureAndCallbackQueue", i8, %"class.base::RepeatingTimer", %"class.base::WeakPtrFactory.279" }
+%"class.std::__1::unique_ptr.254" = type { %"class.std::__1::__compressed_pair.255" }
+%"class.std::__1::__compressed_pair.255" = type { %"struct.std::__1::__compressed_pair_elem.256" }
+%"struct.std::__1::__compressed_pair_elem.256" = type { %"class.content::SyntheticGestureTarget"* }
+%"class.content::SyntheticGestureTarget" = type opaque
+%"class.content::SyntheticGestureController::GestureAndCallbackQueue" = type { i32, %"class.std::__1::vector.260", %"class.std::__1::queue", %"class.std::__1::queue.276" }
+%"class.std::__1::vector.260" = type { %"class.std::__1::__vector_base.261" }
+%"class.std::__1::__vector_base.261" = type { %"class.std::__1::unique_ptr.262"*, %"class.std::__1::unique_ptr.262"*, %"class.std::__1::__compressed_pair.268" }
+%"class.std::__1::unique_ptr.262" = type { %"class.std::__1::__compressed_pair.263" }
+%"class.std::__1::__compressed_pair.263" = type { %"struct.std::__1::__compressed_pair_elem.264" }
+%"struct.std::__1::__compressed_pair_elem.264" = type { %"class.content::SyntheticGesture"* }
+%"class.content::SyntheticGesture" = type { i32 (...)** }
+%"class.std::__1::__compressed_pair.268" = type { %"struct.std::__1::__compressed_pair_elem.269" }
+%"struct.std::__1::__compressed_pair_elem.269" = type { %"class.std::__1::unique_ptr.262"* }
+%"class.std::__1::queue" = type { %"class.base::circular_deque.273" }
+%"class.base::circular_deque.273" = type { %"class.base::internal::VectorBuffer.274", i64, i64 }
+%"class.base::internal::VectorBuffer.274" = type { %"class.base::OnceCallback.275"*, i64 }
+%"class.base::OnceCallback.275" = type { %"class.base::internal::CallbackBase" }
+%"class.std::__1::queue.276" = type { %"class.base::circular_deque.277" }
+%"class.base::circular_deque.277" = type { %"class.base::internal::VectorBuffer.278", i64, i64 }
+%"class.base::internal::VectorBuffer.278" = type { i8*, i64 }
+%"class.base::RepeatingTimer" = type { %"class.base::internal::TimerBase", %"class.base::RepeatingCallback.128" }
+%"class.base::internal::TimerBase" = type { i32 (...)**, %class.scoped_refptr.9, %"class.base::SequenceCheckerDoNothing", %"class.base::internal::TaskDestructionDetector"*, %"class.base::Location", %"class.base::TimeDelta", %"class.base::TimeTicks", %"class.base::TimeTicks", %"class.base::TickClock"*, i8, %"class.base::WeakPtrFactory.140" }
+%"class.base::SequenceCheckerDoNothing" = type { i8 }
+%"class.base::internal::TaskDestructionDetector" = type opaque
+%"class.base::Location" = type { i8*, i8*, i32, i8* }
+%"class.base::WeakPtrFactory.140" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.base::WeakPtrFactory.279" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.std::__1::unique_ptr.283" = type { %"class.std::__1::__compressed_pair.284" }
+%"class.std::__1::__compressed_pair.284" = type { %"struct.std::__1::__compressed_pair_elem.285" }
+%"struct.std::__1::__compressed_pair_elem.285" = type { %"class.content::InputRouter"* }
+%"class.content::InputRouter" = type { i32 (...)** }
+%"class.base::CallbackListSubscription" = type { %"class.base::OnceCallback" }
+%"class.std::__1::unique_ptr.289" = type { %"class.std::__1::__compressed_pair.290" }
+%"class.std::__1::__compressed_pair.290" = type { %"struct.std::__1::__compressed_pair_elem.291" }
+%"struct.std::__1::__compressed_pair_elem.291" = type { %"class.content::TimeoutMonitor"* }
+%"class.content::TimeoutMonitor" = type opaque
+%"class.content::RenderWidgetHostLatencyTracker" = type { i32 (...)**, i8, i64, i8, i8, %"class.content::RenderWidgetHostDelegate"* }
+%"class.std::__1::map.295" = type { %"class.std::__1::__tree.296" }
+%"class.std::__1::__tree.296" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.297", %"class.std::__1::__compressed_pair.301" }
+%"class.std::__1::__compressed_pair.297" = type { %"struct.std::__1::__compressed_pair_elem.51" }
+%"class.std::__1::__compressed_pair.301" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.base::OnceCallback.306" = type { %"class.base::internal::CallbackBase" }
+%"class.std::__1::unique_ptr.307" = type { %"class.std::__1::__compressed_pair.308" }
+%"class.std::__1::__compressed_pair.308" = type { %"struct.std::__1::__compressed_pair_elem.309" }
+%"struct.std::__1::__compressed_pair_elem.309" = type { %"class.content::FrameTokenMessageQueue"* }
+%"class.content::FrameTokenMessageQueue" = type <{ i32 (...)**, %"class.content::FrameTokenMessageQueue::Client"*, i32, [4 x i8], %"class.base::TimeTicks", %"class.std::__1::multimap", i32, [4 x i8] }>
+%"class.std::__1::multimap" = type { %"class.std::__1::__tree.310" }
+%"class.std::__1::__tree.310" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.311", %"class.std::__1::__compressed_pair.315" }
+%"class.std::__1::__compressed_pair.311" = type { %"struct.std::__1::__compressed_pair_elem.51" }
+%"class.std::__1::__compressed_pair.315" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.mojo::Remote" = type { %"class.mojo::internal::InterfacePtrState" }
+%"class.mojo::internal::InterfacePtrState" = type { %"class.mojo::internal::InterfacePtrStateBase.base", %"class.std::__1::unique_ptr.321" }
+%"class.mojo::internal::InterfacePtrStateBase.base" = type <{ %class.scoped_refptr.7, %"class.std::__1::unique_ptr.125", %"class.mojo::ScopedHandleBase", [4 x i8], %class.scoped_refptr.9, i32 }>
+%"class.std::__1::unique_ptr.321" = type { %"class.std::__1::__compressed_pair.322" }
+%"class.std::__1::__compressed_pair.322" = type { %"struct.std::__1::__compressed_pair_elem.323" }
+%"struct.std::__1::__compressed_pair_elem.323" = type { %"class.blink::mojom::WidgetInputHandlerProxy"* }
+%"class.blink::mojom::WidgetInputHandlerProxy" = type { %"class.blink::mojom::WidgetInputHandler", %"class.mojo::MessageReceiverWithResponder"* }
+%"class.blink::mojom::WidgetInputHandler" = type { i32 (...)** }
+%"class.mojo::AssociatedRemote" = type { %"class.mojo::internal::AssociatedInterfacePtrState" }
+%"class.mojo::internal::AssociatedInterfacePtrState" = type { %"class.mojo::internal::AssociatedInterfacePtrStateBase.base", %"class.std::__1::unique_ptr.327" }
+%"class.mojo::internal::AssociatedInterfacePtrStateBase.base" = type <{ %"class.std::__1::unique_ptr.125", i32 }>
+%"class.std::__1::unique_ptr.327" = type { %"class.std::__1::__compressed_pair.328" }
+%"class.std::__1::__compressed_pair.328" = type { %"struct.std::__1::__compressed_pair_elem.329" }
+%"struct.std::__1::__compressed_pair_elem.329" = type { %"class.blink::mojom::FrameWidgetInputHandlerProxy"* }
+%"class.blink::mojom::FrameWidgetInputHandlerProxy" = type { %"class.blink::mojom::FrameWidgetInputHandler", %"class.mojo::MessageReceiverWithResponder"* }
+%"class.blink::mojom::FrameWidgetInputHandler" = type { i32 (...)** }
+%"class.mojo::Remote.333" = type { %"class.mojo::internal::InterfacePtrState.334" }
+%"class.mojo::internal::InterfacePtrState.334" = type { %"class.mojo::internal::InterfacePtrStateBase.base", %"class.std::__1::unique_ptr.335" }
+%"class.std::__1::unique_ptr.335" = type { %"class.std::__1::__compressed_pair.336" }
+%"class.std::__1::__compressed_pair.336" = type { %"struct.std::__1::__compressed_pair_elem.337" }
+%"struct.std::__1::__compressed_pair_elem.337" = type { %"class.viz::mojom::InputTargetClientProxy"* }
+%"class.viz::mojom::InputTargetClientProxy" = type { %"class.viz::mojom::InputTargetClient", %"class.mojo::MessageReceiverWithResponder"* }
+%"class.viz::mojom::InputTargetClient" = type { i32 (...)** }
+%"class.absl::optional.341" = type { %"class.absl::optional_internal::optional_data.342" }
+%"class.absl::optional_internal::optional_data.342" = type { %"class.absl::optional_internal::optional_data_base.343" }
+%"class.absl::optional_internal::optional_data_base.343" = type { %"class.absl::optional_internal::optional_data_dtor_base.344" }
+%"class.absl::optional_internal::optional_data_dtor_base.344" = type { i8, %union.anon.345 }
+%union.anon.345 = type { i16 }
+%"class.absl::optional.346" = type { %"class.absl::optional_internal::optional_data.347" }
+%"class.absl::optional_internal::optional_data.347" = type { %"class.absl::optional_internal::optional_data_base.348" }
+%"class.absl::optional_internal::optional_data_base.348" = type { %"class.absl::optional_internal::optional_data_dtor_base.349" }
+%"class.absl::optional_internal::optional_data_dtor_base.349" = type { i8, %union.anon.350 }
+%union.anon.350 = type { i32 }
+%"class.content::RenderFrameMetadataProviderImpl" = type { %"class.content::RenderFrameMetadataProvider", %"class.cc::mojom::RenderFrameMetadataObserverClient", %"class.base::ObserverList.351", %"class.cc::RenderFrameMetadata", %"class.absl::optional.189", %class.scoped_refptr.365, %"class.content::FrameTokenMessageQueue"*, %"class.mojo::Receiver.366", %"class.mojo::Remote.368", %"class.absl::optional.376", %"class.base::WeakPtrFactory.381" }
+%"class.content::RenderFrameMetadataProvider" = type { i32 (...)** }
+%"class.cc::mojom::RenderFrameMetadataObserverClient" = type { i32 (...)** }
+%"class.base::ObserverList.351" = type <{ %"class.std::__1::vector.220", %"class.base::LinkedList.352", i64, i32, [4 x i8] }>
+%"class.base::LinkedList.352" = type { %"class.base::LinkNode.353" }
+%"class.base::LinkNode.353" = type { %"class.base::internal::LinkNodeBase" }
+%"class.cc::RenderFrameMetadata" = type <{ i8, [3 x i8], i32, %"class.absl::optional.355", %"struct.viz::Selection", i8, %"class.absl::optional.360", i8, float, %"class.gfx::Size", [4 x i8], %"class.absl::optional.189", float, float, float, float, i32, [4 x i8] }>
+%"class.absl::optional.355" = type { %"class.absl::optional_internal::optional_data.356" }
+%"class.absl::optional_internal::optional_data.356" = type { %"class.absl::optional_internal::optional_data_base.357" }
+%"class.absl::optional_internal::optional_data_base.357" = type { %"class.absl::optional_internal::optional_data_dtor_base.358" }
+%"class.absl::optional_internal::optional_data_dtor_base.358" = type { i8, %union.anon.359 }
+%union.anon.359 = type { %"class.gfx::Vector2dF" }
+%"struct.viz::Selection" = type { %"class.gfx::SelectionBound", %"class.gfx::SelectionBound" }
+%"class.gfx::SelectionBound" = type <{ i32, %"class.gfx::PointF", %"class.gfx::PointF", %"class.gfx::PointF", %"class.gfx::PointF", %"class.gfx::Point", %"class.gfx::Point", i8, [3 x i8] }>
+%"class.absl::optional.360" = type { %"class.absl::optional_internal::optional_data.361" }
+%"class.absl::optional_internal::optional_data.361" = type { %"class.absl::optional_internal::optional_data_base.362" }
+%"class.absl::optional_internal::optional_data_base.362" = type { %"class.absl::optional_internal::optional_data_dtor_base.363" }
+%"class.absl::optional_internal::optional_data_dtor_base.363" = type { i8, %union.anon.364 }
+%union.anon.364 = type { %"struct.cc::DelegatedInkBrowserMetadata" }
+%"struct.cc::DelegatedInkBrowserMetadata" = type { i8 }
+%"class.mojo::Receiver.366" = type { %"class.mojo::internal::BindingState.367" }
+%"class.mojo::internal::BindingState.367" = type { %"class.mojo::internal::BindingStateBase", %"class.cc::mojom::RenderFrameMetadataObserverClientStub" }
+%"class.cc::mojom::RenderFrameMetadataObserverClientStub" = type { %"class.mojo::MessageReceiverWithResponderStatus", %"class.cc::mojom::RenderFrameMetadataObserverClient"* }
+%"class.mojo::Remote.368" = type { %"class.mojo::internal::InterfacePtrState.369" }
+%"class.mojo::internal::InterfacePtrState.369" = type { %"class.mojo::internal::InterfacePtrStateBase.base", %"class.std::__1::unique_ptr.370" }
+%"class.std::__1::unique_ptr.370" = type { %"class.std::__1::__compressed_pair.371" }
+%"class.std::__1::__compressed_pair.371" = type { %"struct.std::__1::__compressed_pair_elem.372" }
+%"struct.std::__1::__compressed_pair_elem.372" = type { %"class.cc::mojom::RenderFrameMetadataObserverProxy"* }
+%"class.cc::mojom::RenderFrameMetadataObserverProxy" = type { %"class.cc::mojom::RenderFrameMetadataObserver", %"class.mojo::MessageReceiverWithResponder"* }
+%"class.cc::mojom::RenderFrameMetadataObserver" = type { i32 (...)** }
+%"class.absl::optional.376" = type { %"class.absl::optional_internal::optional_data.377" }
+%"class.absl::optional_internal::optional_data.377" = type { %"class.absl::optional_internal::optional_data_base.378" }
+%"class.absl::optional_internal::optional_data_base.378" = type { %"class.absl::optional_internal::optional_data_dtor_base.379" }
+%"class.absl::optional_internal::optional_data_dtor_base.379" = type { i8, %union.anon.380 }
+%union.anon.380 = type { i8 }
+%"class.base::WeakPtrFactory.381" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.std::__1::unique_ptr.382" = type { %"class.std::__1::__compressed_pair.383" }
+%"class.std::__1::__compressed_pair.383" = type { %"struct.std::__1::__compressed_pair_elem.384" }
+%"struct.std::__1::__compressed_pair_elem.384" = type { %"class.content::FlingSchedulerBase"* }
+%"class.base::OneShotTimer" = type { %"class.base::internal::TimerBase", %"class.base::OnceCallback" }
+%"class.std::__1::unique_ptr.388" = type { %"class.std::__1::__compressed_pair.389" }
+%"class.std::__1::__compressed_pair.389" = type { %"struct.std::__1::__compressed_pair_elem.390" }
+%"struct.std::__1::__compressed_pair_elem.390" = type { %"class.content::PeakGpuMemoryTracker"* }
+%"class.content::PeakGpuMemoryTracker" = type opaque
+%"class.base::OnceCallback.394" = type { %"class.base::internal::CallbackBase" }
+%"class.mojo::AssociatedReceiver" = type { %"class.mojo::internal::AssociatedReceiverBase", %"class.blink::mojom::FrameWidgetHostStub", %"class.base::WeakPtrFactory.395" }
+%"class.mojo::internal::AssociatedReceiverBase" = type { %"class.std::__1::unique_ptr.125" }
+%"class.blink::mojom::FrameWidgetHostStub" = type { %"class.mojo::MessageReceiverWithResponderStatus", %"class.blink::mojom::FrameWidgetHost"* }
+%"class.base::WeakPtrFactory.395" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.mojo::AssociatedRemote.396" = type { %"class.mojo::internal::AssociatedInterfacePtrState.397" }
+%"class.mojo::internal::AssociatedInterfacePtrState.397" = type { %"class.mojo::internal::AssociatedInterfacePtrStateBase.base", %"class.std::__1::unique_ptr.398" }
+%"class.std::__1::unique_ptr.398" = type { %"class.std::__1::__compressed_pair.399" }
+%"class.std::__1::__compressed_pair.399" = type { %"struct.std::__1::__compressed_pair_elem.400" }
+%"struct.std::__1::__compressed_pair_elem.400" = type { %"class.blink::mojom::FrameWidgetProxy"* }
+%"class.blink::mojom::FrameWidgetProxy" = type { %"class.blink::mojom::FrameWidget", %"class.mojo::MessageReceiverWithResponder"* }
+%"class.blink::mojom::FrameWidget" = type { i32 (...)** }
+%"class.mojo::AssociatedReceiver.404" = type { %"class.mojo::internal::AssociatedReceiverBase", %"class.blink::mojom::PopupWidgetHostStub", %"class.base::WeakPtrFactory.405" }
+%"class.blink::mojom::PopupWidgetHostStub" = type { %"class.mojo::MessageReceiverWithResponderStatus", %"class.blink::mojom::PopupWidgetHost"* }
+%"class.base::WeakPtrFactory.405" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.mojo::AssociatedReceiver.406" = type { %"class.mojo::internal::AssociatedReceiverBase", %"class.blink::mojom::WidgetHostStub", %"class.base::WeakPtrFactory.407" }
+%"class.blink::mojom::WidgetHostStub" = type { %"class.mojo::MessageReceiverWithResponderStatus", %"class.blink::mojom::WidgetHost"* }
+%"class.base::WeakPtrFactory.407" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.mojo::AssociatedRemote.408" = type { %"class.mojo::internal::AssociatedInterfacePtrState.409" }
+%"class.mojo::internal::AssociatedInterfacePtrState.409" = type { %"class.mojo::internal::AssociatedInterfacePtrStateBase.base", %"class.std::__1::unique_ptr.410" }
+%"class.std::__1::unique_ptr.410" = type { %"class.std::__1::__compressed_pair.411" }
+%"class.std::__1::__compressed_pair.411" = type { %"struct.std::__1::__compressed_pair_elem.412" }
+%"struct.std::__1::__compressed_pair_elem.412" = type { %"class.blink::mojom::WidgetProxy"* }
+%"class.blink::mojom::WidgetProxy" = type { %"class.blink::mojom::Widget", %"class.mojo::MessageReceiverWithResponder"* }
+%"class.blink::mojom::Widget" = type { i32 (...)** }
+%"class.mojo::Remote.416" = type { %"class.mojo::internal::InterfacePtrState.417" }
+%"class.mojo::internal::InterfacePtrState.417" = type { %"class.mojo::internal::InterfacePtrStateBase.base", %"class.std::__1::unique_ptr.418" }
+%"class.std::__1::unique_ptr.418" = type { %"class.std::__1::__compressed_pair.419" }
+%"class.std::__1::__compressed_pair.419" = type { %"struct.std::__1::__compressed_pair_elem.420" }
+%"struct.std::__1::__compressed_pair_elem.420" = type { %"class.blink::mojom::WidgetCompositorProxy"* }
+%"class.blink::mojom::WidgetCompositorProxy" = type { %"class.blink::mojom::WidgetCompositor", %"class.mojo::MessageReceiverWithResponder"* }
+%"class.blink::mojom::WidgetCompositor" = type { i32 (...)** }
+%"class.std::__1::unique_ptr.424" = type { %"class.std::__1::__compressed_pair.425" }
+%"class.std::__1::__compressed_pair.425" = type { %"struct.std::__1::__compressed_pair_elem.426" }
+%"struct.std::__1::__compressed_pair_elem.426" = type { %"class.power_scheduler::PowerModeVoter"* }
+%"class.power_scheduler::PowerModeVoter" = type { %"class.power_scheduler::PowerModeVoter::Delegate"* }
+%"class.power_scheduler::PowerModeVoter::Delegate" = type { i32 (...)** }
+%"class.base::WeakPtrFactory.430" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.logging::CheckError" = type { %"class.logging::LogMessage"* }
+%"class.logging::LogMessage" = type { i32 (...)**, i32, %"class.std::__1::basic_ostringstream", i64, i8*, i32, %"class.base::ScopedClearLastErrorBase" }
+%"class.std::__1::basic_ostringstream" = type { %"class.std::__1::basic_ostream.base", %"class.std::__1::basic_stringbuf", %"class.std::__1::basic_ios.base" }
+%"class.std::__1::basic_ostream.base" = type { i32 (...)** }
+%"class.std::__1::basic_stringbuf" = type <{ %"class.std::__1::basic_streambuf", %"class.std::__1::basic_string", i8*, i32, [4 x i8] }>
+%"class.std::__1::basic_streambuf" = type { i32 (...)**, %"class.std::__1::locale", i8*, i8*, i8*, i8*, i8*, i8* }
+%"class.std::__1::locale" = type { %"class.std::__1::locale::__imp"* }
+%"class.std::__1::locale::__imp" = type opaque
+%"class.std::__1::basic_ios.base" = type <{ %"class.std::__1::ios_base", %"class.std::__1::basic_ostream"*, i32 }>
+%"class.std::__1::ios_base" = type { i32 (...)**, i32, i64, i64, i32, i32, i8*, i8*, void (i32, %"class.std::__1::ios_base"*, i32)**, i32*, i64, i64, i64*, i64, i64, i8**, i64, i64 }
+%"class.std::__1::basic_ostream" = type { i32 (...)**, %"class.std::__1::basic_ios.base" }
+%"class.base::ScopedClearLastErrorBase" = type { i32 }
+%"class.content::FlingController" = type { %"class.ui::FlingBooster", %"class.content::FlingControllerEventSenderClient"*, %"class.content::FlingControllerSchedulerClient"*, %"class.content::TouchpadTapSuppressionController", %"class.content::TouchscreenTapSuppressionController", %"class.std::__1::unique_ptr.899", %"struct.content::FlingController::ActiveFlingParameters", %"class.base::TimeTicks", %"class.base::TickClock"*, %"class.base::TimeTicks", i8, %"class.base::WeakPtrFactory.905" }
+%"class.ui::FlingBooster" = type { %"class.base::TimeTicks", %"class.gfx::Vector2dF", %"class.gfx::Vector2dF", i32, i32, %"class.base::TimeTicks" }
+%"class.content::FlingControllerEventSenderClient" = type { i32 (...)** }
+%"class.content::TouchpadTapSuppressionController" = type { %"class.content::TapSuppressionController" }
+%"class.content::TapSuppressionController" = type { i32 (...)**, i32, %"class.base::TimeDelta", %"class.base::TimeTicks" }
+%"class.content::TouchscreenTapSuppressionController" = type { %"class.content::TapSuppressionController" }
+%"class.std::__1::unique_ptr.899" = type { %"class.std::__1::__compressed_pair.900" }
+%"class.std::__1::__compressed_pair.900" = type { %"struct.std::__1::__compressed_pair_elem.901" }
+%"struct.std::__1::__compressed_pair_elem.901" = type { %"class.blink::WebGestureCurve"* }
+%"class.blink::WebGestureCurve" = type opaque
+%"struct.content::FlingController::ActiveFlingParameters" = type { %"class.gfx::Vector2dF", %"class.gfx::PointF", %"class.gfx::PointF", i32, i32, %"class.base::TimeTicks" }
+%"class.base::WeakPtrFactory.905" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.content::RenderWidgetHostViewBase" = type { %"class.content::RenderWidgetHostView", %"class.content::RenderWidgetHostImpl"*, i32, %"class.display::DisplayList", i8, i8, %"class.content::TextInputManager"*, %"class.absl::optional.922", %"class.absl::optional.922", i8, %"class.content::RenderWidgetHostViewBase::TooltipObserver"*, %"class.base::ObserverList.927", %"class.absl::optional.931", %"class.mojo::StructPtr", i8, i8, %"class.base::WeakPtrFactory.956" }
+%"class.content::RenderWidgetHostView" = type { i32 (...)** }
+%"class.display::DisplayList" = type { %"class.std::__1::vector.906", i64, i64, %"class.base::ObserverList.918" }
+%"class.std::__1::vector.906" = type { %"class.std::__1::__vector_base.907" }
+%"class.std::__1::__vector_base.907" = type { %"class.display::Display"*, %"class.display::Display"*, %"class.std::__1::__compressed_pair.913" }
+%"class.display::Display" = type { i64, %"class.gfx::Rect", %"class.gfx::Size", %"class.gfx::Rect", float, i32, %"class.absl::optional.908", i32, i32, %"class.gfx::Size", %"class.gfx::DisplayColorSpaces", i32, i32, i8, i32 }
+%"class.absl::optional.908" = type { %"class.absl::optional_internal::optional_data.909" }
+%"class.absl::optional_internal::optional_data.909" = type { %"class.absl::optional_internal::optional_data_base.910" }
+%"class.absl::optional_internal::optional_data_base.910" = type { %"class.absl::optional_internal::optional_data_dtor_base.911" }
+%"class.absl::optional_internal::optional_data_dtor_base.911" = type { i8, %union.anon.912 }
+%union.anon.912 = type { i32 }
+%"class.std::__1::__compressed_pair.913" = type { %"struct.std::__1::__compressed_pair_elem.914" }
+%"struct.std::__1::__compressed_pair_elem.914" = type { %"class.display::Display"* }
+%"class.base::ObserverList.918" = type <{ %"class.std::__1::vector.228", %"class.base::LinkedList.919", i64, i32, [4 x i8] }>
+%"class.base::LinkedList.919" = type { %"class.base::LinkNode.920" }
+%"class.base::LinkNode.920" = type { %"class.base::internal::LinkNodeBase" }
+%"class.content::TextInputManager" = type opaque
+%"class.absl::optional.922" = type { %"class.absl::optional_internal::optional_data.923" }
+%"class.absl::optional_internal::optional_data.923" = type { %"class.absl::optional_internal::optional_data_base.924" }
+%"class.absl::optional_internal::optional_data_base.924" = type { %"class.absl::optional_internal::optional_data_dtor_base.925" }
+%"class.absl::optional_internal::optional_data_dtor_base.925" = type { i8, %union.anon.926 }
+%union.anon.926 = type { i32 }
+%"class.content::RenderWidgetHostViewBase::TooltipObserver" = type { i32 (...)** }
+%"class.base::ObserverList.927" = type <{ %"class.std::__1::vector.220", %"class.base::LinkedList.928", i64, i32, [4 x i8] }>
+%"class.base::LinkedList.928" = type { %"class.base::LinkNode.929" }
+%"class.base::LinkNode.929" = type { %"class.base::internal::LinkNodeBase" }
+%"class.absl::optional.931" = type { %"class.absl::optional_internal::optional_data.932" }
+%"class.absl::optional_internal::optional_data.932" = type { %"class.absl::optional_internal::optional_data_base.933" }
+%"class.absl::optional_internal::optional_data_base.933" = type { %"class.absl::optional_internal::optional_data_dtor_base.934" }
+%"class.absl::optional_internal::optional_data_dtor_base.934" = type { i8, [7 x i8], %union.anon.935 }
+%union.anon.935 = type { %"class.blink::WebGestureEvent" }
+%"class.blink::WebGestureEvent" = type <{ %"class.blink::WebInputEvent", i8, [3 x i8], i32, i32, [4 x i8], %union.anon.936, %"class.gfx::PointF", %"class.gfx::PointF", i32, [4 x i8] }>
+%"class.blink::WebInputEvent" = type { i32 (...)**, float, %"class.gfx::Vector2dF", %"class.base::TimeTicks", i32, i32 }
+%union.anon.936 = type { %struct.anon.942 }
+%struct.anon.942 = type { i64, float, float, i32, i8, i32, i8, i8, i8, i8 }
+%"class.mojo::StructPtr" = type { %"class.std::__1::unique_ptr.950" }
+%"class.std::__1::unique_ptr.950" = type { %"class.std::__1::__compressed_pair.951" }
+%"class.std::__1::__compressed_pair.951" = type { %"struct.std::__1::__compressed_pair_elem.952" }
+%"struct.std::__1::__compressed_pair_elem.952" = type { %"class.blink::mojom::RecordContentToVisibleTimeRequest"* }
+%"class.blink::mojom::RecordContentToVisibleTimeRequest" = type <{ %"class.base::TimeTicks", i8, i8, i8, i8, [4 x i8] }>
+%"class.base::WeakPtrFactory.956" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.aura::Window" = type { %"class.ui::LayerDelegate", %"class.ui::LayerOwner", %"class.ui::EventTarget", %"class.ui::GestureConsumer", %"class.ui::PropertyHandler", %"class.ui::metadata::MetaDataProvider", %"class.viz::HostFrameSinkClient", %"class.gfx::Rect", %"class.aura::WindowTreeHost"*, i32, i8, i8, %"class.aura::WindowDelegate"*, %"class.aura::Window"*, %"class.std::__1::vector.1051", i8, i32, %class.SkRegion, i32, i8, i8, %"class.std::__1::unique_ptr.1058", %"class.std::__1::unique_ptr.1064", %"class.std::__1::vector.194", i32, i32, i32, [4 x i8], %"class.base::ObserverList.1070", i32, %"class.viz::SubtreeCaptureId", float, %"class.viz::FrameSinkId", i8, i8, i8, %"class.std::__1::unique_ptr.1074", %"class.base::WeakPtr.1080" }
+%"class.ui::LayerDelegate" = type { i32 (...)** }
+%"class.ui::LayerOwner" = type { i32 (...)**, %"class.std::__1::unique_ptr.957", %"class.ui::Layer"*, %"class.base::ObserverList.963" }
+%"class.std::__1::unique_ptr.957" = type { %"class.std::__1::__compressed_pair.958" }
+%"class.std::__1::__compressed_pair.958" = type { %"struct.std::__1::__compressed_pair_elem.959" }
+%"struct.std::__1::__compressed_pair_elem.959" = type { %"class.ui::Layer"* }
+%"class.base::ObserverList.963" = type <{ %"class.std::__1::vector.220", %"class.base::LinkedList.964", i64, i32, [4 x i8] }>
+%"class.base::LinkedList.964" = type { %"class.base::LinkNode.965" }
+%"class.base::LinkNode.965" = type { %"class.base::internal::LinkNodeBase" }
+%"class.ui::EventTarget" = type { i32 (...)**, %"class.std::__1::vector.967", %"class.std::__1::vector.988", %"class.ui::EventHandler"* }
+%"class.std::__1::vector.967" = type { %"class.std::__1::__vector_base.968" }
+%"class.std::__1::__vector_base.968" = type { %"struct.ui::EventTarget::PrioritizedHandler"*, %"struct.ui::EventTarget::PrioritizedHandler"*, %"class.std::__1::__compressed_pair.995" }
+%"struct.ui::EventTarget::PrioritizedHandler" = type <{ %"class.ui::EventHandler"*, i32, [4 x i8] }>
+%"class.std::__1::__compressed_pair.995" = type { %"struct.std::__1::__compressed_pair_elem.996" }
+%"struct.std::__1::__compressed_pair_elem.996" = type { %"struct.ui::EventTarget::PrioritizedHandler"* }
+%"class.std::__1::vector.988" = type { %"class.std::__1::__vector_base.989" }
+%"class.std::__1::__vector_base.989" = type { %"class.ui::EventHandler"**, %"class.ui::EventHandler"**, %"class.std::__1::__compressed_pair.990" }
+%"class.std::__1::__compressed_pair.990" = type { %"struct.std::__1::__compressed_pair_elem.991" }
+%"struct.std::__1::__compressed_pair_elem.991" = type { %"class.ui::EventHandler"** }
+%"class.ui::EventHandler" = type { i32 (...)**, %"class.std::__1::stack" }
+%"class.std::__1::stack" = type { %"class.base::circular_deque.969" }
+%"class.base::circular_deque.969" = type { %"class.base::internal::VectorBuffer.970", i64, i64 }
+%"class.base::internal::VectorBuffer.970" = type { %"class.ui::EventDispatcher"**, i64 }
+%"class.ui::EventDispatcher" = type { i32 (...)**, %"class.ui::EventDispatcherDelegate"*, %"class.ui::Event"*, %"class.std::__1::vector.988" }
+%"class.ui::EventDispatcherDelegate" = type { i32 (...)**, %"class.ui::EventDispatcher"* }
+%"class.ui::Event" = type { i32 (...)**, i32, %"class.base::TimeTicks", %"class.ui::LatencyInfo", i32, %"class.ui::Event"*, i8, i8, %"class.ui::EventTarget"*, i32, i32, i32, %"class.std::__1::unique_ptr.981" }
+%"class.ui::LatencyInfo" = type { %"class.base::flat_map.971", i64, i64, i8, i8, i8, i32, float, float, i64 }
+%"class.base::flat_map.971" = type { %"class.base::internal::flat_tree.972" }
+%"class.base::internal::flat_tree.972" = type { %"class.std::__1::vector.973" }
+%"class.std::__1::vector.973" = type { %"class.std::__1::__vector_base.974" }
+%"class.std::__1::__vector_base.974" = type { %"struct.std::__1::pair.975"*, %"struct.std::__1::pair.975"*, %"class.std::__1::__compressed_pair.976" }
+%"struct.std::__1::pair.975" = type { i32, %"class.base::TimeTicks" }
+%"class.std::__1::__compressed_pair.976" = type { %"struct.std::__1::__compressed_pair_elem.977" }
+%"struct.std::__1::__compressed_pair_elem.977" = type { %"struct.std::__1::pair.975"* }
+%"class.std::__1::unique_ptr.981" = type { %"class.std::__1::__compressed_pair.982" }
+%"class.std::__1::__compressed_pair.982" = type { %"struct.std::__1::__compressed_pair_elem.983" }
+%"struct.std::__1::__compressed_pair_elem.983" = type { %"class.base::flat_map.984"* }
+%"class.base::flat_map.984" = type opaque
+%"class.ui::GestureConsumer" = type { i32 (...)** }
+%"class.ui::PropertyHandler" = type { i32 (...)**, %"class.std::__1::map.1000" }
+%"class.std::__1::map.1000" = type { %"class.std::__1::__tree.1001" }
+%"class.std::__1::__tree.1001" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.1002", %"class.std::__1::__compressed_pair.1006" }
+%"class.std::__1::__compressed_pair.1002" = type { %"struct.std::__1::__compressed_pair_elem.51" }
+%"class.std::__1::__compressed_pair.1006" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.ui::metadata::MetaDataProvider" = type { i32 (...)**, %"class.std::__1::map.1011" }
+%"class.std::__1::map.1011" = type { %"class.std::__1::__tree.1012" }
+%"class.std::__1::__tree.1012" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.1013", %"class.std::__1::__compressed_pair.1017" }
+%"class.std::__1::__compressed_pair.1013" = type { %"struct.std::__1::__compressed_pair_elem.51" }
+%"class.std::__1::__compressed_pair.1017" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.aura::WindowTreeHost" = type { %"class.ui::internal::InputMethodDelegate", %"class.ui::EventSource", %"class.display::DisplayObserver", %"class.ui::CompositorObserver", %"class.aura::Window"*, i32, [4 x i8], %"class.base::ObserverList.1024", %"class.std::__1::unique_ptr.1028", %"class.std::__1::unique_ptr.1034", float, %"class.ui::Cursor", %"class.gfx::Point", %"class.std::__1::unique_ptr.1044", %"class.ui::InputMethod"*, i8, i8, i8, %"class.base::WeakPtrFactory.1050" }
+%"class.ui::internal::InputMethodDelegate" = type { i32 (...)** }
+%"class.ui::EventSource" = type { i32 (...)**, %"class.std::__1::list" }
+%"class.std::__1::list" = type { %"class.std::__1::__list_imp" }
+%"class.std::__1::__list_imp" = type { %"struct.std::__1::__list_node_base", %"class.std::__1::__compressed_pair.1020" }
+%"struct.std::__1::__list_node_base" = type { %"struct.std::__1::__list_node_base"*, %"struct.std::__1::__list_node_base"* }
+%"class.std::__1::__compressed_pair.1020" = type { %"struct.std::__1::__compressed_pair_elem.56" }
+%"class.display::DisplayObserver" = type { %"class.base::CheckedObserver" }
+%"class.ui::CompositorObserver" = type { i32 (...)** }
+%"class.base::ObserverList.1024" = type <{ %"class.std::__1::vector.220", %"class.base::LinkedList.1025", i64, i32, [4 x i8] }>
+%"class.base::LinkedList.1025" = type { %"class.base::LinkNode.1026" }
+%"class.base::LinkNode.1026" = type { %"class.base::internal::LinkNodeBase" }
+%"class.std::__1::unique_ptr.1028" = type { %"class.std::__1::__compressed_pair.1029" }
+%"class.std::__1::__compressed_pair.1029" = type { %"struct.std::__1::__compressed_pair_elem.1030" }
+%"struct.std::__1::__compressed_pair_elem.1030" = type { %"class.aura::WindowEventDispatcher"* }
+%"class.aura::WindowEventDispatcher" = type opaque
+%"class.std::__1::unique_ptr.1034" = type { %"class.std::__1::__compressed_pair.1035" }
+%"class.std::__1::__compressed_pair.1035" = type { %"struct.std::__1::__compressed_pair_elem.1036" }
+%"struct.std::__1::__compressed_pair_elem.1036" = type { %"class.ui::Compositor"* }
+%"class.ui::Cursor" = type { i32, %class.scoped_refptr.1040, float, %"class.gfx::Point", %class.SkBitmap }
+%class.scoped_refptr.1040 = type { %"class.ui::PlatformCursor"* }
+%"class.ui::PlatformCursor" = type <{ i32 (...)**, %"class.base::RefCounted.1041", [4 x i8] }>
+%"class.base::RefCounted.1041" = type { %"class.base::subtle::RefCountedBase" }
+%class.SkBitmap = type { %class.sk_sp, %class.SkPixmap, %class.sk_sp.1043 }
+%class.sk_sp = type { %class.SkPixelRef* }
+%class.SkPixelRef = type opaque
+%class.SkPixmap = type { i8*, i64, %struct.SkImageInfo }
+%struct.SkImageInfo = type { %class.SkColorInfo, %struct.SkISize }
+%class.SkColorInfo = type { %class.sk_sp.1042, i32, i32 }
+%class.sk_sp.1042 = type { %class.SkColorSpace* }
+%class.SkColorSpace = type <{ %class.SkNVRefCnt, i32, i32, %struct.skcms_TransferFunction, %struct.skcms_Matrix3x3, %struct.skcms_TransferFunction, %struct.skcms_Matrix3x3, %class.SkOnce, [3 x i8] }>
+%class.SkNVRefCnt = type { %"struct.std::__1::atomic" }
+%struct.skcms_TransferFunction = type { float, float, float, float, float, float, float }
+%struct.skcms_Matrix3x3 = type { [3 x [3 x float]] }
+%class.SkOnce = type { %"struct.std::__1::atomic.1" }
+%struct.SkISize = type { i32, i32 }
+%class.sk_sp.1043 = type { %class.SkMipmap* }
+%class.SkMipmap = type opaque
+%"class.std::__1::unique_ptr.1044" = type { %"class.std::__1::__compressed_pair.1045" }
+%"class.std::__1::__compressed_pair.1045" = type { %"struct.std::__1::__compressed_pair_elem.1046" }
+%"struct.std::__1::__compressed_pair_elem.1046" = type { %"class.ui::ViewProp"* }
+%"class.ui::ViewProp" = type opaque
+%"class.ui::InputMethod" = type opaque
+%"class.base::WeakPtrFactory.1050" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.aura::WindowDelegate" = type opaque
+%"class.std::__1::vector.1051" = type { %"class.std::__1::__vector_base.1052" }
+%"class.std::__1::__vector_base.1052" = type { %"class.aura::Window"**, %"class.aura::Window"**, %"class.std::__1::__compressed_pair.1053" }
+%"class.std::__1::__compressed_pair.1053" = type { %"struct.std::__1::__compressed_pair_elem.1054" }
+%"struct.std::__1::__compressed_pair_elem.1054" = type { %"class.aura::Window"** }
+%class.SkRegion = type { %struct.SkIRect, %"struct.SkRegion::RunHead"* }
+%struct.SkIRect = type { i32, i32, i32, i32 }
+%"struct.SkRegion::RunHead" = type opaque
+%"class.std::__1::unique_ptr.1058" = type { %"class.std::__1::__compressed_pair.1059" }
+%"class.std::__1::__compressed_pair.1059" = type { %"struct.std::__1::__compressed_pair_elem.1060" }
+%"struct.std::__1::__compressed_pair_elem.1060" = type { %"class.aura::LayoutManager"* }
+%"class.aura::LayoutManager" = type opaque
+%"class.std::__1::unique_ptr.1064" = type { %"class.std::__1::__compressed_pair.1065" }
+%"class.std::__1::__compressed_pair.1065" = type { %"struct.std::__1::__compressed_pair_elem.1066" }
+%"struct.std::__1::__compressed_pair_elem.1066" = type { %"class.aura::WindowTargeter"* }
+%"class.aura::WindowTargeter" = type opaque
+%"class.base::ObserverList.1070" = type <{ %"class.std::__1::vector.228", %"class.base::LinkedList.1071", i64, i32, [4 x i8] }>
+%"class.base::LinkedList.1071" = type { %"class.base::LinkNode.1072" }
+%"class.base::LinkNode.1072" = type { %"class.base::internal::LinkNodeBase" }
+%"class.viz::SubtreeCaptureId" = type { i32 }
+%"class.std::__1::unique_ptr.1074" = type { %"class.std::__1::__compressed_pair.1075" }
+%"class.std::__1::__compressed_pair.1075" = type { %"struct.std::__1::__compressed_pair_elem.1076" }
+%"struct.std::__1::__compressed_pair_elem.1076" = type { %"class.viz::ParentLocalSurfaceIdAllocator"* }
+%"class.viz::ParentLocalSurfaceIdAllocator" = type opaque
+%"class.base::WeakPtr.1080" = type { %"class.base::internal::WeakPtrBase" }
+
+@_ZTVN7content14FlingSchedulerE = hidden unnamed_addr constant { [11 x i8*], [6 x i8*] } { [11 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.content::FlingScheduler"*)* @_ZN7content14FlingSchedulerD2Ev to i8*), i8* bitcast (void (%"class.content::FlingScheduler"*)* @_ZN7content14FlingSchedulerD0Ev to i8*), i8* bitcast (void (%"class.content::FlingScheduler"*, %"class.base::WeakPtr.431"*)* @_ZN7content14FlingScheduler21ScheduleFlingProgressEN4base7WeakPtrINS_15FlingControllerEEE to i8*), i8* bitcast (void (%"class.content::FlingScheduler"*, %"class.base::WeakPtr.431"*)* @_ZN7content14FlingScheduler24DidStopFlingingOnBrowserEN4base7WeakPtrINS_15FlingControllerEEE to i8*), i8* bitcast (i1 (%"class.content::FlingScheduler"*)* @_ZN7content14FlingScheduler31NeedsBeginFrameForFlingProgressEv to i8*), i8* bitcast (void (%"class.content::FlingScheduler"*, i64)* @_ZN7content14FlingScheduler33ProgressFlingOnBeginFrameIfneededEN4base9TimeTicksE to i8*), i8* bitcast (%"class.ui::Compositor"* (%"class.content::FlingScheduler"*)* @_ZN7content14FlingScheduler13GetCompositorEv to i8*), i8* bitcast (void (%"class.content::FlingScheduler"*, i64)* @_ZN7content14FlingScheduler15OnAnimationStepEN4base9TimeTicksE to i8*), i8* bitcast (void (%"class.content::FlingScheduler"*, %"class.ui::Compositor"*)* @_ZN7content14FlingScheduler25OnCompositingShuttingDownEPN2ui10CompositorE to i8*)], [6 x i8*] [i8* inttoptr (i64 -8 to i8*), i8* null, i8* bitcast (void (%"class.content::FlingScheduler"*)* @_ZThn8_N7content14FlingSchedulerD1Ev to i8*), i8* bitcast (void (%"class.content::FlingScheduler"*)* @_ZThn8_N7content14FlingSchedulerD0Ev to i8*), i8* bitcast (void (%"class.content::FlingScheduler"*, i64)* @_ZThn8_N7content14FlingScheduler15OnAnimationStepEN4base9TimeTicksE to i8*), i8* bitcast (void (%"class.content::FlingScheduler"*, %"class.ui::Compositor"*)* @_ZThn8_N7content14FlingScheduler25OnCompositingShuttingDownEPN2ui10CompositorE to i8*)] }, align 8
+@.str = private unnamed_addr constant [29 x i8] c"../../base/memory/weak_ptr.h\00", align 1
+@.str.1 = private unnamed_addr constant [15 x i8] c"ref_.IsValid()\00", align 1
+
+@_ZN7content14FlingSchedulerC1EPNS_20RenderWidgetHostImplE = hidden unnamed_addr alias void (%"class.content::FlingScheduler"*, %"class.content::RenderWidgetHostImpl"*), void (%"class.content::FlingScheduler"*, %"class.content::RenderWidgetHostImpl"*)* @_ZN7content14FlingSchedulerC2EPNS_20RenderWidgetHostImplE
+@_ZN7content14FlingSchedulerD1Ev = hidden unnamed_addr alias void (%"class.content::FlingScheduler"*), void (%"class.content::FlingScheduler"*)* @_ZN7content14FlingSchedulerD2Ev
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7content14FlingSchedulerC2EPNS_20RenderWidgetHostImplE(%"class.content::FlingScheduler"*, %"class.content::RenderWidgetHostImpl"*) unnamed_addr #0 align 2 {
+  %3 = bitcast %"class.content::FlingScheduler"* %0 to <2 x i32 (...)**>*
+  store <2 x i32 (...)**> <i32 (...)** bitcast (i8** getelementptr inbounds ({ [11 x i8*], [6 x i8*] }, { [11 x i8*], [6 x i8*] }* @_ZTVN7content14FlingSchedulerE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)** bitcast (i8** getelementptr inbounds ({ [11 x i8*], [6 x i8*] }, { [11 x i8*], [6 x i8*] }* @_ZTVN7content14FlingSchedulerE, i64 0, inrange i32 1, i64 2) to i32 (...)**)>, <2 x i32 (...)**>* %3, align 8
+  %4 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 2
+  store %"class.content::RenderWidgetHostImpl"* %1, %"class.content::RenderWidgetHostImpl"** %4, align 8
+  %5 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 3, i32 0
+  tail call void @_ZN4base8internal11WeakPtrBaseC2Ev(%"class.base::internal::WeakPtrBase"* %5) #5
+  %6 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 4
+  store %"class.ui::Compositor"* null, %"class.ui::Compositor"** %6, align 8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7content14FlingSchedulerD2Ev(%"class.content::FlingScheduler"*) unnamed_addr #0 align 2 {
+  %2 = bitcast %"class.content::FlingScheduler"* %0 to <2 x i32 (...)**>*
+  store <2 x i32 (...)**> <i32 (...)** bitcast (i8** getelementptr inbounds ({ [11 x i8*], [6 x i8*] }, { [11 x i8*], [6 x i8*] }* @_ZTVN7content14FlingSchedulerE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)** bitcast (i8** getelementptr inbounds ({ [11 x i8*], [6 x i8*] }, { [11 x i8*], [6 x i8*] }* @_ZTVN7content14FlingSchedulerE, i64 0, inrange i32 1, i64 2) to i32 (...)**)>, <2 x i32 (...)**>* %2, align 8
+  %3 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 4
+  %4 = load %"class.ui::Compositor"*, %"class.ui::Compositor"** %3, align 8
+  %5 = icmp eq %"class.ui::Compositor"* %4, null
+  br i1 %5, label %8, label %6
+
+6:                                                ; preds = %1
+  %7 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 1
+  tail call void @_ZN2ui10Compositor23RemoveAnimationObserverEPNS_27CompositorAnimationObserverE(%"class.ui::Compositor"* nonnull %4, %"class.ui::CompositorAnimationObserver"* %7) #5
+  br label %8
+
+8:                                                ; preds = %1, %6
+  %9 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 3, i32 0
+  tail call void @_ZN4base8internal11WeakPtrBaseD2Ev(%"class.base::internal::WeakPtrBase"* %9) #5
+  ret void
+}
+
+declare void @_ZN2ui10Compositor23RemoveAnimationObserverEPNS_27CompositorAnimationObserverE(%"class.ui::Compositor"*, %"class.ui::CompositorAnimationObserver"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal11WeakPtrBaseD2Ev(%"class.base::internal::WeakPtrBase"*) unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZThn8_N7content14FlingSchedulerD1Ev(%"class.content::FlingScheduler"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 -1, i32 4
+  %3 = bitcast %"class.ui::Compositor"** %2 to <2 x i32 (...)**>*
+  store <2 x i32 (...)**> <i32 (...)** bitcast (i8** getelementptr inbounds ({ [11 x i8*], [6 x i8*] }, { [11 x i8*], [6 x i8*] }* @_ZTVN7content14FlingSchedulerE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)** bitcast (i8** getelementptr inbounds ({ [11 x i8*], [6 x i8*] }, { [11 x i8*], [6 x i8*] }* @_ZTVN7content14FlingSchedulerE, i64 0, inrange i32 1, i64 2) to i32 (...)**)>, <2 x i32 (...)**>* %3, align 8
+  %4 = getelementptr inbounds %"class.ui::Compositor"*, %"class.ui::Compositor"** %2, i64 5
+  %5 = load %"class.ui::Compositor"*, %"class.ui::Compositor"** %4, align 8
+  %6 = icmp eq %"class.ui::Compositor"* %5, null
+  br i1 %6, label %10, label %7
+
+7:                                                ; preds = %1
+  %8 = getelementptr inbounds %"class.ui::Compositor"*, %"class.ui::Compositor"** %2, i64 1
+  %9 = bitcast %"class.ui::Compositor"** %8 to %"class.ui::CompositorAnimationObserver"*
+  tail call void @_ZN2ui10Compositor23RemoveAnimationObserverEPNS_27CompositorAnimationObserverE(%"class.ui::Compositor"* nonnull %5, %"class.ui::CompositorAnimationObserver"* %9) #5
+  br label %10
+
+10:                                               ; preds = %1, %7
+  %11 = getelementptr inbounds %"class.ui::Compositor"*, %"class.ui::Compositor"** %2, i64 3
+  %12 = bitcast %"class.ui::Compositor"** %11 to %"class.base::internal::WeakPtrBase"*
+  tail call void @_ZN4base8internal11WeakPtrBaseD2Ev(%"class.base::internal::WeakPtrBase"* %12) #5
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7content14FlingSchedulerD0Ev(%"class.content::FlingScheduler"*) unnamed_addr #0 align 2 {
+  %2 = bitcast %"class.content::FlingScheduler"* %0 to <2 x i32 (...)**>*
+  store <2 x i32 (...)**> <i32 (...)** bitcast (i8** getelementptr inbounds ({ [11 x i8*], [6 x i8*] }, { [11 x i8*], [6 x i8*] }* @_ZTVN7content14FlingSchedulerE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)** bitcast (i8** getelementptr inbounds ({ [11 x i8*], [6 x i8*] }, { [11 x i8*], [6 x i8*] }* @_ZTVN7content14FlingSchedulerE, i64 0, inrange i32 1, i64 2) to i32 (...)**)>, <2 x i32 (...)**>* %2, align 8
+  %3 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 4
+  %4 = load %"class.ui::Compositor"*, %"class.ui::Compositor"** %3, align 8
+  %5 = icmp eq %"class.ui::Compositor"* %4, null
+  br i1 %5, label %8, label %6
+
+6:                                                ; preds = %1
+  %7 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 1
+  tail call void @_ZN2ui10Compositor23RemoveAnimationObserverEPNS_27CompositorAnimationObserverE(%"class.ui::Compositor"* nonnull %4, %"class.ui::CompositorAnimationObserver"* %7) #5
+  br label %8
+
+8:                                                ; preds = %1, %6
+  %9 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 3, i32 0
+  tail call void @_ZN4base8internal11WeakPtrBaseD2Ev(%"class.base::internal::WeakPtrBase"* %9) #5
+  %10 = bitcast %"class.content::FlingScheduler"* %0 to i8*
+  tail call void @_ZdlPv(i8* %10) #6
+  ret void
+}
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZThn8_N7content14FlingSchedulerD0Ev(%"class.content::FlingScheduler"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 -1, i32 4
+  %3 = bitcast %"class.ui::Compositor"** %2 to <2 x i32 (...)**>*
+  store <2 x i32 (...)**> <i32 (...)** bitcast (i8** getelementptr inbounds ({ [11 x i8*], [6 x i8*] }, { [11 x i8*], [6 x i8*] }* @_ZTVN7content14FlingSchedulerE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)** bitcast (i8** getelementptr inbounds ({ [11 x i8*], [6 x i8*] }, { [11 x i8*], [6 x i8*] }* @_ZTVN7content14FlingSchedulerE, i64 0, inrange i32 1, i64 2) to i32 (...)**)>, <2 x i32 (...)**>* %3, align 8
+  %4 = getelementptr inbounds %"class.ui::Compositor"*, %"class.ui::Compositor"** %2, i64 5
+  %5 = load %"class.ui::Compositor"*, %"class.ui::Compositor"** %4, align 8
+  %6 = icmp eq %"class.ui::Compositor"* %5, null
+  br i1 %6, label %10, label %7
+
+7:                                                ; preds = %1
+  %8 = getelementptr inbounds %"class.ui::Compositor"*, %"class.ui::Compositor"** %2, i64 1
+  %9 = bitcast %"class.ui::Compositor"** %8 to %"class.ui::CompositorAnimationObserver"*
+  tail call void @_ZN2ui10Compositor23RemoveAnimationObserverEPNS_27CompositorAnimationObserverE(%"class.ui::Compositor"* nonnull %5, %"class.ui::CompositorAnimationObserver"* %9) #5
+  br label %10
+
+10:                                               ; preds = %1, %7
+  %11 = getelementptr inbounds %"class.ui::Compositor"*, %"class.ui::Compositor"** %2, i64 3
+  %12 = bitcast %"class.ui::Compositor"** %11 to %"class.base::internal::WeakPtrBase"*
+  tail call void @_ZN4base8internal11WeakPtrBaseD2Ev(%"class.base::internal::WeakPtrBase"* %12) #5
+  %13 = bitcast %"class.ui::Compositor"** %2 to i8*
+  tail call void @_ZdlPv(i8* %13) #6
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7content14FlingScheduler21ScheduleFlingProgressEN4base7WeakPtrINS_15FlingControllerEEE(%"class.content::FlingScheduler"*, %"class.base::WeakPtr.431"* nocapture readonly) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 3
+  %4 = getelementptr inbounds %"class.base::WeakPtr.431", %"class.base::WeakPtr.431"* %1, i64 0, i32 0, i32 0, i32 0, i32 0
+  %5 = load %"class.base::internal::WeakReference::Flag"*, %"class.base::internal::WeakReference::Flag"** %4, align 8
+  %6 = icmp eq %"class.base::internal::WeakReference::Flag"* %5, null
+  br i1 %6, label %10, label %7
+
+7:                                                ; preds = %2
+  %8 = getelementptr inbounds %"class.base::internal::WeakReference::Flag", %"class.base::internal::WeakReference::Flag"* %5, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %9 = atomicrmw add i32* %8, i32 1 monotonic
+  br label %10
+
+10:                                               ; preds = %7, %2
+  %11 = ptrtoint %"class.base::internal::WeakReference::Flag"* %5 to i64
+  %12 = bitcast %"class.base::WeakPtr.431"* %3 to i64*
+  %13 = getelementptr inbounds %"class.base::WeakPtr.431", %"class.base::WeakPtr.431"* %3, i64 0, i32 0, i32 0, i32 0, i32 0
+  %14 = load %"class.base::internal::WeakReference::Flag"*, %"class.base::internal::WeakReference::Flag"** %13, align 8
+  store i64 %11, i64* %12, align 8
+  %15 = icmp eq %"class.base::internal::WeakReference::Flag"* %14, null
+  br i1 %15, label %22, label %16
+
+16:                                               ; preds = %10
+  %17 = getelementptr inbounds %"class.base::internal::WeakReference::Flag", %"class.base::internal::WeakReference::Flag"* %14, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %18 = atomicrmw sub i32* %17, i32 1 acq_rel
+  %19 = icmp eq i32 %18, 1
+  br i1 %19, label %20, label %22
+
+20:                                               ; preds = %16
+  tail call void @_ZN4base8internal13WeakReference4FlagD1Ev(%"class.base::internal::WeakReference::Flag"* nonnull %14) #5
+  %21 = bitcast %"class.base::internal::WeakReference::Flag"* %14 to i8*
+  tail call void @_ZdlPv(i8* %21) #6
+  br label %22
+
+22:                                               ; preds = %10, %16, %20
+  %23 = getelementptr inbounds %"class.base::WeakPtr.431", %"class.base::WeakPtr.431"* %1, i64 0, i32 0, i32 1
+  %24 = load i64, i64* %23, align 8
+  %25 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 3, i32 0, i32 1
+  store i64 %24, i64* %25, align 8
+  %26 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 4
+  %27 = load %"class.ui::Compositor"*, %"class.ui::Compositor"** %26, align 8
+  %28 = icmp eq %"class.ui::Compositor"* %27, null
+  br i1 %28, label %29, label %38
+
+29:                                               ; preds = %22
+  %30 = bitcast %"class.content::FlingScheduler"* %0 to %"class.ui::Compositor"* (%"class.content::FlingScheduler"*)***
+  %31 = load %"class.ui::Compositor"* (%"class.content::FlingScheduler"*)**, %"class.ui::Compositor"* (%"class.content::FlingScheduler"*)*** %30, align 8
+  %32 = getelementptr inbounds %"class.ui::Compositor"* (%"class.content::FlingScheduler"*)*, %"class.ui::Compositor"* (%"class.content::FlingScheduler"*)** %31, i64 6
+  %33 = load %"class.ui::Compositor"* (%"class.content::FlingScheduler"*)*, %"class.ui::Compositor"* (%"class.content::FlingScheduler"*)** %32, align 8
+  %34 = tail call %"class.ui::Compositor"* %33(%"class.content::FlingScheduler"* %0) #5
+  %35 = icmp eq %"class.ui::Compositor"* %34, null
+  br i1 %35, label %38, label %36
+
+36:                                               ; preds = %29
+  %37 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 1
+  tail call void @_ZN2ui10Compositor20AddAnimationObserverEPNS_27CompositorAnimationObserverE(%"class.ui::Compositor"* nonnull %34, %"class.ui::CompositorAnimationObserver"* %37) #5
+  store %"class.ui::Compositor"* %34, %"class.ui::Compositor"** %26, align 8
+  br label %38
+
+38:                                               ; preds = %36, %29, %22
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #4
+
+declare void @_ZN2ui10Compositor20AddAnimationObserverEPNS_27CompositorAnimationObserverE(%"class.ui::Compositor"*, %"class.ui::CompositorAnimationObserver"*) local_unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #4
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7content14FlingScheduler24DidStopFlingingOnBrowserEN4base7WeakPtrINS_15FlingControllerEEE(%"class.content::FlingScheduler"*, %"class.base::WeakPtr.431"* nocapture readnone) unnamed_addr #0 align 2 {
+  %3 = alloca %"class.base::WeakPtr.431", align 8
+  %4 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 4
+  %5 = load %"class.ui::Compositor"*, %"class.ui::Compositor"** %4, align 8
+  %6 = icmp eq %"class.ui::Compositor"* %5, null
+  br i1 %6, label %9, label %7
+
+7:                                                ; preds = %2
+  %8 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 1
+  tail call void @_ZN2ui10Compositor23RemoveAnimationObserverEPNS_27CompositorAnimationObserverE(%"class.ui::Compositor"* nonnull %5, %"class.ui::CompositorAnimationObserver"* %8) #5
+  store %"class.ui::Compositor"* null, %"class.ui::Compositor"** %4, align 8
+  br label %9
+
+9:                                                ; preds = %2, %7
+  %10 = bitcast %"class.base::WeakPtr.431"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %10) #5
+  %11 = getelementptr inbounds %"class.base::WeakPtr.431", %"class.base::WeakPtr.431"* %3, i64 0, i32 0
+  call void @_ZN4base8internal11WeakPtrBaseC2Ev(%"class.base::internal::WeakPtrBase"* nonnull %11) #5
+  %12 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 3
+  %13 = getelementptr inbounds %"class.base::WeakPtr.431", %"class.base::WeakPtr.431"* %3, i64 0, i32 0, i32 0, i32 0, i32 0
+  %14 = bitcast %"class.base::WeakPtr.431"* %3 to i64*
+  %15 = load i64, i64* %14, align 8
+  store %"class.base::internal::WeakReference::Flag"* null, %"class.base::internal::WeakReference::Flag"** %13, align 8
+  %16 = bitcast %"class.base::WeakPtr.431"* %12 to i64*
+  %17 = getelementptr inbounds %"class.base::WeakPtr.431", %"class.base::WeakPtr.431"* %12, i64 0, i32 0, i32 0, i32 0, i32 0
+  %18 = load %"class.base::internal::WeakReference::Flag"*, %"class.base::internal::WeakReference::Flag"** %17, align 8
+  store i64 %15, i64* %16, align 8
+  %19 = icmp eq %"class.base::internal::WeakReference::Flag"* %18, null
+  br i1 %19, label %26, label %20
+
+20:                                               ; preds = %9
+  %21 = getelementptr inbounds %"class.base::internal::WeakReference::Flag", %"class.base::internal::WeakReference::Flag"* %18, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %22 = atomicrmw sub i32* %21, i32 1 acq_rel
+  %23 = icmp eq i32 %22, 1
+  br i1 %23, label %24, label %26
+
+24:                                               ; preds = %20
+  call void @_ZN4base8internal13WeakReference4FlagD1Ev(%"class.base::internal::WeakReference::Flag"* nonnull %18) #5
+  %25 = bitcast %"class.base::internal::WeakReference::Flag"* %18 to i8*
+  call void @_ZdlPv(i8* %25) #6
+  br label %26
+
+26:                                               ; preds = %9, %20, %24
+  %27 = getelementptr inbounds %"class.base::WeakPtr.431", %"class.base::WeakPtr.431"* %3, i64 0, i32 0, i32 1
+  %28 = load i64, i64* %27, align 8
+  %29 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 3, i32 0, i32 1
+  store i64 %28, i64* %29, align 8
+  call void @_ZN4base8internal11WeakPtrBaseD2Ev(%"class.base::internal::WeakPtrBase"* nonnull %11) #5
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %10) #5
+  %30 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 2
+  %31 = load %"class.content::RenderWidgetHostImpl"*, %"class.content::RenderWidgetHostImpl"** %30, align 8
+  call void @_ZN7content20RenderWidgetHostImpl15DidStopFlingingEv(%"class.content::RenderWidgetHostImpl"* %31) #5
+  ret void
+}
+
+declare void @_ZN7content20RenderWidgetHostImpl15DidStopFlingingEv(%"class.content::RenderWidgetHostImpl"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN7content14FlingScheduler31NeedsBeginFrameForFlingProgressEv(%"class.content::FlingScheduler"*) unnamed_addr #0 align 2 {
+  %2 = bitcast %"class.content::FlingScheduler"* %0 to %"class.ui::Compositor"* (%"class.content::FlingScheduler"*)***
+  %3 = load %"class.ui::Compositor"* (%"class.content::FlingScheduler"*)**, %"class.ui::Compositor"* (%"class.content::FlingScheduler"*)*** %2, align 8
+  %4 = getelementptr inbounds %"class.ui::Compositor"* (%"class.content::FlingScheduler"*)*, %"class.ui::Compositor"* (%"class.content::FlingScheduler"*)** %3, i64 6
+  %5 = load %"class.ui::Compositor"* (%"class.content::FlingScheduler"*)*, %"class.ui::Compositor"* (%"class.content::FlingScheduler"*)** %4, align 8
+  %6 = tail call %"class.ui::Compositor"* %5(%"class.content::FlingScheduler"* %0) #5
+  %7 = icmp eq %"class.ui::Compositor"* %6, null
+  ret i1 %7
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7content14FlingScheduler33ProgressFlingOnBeginFrameIfneededEN4base9TimeTicksE(%"class.content::FlingScheduler"*, i64) unnamed_addr #0 align 2 {
+  %3 = alloca %"class.logging::CheckError", align 8
+  %4 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 3, i32 0, i32 0
+  %5 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %4) #5
+  br i1 %5, label %6, label %26
+
+6:                                                ; preds = %2
+  %7 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 3, i32 0, i32 1
+  %8 = bitcast i64* %7 to %"class.content::FlingController"**
+  %9 = load %"class.content::FlingController"*, %"class.content::FlingController"** %8, align 8
+  %10 = icmp eq %"class.content::FlingController"* %9, null
+  br i1 %10, label %26, label %11
+
+11:                                               ; preds = %6
+  %12 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 4
+  %13 = load %"class.ui::Compositor"*, %"class.ui::Compositor"** %12, align 8
+  %14 = icmp eq %"class.ui::Compositor"* %13, null
+  br i1 %14, label %15, label %26
+
+15:                                               ; preds = %11
+  %16 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %4) #5
+  br i1 %16, label %20, label %17
+
+17:                                               ; preds = %15
+  %18 = bitcast %"class.logging::CheckError"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %18) #5
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %3, i8* getelementptr inbounds ([29 x i8], [29 x i8]* @.str, i64 0, i64 0), i32 255, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.1, i64 0, i64 0)) #5
+  %19 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %3) #5
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %3) #5
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %18) #5
+  br label %20
+
+20:                                               ; preds = %17, %15
+  %21 = call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %4) #5
+  br i1 %21, label %22, label %24
+
+22:                                               ; preds = %20
+  %23 = load %"class.content::FlingController"*, %"class.content::FlingController"** %8, align 8
+  br label %24
+
+24:                                               ; preds = %20, %22
+  %25 = phi %"class.content::FlingController"* [ %23, %22 ], [ null, %20 ]
+  call void @_ZN7content15FlingController13ProgressFlingEN4base9TimeTicksE(%"class.content::FlingController"* %25, i64 %1) #5
+  br label %26
+
+26:                                               ; preds = %6, %2, %11, %24
+  ret void
+}
+
+declare void @_ZN7content15FlingController13ProgressFlingEN4base9TimeTicksE(%"class.content::FlingController"*, i64) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden %"class.ui::Compositor"* @_ZN7content14FlingScheduler13GetCompositorEv(%"class.content::FlingScheduler"* nocapture readonly) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 2
+  %3 = load %"class.content::RenderWidgetHostImpl"*, %"class.content::RenderWidgetHostImpl"** %2, align 8
+  %4 = bitcast %"class.content::RenderWidgetHostImpl"* %3 to %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)***
+  %5 = load %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)**, %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)*** %4, align 8
+  %6 = getelementptr inbounds %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)*, %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)** %5, i64 16
+  %7 = load %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)*, %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)** %6, align 8
+  %8 = tail call %"class.content::RenderWidgetHostViewBase"* %7(%"class.content::RenderWidgetHostImpl"* %3) #5
+  %9 = icmp eq %"class.content::RenderWidgetHostViewBase"* %8, null
+  br i1 %9, label %72, label %10
+
+10:                                               ; preds = %1
+  %11 = load %"class.content::RenderWidgetHostImpl"*, %"class.content::RenderWidgetHostImpl"** %2, align 8
+  %12 = bitcast %"class.content::RenderWidgetHostImpl"* %11 to %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)***
+  %13 = load %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)**, %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)*** %12, align 8
+  %14 = getelementptr inbounds %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)*, %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)** %13, i64 16
+  %15 = load %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)*, %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)** %14, align 8
+  %16 = tail call %"class.content::RenderWidgetHostViewBase"* %15(%"class.content::RenderWidgetHostImpl"* %11) #5
+  %17 = getelementptr inbounds %"class.content::RenderWidgetHostViewBase", %"class.content::RenderWidgetHostViewBase"* %16, i64 0, i32 0
+  %18 = bitcast %"class.content::RenderWidgetHostViewBase"* %16 to %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)***
+  %19 = load %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)**, %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)*** %18, align 8
+  %20 = getelementptr inbounds %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)*, %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)** %19, i64 11
+  %21 = load %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)*, %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)** %20, align 8
+  %22 = tail call %"class.aura::Window"* %21(%"class.content::RenderWidgetHostView"* %17) #5
+  %23 = icmp eq %"class.aura::Window"* %22, null
+  br i1 %23, label %72, label %24
+
+24:                                               ; preds = %10
+  %25 = load %"class.content::RenderWidgetHostImpl"*, %"class.content::RenderWidgetHostImpl"** %2, align 8
+  %26 = bitcast %"class.content::RenderWidgetHostImpl"* %25 to %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)***
+  %27 = load %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)**, %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)*** %26, align 8
+  %28 = getelementptr inbounds %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)*, %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)** %27, i64 16
+  %29 = load %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)*, %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)** %28, align 8
+  %30 = tail call %"class.content::RenderWidgetHostViewBase"* %29(%"class.content::RenderWidgetHostImpl"* %25) #5
+  %31 = getelementptr inbounds %"class.content::RenderWidgetHostViewBase", %"class.content::RenderWidgetHostViewBase"* %30, i64 0, i32 0
+  %32 = bitcast %"class.content::RenderWidgetHostViewBase"* %30 to %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)***
+  %33 = load %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)**, %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)*** %32, align 8
+  %34 = getelementptr inbounds %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)*, %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)** %33, i64 11
+  %35 = load %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)*, %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)** %34, align 8
+  %36 = tail call %"class.aura::Window"* %35(%"class.content::RenderWidgetHostView"* %31) #5
+  %37 = tail call %"class.aura::WindowTreeHost"* @_ZN4aura6Window7GetHostEv(%"class.aura::Window"* %36) #5
+  %38 = icmp eq %"class.aura::WindowTreeHost"* %37, null
+  br i1 %38, label %72, label %39
+
+39:                                               ; preds = %24
+  %40 = load %"class.content::RenderWidgetHostImpl"*, %"class.content::RenderWidgetHostImpl"** %2, align 8
+  %41 = bitcast %"class.content::RenderWidgetHostImpl"* %40 to %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)***
+  %42 = load %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)**, %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)*** %41, align 8
+  %43 = getelementptr inbounds %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)*, %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)** %42, i64 16
+  %44 = load %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)*, %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)** %43, align 8
+  %45 = tail call %"class.content::RenderWidgetHostViewBase"* %44(%"class.content::RenderWidgetHostImpl"* %40) #5
+  %46 = getelementptr inbounds %"class.content::RenderWidgetHostViewBase", %"class.content::RenderWidgetHostViewBase"* %45, i64 0, i32 0
+  %47 = bitcast %"class.content::RenderWidgetHostViewBase"* %45 to %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)***
+  %48 = load %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)**, %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)*** %47, align 8
+  %49 = getelementptr inbounds %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)*, %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)** %48, i64 11
+  %50 = load %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)*, %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)** %49, align 8
+  %51 = tail call %"class.aura::Window"* %50(%"class.content::RenderWidgetHostView"* %46) #5
+  %52 = tail call %"class.aura::WindowTreeHost"* @_ZN4aura6Window7GetHostEv(%"class.aura::Window"* %51) #5
+  %53 = getelementptr inbounds %"class.aura::WindowTreeHost", %"class.aura::WindowTreeHost"* %52, i64 0, i32 9, i32 0, i32 0, i32 0
+  %54 = load %"class.ui::Compositor"*, %"class.ui::Compositor"** %53, align 8
+  %55 = icmp eq %"class.ui::Compositor"* %54, null
+  br i1 %55, label %72, label %56
+
+56:                                               ; preds = %39
+  %57 = load %"class.content::RenderWidgetHostImpl"*, %"class.content::RenderWidgetHostImpl"** %2, align 8
+  %58 = bitcast %"class.content::RenderWidgetHostImpl"* %57 to %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)***
+  %59 = load %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)**, %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)*** %58, align 8
+  %60 = getelementptr inbounds %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)*, %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)** %59, i64 16
+  %61 = load %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)*, %"class.content::RenderWidgetHostViewBase"* (%"class.content::RenderWidgetHostImpl"*)** %60, align 8
+  %62 = tail call %"class.content::RenderWidgetHostViewBase"* %61(%"class.content::RenderWidgetHostImpl"* %57) #5
+  %63 = getelementptr inbounds %"class.content::RenderWidgetHostViewBase", %"class.content::RenderWidgetHostViewBase"* %62, i64 0, i32 0
+  %64 = bitcast %"class.content::RenderWidgetHostViewBase"* %62 to %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)***
+  %65 = load %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)**, %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)*** %64, align 8
+  %66 = getelementptr inbounds %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)*, %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)** %65, i64 11
+  %67 = load %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)*, %"class.aura::Window"* (%"class.content::RenderWidgetHostView"*)** %66, align 8
+  %68 = tail call %"class.aura::Window"* %67(%"class.content::RenderWidgetHostView"* %63) #5
+  %69 = tail call %"class.aura::WindowTreeHost"* @_ZN4aura6Window7GetHostEv(%"class.aura::Window"* %68) #5
+  %70 = getelementptr inbounds %"class.aura::WindowTreeHost", %"class.aura::WindowTreeHost"* %69, i64 0, i32 9, i32 0, i32 0, i32 0
+  %71 = load %"class.ui::Compositor"*, %"class.ui::Compositor"** %70, align 8
+  br label %72
+
+72:                                               ; preds = %1, %10, %24, %39, %56
+  %73 = phi %"class.ui::Compositor"* [ %71, %56 ], [ null, %39 ], [ null, %24 ], [ null, %10 ], [ null, %1 ]
+  ret %"class.ui::Compositor"* %73
+}
+
+declare %"class.aura::WindowTreeHost"* @_ZN4aura6Window7GetHostEv(%"class.aura::Window"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7content14FlingScheduler15OnAnimationStepEN4base9TimeTicksE(%"class.content::FlingScheduler"*, i64) unnamed_addr #0 align 2 {
+  %3 = alloca %"class.logging::CheckError", align 8
+  %4 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 3, i32 0, i32 0
+  %5 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %4) #5
+  br i1 %5, label %6, label %22
+
+6:                                                ; preds = %2
+  %7 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 3, i32 0, i32 1
+  %8 = bitcast i64* %7 to %"class.content::FlingController"**
+  %9 = load %"class.content::FlingController"*, %"class.content::FlingController"** %8, align 8
+  %10 = icmp eq %"class.content::FlingController"* %9, null
+  br i1 %10, label %22, label %11
+
+11:                                               ; preds = %6
+  %12 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %4) #5
+  br i1 %12, label %16, label %13
+
+13:                                               ; preds = %11
+  %14 = bitcast %"class.logging::CheckError"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %14) #5
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %3, i8* getelementptr inbounds ([29 x i8], [29 x i8]* @.str, i64 0, i64 0), i32 255, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.1, i64 0, i64 0)) #5
+  %15 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %3) #5
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %3) #5
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %14) #5
+  br label %16
+
+16:                                               ; preds = %13, %11
+  %17 = call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %4) #5
+  br i1 %17, label %18, label %20
+
+18:                                               ; preds = %16
+  %19 = load %"class.content::FlingController"*, %"class.content::FlingController"** %8, align 8
+  br label %20
+
+20:                                               ; preds = %16, %18
+  %21 = phi %"class.content::FlingController"* [ %19, %18 ], [ null, %16 ]
+  call void @_ZN7content15FlingController13ProgressFlingEN4base9TimeTicksE(%"class.content::FlingController"* %21, i64 %1) #5
+  br label %22
+
+22:                                               ; preds = %6, %2, %20
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZThn8_N7content14FlingScheduler15OnAnimationStepEN4base9TimeTicksE(%"class.content::FlingScheduler"*, i64) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 -1, i32 4
+  %4 = bitcast %"class.ui::Compositor"** %3 to %"class.content::FlingScheduler"*
+  tail call void @_ZN7content14FlingScheduler15OnAnimationStepEN4base9TimeTicksE(%"class.content::FlingScheduler"* %4, i64 %1)
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7content14FlingScheduler25OnCompositingShuttingDownEPN2ui10CompositorE(%"class.content::FlingScheduler"*, %"class.ui::Compositor"* nocapture readnone) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 4
+  %4 = load %"class.ui::Compositor"*, %"class.ui::Compositor"** %3, align 8
+  %5 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 0, i32 1
+  tail call void @_ZN2ui10Compositor23RemoveAnimationObserverEPNS_27CompositorAnimationObserverE(%"class.ui::Compositor"* %4, %"class.ui::CompositorAnimationObserver"* %5) #5
+  store %"class.ui::Compositor"* null, %"class.ui::Compositor"** %3, align 8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZThn8_N7content14FlingScheduler25OnCompositingShuttingDownEPN2ui10CompositorE(%"class.content::FlingScheduler"*, %"class.ui::Compositor"* nocapture readnone) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.content::FlingScheduler", %"class.content::FlingScheduler"* %0, i64 -1, i32 4
+  %4 = getelementptr inbounds %"class.ui::Compositor"*, %"class.ui::Compositor"** %3, i64 5
+  %5 = load %"class.ui::Compositor"*, %"class.ui::Compositor"** %4, align 8
+  %6 = getelementptr inbounds %"class.ui::Compositor"*, %"class.ui::Compositor"** %3, i64 1
+  %7 = bitcast %"class.ui::Compositor"** %6 to %"class.ui::CompositorAnimationObserver"*
+  tail call void @_ZN2ui10Compositor23RemoveAnimationObserverEPNS_27CompositorAnimationObserverE(%"class.ui::Compositor"* %5, %"class.ui::CompositorAnimationObserver"* %7) #5
+  store %"class.ui::Compositor"* null, %"class.ui::Compositor"** %4, align 8
+  ret void
+}
+
+declare void @_ZN4base8internal11WeakPtrBaseC2Ev(%"class.base::internal::WeakPtrBase"*) unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal13WeakReference4FlagD1Ev(%"class.base::internal::WeakReference::Flag"*) unnamed_addr #2
+
+declare zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"*) local_unnamed_addr #1
+
+declare void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* sret, i8*, i32, i8*) local_unnamed_addr #1
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"*) unnamed_addr #2
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { argmemonly nounwind }
+attributes #5 = { nounwind }
+attributes #6 = { builtin nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}

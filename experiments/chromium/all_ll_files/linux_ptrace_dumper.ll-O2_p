@@ -1,0 +1,1796 @@
+; ModuleID = '../../third_party/breakpad/breakpad/src/client/linux/minidump_writer/linux_ptrace_dumper.cc'
+source_filename = "../../third_party/breakpad/breakpad/src/client/linux/minidump_writer/linux_ptrace_dumper.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver fmemopen, fmemopen@GLIBC_2.2.5"
+module asm ".symver glob, glob@GLIBC_2.2.5"
+module asm ".symver glob64, glob64@GLIBC_2.2.5"
+module asm ".symver quick_exit, quick_exit@GLIBC_2.10"
+module asm ".symver fmemopen, fmemopen@GLIBC_2.2.5"
+module asm ".symver glob, glob@GLIBC_2.2.5"
+module asm ".symver glob64, glob64@GLIBC_2.2.5"
+module asm ".symver quick_exit, quick_exit@GLIBC_2.10"
+
+%"class.google_breakpad::LinuxPtraceDumper" = type <{ %"class.google_breakpad::LinuxDumper", i8, [7 x i8] }>
+%"class.google_breakpad::LinuxDumper" = type { i32 (...)**, i32, i8*, i64, i32, i32, %"class.std::__1::vector", i32, %"class.google_breakpad::PageAllocator", %"class.google_breakpad::wasteful_vector", %"class.google_breakpad::wasteful_vector.8", %"class.google_breakpad::wasteful_vector.17" }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { i64*, i64*, %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { i64* }
+%"class.google_breakpad::PageAllocator" = type { i64, %"struct.google_breakpad::PageAllocator::PageHeader"*, i8*, i64, i64 }
+%"struct.google_breakpad::PageAllocator::PageHeader" = type { %"struct.google_breakpad::PageAllocator::PageHeader"*, i64 }
+%"class.google_breakpad::wasteful_vector" = type { %"class.std::__1::vector.1" }
+%"class.std::__1::vector.1" = type { %"class.std::__1::__vector_base.2" }
+%"class.std::__1::__vector_base.2" = type { i32*, i32*, %"class.std::__1::__compressed_pair.3" }
+%"class.std::__1::__compressed_pair.3" = type { %"struct.std::__1::__compressed_pair_elem.4", %"struct.std::__1::__compressed_pair_elem.5" }
+%"struct.std::__1::__compressed_pair_elem.4" = type { i32* }
+%"struct.std::__1::__compressed_pair_elem.5" = type { %"struct.google_breakpad::PageStdAllocator" }
+%"struct.google_breakpad::PageStdAllocator" = type { %"class.google_breakpad::PageAllocator"*, i32*, i64 }
+%"class.google_breakpad::wasteful_vector.8" = type { %"class.std::__1::vector.9" }
+%"class.std::__1::vector.9" = type { %"class.std::__1::__vector_base.10" }
+%"class.std::__1::__vector_base.10" = type { %"struct.google_breakpad::MappingInfo"**, %"struct.google_breakpad::MappingInfo"**, %"class.std::__1::__compressed_pair.11" }
+%"struct.google_breakpad::MappingInfo" = type { i64, i64, %struct.anon, i64, i8, [255 x i8] }
+%struct.anon = type { i64, i64 }
+%"class.std::__1::__compressed_pair.11" = type { %"struct.std::__1::__compressed_pair_elem.12", %"struct.std::__1::__compressed_pair_elem.13" }
+%"struct.std::__1::__compressed_pair_elem.12" = type { %"struct.google_breakpad::MappingInfo"** }
+%"struct.std::__1::__compressed_pair_elem.13" = type { %"struct.google_breakpad::PageStdAllocator.14" }
+%"struct.google_breakpad::PageStdAllocator.14" = type { %"class.google_breakpad::PageAllocator"*, %"struct.google_breakpad::MappingInfo"**, i64 }
+%"class.google_breakpad::wasteful_vector.17" = type { %"class.std::__1::vector.18" }
+%"class.std::__1::vector.18" = type { %"class.std::__1::__vector_base.19" }
+%"class.std::__1::__vector_base.19" = type { i64*, i64*, %"class.std::__1::__compressed_pair.20" }
+%"class.std::__1::__compressed_pair.20" = type { %"struct.std::__1::__compressed_pair_elem", %"struct.std::__1::__compressed_pair_elem.21" }
+%"struct.std::__1::__compressed_pair_elem.21" = type { %"struct.google_breakpad::PageStdAllocator.22" }
+%"struct.google_breakpad::PageStdAllocator.22" = type { %"class.google_breakpad::PageAllocator"*, i64*, i64 }
+%"struct.google_breakpad::ThreadInfo" = type { i32, i32, i64, %struct.user_regs_struct, %struct.user_fpregs_struct, [8 x i64] }
+%struct.user_regs_struct = type { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 }
+%struct.user_fpregs_struct = type { i16, i16, i16, i16, i64, i64, i32, i32, [32 x i32], [64 x i32], [24 x i32] }
+%struct.iovec = type { i8*, i64 }
+%"class.google_breakpad::LineReader" = type { i32, i8, i32, [512 x i8] }
+%"class.google_breakpad::DirectoryReader" = type { i32, i8, i32, [536 x i8] }
+%"class.std::__1::__vector_base_common" = type { i8 }
+
+$_ZN15google_breakpad17LinuxPtraceDumperD0Ev = comdat any
+
+$_ZN15google_breakpad13PageAllocator5AllocEm = comdat any
+
+$_ZNSt3__16vectorIiN15google_breakpad16PageStdAllocatorIiEEE8__appendEm = comdat any
+
+@.str = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@_ZTVN15google_breakpad17LinuxPtraceDumperE = hidden unnamed_addr constant { [14 x i8*] } { [14 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.google_breakpad::LinuxDumper"*)* @_ZN15google_breakpad11LinuxDumperD2Ev to i8*), i8* bitcast (void (%"class.google_breakpad::LinuxPtraceDumper"*)* @_ZN15google_breakpad17LinuxPtraceDumperD0Ev to i8*), i8* bitcast (i1 (%"class.google_breakpad::LinuxDumper"*)* @_ZN15google_breakpad11LinuxDumper4InitEv to i8*), i8* bitcast (i1 (%"class.google_breakpad::LinuxDumper"*)* @_ZN15google_breakpad11LinuxDumper8LateInitEv to i8*), i8* bitcast (i1 (%"class.google_breakpad::LinuxPtraceDumper"*)* @_ZNK15google_breakpad17LinuxPtraceDumper12IsPostMortemEv to i8*), i8* bitcast (i1 (%"class.google_breakpad::LinuxPtraceDumper"*)* @_ZN15google_breakpad17LinuxPtraceDumper14ThreadsSuspendEv to i8*), i8* bitcast (i1 (%"class.google_breakpad::LinuxPtraceDumper"*)* @_ZN15google_breakpad17LinuxPtraceDumper13ThreadsResumeEv to i8*), i8* bitcast (i1 (%"class.google_breakpad::LinuxPtraceDumper"*, i64, %"struct.google_breakpad::ThreadInfo"*)* @_ZN15google_breakpad17LinuxPtraceDumper20GetThreadInfoByIndexEmPNS_10ThreadInfoE to i8*), i8* bitcast (i1 (%"class.google_breakpad::LinuxPtraceDumper"*, i8*, i32, i8*, i64)* @_ZN15google_breakpad17LinuxPtraceDumper15CopyFromProcessEPviPKvm to i8*), i8* bitcast (i1 (%"class.google_breakpad::LinuxPtraceDumper"*, i8*, i32, i8*)* @_ZNK15google_breakpad17LinuxPtraceDumper13BuildProcPathEPciPKc to i8*), i8* bitcast (i1 (%"class.google_breakpad::LinuxDumper"*)* @_ZN15google_breakpad11LinuxDumper17EnumerateMappingsEv to i8*), i8* bitcast (i1 (%"class.google_breakpad::LinuxPtraceDumper"*)* @_ZN15google_breakpad17LinuxPtraceDumper16EnumerateThreadsEv to i8*)] }, align 8
+@.str.1 = private unnamed_addr constant [7 x i8] c"/proc/\00", align 1
+@.str.2 = private unnamed_addr constant [7 x i8] c"status\00", align 1
+@.str.3 = private unnamed_addr constant [7 x i8] c"Tgid:\09\00", align 1
+@.str.4 = private unnamed_addr constant [7 x i8] c"PPid:\09\00", align 1
+@.str.5 = private unnamed_addr constant [5 x i8] c"task\00", align 1
+@.str.6 = private unnamed_addr constant [2 x i8] c".\00", align 1
+@.str.7 = private unnamed_addr constant [3 x i8] c"..\00", align 1
+
+@_ZN15google_breakpad17LinuxPtraceDumperC1Ei = hidden unnamed_addr alias void (%"class.google_breakpad::LinuxPtraceDumper"*, i32), void (%"class.google_breakpad::LinuxPtraceDumper"*, i32)* @_ZN15google_breakpad17LinuxPtraceDumperC2Ei
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN15google_breakpad17LinuxPtraceDumperC2Ei(%"class.google_breakpad::LinuxPtraceDumper"*, i32) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 0
+  tail call void @_ZN15google_breakpad11LinuxDumperC2EiPKc(%"class.google_breakpad::LinuxDumper"* %3, i32 %1, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @.str, i64 0, i64 0)) #9
+  %4 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [14 x i8*] }, { [14 x i8*] }* @_ZTVN15google_breakpad17LinuxPtraceDumperE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %4, align 8
+  %5 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 1
+  store i8 0, i8* %5, align 8
+  ret void
+}
+
+declare void @_ZN15google_breakpad11LinuxDumperC2EiPKc(%"class.google_breakpad::LinuxDumper"*, i32, i8*) unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZNK15google_breakpad17LinuxPtraceDumper13BuildProcPathEPciPKc(%"class.google_breakpad::LinuxPtraceDumper"* nocapture readnone, i8*, i32, i8*) unnamed_addr #0 align 2 {
+  %5 = icmp eq i8* %1, null
+  %6 = icmp eq i8* %3, null
+  %7 = or i1 %5, %6
+  %8 = icmp slt i32 %2, 1
+  %9 = or i1 %8, %7
+  br i1 %9, label %29, label %10
+
+10:                                               ; preds = %4
+  %11 = tail call i64 @my_strlen(i8* nonnull %3) #9
+  %12 = icmp eq i64 %11, 0
+  br i1 %12, label %29, label %13
+
+13:                                               ; preds = %10
+  %14 = sext i32 %2 to i64
+  %15 = tail call i32 @my_uint_len(i64 %14) #9
+  %16 = add i32 %15, 7
+  %17 = zext i32 %16 to i64
+  %18 = add i64 %11, %17
+  %19 = icmp ugt i64 %18, 254
+  br i1 %19, label %29, label %20
+
+20:                                               ; preds = %13
+  %21 = add i32 %15, 6
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 1 %1, i8* align 1 getelementptr inbounds ([7 x i8], [7 x i8]* @.str.1, i64 0, i64 0), i64 6, i1 false)
+  %22 = getelementptr inbounds i8, i8* %1, i64 6
+  tail call void @my_uitos(i8* %22, i64 %14, i32 %15) #9
+  %23 = zext i32 %21 to i64
+  %24 = getelementptr inbounds i8, i8* %1, i64 %23
+  store i8 47, i8* %24, align 1
+  %25 = zext i32 %15 to i64
+  %26 = getelementptr inbounds i8, i8* %22, i64 %25
+  %27 = getelementptr inbounds i8, i8* %26, i64 1
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %27, i8* nonnull align 1 %3, i64 %11, i1 false)
+  %28 = getelementptr inbounds i8, i8* %1, i64 %18
+  store i8 0, i8* %28, align 1
+  br label %29
+
+29:                                               ; preds = %10, %13, %20, %4
+  %30 = phi i1 [ false, %4 ], [ false, %10 ], [ true, %20 ], [ false, %13 ]
+  ret i1 %30
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+declare i64 @my_strlen(i8*) local_unnamed_addr #1
+
+declare i32 @my_uint_len(i64) local_unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #2
+
+declare void @my_uitos(i8*, i64, i32) local_unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN15google_breakpad17LinuxPtraceDumper15CopyFromProcessEPviPKvm(%"class.google_breakpad::LinuxPtraceDumper"* nocapture readnone, i8* nocapture, i32, i8*, i64) unnamed_addr #0 align 2 {
+  %6 = alloca i64, align 8
+  %7 = bitcast i64* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %7) #9
+  store i64 55, i64* %6, align 8
+  %8 = icmp eq i64 %4, 0
+  br i1 %8, label %29, label %9
+
+9:                                                ; preds = %5
+  %10 = sext i32 %2 to i64
+  %11 = ptrtoint i64* %6 to i64
+  br label %12
+
+12:                                               ; preds = %9, %25
+  %13 = phi i64 [ 0, %9 ], [ %27, %25 ]
+  %14 = sub i64 %4, %13
+  %15 = icmp ult i64 %14, 8
+  %16 = select i1 %15, i64 %14, i64 8
+  %17 = getelementptr inbounds i8, i8* %3, i64 %13
+  %18 = ptrtoint i8* %17 to i64
+  %19 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 2, i64 %10, i64 %18, i64 %11) #9, !srcloc !2
+  %20 = icmp ugt i64 %19, -4096
+  br i1 %20, label %21, label %25
+
+21:                                               ; preds = %12
+  %22 = trunc i64 %19 to i32
+  %23 = sub nsw i32 0, %22
+  %24 = tail call i32* @__errno_location() #10
+  store i32 %23, i32* %24, align 4
+  store i64 0, i64* %6, align 8
+  br label %25
+
+25:                                               ; preds = %12, %21
+  %26 = getelementptr inbounds i8, i8* %1, i64 %13
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %26, i8* nonnull align 8 %7, i64 %16, i1 false)
+  %27 = add i64 %16, %13
+  %28 = icmp ult i64 %27, %4
+  br i1 %28, label %12, label %29
+
+29:                                               ; preds = %25, %5
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %7) #9
+  ret i1 true
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN15google_breakpad17LinuxPtraceDumper15ReadRegisterSetEPNS_10ThreadInfoEi(%"class.google_breakpad::LinuxPtraceDumper"* nocapture readnone, %"struct.google_breakpad::ThreadInfo"*, i32) local_unnamed_addr #0 align 2 {
+  %4 = alloca %struct.iovec, align 8
+  %5 = bitcast %struct.iovec* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %5) #9
+  %6 = getelementptr inbounds %struct.iovec, %struct.iovec* %4, i64 0, i32 0
+  %7 = getelementptr inbounds %struct.iovec, %struct.iovec* %4, i64 0, i32 1
+  %8 = bitcast %struct.iovec* %4 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %8, i8 -86, i64 16, i1 false)
+  call void @_ZN15google_breakpad10ThreadInfo26GetGeneralPurposeRegistersEPPvPm(%"struct.google_breakpad::ThreadInfo"* %1, i8** nonnull %6, i64* %7) #9
+  %9 = sext i32 %2 to i64
+  %10 = ptrtoint %struct.iovec* %4 to i64
+  %11 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 16900, i64 %9, i64 1, i64 %10) #9, !srcloc !2
+  %12 = icmp ugt i64 %11, -4096
+  br i1 %12, label %16, label %13
+
+13:                                               ; preds = %3
+  call void @_ZN15google_breakpad10ThreadInfo25GetFloatingPointRegistersEPPvPm(%"struct.google_breakpad::ThreadInfo"* %1, i8** nonnull %6, i64* %7) #9
+  %14 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 16900, i64 %9, i64 2, i64 %10) #9, !srcloc !2
+  %15 = icmp ugt i64 %14, -4096
+  br i1 %15, label %16, label %21
+
+16:                                               ; preds = %13, %3
+  %17 = phi i64 [ %11, %3 ], [ %14, %13 ]
+  %18 = trunc i64 %17 to i32
+  %19 = sub nsw i32 0, %18
+  %20 = tail call i32* @__errno_location() #10
+  store i32 %19, i32* %20, align 4
+  br label %21
+
+21:                                               ; preds = %16, %13
+  %22 = phi i1 [ true, %13 ], [ false, %16 ]
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %5) #9
+  ret i1 %22
+}
+
+declare void @_ZN15google_breakpad10ThreadInfo26GetGeneralPurposeRegistersEPPvPm(%"struct.google_breakpad::ThreadInfo"*, i8**, i64*) local_unnamed_addr #1
+
+declare void @_ZN15google_breakpad10ThreadInfo25GetFloatingPointRegistersEPPvPm(%"struct.google_breakpad::ThreadInfo"*, i8**, i64*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN15google_breakpad17LinuxPtraceDumper13ReadRegistersEPNS_10ThreadInfoEi(%"class.google_breakpad::LinuxPtraceDumper"* nocapture readnone, %"struct.google_breakpad::ThreadInfo"*, i32) local_unnamed_addr #0 align 2 {
+  %4 = alloca i8*, align 8
+  %5 = alloca i8*, align 8
+  %6 = bitcast i8** %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %6) #9
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %4, align 8
+  call void @_ZN15google_breakpad10ThreadInfo26GetGeneralPurposeRegistersEPPvPm(%"struct.google_breakpad::ThreadInfo"* %1, i8** nonnull %4, i64* null) #9
+  %7 = bitcast i8** %4 to i64*
+  %8 = load i64, i64* %7, align 8
+  %9 = sext i32 %2 to i64
+  %10 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 12, i64 %9, i64 0, i64 %8) #9, !srcloc !2
+  %11 = icmp ugt i64 %10, -4096
+  br i1 %11, label %12, label %16
+
+12:                                               ; preds = %3
+  %13 = trunc i64 %10 to i32
+  %14 = sub nsw i32 0, %13
+  %15 = tail call i32* @__errno_location() #10
+  store i32 %14, i32* %15, align 4
+  br label %28
+
+16:                                               ; preds = %3
+  %17 = bitcast i8** %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %17) #9
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %5, align 8
+  call void @_ZN15google_breakpad10ThreadInfo25GetFloatingPointRegistersEPPvPm(%"struct.google_breakpad::ThreadInfo"* %1, i8** nonnull %5, i64* null) #9
+  %18 = bitcast i8** %5 to i64*
+  %19 = load i64, i64* %18, align 8
+  %20 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 14, i64 %9, i64 0, i64 %19) #9, !srcloc !2
+  %21 = icmp ugt i64 %20, -4096
+  br i1 %21, label %22, label %26
+
+22:                                               ; preds = %16
+  %23 = trunc i64 %20 to i32
+  %24 = sub nsw i32 0, %23
+  %25 = tail call i32* @__errno_location() #10
+  store i32 %24, i32* %25, align 4
+  br label %26
+
+26:                                               ; preds = %16, %22
+  %27 = phi i1 [ false, %22 ], [ true, %16 ]
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %17) #9
+  br label %28
+
+28:                                               ; preds = %12, %26
+  %29 = phi i1 [ %27, %26 ], [ false, %12 ]
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %6) #9
+  ret i1 %29
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN15google_breakpad17LinuxPtraceDumper20GetThreadInfoByIndexEmPNS_10ThreadInfoE(%"class.google_breakpad::LinuxPtraceDumper"*, i64, %"struct.google_breakpad::ThreadInfo"*) unnamed_addr #0 align 2 {
+  %4 = alloca %struct.iovec, align 8
+  %5 = alloca [255 x i8], align 16
+  %6 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 0, i32 9, i32 0
+  %7 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 0, i32 9, i32 0, i32 0, i32 1
+  %8 = bitcast i32** %7 to i64*
+  %9 = load i64, i64* %8, align 8
+  %10 = bitcast %"class.std::__1::vector.1"* %6 to i64*
+  %11 = load i64, i64* %10, align 8
+  %12 = sub i64 %9, %11
+  %13 = ashr exact i64 %12, 2
+  %14 = icmp ugt i64 %13, %1
+  br i1 %14, label %15, label %166
+
+15:                                               ; preds = %3
+  %16 = inttoptr i64 %11 to i32*
+  %17 = getelementptr inbounds i32, i32* %16, i64 %1
+  %18 = load i32, i32* %17, align 4
+  %19 = getelementptr inbounds [255 x i8], [255 x i8]* %5, i64 0, i64 0
+  call void @llvm.lifetime.start.p0i8(i64 255, i8* nonnull %19) #9
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %19, i8 -86, i64 255, i1 false)
+  %20 = bitcast %"class.google_breakpad::LinuxPtraceDumper"* %0 to i1 (%"class.google_breakpad::LinuxPtraceDumper"*, i8*, i32, i8*)***
+  %21 = load i1 (%"class.google_breakpad::LinuxPtraceDumper"*, i8*, i32, i8*)**, i1 (%"class.google_breakpad::LinuxPtraceDumper"*, i8*, i32, i8*)*** %20, align 8
+  %22 = getelementptr inbounds i1 (%"class.google_breakpad::LinuxPtraceDumper"*, i8*, i32, i8*)*, i1 (%"class.google_breakpad::LinuxPtraceDumper"*, i8*, i32, i8*)** %21, i64 9
+  %23 = load i1 (%"class.google_breakpad::LinuxPtraceDumper"*, i8*, i32, i8*)*, i1 (%"class.google_breakpad::LinuxPtraceDumper"*, i8*, i32, i8*)** %22, align 8
+  %24 = call zeroext i1 %23(%"class.google_breakpad::LinuxPtraceDumper"* %0, i8* nonnull %19, i32 %18, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @.str.2, i64 0, i64 0)) #9
+  br i1 %24, label %25, label %164
+
+25:                                               ; preds = %15
+  %26 = ptrtoint [255 x i8]* %5 to i64
+  %27 = call i64 asm sideeffect "syscall\0A", "={ax},0,{di},{si},{dx},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 2, i64 %26, i64 0, i64 0) #9, !srcloc !3
+  %28 = icmp ugt i64 %27, -4096
+  %29 = trunc i64 %27 to i32
+  br i1 %28, label %30, label %33
+
+30:                                               ; preds = %25
+  %31 = sub nsw i32 0, %29
+  %32 = tail call i32* @__errno_location() #10
+  store i32 %31, i32* %32, align 4
+  br label %164
+
+33:                                               ; preds = %25
+  %34 = icmp slt i32 %29, 0
+  br i1 %34, label %164, label %35
+
+35:                                               ; preds = %33
+  %36 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 0, i32 8
+  %37 = call i8* @_ZN15google_breakpad13PageAllocator5AllocEm(%"class.google_breakpad::PageAllocator"* %36, i64 524) #9
+  %38 = bitcast i8* %37 to %"class.google_breakpad::LineReader"*
+  %39 = bitcast i8* %37 to i32*
+  store i32 %29, i32* %39, align 4
+  %40 = getelementptr inbounds i8, i8* %37, i64 4
+  store i8 0, i8* %40, align 4
+  %41 = getelementptr inbounds i8, i8* %37, i64 8
+  %42 = bitcast i8* %41 to i32*
+  store i32 0, i32* %42, align 4
+  %43 = getelementptr inbounds %"struct.google_breakpad::ThreadInfo", %"struct.google_breakpad::ThreadInfo"* %2, i64 0, i32 0
+  store i32 -1, i32* %43, align 8
+  %44 = getelementptr inbounds %"struct.google_breakpad::ThreadInfo", %"struct.google_breakpad::ThreadInfo"* %2, i64 0, i32 1
+  store i32 -1, i32* %44, align 4
+  %45 = getelementptr inbounds i8, i8* %37, i64 12
+  %46 = getelementptr inbounds i8, i8* %37, i64 18
+  br label %47
+
+47:                                               ; preds = %115, %35
+  %48 = load i32, i32* %42, align 4
+  %49 = icmp eq i32 %48, 0
+  br i1 %49, label %50, label %53
+
+50:                                               ; preds = %47
+  %51 = load i8, i8* %40, align 4, !range !4
+  %52 = icmp eq i8 %51, 0
+  br i1 %52, label %75, label %116
+
+53:                                               ; preds = %47
+  %54 = zext i32 %48 to i64
+  br label %55
+
+55:                                               ; preds = %59, %53
+  %56 = phi i64 [ 0, %53 ], [ %60, %59 ]
+  %57 = getelementptr inbounds %"class.google_breakpad::LineReader", %"class.google_breakpad::LineReader"* %38, i64 0, i32 3, i64 %56
+  %58 = load i8, i8* %57, align 1
+  switch i8 %58, label %59 [
+    i8 10, label %62
+    i8 0, label %62
+  ]
+
+59:                                               ; preds = %55
+  %60 = add nuw nsw i64 %56, 1
+  %61 = icmp eq i64 %60, %54
+  br i1 %61, label %66, label %55
+
+62:                                               ; preds = %55, %55
+  %63 = trunc i64 %56 to i32
+  %64 = and i64 %56, 4294967295
+  %65 = getelementptr inbounds %"class.google_breakpad::LineReader", %"class.google_breakpad::LineReader"* %38, i64 0, i32 3, i64 %64
+  store i8 0, i8* %65, align 1
+  br label %97
+
+66:                                               ; preds = %59
+  %67 = icmp eq i32 %48, 512
+  br i1 %67, label %116, label %68
+
+68:                                               ; preds = %66
+  %69 = load i8, i8* %40, align 4
+  %70 = icmp eq i8 %69, 0
+  br i1 %70, label %75, label %71
+
+71:                                               ; preds = %68
+  %72 = zext i32 %48 to i64
+  %73 = getelementptr inbounds %"class.google_breakpad::LineReader", %"class.google_breakpad::LineReader"* %38, i64 0, i32 3, i64 %72
+  store i8 0, i8* %73, align 1
+  %74 = add i32 %48, 1
+  store i32 %74, i32* %42, align 4
+  br label %97
+
+75:                                               ; preds = %68, %50
+  %76 = phi i64 [ %54, %68 ], [ 0, %50 ]
+  %77 = load i32, i32* %39, align 4
+  %78 = getelementptr inbounds %"class.google_breakpad::LineReader", %"class.google_breakpad::LineReader"* %38, i64 0, i32 3, i64 %76
+  %79 = sub nsw i64 512, %76
+  %80 = sext i32 %77 to i64
+  %81 = ptrtoint i8* %78 to i64
+  %82 = call i64 asm sideeffect "syscall\0A", "={ax},0,{di},{si},{dx},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 0, i64 %80, i64 %81, i64 %79) #9, !srcloc !5
+  %83 = icmp ugt i64 %82, -4096
+  br i1 %83, label %84, label %88
+
+84:                                               ; preds = %75
+  %85 = trunc i64 %82 to i32
+  %86 = sub nsw i32 0, %85
+  %87 = tail call i32* @__errno_location() #10
+  store i32 %86, i32* %87, align 4
+  br label %116
+
+88:                                               ; preds = %75
+  %89 = icmp slt i64 %82, 0
+  br i1 %89, label %116, label %90
+
+90:                                               ; preds = %88
+  %91 = icmp eq i64 %82, 0
+  br i1 %91, label %92, label %93
+
+92:                                               ; preds = %90
+  store i8 1, i8* %40, align 4
+  br label %115
+
+93:                                               ; preds = %90
+  %94 = load i32, i32* %42, align 4
+  %95 = trunc i64 %82 to i32
+  %96 = add i32 %94, %95
+  store i32 %96, i32* %42, align 4
+  br label %115
+
+97:                                               ; preds = %71, %62
+  %98 = phi i32 [ %48, %71 ], [ %63, %62 ]
+  %99 = call i32 @my_strncmp(i8* getelementptr inbounds ([7 x i8], [7 x i8]* @.str.3, i64 0, i64 0), i8* %45, i64 6) #9
+  %100 = icmp eq i32 %99, 0
+  br i1 %100, label %104, label %101
+
+101:                                              ; preds = %97
+  %102 = call i32 @my_strncmp(i8* getelementptr inbounds ([7 x i8], [7 x i8]* @.str.4, i64 0, i64 0), i8* %45, i64 6) #9
+  %103 = icmp eq i32 %102, 0
+  br i1 %103, label %104, label %107
+
+104:                                              ; preds = %101, %97
+  %105 = phi i32* [ %43, %97 ], [ %44, %101 ]
+  %106 = call zeroext i1 @my_strtoui(i32* %105, i8* %46) #9
+  br label %107
+
+107:                                              ; preds = %104, %101
+  %108 = load i32, i32* %42, align 4
+  %109 = xor i32 %98, -1
+  %110 = add i32 %108, %109
+  store i32 %110, i32* %42, align 4
+  %111 = zext i32 %98 to i64
+  %112 = getelementptr inbounds %"class.google_breakpad::LineReader", %"class.google_breakpad::LineReader"* %38, i64 0, i32 3, i64 %111
+  %113 = getelementptr inbounds i8, i8* %112, i64 1
+  %114 = zext i32 %110 to i64
+  call void @llvm.memmove.p0i8.p0i8.i64(i8* align 4 %45, i8* align 1 %113, i64 %114, i1 false) #9
+  br label %115
+
+115:                                              ; preds = %107, %93, %92
+  br label %47
+
+116:                                              ; preds = %50, %66, %88, %84
+  %117 = shl i64 %27, 32
+  %118 = ashr exact i64 %117, 32
+  %119 = call i64 asm sideeffect "syscall\0A", "={ax},0,{di},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 3, i64 %118) #9, !srcloc !6
+  %120 = icmp ugt i64 %119, -4096
+  br i1 %120, label %121, label %125
+
+121:                                              ; preds = %116
+  %122 = trunc i64 %119 to i32
+  %123 = sub nsw i32 0, %122
+  %124 = tail call i32* @__errno_location() #10
+  store i32 %123, i32* %124, align 4
+  br label %125
+
+125:                                              ; preds = %116, %121
+  %126 = load i32, i32* %44, align 4
+  %127 = icmp eq i32 %126, -1
+  br i1 %127, label %164, label %128
+
+128:                                              ; preds = %125
+  %129 = load i32, i32* %43, align 8
+  %130 = icmp eq i32 %129, -1
+  br i1 %130, label %164, label %131
+
+131:                                              ; preds = %128
+  %132 = bitcast %struct.iovec* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %132) #9
+  %133 = getelementptr inbounds %struct.iovec, %struct.iovec* %4, i64 0, i32 0
+  %134 = getelementptr inbounds %struct.iovec, %struct.iovec* %4, i64 0, i32 1
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %132, i8 -86, i64 16, i1 false) #9
+  call void @_ZN15google_breakpad10ThreadInfo26GetGeneralPurposeRegistersEPPvPm(%"struct.google_breakpad::ThreadInfo"* %2, i8** nonnull %133, i64* %134) #9
+  %135 = sext i32 %18 to i64
+  %136 = ptrtoint %struct.iovec* %4 to i64
+  %137 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 16900, i64 %135, i64 1, i64 %136) #9, !srcloc !2
+  %138 = icmp ugt i64 %137, -4096
+  br i1 %138, label %143, label %139
+
+139:                                              ; preds = %131
+  call void @_ZN15google_breakpad10ThreadInfo25GetFloatingPointRegistersEPPvPm(%"struct.google_breakpad::ThreadInfo"* %2, i8** nonnull %133, i64* %134) #9
+  %140 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 16900, i64 %135, i64 2, i64 %136) #9, !srcloc !2
+  %141 = icmp ugt i64 %140, -4096
+  br i1 %141, label %143, label %142
+
+142:                                              ; preds = %139
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %132) #9
+  br label %149
+
+143:                                              ; preds = %139, %131
+  %144 = phi i64 [ %137, %131 ], [ %140, %139 ]
+  %145 = trunc i64 %144 to i32
+  %146 = sub nsw i32 0, %145
+  %147 = tail call i32* @__errno_location() #10
+  store i32 %146, i32* %147, align 4
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %132) #9
+  %148 = call zeroext i1 @_ZN15google_breakpad17LinuxPtraceDumper13ReadRegistersEPNS_10ThreadInfoEi(%"class.google_breakpad::LinuxPtraceDumper"* undef, %"struct.google_breakpad::ThreadInfo"* %2, i32 %18)
+  br i1 %148, label %149, label %164
+
+149:                                              ; preds = %142, %143
+  %150 = getelementptr inbounds %"struct.google_breakpad::ThreadInfo", %"struct.google_breakpad::ThreadInfo"* %2, i64 0, i32 5, i64 0
+  %151 = ptrtoint i64* %150 to i64
+  %152 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 3, i64 %135, i64 848, i64 %151) #9, !srcloc !2
+  %153 = icmp ugt i64 %152, -4096
+  br i1 %153, label %159, label %154
+
+154:                                              ; preds = %149
+  %155 = getelementptr inbounds %"struct.google_breakpad::ThreadInfo", %"struct.google_breakpad::ThreadInfo"* %2, i64 0, i32 5, i64 1
+  %156 = ptrtoint i64* %155 to i64
+  %157 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 3, i64 %135, i64 856, i64 %156) #9, !srcloc !2
+  %158 = icmp ugt i64 %157, -4096
+  br i1 %158, label %159, label %168
+
+159:                                              ; preds = %193, %188, %183, %178, %173, %168, %154, %149
+  %160 = phi i64 [ %152, %149 ], [ %157, %154 ], [ %171, %168 ], [ %176, %173 ], [ %181, %178 ], [ %186, %183 ], [ %191, %188 ], [ %196, %193 ]
+  %161 = trunc i64 %160 to i32
+  %162 = sub nsw i32 0, %161
+  %163 = tail call i32* @__errno_location() #10
+  store i32 %162, i32* %163, align 4
+  br label %164
+
+164:                                              ; preds = %198, %128, %125, %143, %159, %30, %33, %15
+  %165 = phi i1 [ false, %15 ], [ false, %33 ], [ false, %30 ], [ true, %198 ], [ false, %128 ], [ false, %125 ], [ false, %143 ], [ false, %159 ]
+  call void @llvm.lifetime.end.p0i8(i64 255, i8* nonnull %19) #9
+  br label %166
+
+166:                                              ; preds = %3, %164
+  %167 = phi i1 [ %165, %164 ], [ false, %3 ]
+  ret i1 %167
+
+168:                                              ; preds = %154
+  %169 = getelementptr inbounds %"struct.google_breakpad::ThreadInfo", %"struct.google_breakpad::ThreadInfo"* %2, i64 0, i32 5, i64 2
+  %170 = ptrtoint i64* %169 to i64
+  %171 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 3, i64 %135, i64 864, i64 %170) #9, !srcloc !2
+  %172 = icmp ugt i64 %171, -4096
+  br i1 %172, label %159, label %173
+
+173:                                              ; preds = %168
+  %174 = getelementptr inbounds %"struct.google_breakpad::ThreadInfo", %"struct.google_breakpad::ThreadInfo"* %2, i64 0, i32 5, i64 3
+  %175 = ptrtoint i64* %174 to i64
+  %176 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 3, i64 %135, i64 872, i64 %175) #9, !srcloc !2
+  %177 = icmp ugt i64 %176, -4096
+  br i1 %177, label %159, label %178
+
+178:                                              ; preds = %173
+  %179 = getelementptr inbounds %"struct.google_breakpad::ThreadInfo", %"struct.google_breakpad::ThreadInfo"* %2, i64 0, i32 5, i64 4
+  %180 = ptrtoint i64* %179 to i64
+  %181 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 3, i64 %135, i64 880, i64 %180) #9, !srcloc !2
+  %182 = icmp ugt i64 %181, -4096
+  br i1 %182, label %159, label %183
+
+183:                                              ; preds = %178
+  %184 = getelementptr inbounds %"struct.google_breakpad::ThreadInfo", %"struct.google_breakpad::ThreadInfo"* %2, i64 0, i32 5, i64 5
+  %185 = ptrtoint i64* %184 to i64
+  %186 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 3, i64 %135, i64 888, i64 %185) #9, !srcloc !2
+  %187 = icmp ugt i64 %186, -4096
+  br i1 %187, label %159, label %188
+
+188:                                              ; preds = %183
+  %189 = getelementptr inbounds %"struct.google_breakpad::ThreadInfo", %"struct.google_breakpad::ThreadInfo"* %2, i64 0, i32 5, i64 6
+  %190 = ptrtoint i64* %189 to i64
+  %191 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 3, i64 %135, i64 896, i64 %190) #9, !srcloc !2
+  %192 = icmp ugt i64 %191, -4096
+  br i1 %192, label %159, label %193
+
+193:                                              ; preds = %188
+  %194 = getelementptr inbounds %"struct.google_breakpad::ThreadInfo", %"struct.google_breakpad::ThreadInfo"* %2, i64 0, i32 5, i64 7
+  %195 = ptrtoint i64* %194 to i64
+  %196 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 3, i64 %135, i64 904, i64 %195) #9, !srcloc !2
+  %197 = icmp ugt i64 %196, -4096
+  br i1 %197, label %159, label %198
+
+198:                                              ; preds = %193
+  %199 = getelementptr inbounds %"struct.google_breakpad::ThreadInfo", %"struct.google_breakpad::ThreadInfo"* %2, i64 0, i32 3, i32 19
+  %200 = load i64, i64* %199, align 8
+  %201 = getelementptr inbounds %"struct.google_breakpad::ThreadInfo", %"struct.google_breakpad::ThreadInfo"* %2, i64 0, i32 2
+  store i64 %200, i64* %201, align 8
+  br label %164
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+declare i32 @my_strncmp(i8*, i8*, i64) local_unnamed_addr #1
+
+declare zeroext i1 @my_strtoui(i32*, i8*) local_unnamed_addr #1
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden zeroext i1 @_ZNK15google_breakpad17LinuxPtraceDumper12IsPostMortemEv(%"class.google_breakpad::LinuxPtraceDumper"* nocapture readnone) unnamed_addr #3 align 2 {
+  ret i1 false
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN15google_breakpad17LinuxPtraceDumper14ThreadsSuspendEv(%"class.google_breakpad::LinuxPtraceDumper"*) unnamed_addr #0 align 2 {
+  %2 = alloca %struct.user_regs_struct, align 8
+  %3 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 1
+  %4 = load i8, i8* %3, align 8, !range !4
+  %5 = icmp eq i8 %4, 0
+  br i1 %5, label %6, label %117
+
+6:                                                ; preds = %1
+  %7 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 0, i32 9, i32 0
+  %8 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 0, i32 9, i32 0, i32 0, i32 1
+  %9 = bitcast i32** %8 to i64*
+  %10 = load i64, i64* %9, align 8
+  %11 = bitcast %"class.std::__1::vector.1"* %7 to i64*
+  %12 = load i64, i64* %11, align 8
+  %13 = icmp eq i64 %10, %12
+  br i1 %13, label %21, label %14
+
+14:                                               ; preds = %6
+  %15 = tail call i32* @__errno_location() #10
+  %16 = bitcast %struct.user_regs_struct* %2 to i8*
+  %17 = ptrtoint %struct.user_regs_struct* %2 to i64
+  %18 = getelementptr inbounds %struct.user_regs_struct, %struct.user_regs_struct* %2, i64 0, i32 19
+  br label %23
+
+19:                                               ; preds = %109
+  %20 = icmp ne i64 %114, 0
+  br label %21
+
+21:                                               ; preds = %19, %6
+  %22 = phi i1 [ false, %6 ], [ %20, %19 ]
+  store i8 1, i8* %3, align 8
+  br label %117
+
+23:                                               ; preds = %14, %109
+  %24 = phi i64 [ %12, %14 ], [ %113, %109 ]
+  %25 = phi i64 [ 0, %14 ], [ %111, %109 ]
+  %26 = inttoptr i64 %24 to i32*
+  %27 = getelementptr inbounds i32, i32* %26, i64 %25
+  %28 = load i32, i32* %27, align 4
+  store i32 0, i32* %15, align 4
+  %29 = sext i32 %28 to i64
+  %30 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 16, i64 %29, i64 0, i64 0) #9, !srcloc !2
+  %31 = icmp ugt i64 %30, -4096
+  br i1 %31, label %32, label %35
+
+32:                                               ; preds = %23
+  %33 = trunc i64 %30 to i32
+  %34 = sub nsw i32 0, %33
+  store i32 %34, i32* %15, align 4
+  br label %77
+
+35:                                               ; preds = %23
+  %36 = icmp eq i64 %30, 0
+  br i1 %36, label %40, label %37
+
+37:                                               ; preds = %35
+  %38 = load i32, i32* %15, align 4
+  %39 = icmp eq i32 %38, 0
+  br i1 %39, label %40, label %77
+
+40:                                               ; preds = %37, %35
+  br label %41
+
+41:                                               ; preds = %40, %51
+  %42 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 61, i64 %29, i64 0, i64 1073741824, i64 0) #9, !srcloc !7
+  %43 = icmp ugt i64 %42, -4096
+  %44 = trunc i64 %42 to i32
+  br i1 %43, label %45, label %47
+
+45:                                               ; preds = %41
+  %46 = sub nsw i32 0, %44
+  store i32 %46, i32* %15, align 4
+  br label %51
+
+47:                                               ; preds = %41
+  %48 = icmp slt i32 %44, 0
+  br i1 %48, label %49, label %60
+
+49:                                               ; preds = %47
+  %50 = load i32, i32* %15, align 4
+  br label %51
+
+51:                                               ; preds = %49, %45
+  %52 = phi i32 [ %50, %49 ], [ %46, %45 ]
+  %53 = icmp eq i32 %52, 4
+  br i1 %53, label %41, label %54
+
+54:                                               ; preds = %51
+  %55 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 17, i64 %29, i64 0, i64 0) #9, !srcloc !2
+  %56 = icmp ugt i64 %55, -4096
+  br i1 %56, label %57, label %77
+
+57:                                               ; preds = %54
+  %58 = trunc i64 %55 to i32
+  %59 = sub nsw i32 0, %58
+  store i32 %59, i32* %15, align 4
+  br label %77
+
+60:                                               ; preds = %47
+  call void @llvm.lifetime.start.p0i8(i64 216, i8* nonnull %16) #9
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %16, i8 -86, i64 216, i1 false) #9
+  %61 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 12, i64 %29, i64 0, i64 %17) #9, !srcloc !2
+  %62 = icmp ugt i64 %61, -4096
+  br i1 %62, label %63, label %66
+
+63:                                               ; preds = %60
+  %64 = trunc i64 %61 to i32
+  %65 = sub nsw i32 0, %64
+  store i32 %65, i32* %15, align 4
+  br label %69
+
+66:                                               ; preds = %60
+  %67 = load i64, i64* %18, align 8
+  %68 = icmp eq i64 %67, 0
+  br i1 %68, label %69, label %76
+
+69:                                               ; preds = %66, %63
+  %70 = call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 17, i64 %29, i64 0, i64 0) #9, !srcloc !2
+  %71 = icmp ugt i64 %70, -4096
+  br i1 %71, label %72, label %75
+
+72:                                               ; preds = %69
+  %73 = trunc i64 %70 to i32
+  %74 = sub nsw i32 0, %73
+  store i32 %74, i32* %15, align 4
+  br label %75
+
+75:                                               ; preds = %69, %72
+  call void @llvm.lifetime.end.p0i8(i64 216, i8* nonnull %16) #9
+  br label %77
+
+76:                                               ; preds = %66
+  call void @llvm.lifetime.end.p0i8(i64 216, i8* nonnull %16) #9
+  br label %109
+
+77:                                               ; preds = %57, %54, %32, %37, %75
+  %78 = load i64, i64* %9, align 8
+  %79 = load i64, i64* %11, align 8
+  %80 = sub i64 %78, %79
+  %81 = ashr exact i64 %80, 2
+  %82 = add nsw i64 %81, -1
+  %83 = icmp ult i64 %25, %82
+  %84 = inttoptr i64 %79 to i32*
+  br i1 %83, label %85, label %96
+
+85:                                               ; preds = %77
+  %86 = getelementptr inbounds i32, i32* %84, i64 %25
+  %87 = bitcast i32* %86 to i8*
+  %88 = add nuw i64 %25, 1
+  %89 = getelementptr inbounds i32, i32* %84, i64 %88
+  %90 = bitcast i32* %89 to i8*
+  %91 = xor i64 %25, 4611686018427387903
+  %92 = add i64 %81, %91
+  %93 = shl i64 %92, 2
+  call void @llvm.memmove.p0i8.p0i8.i64(i8* align 4 %87, i8* align 4 %90, i64 %93, i1 false)
+  %94 = load i64, i64* %9, align 8
+  %95 = load i64, i64* %11, align 8
+  br label %96
+
+96:                                               ; preds = %85, %77
+  %97 = phi i64 [ %95, %85 ], [ %79, %77 ]
+  %98 = phi i64 [ %94, %85 ], [ %78, %77 ]
+  %99 = sub i64 %98, %97
+  %100 = icmp eq i64 %99, 0
+  br i1 %100, label %101, label %102
+
+101:                                              ; preds = %96
+  call void @_ZNSt3__16vectorIiN15google_breakpad16PageStdAllocatorIiEEE8__appendEm(%"class.std::__1::vector.1"* %7, i64 -1) #9
+  br label %107
+
+102:                                              ; preds = %96
+  %103 = inttoptr i64 %97 to i32*
+  %104 = ashr exact i64 %99, 2
+  %105 = add nsw i64 %104, -1
+  %106 = getelementptr inbounds i32, i32* %103, i64 %105
+  store i32* %106, i32** %8, align 8
+  br label %107
+
+107:                                              ; preds = %101, %102
+  %108 = add i64 %25, -1
+  br label %109
+
+109:                                              ; preds = %76, %107
+  %110 = phi i64 [ %25, %76 ], [ %108, %107 ]
+  %111 = add i64 %110, 1
+  %112 = load i64, i64* %9, align 8
+  %113 = load i64, i64* %11, align 8
+  %114 = sub i64 %112, %113
+  %115 = ashr exact i64 %114, 2
+  %116 = icmp ult i64 %111, %115
+  br i1 %116, label %23, label %19
+
+117:                                              ; preds = %1, %21
+  %118 = phi i1 [ %22, %21 ], [ true, %1 ]
+  ret i1 %118
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memmove.p0i8.p0i8.i64(i8* nocapture, i8* nocapture readonly, i64, i1 immarg) #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN15google_breakpad17LinuxPtraceDumper13ThreadsResumeEv(%"class.google_breakpad::LinuxPtraceDumper"* nocapture) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 1
+  %3 = load i8, i8* %2, align 8, !range !4
+  %4 = icmp eq i8 %3, 0
+  br i1 %4, label %39, label %5
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 0, i32 9, i32 0
+  %7 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 0, i32 9, i32 0, i32 0, i32 1
+  %8 = bitcast i32** %7 to i64*
+  %9 = load i64, i64* %8, align 8
+  %10 = bitcast %"class.std::__1::vector.1"* %6 to i64*
+  %11 = load i64, i64* %10, align 8
+  %12 = icmp eq i64 %9, %11
+  br i1 %12, label %13, label %15
+
+13:                                               ; preds = %29, %5
+  %14 = phi i1 [ true, %5 ], [ %32, %29 ]
+  store i8 0, i8* %2, align 8
+  br label %39
+
+15:                                               ; preds = %5, %29
+  %16 = phi i64 [ %35, %29 ], [ %11, %5 ]
+  %17 = phi i64 [ %33, %29 ], [ 0, %5 ]
+  %18 = phi i1 [ %32, %29 ], [ true, %5 ]
+  %19 = inttoptr i64 %16 to i32*
+  %20 = getelementptr inbounds i32, i32* %19, i64 %17
+  %21 = load i32, i32* %20, align 4
+  %22 = sext i32 %21 to i64
+  %23 = tail call i64 asm sideeffect "movq $5,%r10;syscall\0A", "={ax},0,{di},{si},{dx},r,~{r10},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 101, i64 17, i64 %22, i64 0, i64 0) #9, !srcloc !2
+  %24 = icmp ugt i64 %23, -4096
+  br i1 %24, label %25, label %29
+
+25:                                               ; preds = %15
+  %26 = trunc i64 %23 to i32
+  %27 = sub nsw i32 0, %26
+  %28 = tail call i32* @__errno_location() #10
+  store i32 %27, i32* %28, align 4
+  br label %29
+
+29:                                               ; preds = %15, %25
+  %30 = phi i64 [ -1, %25 ], [ %23, %15 ]
+  %31 = icmp sgt i64 %30, -1
+  %32 = and i1 %18, %31
+  %33 = add nuw i64 %17, 1
+  %34 = load i64, i64* %8, align 8
+  %35 = load i64, i64* %10, align 8
+  %36 = sub i64 %34, %35
+  %37 = ashr exact i64 %36, 2
+  %38 = icmp ult i64 %33, %37
+  br i1 %38, label %15, label %13
+
+39:                                               ; preds = %1, %13
+  %40 = phi i1 [ %14, %13 ], [ false, %1 ]
+  ret i1 %40
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN15google_breakpad17LinuxPtraceDumper16EnumerateThreadsEv(%"class.google_breakpad::LinuxPtraceDumper"*) unnamed_addr #0 align 2 {
+  %2 = alloca [255 x i8], align 16
+  %3 = alloca i32, align 4
+  %4 = getelementptr inbounds [255 x i8], [255 x i8]* %2, i64 0, i64 0
+  call void @llvm.lifetime.start.p0i8(i64 255, i8* nonnull %4) #9
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %4, i8 -86, i64 255, i1 false)
+  %5 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 0, i32 1
+  %6 = load i32, i32* %5, align 8
+  %7 = bitcast %"class.google_breakpad::LinuxPtraceDumper"* %0 to i1 (%"class.google_breakpad::LinuxPtraceDumper"*, i8*, i32, i8*)***
+  %8 = load i1 (%"class.google_breakpad::LinuxPtraceDumper"*, i8*, i32, i8*)**, i1 (%"class.google_breakpad::LinuxPtraceDumper"*, i8*, i32, i8*)*** %7, align 8
+  %9 = getelementptr inbounds i1 (%"class.google_breakpad::LinuxPtraceDumper"*, i8*, i32, i8*)*, i1 (%"class.google_breakpad::LinuxPtraceDumper"*, i8*, i32, i8*)** %8, i64 9
+  %10 = load i1 (%"class.google_breakpad::LinuxPtraceDumper"*, i8*, i32, i8*)*, i1 (%"class.google_breakpad::LinuxPtraceDumper"*, i8*, i32, i8*)** %9, align 8
+  %11 = call zeroext i1 %10(%"class.google_breakpad::LinuxPtraceDumper"* %0, i8* nonnull %4, i32 %6, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.5, i64 0, i64 0)) #9
+  br i1 %11, label %12, label %316
+
+12:                                               ; preds = %1
+  %13 = ptrtoint [255 x i8]* %2 to i64
+  %14 = call i64 asm sideeffect "syscall\0A", "={ax},0,{di},{si},{dx},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 2, i64 %13, i64 65536, i64 0) #9, !srcloc !3
+  %15 = icmp ugt i64 %14, -4096
+  %16 = trunc i64 %14 to i32
+  br i1 %15, label %17, label %20
+
+17:                                               ; preds = %12
+  %18 = sub nsw i32 0, %16
+  %19 = tail call i32* @__errno_location() #10
+  store i32 %18, i32* %19, align 4
+  br label %316
+
+20:                                               ; preds = %12
+  %21 = icmp slt i32 %16, 0
+  br i1 %21, label %316, label %22
+
+22:                                               ; preds = %20
+  %23 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 0, i32 8
+  %24 = call i8* @_ZN15google_breakpad13PageAllocator5AllocEm(%"class.google_breakpad::PageAllocator"* %23, i64 548) #9
+  %25 = bitcast i8* %24 to %"class.google_breakpad::DirectoryReader"*
+  %26 = bitcast i8* %24 to i32*
+  store i32 %16, i32* %26, align 4
+  %27 = getelementptr inbounds i8, i8* %24, i64 8
+  %28 = bitcast i8* %27 to i32*
+  store i32 0, i32* %28, align 4
+  %29 = getelementptr inbounds i8, i8* %24, i64 12
+  %30 = ptrtoint i8* %29 to i64
+  %31 = getelementptr inbounds i8, i8* %24, i64 4
+  %32 = getelementptr inbounds i8, i8* %24, i64 30
+  %33 = bitcast i32* %3 to i8*
+  %34 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 0, i32 9, i32 0
+  %35 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 0, i32 9, i32 0, i32 0, i32 1
+  %36 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 0, i32 9, i32 0, i32 0, i32 2, i32 0, i32 0
+  %37 = bitcast i32** %35 to i64*
+  %38 = bitcast %"class.std::__1::vector.1"* %34 to i64*
+  %39 = bitcast i32** %36 to i64*
+  %40 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 0, i32 9, i32 0, i32 0, i32 2, i32 1, i32 0, i32 2
+  %41 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 0, i32 9, i32 0, i32 0, i32 2, i32 1, i32 0, i32 1
+  %42 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 0, i32 9, i32 0, i32 0, i32 2, i32 1, i32 0, i32 0
+  %43 = getelementptr inbounds %"class.std::__1::vector.1", %"class.std::__1::vector.1"* %34, i64 0, i32 0, i32 0
+  %44 = getelementptr inbounds i8, i8* %24, i64 28
+  %45 = bitcast i8* %44 to i16*
+  br label %46
+
+46:                                               ; preds = %298, %22
+  %47 = phi i32 [ 0, %22 ], [ %299, %298 ]
+  %48 = phi i32 [ -1, %22 ], [ %295, %298 ]
+  %49 = icmp eq i32 %47, 0
+  br i1 %49, label %50, label %75
+
+50:                                               ; preds = %46
+  %51 = load i32, i32* %26, align 4
+  %52 = sext i32 %51 to i64
+  %53 = call i64 asm sideeffect "syscall\0A", "={ax},0,{di},{si},{dx},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 78, i64 %52, i64 %30, i64 536) #9, !srcloc !8
+  %54 = icmp ugt i64 %53, -4096
+  %55 = trunc i64 %53 to i32
+  br i1 %54, label %56, label %60
+
+56:                                               ; preds = %50
+  %57 = trunc i64 %53 to i32
+  %58 = sub nsw i32 0, %57
+  %59 = tail call i32* @__errno_location() #10
+  store i32 %58, i32* %59, align 4
+  br label %307
+
+60:                                               ; preds = %50
+  %61 = icmp slt i32 %55, 0
+  br i1 %61, label %307, label %62
+
+62:                                               ; preds = %60
+  %63 = icmp eq i32 %55, 0
+  br i1 %63, label %64, label %66
+
+64:                                               ; preds = %62
+  store i8 1, i8* %31, align 4
+  %65 = load i32, i32* %28, align 4
+  br label %69
+
+66:                                               ; preds = %62
+  %67 = load i32, i32* %28, align 4
+  %68 = add i32 %67, %55
+  store i32 %68, i32* %28, align 4
+  br label %69
+
+69:                                               ; preds = %66, %64
+  %70 = phi i32 [ %65, %64 ], [ %68, %66 ]
+  %71 = icmp eq i32 %70, 0
+  br i1 %71, label %72, label %75
+
+72:                                               ; preds = %69
+  %73 = load i8, i8* %31, align 4, !range !4
+  %74 = icmp eq i8 %73, 0
+  br i1 %74, label %75, label %307
+
+75:                                               ; preds = %72, %69, %46
+  %76 = call i32 @my_strcmp(i8* %32, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @.str.6, i64 0, i64 0)) #9
+  %77 = icmp eq i32 %76, 0
+  br i1 %77, label %294, label %78
+
+78:                                               ; preds = %75
+  %79 = call i32 @my_strcmp(i8* %32, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str.7, i64 0, i64 0)) #9
+  %80 = icmp eq i32 %79, 0
+  br i1 %80, label %294, label %81
+
+81:                                               ; preds = %78
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %33) #9
+  store i32 0, i32* %3, align 4
+  %82 = call zeroext i1 @my_strtoui(i32* nonnull %3, i8* %32) #9
+  br i1 %82, label %83, label %292
+
+83:                                               ; preds = %81
+  %84 = load i32, i32* %3, align 4
+  %85 = icmp eq i32 %48, %84
+  br i1 %85, label %292, label %86
+
+86:                                               ; preds = %83
+  %87 = load i32*, i32** %35, align 8
+  %88 = load i32*, i32** %36, align 8
+  %89 = icmp eq i32* %87, %88
+  %90 = ptrtoint i32* %88 to i64
+  br i1 %89, label %94, label %91
+
+91:                                               ; preds = %86
+  store i32 %84, i32* %87, align 4
+  %92 = getelementptr inbounds i32, i32* %87, i64 1
+  %93 = ptrtoint i32* %92 to i64
+  store i64 %93, i64* %37, align 8
+  br label %292
+
+94:                                               ; preds = %86
+  %95 = ptrtoint i32* %87 to i64
+  %96 = load i64, i64* %38, align 8
+  %97 = sub i64 %95, %96
+  %98 = ashr exact i64 %97, 2
+  %99 = add nsw i64 %98, 1
+  %100 = icmp ugt i64 %99, 4611686018427387903
+  br i1 %100, label %101, label %103
+
+101:                                              ; preds = %94
+  %102 = bitcast %"class.std::__1::vector.1"* %34 to %"class.std::__1::__vector_base_common"*
+  call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"* %102) #11
+  unreachable
+
+103:                                              ; preds = %94
+  %104 = sub i64 %90, %96
+  %105 = ashr exact i64 %104, 2
+  %106 = icmp ult i64 %105, 2305843009213693951
+  br i1 %106, label %107, label %112
+
+107:                                              ; preds = %103
+  %108 = ashr exact i64 %104, 1
+  %109 = icmp ult i64 %108, %99
+  %110 = select i1 %109, i64 %99, i64 %108
+  %111 = icmp eq i64 %110, 0
+  br i1 %111, label %124, label %112
+
+112:                                              ; preds = %107, %103
+  %113 = phi i64 [ %110, %107 ], [ 4611686018427387903, %103 ]
+  %114 = shl i64 %113, 2
+  %115 = load i64, i64* %40, align 8
+  %116 = icmp ugt i64 %114, %115
+  br i1 %116, label %119, label %117
+
+117:                                              ; preds = %112
+  %118 = load i32*, i32** %41, align 8
+  br label %124
+
+119:                                              ; preds = %112
+  %120 = load %"class.google_breakpad::PageAllocator"*, %"class.google_breakpad::PageAllocator"** %42, align 8
+  %121 = call i8* @_ZN15google_breakpad13PageAllocator5AllocEm(%"class.google_breakpad::PageAllocator"* %120, i64 %114) #9
+  %122 = bitcast i8* %121 to i32*
+  %123 = load i32, i32* %3, align 4
+  br label %124
+
+124:                                              ; preds = %119, %117, %107
+  %125 = phi i32 [ %84, %107 ], [ %84, %117 ], [ %123, %119 ]
+  %126 = phi i64 [ 0, %107 ], [ %113, %117 ], [ %113, %119 ]
+  %127 = phi i32* [ null, %107 ], [ %118, %117 ], [ %122, %119 ]
+  %128 = getelementptr inbounds i32, i32* %127, i64 %98
+  %129 = getelementptr inbounds i32, i32* %127, i64 %126
+  %130 = ptrtoint i32* %129 to i64
+  store i32 %125, i32* %128, align 4
+  %131 = getelementptr inbounds i32, i32* %128, i64 1
+  %132 = ptrtoint i32* %131 to i64
+  %133 = load i32*, i32** %43, align 8
+  %134 = ptrtoint i32* %133 to i64
+  %135 = load i32*, i32** %35, align 8
+  %136 = icmp eq i32* %135, %133
+  br i1 %136, label %289, label %137
+
+137:                                              ; preds = %124
+  %138 = getelementptr i32, i32* %135, i64 -1
+  %139 = ptrtoint i32* %138 to i64
+  %140 = sub i64 %139, %134
+  %141 = lshr i64 %140, 2
+  %142 = add nuw nsw i64 %141, 1
+  %143 = icmp ult i64 %142, 8
+  br i1 %143, label %237, label %144
+
+144:                                              ; preds = %137
+  %145 = getelementptr i32, i32* %127, i64 -1
+  %146 = getelementptr i32, i32* %135, i64 -1
+  %147 = ptrtoint i32* %146 to i64
+  %148 = sub i64 %147, %134
+  %149 = lshr i64 %148, 2
+  %150 = sub nsw i64 %98, %149
+  %151 = getelementptr i32, i32* %145, i64 %150
+  %152 = getelementptr i32, i32* %135, i64 -1
+  %153 = sub nsw i64 0, %149
+  %154 = getelementptr i32, i32* %152, i64 %153
+  %155 = icmp ult i32* %151, %135
+  %156 = icmp ult i32* %154, %128
+  %157 = and i1 %155, %156
+  br i1 %157, label %237, label %158
+
+158:                                              ; preds = %144
+  %159 = and i64 %142, 9223372036854775800
+  %160 = sub nsw i64 0, %159
+  %161 = getelementptr i32, i32* %128, i64 %160
+  %162 = sub nsw i64 0, %159
+  %163 = getelementptr i32, i32* %135, i64 %162
+  %164 = add nsw i64 %159, -8
+  %165 = lshr exact i64 %164, 3
+  %166 = add nuw nsw i64 %165, 1
+  %167 = and i64 %166, 1
+  %168 = icmp eq i64 %164, 0
+  br i1 %168, label %213, label %169
+
+169:                                              ; preds = %158
+  %170 = sub nuw nsw i64 %166, %167
+  %171 = getelementptr i32, i32* %128, i64 -1
+  %172 = getelementptr i32, i32* %135, i64 -1
+  %173 = getelementptr i32, i32* %128, i64 -1
+  %174 = getelementptr i32, i32* %135, i64 -1
+  br label %175
+
+175:                                              ; preds = %175, %169
+  %176 = phi i64 [ 0, %169 ], [ %210, %175 ]
+  %177 = phi i64 [ %170, %169 ], [ %211, %175 ]
+  %178 = sub i64 0, %176
+  %179 = sub i64 0, %176
+  %180 = getelementptr inbounds i32, i32* %171, i64 %178
+  %181 = getelementptr inbounds i32, i32* %172, i64 %179
+  %182 = getelementptr inbounds i32, i32* %181, i64 -3
+  %183 = bitcast i32* %182 to <4 x i32>*
+  %184 = load <4 x i32>, <4 x i32>* %183, align 4, !alias.scope !9
+  %185 = getelementptr inbounds i32, i32* %181, i64 -4
+  %186 = getelementptr inbounds i32, i32* %185, i64 -3
+  %187 = bitcast i32* %186 to <4 x i32>*
+  %188 = load <4 x i32>, <4 x i32>* %187, align 4, !alias.scope !9
+  %189 = getelementptr inbounds i32, i32* %180, i64 -3
+  %190 = bitcast i32* %189 to <4 x i32>*
+  store <4 x i32> %184, <4 x i32>* %190, align 4, !alias.scope !12, !noalias !9
+  %191 = getelementptr inbounds i32, i32* %180, i64 -4
+  %192 = getelementptr inbounds i32, i32* %191, i64 -3
+  %193 = bitcast i32* %192 to <4 x i32>*
+  store <4 x i32> %188, <4 x i32>* %193, align 4, !alias.scope !12, !noalias !9
+  %194 = sub nuw nsw i64 -8, %176
+  %195 = sub nuw nsw i64 -8, %176
+  %196 = getelementptr inbounds i32, i32* %173, i64 %194
+  %197 = getelementptr inbounds i32, i32* %174, i64 %195
+  %198 = getelementptr inbounds i32, i32* %197, i64 -3
+  %199 = bitcast i32* %198 to <4 x i32>*
+  %200 = load <4 x i32>, <4 x i32>* %199, align 4, !alias.scope !9
+  %201 = getelementptr inbounds i32, i32* %197, i64 -4
+  %202 = getelementptr inbounds i32, i32* %201, i64 -3
+  %203 = bitcast i32* %202 to <4 x i32>*
+  %204 = load <4 x i32>, <4 x i32>* %203, align 4, !alias.scope !9
+  %205 = getelementptr inbounds i32, i32* %196, i64 -3
+  %206 = bitcast i32* %205 to <4 x i32>*
+  store <4 x i32> %200, <4 x i32>* %206, align 4, !alias.scope !12, !noalias !9
+  %207 = getelementptr inbounds i32, i32* %196, i64 -4
+  %208 = getelementptr inbounds i32, i32* %207, i64 -3
+  %209 = bitcast i32* %208 to <4 x i32>*
+  store <4 x i32> %204, <4 x i32>* %209, align 4, !alias.scope !12, !noalias !9
+  %210 = add i64 %176, 16
+  %211 = add i64 %177, -2
+  %212 = icmp eq i64 %211, 0
+  br i1 %212, label %213, label %175, !llvm.loop !14
+
+213:                                              ; preds = %175, %158
+  %214 = phi i64 [ 0, %158 ], [ %210, %175 ]
+  %215 = icmp eq i64 %167, 0
+  br i1 %215, label %235, label %216
+
+216:                                              ; preds = %213
+  %217 = sub i64 0, %214
+  %218 = getelementptr i32, i32* %128, i64 -1
+  %219 = sub i64 0, %214
+  %220 = getelementptr i32, i32* %135, i64 -1
+  %221 = getelementptr inbounds i32, i32* %218, i64 %217
+  %222 = getelementptr inbounds i32, i32* %220, i64 %219
+  %223 = getelementptr inbounds i32, i32* %222, i64 -3
+  %224 = bitcast i32* %223 to <4 x i32>*
+  %225 = load <4 x i32>, <4 x i32>* %224, align 4, !alias.scope !9
+  %226 = getelementptr inbounds i32, i32* %222, i64 -4
+  %227 = getelementptr inbounds i32, i32* %226, i64 -3
+  %228 = bitcast i32* %227 to <4 x i32>*
+  %229 = load <4 x i32>, <4 x i32>* %228, align 4, !alias.scope !9
+  %230 = getelementptr inbounds i32, i32* %221, i64 -3
+  %231 = bitcast i32* %230 to <4 x i32>*
+  store <4 x i32> %225, <4 x i32>* %231, align 4, !alias.scope !12, !noalias !9
+  %232 = getelementptr inbounds i32, i32* %221, i64 -4
+  %233 = getelementptr inbounds i32, i32* %232, i64 -3
+  %234 = bitcast i32* %233 to <4 x i32>*
+  store <4 x i32> %229, <4 x i32>* %234, align 4, !alias.scope !12, !noalias !9
+  br label %235
+
+235:                                              ; preds = %213, %216
+  %236 = icmp eq i64 %142, %159
+  br i1 %236, label %289, label %237
+
+237:                                              ; preds = %235, %144, %137
+  %238 = phi i32* [ %128, %144 ], [ %128, %137 ], [ %161, %235 ]
+  %239 = phi i32* [ %135, %144 ], [ %135, %137 ], [ %163, %235 ]
+  %240 = getelementptr i32, i32* %239, i64 -1
+  %241 = ptrtoint i32* %240 to i64
+  %242 = sub i64 %241, %134
+  %243 = lshr i64 %242, 2
+  %244 = add nuw nsw i64 %243, 1
+  %245 = and i64 %244, 7
+  %246 = icmp eq i64 %245, 0
+  br i1 %246, label %256, label %247
+
+247:                                              ; preds = %237, %247
+  %248 = phi i32* [ %251, %247 ], [ %238, %237 ]
+  %249 = phi i32* [ %252, %247 ], [ %239, %237 ]
+  %250 = phi i64 [ %254, %247 ], [ %245, %237 ]
+  %251 = getelementptr inbounds i32, i32* %248, i64 -1
+  %252 = getelementptr inbounds i32, i32* %249, i64 -1
+  %253 = load i32, i32* %252, align 4
+  store i32 %253, i32* %251, align 4
+  %254 = add i64 %250, -1
+  %255 = icmp eq i64 %254, 0
+  br i1 %255, label %256, label %247, !llvm.loop !16
+
+256:                                              ; preds = %247, %237
+  %257 = phi i32* [ undef, %237 ], [ %251, %247 ]
+  %258 = phi i32* [ %238, %237 ], [ %251, %247 ]
+  %259 = phi i32* [ %239, %237 ], [ %252, %247 ]
+  %260 = icmp ult i64 %242, 28
+  br i1 %260, label %289, label %261
+
+261:                                              ; preds = %256, %261
+  %262 = phi i32* [ %285, %261 ], [ %258, %256 ]
+  %263 = phi i32* [ %286, %261 ], [ %259, %256 ]
+  %264 = getelementptr inbounds i32, i32* %262, i64 -1
+  %265 = getelementptr inbounds i32, i32* %263, i64 -1
+  %266 = load i32, i32* %265, align 4
+  store i32 %266, i32* %264, align 4
+  %267 = getelementptr inbounds i32, i32* %262, i64 -2
+  %268 = getelementptr inbounds i32, i32* %263, i64 -2
+  %269 = load i32, i32* %268, align 4
+  store i32 %269, i32* %267, align 4
+  %270 = getelementptr inbounds i32, i32* %262, i64 -3
+  %271 = getelementptr inbounds i32, i32* %263, i64 -3
+  %272 = load i32, i32* %271, align 4
+  store i32 %272, i32* %270, align 4
+  %273 = getelementptr inbounds i32, i32* %262, i64 -4
+  %274 = getelementptr inbounds i32, i32* %263, i64 -4
+  %275 = load i32, i32* %274, align 4
+  store i32 %275, i32* %273, align 4
+  %276 = getelementptr inbounds i32, i32* %262, i64 -5
+  %277 = getelementptr inbounds i32, i32* %263, i64 -5
+  %278 = load i32, i32* %277, align 4
+  store i32 %278, i32* %276, align 4
+  %279 = getelementptr inbounds i32, i32* %262, i64 -6
+  %280 = getelementptr inbounds i32, i32* %263, i64 -6
+  %281 = load i32, i32* %280, align 4
+  store i32 %281, i32* %279, align 4
+  %282 = getelementptr inbounds i32, i32* %262, i64 -7
+  %283 = getelementptr inbounds i32, i32* %263, i64 -7
+  %284 = load i32, i32* %283, align 4
+  store i32 %284, i32* %282, align 4
+  %285 = getelementptr inbounds i32, i32* %262, i64 -8
+  %286 = getelementptr inbounds i32, i32* %263, i64 -8
+  %287 = load i32, i32* %286, align 4
+  store i32 %287, i32* %285, align 4
+  %288 = icmp eq i32* %286, %133
+  br i1 %288, label %289, label %261, !llvm.loop !18
+
+289:                                              ; preds = %256, %261, %235, %124
+  %290 = phi i32* [ %128, %124 ], [ %161, %235 ], [ %257, %256 ], [ %285, %261 ]
+  %291 = ptrtoint i32* %290 to i64
+  store i64 %291, i64* %38, align 8
+  store i64 %132, i64* %37, align 8
+  store i64 %130, i64* %39, align 8
+  br label %292
+
+292:                                              ; preds = %289, %91, %83, %81
+  %293 = phi i32 [ %48, %83 ], [ %48, %81 ], [ %84, %91 ], [ %84, %289 ]
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %33) #9
+  br label %294
+
+294:                                              ; preds = %78, %75, %292
+  %295 = phi i32 [ %293, %292 ], [ %48, %78 ], [ %48, %75 ]
+  %296 = load i32, i32* %28, align 4
+  %297 = icmp eq i32 %296, 0
+  br i1 %297, label %298, label %300
+
+298:                                              ; preds = %294, %300
+  %299 = phi i32 [ 0, %294 ], [ %303, %300 ]
+  br label %46
+
+300:                                              ; preds = %294
+  %301 = load i16, i16* %45, align 8
+  %302 = zext i16 %301 to i32
+  %303 = sub i32 %296, %302
+  store i32 %303, i32* %28, align 4
+  %304 = zext i16 %301 to i64
+  %305 = getelementptr inbounds %"class.google_breakpad::DirectoryReader", %"class.google_breakpad::DirectoryReader"* %25, i64 0, i32 3, i64 %304
+  %306 = zext i32 %303 to i64
+  call void @llvm.memmove.p0i8.p0i8.i64(i8* align 4 %29, i8* align 1 %305, i64 %306, i1 false) #9
+  br label %298
+
+307:                                              ; preds = %72, %60, %56
+  %308 = shl i64 %14, 32
+  %309 = ashr exact i64 %308, 32
+  %310 = call i64 asm sideeffect "syscall\0A", "={ax},0,{di},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 3, i64 %309) #9, !srcloc !6
+  %311 = icmp ugt i64 %310, -4096
+  br i1 %311, label %312, label %316
+
+312:                                              ; preds = %307
+  %313 = trunc i64 %310 to i32
+  %314 = sub nsw i32 0, %313
+  %315 = tail call i32* @__errno_location() #10
+  store i32 %314, i32* %315, align 4
+  br label %316
+
+316:                                              ; preds = %312, %307, %17, %20, %1
+  %317 = phi i1 [ false, %1 ], [ false, %20 ], [ false, %17 ], [ true, %307 ], [ true, %312 ]
+  call void @llvm.lifetime.end.p0i8(i64 255, i8* nonnull %4) #9
+  ret i1 %317
+}
+
+declare i32 @my_strcmp(i8*, i8*) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN15google_breakpad11LinuxDumperD2Ev(%"class.google_breakpad::LinuxDumper"*) unnamed_addr #4
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN15google_breakpad17LinuxPtraceDumperD0Ev(%"class.google_breakpad::LinuxPtraceDumper"*) unnamed_addr #5 comdat align 2 {
+  %2 = getelementptr inbounds %"class.google_breakpad::LinuxPtraceDumper", %"class.google_breakpad::LinuxPtraceDumper"* %0, i64 0, i32 0
+  tail call void @_ZN15google_breakpad11LinuxDumperD2Ev(%"class.google_breakpad::LinuxDumper"* %2) #9
+  %3 = bitcast %"class.google_breakpad::LinuxPtraceDumper"* %0 to i8*
+  tail call void @_ZdlPv(i8* %3) #12
+  ret void
+}
+
+declare zeroext i1 @_ZN15google_breakpad11LinuxDumper4InitEv(%"class.google_breakpad::LinuxDumper"*) unnamed_addr #1
+
+declare zeroext i1 @_ZN15google_breakpad11LinuxDumper8LateInitEv(%"class.google_breakpad::LinuxDumper"*) unnamed_addr #1
+
+declare zeroext i1 @_ZN15google_breakpad11LinuxDumper17EnumerateMappingsEv(%"class.google_breakpad::LinuxDumper"*) unnamed_addr #1
+
+; Function Attrs: nounwind readnone
+declare i32* @__errno_location() local_unnamed_addr #6
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden i8* @_ZN15google_breakpad13PageAllocator5AllocEm(%"class.google_breakpad::PageAllocator"*, i64) local_unnamed_addr #0 comdat align 2 {
+  %3 = icmp eq i64 %1, 0
+  br i1 %3, label %62, label %4
+
+4:                                                ; preds = %2
+  %5 = getelementptr inbounds %"class.google_breakpad::PageAllocator", %"class.google_breakpad::PageAllocator"* %0, i64 0, i32 2
+  %6 = load i8*, i8** %5, align 8
+  %7 = icmp eq i8* %6, null
+  %8 = getelementptr inbounds %"class.google_breakpad::PageAllocator", %"class.google_breakpad::PageAllocator"* %0, i64 0, i32 0
+  %9 = load i64, i64* %8, align 8
+  br i1 %7, label %21, label %10
+
+10:                                               ; preds = %4
+  %11 = getelementptr inbounds %"class.google_breakpad::PageAllocator", %"class.google_breakpad::PageAllocator"* %0, i64 0, i32 3
+  %12 = load i64, i64* %11, align 8
+  %13 = sub i64 %9, %12
+  %14 = icmp ult i64 %13, %1
+  br i1 %14, label %21, label %15
+
+15:                                               ; preds = %10
+  %16 = getelementptr inbounds i8, i8* %6, i64 %12
+  %17 = add i64 %12, %1
+  store i64 %17, i64* %11, align 8
+  %18 = icmp eq i64 %17, %9
+  br i1 %18, label %19, label %62
+
+19:                                               ; preds = %15
+  %20 = bitcast i8** %5 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %20, i8 0, i64 16, i1 false)
+  br label %62
+
+21:                                               ; preds = %4, %10
+  %22 = add i64 %1, 16
+  %23 = getelementptr inbounds %"class.google_breakpad::PageAllocator", %"class.google_breakpad::PageAllocator"* %0, i64 0, i32 0
+  %24 = add i64 %1, 15
+  %25 = add i64 %24, %9
+  %26 = udiv i64 %25, %9
+  %27 = mul i64 %26, %9
+  %28 = tail call i64 asm sideeffect "movq $5,%r10;movq $6,%r8;movq $7,%r9;syscall\0A", "={ax},0,{di},{si},{dx},r,r,r,~{r10},~{r8},~{r9},~{r11},~{rcx},~{memory},~{dirflag},~{fpsr},~{flags}"(i64 9, i64 0, i64 %27, i64 3, i64 34, i64 -1, i64 0) #9, !srcloc !19
+  %29 = icmp ugt i64 %28, -4096
+  br i1 %29, label %30, label %34
+
+30:                                               ; preds = %21
+  %31 = trunc i64 %28 to i32
+  %32 = sub nsw i32 0, %31
+  %33 = tail call i32* @__errno_location() #10
+  store i32 %32, i32* %33, align 4
+  br label %62
+
+34:                                               ; preds = %21
+  %35 = inttoptr i64 %28 to i8*
+  %36 = icmp eq i8* %35, inttoptr (i64 -1 to i8*)
+  br i1 %36, label %62, label %37
+
+37:                                               ; preds = %34
+  %38 = getelementptr inbounds %"class.google_breakpad::PageAllocator", %"class.google_breakpad::PageAllocator"* %0, i64 0, i32 1
+  %39 = bitcast %"struct.google_breakpad::PageAllocator::PageHeader"** %38 to i64*
+  %40 = load i64, i64* %39, align 8
+  %41 = inttoptr i64 %28 to i64*
+  store i64 %40, i64* %41, align 8
+  %42 = getelementptr inbounds i8, i8* %35, i64 8
+  %43 = bitcast i8* %42 to i64*
+  store i64 %26, i64* %43, align 8
+  %44 = bitcast %"struct.google_breakpad::PageAllocator::PageHeader"** %38 to i8**
+  store i8* %35, i8** %44, align 8
+  %45 = getelementptr inbounds %"class.google_breakpad::PageAllocator", %"class.google_breakpad::PageAllocator"* %0, i64 0, i32 4
+  %46 = load i64, i64* %45, align 8
+  %47 = add i64 %46, %26
+  store i64 %47, i64* %45, align 8
+  %48 = icmp eq i64 %28, 0
+  br i1 %48, label %62, label %49
+
+49:                                               ; preds = %37
+  %50 = load i64, i64* %23, align 8
+  %51 = mul i64 %50, %26
+  %52 = add i64 %50, %22
+  %53 = sub i64 %52, %51
+  %54 = urem i64 %53, %50
+  %55 = getelementptr inbounds %"class.google_breakpad::PageAllocator", %"class.google_breakpad::PageAllocator"* %0, i64 0, i32 3
+  store i64 %54, i64* %55, align 8
+  %56 = icmp eq i64 %54, 0
+  %57 = add i64 %26, -1
+  %58 = mul i64 %50, %57
+  %59 = getelementptr inbounds i8, i8* %35, i64 %58
+  %60 = select i1 %56, i8* null, i8* %59
+  store i8* %60, i8** %5, align 8
+  %61 = getelementptr inbounds i8, i8* %35, i64 16
+  br label %62
+
+62:                                               ; preds = %30, %34, %49, %37, %15, %19, %2
+  %63 = phi i8* [ null, %2 ], [ %16, %19 ], [ %16, %15 ], [ %61, %49 ], [ null, %37 ], [ null, %34 ], [ null, %30 ]
+  ret i8* %63
+}
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #7
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZNSt3__16vectorIiN15google_breakpad16PageStdAllocatorIiEEE8__appendEm(%"class.std::__1::vector.1"*, i64) local_unnamed_addr #0 comdat align 2 {
+  %3 = getelementptr inbounds %"class.std::__1::vector.1", %"class.std::__1::vector.1"* %0, i64 0, i32 0, i32 2, i32 0, i32 0
+  %4 = bitcast i32** %3 to i64*
+  %5 = load i64, i64* %4, align 8
+  %6 = getelementptr inbounds %"class.std::__1::vector.1", %"class.std::__1::vector.1"* %0, i64 0, i32 0, i32 1
+  %7 = bitcast i32** %6 to i64*
+  %8 = load i64, i64* %7, align 8
+  %9 = sub i64 %5, %8
+  %10 = ashr exact i64 %9, 2
+  %11 = icmp ult i64 %10, %1
+  br i1 %11, label %29, label %12
+
+12:                                               ; preds = %2
+  %13 = inttoptr i64 %8 to i32*
+  %14 = icmp eq i64 %1, 0
+  br i1 %14, label %27, label %15
+
+15:                                               ; preds = %12
+  %16 = getelementptr inbounds i32, i32* %13, i64 %1
+  %17 = inttoptr i64 %8 to i8*
+  %18 = add i64 %1, -1
+  %19 = getelementptr i32, i32* %13, i64 %18
+  %20 = bitcast i32* %19 to i8*
+  %21 = sub i64 0, %8
+  %22 = getelementptr i8, i8* %20, i64 %21
+  %23 = ptrtoint i8* %22 to i64
+  %24 = add i64 %23, 4
+  %25 = and i64 %24, -4
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %17, i8 0, i64 %25, i1 false) #9
+  %26 = ptrtoint i32* %16 to i64
+  br label %27
+
+27:                                               ; preds = %12, %15
+  %28 = phi i64 [ %26, %15 ], [ %8, %12 ]
+  store i64 %28, i64* %7, align 8
+  ret void
+
+29:                                               ; preds = %2
+  %30 = bitcast %"class.std::__1::vector.1"* %0 to i64*
+  %31 = load i64, i64* %30, align 8
+  %32 = sub i64 %8, %31
+  %33 = ashr exact i64 %32, 2
+  %34 = add i64 %33, %1
+  %35 = icmp ugt i64 %34, 4611686018427387903
+  br i1 %35, label %36, label %38
+
+36:                                               ; preds = %29
+  %37 = bitcast %"class.std::__1::vector.1"* %0 to %"class.std::__1::__vector_base_common"*
+  tail call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"* %37) #11
+  unreachable
+
+38:                                               ; preds = %29
+  %39 = sub i64 %5, %31
+  %40 = ashr exact i64 %39, 2
+  %41 = icmp ult i64 %40, 2305843009213693951
+  br i1 %41, label %42, label %47
+
+42:                                               ; preds = %38
+  %43 = ashr exact i64 %39, 1
+  %44 = icmp ult i64 %43, %34
+  %45 = select i1 %44, i64 %34, i64 %43
+  %46 = icmp eq i64 %45, 0
+  br i1 %46, label %61, label %47
+
+47:                                               ; preds = %38, %42
+  %48 = phi i64 [ %45, %42 ], [ 4611686018427387903, %38 ]
+  %49 = shl i64 %48, 2
+  %50 = getelementptr inbounds %"class.std::__1::vector.1", %"class.std::__1::vector.1"* %0, i64 0, i32 0, i32 2, i32 1, i32 0, i32 2
+  %51 = load i64, i64* %50, align 8
+  %52 = icmp ugt i64 %49, %51
+  br i1 %52, label %56, label %53
+
+53:                                               ; preds = %47
+  %54 = getelementptr inbounds %"class.std::__1::vector.1", %"class.std::__1::vector.1"* %0, i64 0, i32 0, i32 2, i32 1, i32 0, i32 1
+  %55 = load i32*, i32** %54, align 8
+  br label %61
+
+56:                                               ; preds = %47
+  %57 = getelementptr inbounds %"class.std::__1::vector.1", %"class.std::__1::vector.1"* %0, i64 0, i32 0, i32 2, i32 1, i32 0, i32 0
+  %58 = load %"class.google_breakpad::PageAllocator"*, %"class.google_breakpad::PageAllocator"** %57, align 8
+  %59 = tail call i8* @_ZN15google_breakpad13PageAllocator5AllocEm(%"class.google_breakpad::PageAllocator"* %58, i64 %49) #9
+  %60 = bitcast i8* %59 to i32*
+  br label %61
+
+61:                                               ; preds = %56, %53, %42
+  %62 = phi i64 [ 0, %42 ], [ %48, %53 ], [ %48, %56 ]
+  %63 = phi i32* [ null, %42 ], [ %55, %53 ], [ %60, %56 ]
+  %64 = getelementptr inbounds i32, i32* %63, i64 %33
+  %65 = bitcast i32* %64 to i8*
+  %66 = getelementptr inbounds i32, i32* %63, i64 %62
+  %67 = getelementptr inbounds i32, i32* %64, i64 %1
+  %68 = shl i64 %1, 2
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %65, i8 0, i64 %68, i1 false) #9
+  %69 = ptrtoint i32* %66 to i64
+  %70 = ptrtoint i32* %67 to i64
+  %71 = getelementptr inbounds %"class.std::__1::vector.1", %"class.std::__1::vector.1"* %0, i64 0, i32 0, i32 0
+  %72 = load i32*, i32** %71, align 8
+  %73 = ptrtoint i32* %72 to i64
+  %74 = load i32*, i32** %6, align 8
+  %75 = icmp eq i32* %74, %72
+  br i1 %75, label %227, label %76
+
+76:                                               ; preds = %61
+  %77 = getelementptr i32, i32* %74, i64 -1
+  %78 = ptrtoint i32* %77 to i64
+  %79 = sub i64 %78, %73
+  %80 = lshr i64 %79, 2
+  %81 = add nuw nsw i64 %80, 1
+  %82 = icmp ult i64 %81, 8
+  br i1 %82, label %175, label %83
+
+83:                                               ; preds = %76
+  %84 = getelementptr i32, i32* %74, i64 -1
+  %85 = ptrtoint i32* %84 to i64
+  %86 = sub i64 %85, %73
+  %87 = lshr i64 %86, 2
+  %88 = xor i64 %87, -1
+  %89 = add nsw i64 %33, %88
+  %90 = getelementptr i32, i32* %63, i64 %89
+  %91 = xor i64 %87, -1
+  %92 = getelementptr i32, i32* %74, i64 %91
+  %93 = icmp ult i32* %90, %74
+  %94 = icmp ult i32* %92, %64
+  %95 = and i1 %93, %94
+  br i1 %95, label %175, label %96
+
+96:                                               ; preds = %83
+  %97 = and i64 %81, 9223372036854775800
+  %98 = sub nsw i64 0, %97
+  %99 = getelementptr i32, i32* %64, i64 %98
+  %100 = sub nsw i64 0, %97
+  %101 = getelementptr i32, i32* %74, i64 %100
+  %102 = add nsw i64 %97, -8
+  %103 = lshr exact i64 %102, 3
+  %104 = add nuw nsw i64 %103, 1
+  %105 = and i64 %104, 1
+  %106 = icmp eq i64 %102, 0
+  br i1 %106, label %153, label %107
+
+107:                                              ; preds = %96
+  %108 = sub nuw nsw i64 %104, %105
+  %109 = getelementptr i32, i32* %64, i64 -1
+  %110 = getelementptr i32, i32* %74, i64 -1
+  %111 = getelementptr i32, i32* %64, i64 -1
+  %112 = getelementptr i32, i32* %74, i64 -1
+  br label %113
+
+113:                                              ; preds = %113, %107
+  %114 = phi i64 [ 0, %107 ], [ %148, %113 ]
+  %115 = phi i64 [ %108, %107 ], [ %149, %113 ]
+  %116 = sub i64 0, %114
+  %117 = sub i64 0, %114
+  %118 = getelementptr inbounds i32, i32* %109, i64 %116
+  %119 = getelementptr inbounds i32, i32* %110, i64 %117
+  %120 = getelementptr inbounds i32, i32* %119, i64 -3
+  %121 = bitcast i32* %120 to <4 x i32>*
+  %122 = load <4 x i32>, <4 x i32>* %121, align 4, !alias.scope !20
+  %123 = getelementptr inbounds i32, i32* %119, i64 -4
+  %124 = getelementptr inbounds i32, i32* %123, i64 -3
+  %125 = bitcast i32* %124 to <4 x i32>*
+  %126 = load <4 x i32>, <4 x i32>* %125, align 4, !alias.scope !20
+  %127 = getelementptr inbounds i32, i32* %118, i64 -3
+  %128 = bitcast i32* %127 to <4 x i32>*
+  store <4 x i32> %122, <4 x i32>* %128, align 4, !alias.scope !23, !noalias !20
+  %129 = getelementptr inbounds i32, i32* %118, i64 -4
+  %130 = getelementptr inbounds i32, i32* %129, i64 -3
+  %131 = bitcast i32* %130 to <4 x i32>*
+  store <4 x i32> %126, <4 x i32>* %131, align 4, !alias.scope !23, !noalias !20
+  %132 = sub nuw nsw i64 -8, %114
+  %133 = sub nuw nsw i64 -8, %114
+  %134 = getelementptr inbounds i32, i32* %111, i64 %132
+  %135 = getelementptr inbounds i32, i32* %112, i64 %133
+  %136 = getelementptr inbounds i32, i32* %135, i64 -3
+  %137 = bitcast i32* %136 to <4 x i32>*
+  %138 = load <4 x i32>, <4 x i32>* %137, align 4, !alias.scope !20
+  %139 = getelementptr inbounds i32, i32* %135, i64 -4
+  %140 = getelementptr inbounds i32, i32* %139, i64 -3
+  %141 = bitcast i32* %140 to <4 x i32>*
+  %142 = load <4 x i32>, <4 x i32>* %141, align 4, !alias.scope !20
+  %143 = getelementptr inbounds i32, i32* %134, i64 -3
+  %144 = bitcast i32* %143 to <4 x i32>*
+  store <4 x i32> %138, <4 x i32>* %144, align 4, !alias.scope !23, !noalias !20
+  %145 = getelementptr inbounds i32, i32* %134, i64 -4
+  %146 = getelementptr inbounds i32, i32* %145, i64 -3
+  %147 = bitcast i32* %146 to <4 x i32>*
+  store <4 x i32> %142, <4 x i32>* %147, align 4, !alias.scope !23, !noalias !20
+  %148 = add i64 %114, 16
+  %149 = add i64 %115, -2
+  %150 = icmp eq i64 %149, 0
+  br i1 %150, label %151, label %113, !llvm.loop !25
+
+151:                                              ; preds = %113
+  %152 = sub nuw nsw i64 -16, %114
+  br label %153
+
+153:                                              ; preds = %151, %96
+  %154 = phi i64 [ 0, %96 ], [ %152, %151 ]
+  %155 = icmp eq i64 %105, 0
+  br i1 %155, label %173, label %156
+
+156:                                              ; preds = %153
+  %157 = getelementptr i32, i32* %64, i64 -1
+  %158 = getelementptr i32, i32* %74, i64 -1
+  %159 = getelementptr inbounds i32, i32* %157, i64 %154
+  %160 = getelementptr inbounds i32, i32* %158, i64 %154
+  %161 = getelementptr inbounds i32, i32* %160, i64 -3
+  %162 = bitcast i32* %161 to <4 x i32>*
+  %163 = load <4 x i32>, <4 x i32>* %162, align 4, !alias.scope !20
+  %164 = getelementptr inbounds i32, i32* %160, i64 -4
+  %165 = getelementptr inbounds i32, i32* %164, i64 -3
+  %166 = bitcast i32* %165 to <4 x i32>*
+  %167 = load <4 x i32>, <4 x i32>* %166, align 4, !alias.scope !20
+  %168 = getelementptr inbounds i32, i32* %159, i64 -3
+  %169 = bitcast i32* %168 to <4 x i32>*
+  store <4 x i32> %163, <4 x i32>* %169, align 4, !alias.scope !23, !noalias !20
+  %170 = getelementptr inbounds i32, i32* %159, i64 -4
+  %171 = getelementptr inbounds i32, i32* %170, i64 -3
+  %172 = bitcast i32* %171 to <4 x i32>*
+  store <4 x i32> %167, <4 x i32>* %172, align 4, !alias.scope !23, !noalias !20
+  br label %173
+
+173:                                              ; preds = %153, %156
+  %174 = icmp eq i64 %81, %97
+  br i1 %174, label %227, label %175
+
+175:                                              ; preds = %173, %83, %76
+  %176 = phi i32* [ %64, %83 ], [ %64, %76 ], [ %99, %173 ]
+  %177 = phi i32* [ %74, %83 ], [ %74, %76 ], [ %101, %173 ]
+  %178 = getelementptr i32, i32* %177, i64 -1
+  %179 = ptrtoint i32* %178 to i64
+  %180 = sub i64 %179, %73
+  %181 = lshr i64 %180, 2
+  %182 = add nuw nsw i64 %181, 1
+  %183 = and i64 %182, 7
+  %184 = icmp eq i64 %183, 0
+  br i1 %184, label %194, label %185
+
+185:                                              ; preds = %175, %185
+  %186 = phi i32* [ %189, %185 ], [ %176, %175 ]
+  %187 = phi i32* [ %190, %185 ], [ %177, %175 ]
+  %188 = phi i64 [ %192, %185 ], [ %183, %175 ]
+  %189 = getelementptr inbounds i32, i32* %186, i64 -1
+  %190 = getelementptr inbounds i32, i32* %187, i64 -1
+  %191 = load i32, i32* %190, align 4
+  store i32 %191, i32* %189, align 4
+  %192 = add i64 %188, -1
+  %193 = icmp eq i64 %192, 0
+  br i1 %193, label %194, label %185, !llvm.loop !26
+
+194:                                              ; preds = %185, %175
+  %195 = phi i32* [ undef, %175 ], [ %189, %185 ]
+  %196 = phi i32* [ %176, %175 ], [ %189, %185 ]
+  %197 = phi i32* [ %177, %175 ], [ %190, %185 ]
+  %198 = icmp ult i64 %180, 28
+  br i1 %198, label %227, label %199
+
+199:                                              ; preds = %194, %199
+  %200 = phi i32* [ %223, %199 ], [ %196, %194 ]
+  %201 = phi i32* [ %224, %199 ], [ %197, %194 ]
+  %202 = getelementptr inbounds i32, i32* %200, i64 -1
+  %203 = getelementptr inbounds i32, i32* %201, i64 -1
+  %204 = load i32, i32* %203, align 4
+  store i32 %204, i32* %202, align 4
+  %205 = getelementptr inbounds i32, i32* %200, i64 -2
+  %206 = getelementptr inbounds i32, i32* %201, i64 -2
+  %207 = load i32, i32* %206, align 4
+  store i32 %207, i32* %205, align 4
+  %208 = getelementptr inbounds i32, i32* %200, i64 -3
+  %209 = getelementptr inbounds i32, i32* %201, i64 -3
+  %210 = load i32, i32* %209, align 4
+  store i32 %210, i32* %208, align 4
+  %211 = getelementptr inbounds i32, i32* %200, i64 -4
+  %212 = getelementptr inbounds i32, i32* %201, i64 -4
+  %213 = load i32, i32* %212, align 4
+  store i32 %213, i32* %211, align 4
+  %214 = getelementptr inbounds i32, i32* %200, i64 -5
+  %215 = getelementptr inbounds i32, i32* %201, i64 -5
+  %216 = load i32, i32* %215, align 4
+  store i32 %216, i32* %214, align 4
+  %217 = getelementptr inbounds i32, i32* %200, i64 -6
+  %218 = getelementptr inbounds i32, i32* %201, i64 -6
+  %219 = load i32, i32* %218, align 4
+  store i32 %219, i32* %217, align 4
+  %220 = getelementptr inbounds i32, i32* %200, i64 -7
+  %221 = getelementptr inbounds i32, i32* %201, i64 -7
+  %222 = load i32, i32* %221, align 4
+  store i32 %222, i32* %220, align 4
+  %223 = getelementptr inbounds i32, i32* %200, i64 -8
+  %224 = getelementptr inbounds i32, i32* %201, i64 -8
+  %225 = load i32, i32* %224, align 4
+  store i32 %225, i32* %223, align 4
+  %226 = icmp eq i32* %224, %72
+  br i1 %226, label %227, label %199, !llvm.loop !27
+
+227:                                              ; preds = %194, %199, %173, %61
+  %228 = phi i32* [ %64, %61 ], [ %99, %173 ], [ %195, %194 ], [ %223, %199 ]
+  %229 = ptrtoint i32* %228 to i64
+  store i64 %229, i64* %30, align 8
+  store i64 %70, i64* %7, align 8
+  store i64 %69, i64* %4, align 8
+  ret void
+}
+
+; Function Attrs: noreturn
+declare void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"*) local_unnamed_addr #8
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { norecurse nounwind readnone ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { inlinehint nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nounwind readnone "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { noreturn "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #9 = { nounwind }
+attributes #10 = { nounwind readnone }
+attributes #11 = { noreturn nounwind }
+attributes #12 = { builtin nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{i32 -2143676340}
+!3 = !{i32 -2143686896}
+!4 = !{i8 0, i8 2}
+!5 = !{i32 -2143671409}
+!6 = !{i32 -2143778392}
+!7 = !{i32 -2143580823}
+!8 = !{i32 -2143750208}
+!9 = !{!10}
+!10 = distinct !{!10, !11}
+!11 = distinct !{!11, !"LVerDomain"}
+!12 = !{!13}
+!13 = distinct !{!13, !11}
+!14 = distinct !{!14, !15}
+!15 = !{!"llvm.loop.isvectorized", i32 1}
+!16 = distinct !{!16, !17}
+!17 = !{!"llvm.loop.unroll.disable"}
+!18 = distinct !{!18, !15}
+!19 = !{i32 -2143573559}
+!20 = !{!21}
+!21 = distinct !{!21, !22}
+!22 = distinct !{!22, !"LVerDomain"}
+!23 = !{!24}
+!24 = distinct !{!24, !22}
+!25 = distinct !{!25, !15}
+!26 = distinct !{!26, !17}
+!27 = distinct !{!27, !15}

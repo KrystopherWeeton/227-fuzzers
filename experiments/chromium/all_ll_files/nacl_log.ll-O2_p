@@ -1,0 +1,826 @@
+; ModuleID = '../../native_client/src/shared/platform/nacl_log.c'
+source_filename = "../../native_client/src/shared/platform/nacl_log.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver fmemopen, fmemopen@GLIBC_2.2.5"
+module asm ".symver glob, glob@GLIBC_2.2.5"
+module asm ".symver glob64, glob64@GLIBC_2.2.5"
+module asm ".symver quick_exit, quick_exit@GLIBC_2.10"
+module asm ".symver fmemopen, fmemopen@GLIBC_2.2.5"
+module asm ".symver glob, glob@GLIBC_2.2.5"
+module asm ".symver glob64, glob64@GLIBC_2.2.5"
+module asm ".symver quick_exit, quick_exit@GLIBC_2.10"
+
+%struct._IO_FILE = type { i32, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, %struct._IO_marker*, %struct._IO_FILE*, i32, i32, i64, i16, i8, [1 x i8], i8*, i64, %struct._IO_codecvt*, %struct._IO_wide_data*, %struct._IO_FILE*, i8*, i64, i32, [20 x i8] }
+%struct._IO_marker = type opaque
+%struct._IO_codecvt = type opaque
+%struct._IO_wide_data = type opaque
+%struct.NaClMutex = type { %union.pthread_mutex_t, i32 }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%struct.Gio = type { %struct.GioVtbl* }
+%struct.GioVtbl = type { {}*, i64 (%struct.Gio*, i8*, i64)*, i64 (%struct.Gio*, i8*, i64)*, i64 (%struct.Gio*, i64, i32)*, i32 (%struct.Gio*)*, i32 (%struct.Gio*)* }
+%struct.GioFile = type { %struct.Gio, %struct._IO_FILE* }
+%struct.__va_list_tag = type { i32, i32, i8*, i8* }
+
+@gNaClLogAbortBehavior = hidden local_unnamed_addr global void ()* @NaClAbort, align 8
+@.str = private unnamed_addr constant [14 x i8] c"NACLVERBOSITY\00", align 1
+@.str.1 = private unnamed_addr constant [8 x i8] c"NACLLOG\00", align 1
+@stderr = external local_unnamed_addr global %struct._IO_FILE*, align 8
+@g_initialized = internal unnamed_addr global i1 false, align 4
+@log_mu = internal global %struct.NaClMutex zeroinitializer, align 8
+@tag_output = internal unnamed_addr global i1 false, align 4
+@g_abort_count = internal unnamed_addr global i32 0, align 4
+@g_abort_behavior_active = internal unnamed_addr global i1 false, align 4
+@.str.2 = private unnamed_addr constant [22 x i8] c"LOG_FATAL abort exit\0A\00", align 1
+@verbosity = internal unnamed_addr global i32 2147483647, align 4
+@timestamp_enabled = internal unnamed_addr global i1 false, align 4
+@.str.3 = private unnamed_addr constant [13 x i8] c"POST-ABORT: \00", align 1
+@.str.4 = private unnamed_addr constant [15 x i8] c"NaClLogSetFile\00", align 1
+@.str.5 = private unnamed_addr constant [27 x i8] c"No memory for log buffers\0A\00", align 1
+@.str.6 = private unnamed_addr constant [54 x i8] c"NaClLog module internal error: GioFileRefCtor failed\0A\00", align 1
+@.str.7 = private unnamed_addr constant [27 x i8] c"Could not create log file\0A\00", align 1
+@.str.8 = private unnamed_addr constant [2 x i8] c"a\00", align 1
+@.str.9 = private unnamed_addr constant [29 x i8] c"Could not fdopen log stream\0A\00", align 1
+@log_stream = internal unnamed_addr global %struct.Gio* null, align 8
+@log_file_stream = internal global %struct.GioFile zeroinitializer, align 8
+@.str.10 = private unnamed_addr constant [12 x i8] c"[%d,%u:%s] \00", align 1
+
+declare void @NaClAbort() #0
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLogSetFile(i8* nocapture readonly) local_unnamed_addr #1 {
+  %2 = tail call fastcc %struct._IO_FILE* @NaClLogFileIoBufferFromFile(i8* %0)
+  %3 = tail call fastcc %struct.Gio* @NaClLogGioFromFileIoBuffer(%struct._IO_FILE* %2)
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @log_mu) #7
+  store i1 true, i1* @tag_output, align 4
+  %4 = load %struct.Gio*, %struct.Gio** @log_stream, align 8
+  %5 = icmp eq %struct.Gio* %4, null
+  br i1 %5, label %12, label %6
+
+6:                                                ; preds = %1
+  %7 = getelementptr inbounds %struct.Gio, %struct.Gio* %4, i64 0, i32 0
+  %8 = load %struct.GioVtbl*, %struct.GioVtbl** %7, align 8
+  %9 = getelementptr inbounds %struct.GioVtbl, %struct.GioVtbl* %8, i64 0, i32 4
+  %10 = load i32 (%struct.Gio*)*, i32 (%struct.Gio*)** %9, align 8
+  %11 = tail call i32 %10(%struct.Gio* nonnull %4) #7
+  br label %12
+
+12:                                               ; preds = %1, %6
+  store %struct.Gio* %3, %struct.Gio** @log_stream, align 8
+  tail call void @NaClLogUnlock() #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLogSetGio(%struct.Gio*) local_unnamed_addr #1 {
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @log_mu) #7
+  store i1 true, i1* @tag_output, align 4
+  %2 = load %struct.Gio*, %struct.Gio** @log_stream, align 8
+  %3 = icmp eq %struct.Gio* %2, null
+  br i1 %3, label %10, label %4
+
+4:                                                ; preds = %1
+  %5 = getelementptr inbounds %struct.Gio, %struct.Gio* %2, i64 0, i32 0
+  %6 = load %struct.GioVtbl*, %struct.GioVtbl** %5, align 8
+  %7 = getelementptr inbounds %struct.GioVtbl, %struct.GioVtbl* %6, i64 0, i32 4
+  %8 = load i32 (%struct.Gio*)*, i32 (%struct.Gio*)** %7, align 8
+  %9 = tail call i32 %8(%struct.Gio* nonnull %2) #7
+  br label %10
+
+10:                                               ; preds = %1, %4
+  store %struct.Gio* %0, %struct.Gio** @log_stream, align 8
+  tail call void @NaClLogUnlock()
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal fastcc %struct.Gio* @NaClLogGioFromFileIoBuffer(%struct._IO_FILE*) unnamed_addr #1 {
+  %2 = tail call noalias i8* @malloc(i64 16) #7
+  %3 = bitcast i8* %2 to %struct.GioFile*
+  %4 = icmp eq i8* %2, null
+  br i1 %4, label %5, label %8
+
+5:                                                ; preds = %1
+  tail call void @perror(i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.4, i64 0, i64 0)) #10
+  %6 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %7 = tail call i32 (%struct._IO_FILE*, i32, i8*, ...) @__fprintf_chk(%struct._IO_FILE* %6, i32 1, i8* getelementptr inbounds ([27 x i8], [27 x i8]* @.str.5, i64 0, i64 0)) #7
+  tail call void @NaClAbort() #7
+  br label %8
+
+8:                                                ; preds = %5, %1
+  %9 = tail call i32 @GioFileRefCtor(%struct.GioFile* %3, %struct._IO_FILE* %0) #7
+  %10 = icmp eq i32 %9, 0
+  br i1 %10, label %11, label %14
+
+11:                                               ; preds = %8
+  %12 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %13 = tail call i32 (%struct._IO_FILE*, i32, i8*, ...) @__fprintf_chk(%struct._IO_FILE* %12, i32 1, i8* getelementptr inbounds ([54 x i8], [54 x i8]* @.str.6, i64 0, i64 0)) #7
+  tail call void @NaClAbort() #7
+  br label %14
+
+14:                                               ; preds = %8, %11
+  %15 = bitcast i8* %2 to %struct.Gio*
+  ret %struct.Gio* %15
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal fastcc noalias %struct._IO_FILE* @NaClLogFileIoBufferFromFile(i8* nocapture readonly) unnamed_addr #1 {
+  %2 = tail call i32 (i8*, i32, ...) @open64(i8* %0, i32 1089, i32 511) #7
+  %3 = icmp eq i32 %2, -1
+  br i1 %3, label %4, label %7
+
+4:                                                ; preds = %1
+  tail call void @perror(i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.4, i64 0, i64 0)) #10
+  %5 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %6 = tail call i32 (%struct._IO_FILE*, i32, i8*, ...) @__fprintf_chk(%struct._IO_FILE* %5, i32 1, i8* getelementptr inbounds ([27 x i8], [27 x i8]* @.str.7, i64 0, i64 0)) #7
+  tail call void @NaClAbort() #7
+  br label %7
+
+7:                                                ; preds = %4, %1
+  %8 = tail call %struct._IO_FILE* @fdopen(i32 %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @.str.8, i64 0, i64 0)) #7
+  %9 = icmp eq %struct._IO_FILE* %8, null
+  br i1 %9, label %10, label %13
+
+10:                                               ; preds = %7
+  tail call void @perror(i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.4, i64 0, i64 0)) #10
+  %11 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %12 = tail call i32 (%struct._IO_FILE*, i32, i8*, ...) @__fprintf_chk(%struct._IO_FILE* %11, i32 1, i8* getelementptr inbounds ([29 x i8], [29 x i8]* @.str.9, i64 0, i64 0)) #7
+  tail call void @NaClAbort() #7
+  br label %13
+
+13:                                               ; preds = %10, %7
+  ret %struct._IO_FILE* %8
+}
+
+; Function Attrs: nofree nounwind ssp uwtable
+define hidden i32 @NaClLogDefaultLogVerbosity() local_unnamed_addr #2 {
+  %1 = tail call i8* @getenv(i8* getelementptr inbounds ([14 x i8], [14 x i8]* @.str, i64 0, i64 0)) #7
+  %2 = icmp eq i8* %1, null
+  br i1 %2, label %6, label %3
+
+3:                                                ; preds = %0
+  %4 = tail call i64 @strtol(i8* nocapture nonnull %1, i8** null, i32 0) #7
+  %5 = trunc i64 %4 to i32
+  br label %6
+
+6:                                                ; preds = %0, %3
+  %7 = phi i32 [ %5, %3 ], [ 0, %0 ]
+  ret i32 %7
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #3
+
+; Function Attrs: nofree nounwind readonly
+declare i8* @getenv(i8* nocapture) local_unnamed_addr #4
+
+; Function Attrs: nofree nounwind
+declare i64 @strtol(i8* readonly, i8** nocapture, i32) local_unnamed_addr #5
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden %struct.Gio* @NaClLogDefaultLogGio() local_unnamed_addr #1 {
+  %1 = tail call i8* @getenv(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str.1, i64 0, i64 0)) #7
+  %2 = icmp eq i8* %1, null
+  br i1 %2, label %3, label %15
+
+3:                                                ; preds = %0
+  %4 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %5 = tail call i32 @fileno(%struct._IO_FILE* %4) #7
+  %6 = tail call i32 @dup(i32 %5) #7
+  %7 = icmp eq i32 %6, -1
+  br i1 %7, label %12, label %8
+
+8:                                                ; preds = %3
+  %9 = tail call %struct._IO_FILE* @fdopen(i32 %6, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @.str.8, i64 0, i64 0)) #7
+  %10 = icmp eq %struct._IO_FILE* %9, null
+  %11 = select i1 %10, %struct._IO_FILE* %4, %struct._IO_FILE* %9
+  br label %12
+
+12:                                               ; preds = %3, %8
+  %13 = phi %struct._IO_FILE* [ %4, %3 ], [ %11, %8 ]
+  %14 = tail call i32 @setvbuf(%struct._IO_FILE* %13, i8* null, i32 0, i64 1024) #7
+  br label %17
+
+15:                                               ; preds = %0
+  %16 = tail call fastcc %struct._IO_FILE* @NaClLogFileIoBufferFromFile(i8* nonnull %1)
+  br label %17
+
+17:                                               ; preds = %15, %12
+  %18 = phi %struct._IO_FILE* [ %13, %12 ], [ %16, %15 ]
+  %19 = tail call fastcc %struct.Gio* @NaClLogGioFromFileIoBuffer(%struct._IO_FILE* %18)
+  ret %struct.Gio* %19
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLogModuleInitExtended(i32, %struct.Gio*) local_unnamed_addr #1 {
+  %3 = load i1, i1* @g_initialized, align 4
+  br i1 %3, label %5, label %4
+
+4:                                                ; preds = %2
+  tail call void @NaClXMutexCtor(%struct.NaClMutex* nonnull @log_mu) #7
+  store i1 true, i1* @g_initialized, align 4
+  br label %5
+
+5:                                                ; preds = %4, %2
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @log_mu) #7
+  store i1 true, i1* @tag_output, align 4
+  store i32 %0, i32* @verbosity, align 4
+  tail call void @NaClLogUnlock() #7
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @log_mu) #7
+  store i1 true, i1* @tag_output, align 4
+  %6 = load %struct.Gio*, %struct.Gio** @log_stream, align 8
+  %7 = icmp eq %struct.Gio* %6, null
+  br i1 %7, label %14, label %8
+
+8:                                                ; preds = %5
+  %9 = getelementptr inbounds %struct.Gio, %struct.Gio* %6, i64 0, i32 0
+  %10 = load %struct.GioVtbl*, %struct.GioVtbl** %9, align 8
+  %11 = getelementptr inbounds %struct.GioVtbl, %struct.GioVtbl* %10, i64 0, i32 4
+  %12 = load i32 (%struct.Gio*)*, i32 (%struct.Gio*)** %11, align 8
+  %13 = tail call i32 %12(%struct.Gio* nonnull %6) #7
+  br label %14
+
+14:                                               ; preds = %5, %8
+  store %struct.Gio* %1, %struct.Gio** @log_stream, align 8
+  tail call void @NaClLogUnlock() #7
+  ret void
+}
+
+declare void @NaClXMutexCtor(%struct.NaClMutex*) local_unnamed_addr #0
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLogSetVerbosity(i32) local_unnamed_addr #1 {
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @log_mu) #7
+  store i1 true, i1* @tag_output, align 4
+  store i32 %0, i32* @verbosity, align 4
+  tail call void @NaClLogUnlock()
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLogModuleInit() local_unnamed_addr #1 {
+  %1 = tail call i8* @getenv(i8* getelementptr inbounds ([14 x i8], [14 x i8]* @.str, i64 0, i64 0)) #7
+  %2 = icmp eq i8* %1, null
+  br i1 %2, label %6, label %3
+
+3:                                                ; preds = %0
+  %4 = tail call i64 @strtol(i8* nocapture nonnull %1, i8** null, i32 0) #7
+  %5 = trunc i64 %4 to i32
+  br label %6
+
+6:                                                ; preds = %0, %3
+  %7 = phi i32 [ %5, %3 ], [ 0, %0 ]
+  %8 = tail call %struct.Gio* @NaClLogDefaultLogGio()
+  %9 = load i1, i1* @g_initialized, align 4
+  br i1 %9, label %11, label %10
+
+10:                                               ; preds = %6
+  tail call void @NaClXMutexCtor(%struct.NaClMutex* nonnull @log_mu) #7
+  store i1 true, i1* @g_initialized, align 4
+  br label %11
+
+11:                                               ; preds = %10, %6
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @log_mu) #7
+  store i1 true, i1* @tag_output, align 4
+  store i32 %7, i32* @verbosity, align 4
+  tail call void @NaClLogUnlock() #7
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @log_mu) #7
+  store i1 true, i1* @tag_output, align 4
+  %12 = load %struct.Gio*, %struct.Gio** @log_stream, align 8
+  %13 = icmp eq %struct.Gio* %12, null
+  br i1 %13, label %20, label %14
+
+14:                                               ; preds = %11
+  %15 = getelementptr inbounds %struct.Gio, %struct.Gio* %12, i64 0, i32 0
+  %16 = load %struct.GioVtbl*, %struct.GioVtbl** %15, align 8
+  %17 = getelementptr inbounds %struct.GioVtbl, %struct.GioVtbl* %16, i64 0, i32 4
+  %18 = load i32 (%struct.Gio*)*, i32 (%struct.Gio*)** %17, align 8
+  %19 = tail call i32 %18(%struct.Gio* nonnull %12) #7
+  br label %20
+
+20:                                               ; preds = %11, %14
+  store %struct.Gio* %8, %struct.Gio** @log_stream, align 8
+  tail call void @NaClLogUnlock() #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLogModuleFini() local_unnamed_addr #1 {
+  tail call void @NaClMutexDtor(%struct.NaClMutex* nonnull @log_mu) #7
+  store i1 false, i1* @g_initialized, align 4
+  ret void
+}
+
+declare void @NaClMutexDtor(%struct.NaClMutex*) local_unnamed_addr #0
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable writeonly
+define hidden void @NaClLogTagNext_mu() local_unnamed_addr #6 {
+  store i1 true, i1* @tag_output, align 4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLogLock() local_unnamed_addr #1 {
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @log_mu) #7
+  store i1 true, i1* @tag_output, align 4
+  ret void
+}
+
+declare void @NaClXMutexLock(%struct.NaClMutex*) local_unnamed_addr #0
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLogUnlock() local_unnamed_addr #1 {
+  %1 = load i32, i32* @g_abort_count, align 4
+  switch i32 %1, label %7 [
+    i32 0, label %2
+    i32 1, label %3
+  ]
+
+2:                                                ; preds = %0
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* nonnull @log_mu) #7
+  br label %9
+
+3:                                                ; preds = %0
+  %4 = load i1, i1* @g_abort_behavior_active, align 4
+  br i1 %4, label %8, label %5
+
+5:                                                ; preds = %3
+  tail call void (i32, i8*, ...) @NaClLog_mu(i32 -3, i8* getelementptr inbounds ([22 x i8], [22 x i8]* @.str.2, i64 0, i64 0))
+  store i1 true, i1* @g_abort_behavior_active, align 4
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* nonnull @log_mu) #7
+  %6 = load void ()*, void ()** @gNaClLogAbortBehavior, align 8
+  tail call void %6() #7
+  tail call void @NaClAbort() #7
+  br label %9
+
+7:                                                ; preds = %0
+  tail call void @NaClAbort() #7
+  br label %9
+
+8:                                                ; preds = %3
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* nonnull @log_mu) #7
+  br label %9
+
+9:                                                ; preds = %8, %5, %7, %2
+  ret void
+}
+
+declare void @NaClXMutexUnlock(%struct.NaClMutex*) local_unnamed_addr #0
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLog_mu(i32, i8*, ...) local_unnamed_addr #1 {
+  %3 = alloca [1 x %struct.__va_list_tag], align 16
+  %4 = bitcast [1 x %struct.__va_list_tag]* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %4) #7
+  %5 = getelementptr inbounds [1 x %struct.__va_list_tag], [1 x %struct.__va_list_tag]* %3, i64 0, i64 0
+  %6 = bitcast [1 x %struct.__va_list_tag]* %3 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %6, i8 -86, i64 24, i1 false)
+  call void @llvm.va_start(i8* nonnull %4)
+  %7 = load i32, i32* @verbosity, align 4
+  %8 = icmp eq i32 %7, 2147483647
+  br i1 %8, label %9, label %17
+
+9:                                                ; preds = %2
+  %10 = call i8* @getenv(i8* getelementptr inbounds ([14 x i8], [14 x i8]* @.str, i64 0, i64 0)) #7
+  %11 = icmp eq i8* %10, null
+  br i1 %11, label %15, label %12
+
+12:                                               ; preds = %9
+  %13 = call i64 @strtol(i8* nocapture nonnull %10, i8** null, i32 0) #7
+  %14 = trunc i64 %13 to i32
+  br label %15
+
+15:                                               ; preds = %12, %9
+  %16 = phi i32 [ %14, %12 ], [ 0, %9 ]
+  store i32 %16, i32* @verbosity, align 4
+  br label %17
+
+17:                                               ; preds = %15, %2
+  %18 = phi i32 [ %16, %15 ], [ %7, %2 ]
+  %19 = icmp slt i32 %18, %0
+  br i1 %19, label %21, label %20
+
+20:                                               ; preds = %17
+  call void @NaClLogDoLogV_mu(i32 %0, i8* %1, %struct.__va_list_tag* nonnull %5) #7
+  br label %21
+
+21:                                               ; preds = %17, %20
+  call void @llvm.va_end(i8* nonnull %4)
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %4) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLogRunAbortBehavior() local_unnamed_addr #1 {
+  %1 = load void ()*, void ()** @gNaClLogAbortBehavior, align 8
+  tail call void %1() #7
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable writeonly
+define hidden void @NaClLogPreInitSetVerbosity(i32) local_unnamed_addr #6 {
+  store i32 %0, i32* @verbosity, align 4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLogIncrVerbosity() local_unnamed_addr #1 {
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @log_mu) #7
+  store i1 true, i1* @tag_output, align 4
+  %1 = load i32, i32* @verbosity, align 4
+  %2 = icmp eq i32 %1, 2147483647
+  br i1 %2, label %3, label %4
+
+3:                                                ; preds = %0
+  store i32 0, i32* @verbosity, align 4
+  br label %4
+
+4:                                                ; preds = %3, %0
+  %5 = phi i32 [ 0, %3 ], [ %1, %0 ]
+  %6 = add nsw i32 %5, 1
+  store i32 %6, i32* @verbosity, align 4
+  tail call void @NaClLogUnlock()
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClLogGetVerbosity() local_unnamed_addr #1 {
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @log_mu) #7
+  store i1 true, i1* @tag_output, align 4
+  %1 = load i32, i32* @verbosity, align 4
+  %2 = icmp eq i32 %1, 2147483647
+  br i1 %2, label %3, label %4
+
+3:                                                ; preds = %0
+  store i32 0, i32* @verbosity, align 4
+  br label %4
+
+4:                                                ; preds = %3, %0
+  %5 = phi i32 [ 0, %3 ], [ %1, %0 ]
+  tail call void @NaClLogUnlock()
+  ret i32 %5
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLogPreInitSetGio(%struct.Gio*) local_unnamed_addr #1 {
+  %2 = load %struct.Gio*, %struct.Gio** @log_stream, align 8
+  %3 = icmp eq %struct.Gio* %2, null
+  br i1 %3, label %10, label %4
+
+4:                                                ; preds = %1
+  %5 = getelementptr inbounds %struct.Gio, %struct.Gio* %2, i64 0, i32 0
+  %6 = load %struct.GioVtbl*, %struct.GioVtbl** %5, align 8
+  %7 = getelementptr inbounds %struct.GioVtbl, %struct.GioVtbl* %6, i64 0, i32 4
+  %8 = load i32 (%struct.Gio*)*, i32 (%struct.Gio*)** %7, align 8
+  %9 = tail call i32 %8(%struct.Gio* nonnull %2) #7
+  br label %10
+
+10:                                               ; preds = %1, %4
+  store %struct.Gio* %0, %struct.Gio** @log_stream, align 8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden %struct.Gio* @NaClLogGetGio() local_unnamed_addr #1 {
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @log_mu) #7
+  store i1 true, i1* @tag_output, align 4
+  %1 = load %struct.Gio*, %struct.Gio** @log_stream, align 8
+  %2 = icmp eq %struct.Gio* %1, null
+  br i1 %2, label %3, label %16
+
+3:                                                ; preds = %0
+  %4 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %5 = tail call i32 @fileno(%struct._IO_FILE* %4) #7
+  %6 = tail call i32 @dup(i32 %5) #7
+  %7 = icmp eq i32 %6, -1
+  br i1 %7, label %12, label %8
+
+8:                                                ; preds = %3
+  %9 = tail call %struct._IO_FILE* @fdopen(i32 %6, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @.str.8, i64 0, i64 0)) #7
+  %10 = icmp eq %struct._IO_FILE* %9, null
+  %11 = select i1 %10, %struct._IO_FILE* %4, %struct._IO_FILE* %9
+  br label %12
+
+12:                                               ; preds = %8, %3
+  %13 = phi %struct._IO_FILE* [ %4, %3 ], [ %11, %8 ]
+  %14 = tail call i32 @setvbuf(%struct._IO_FILE* %13, i8* null, i32 0, i64 1024) #7
+  %15 = tail call i32 @GioFileRefCtor(%struct.GioFile* nonnull @log_file_stream, %struct._IO_FILE* %13) #7
+  store %struct.Gio* getelementptr inbounds (%struct.GioFile, %struct.GioFile* @log_file_stream, i64 0, i32 0), %struct.Gio** @log_stream, align 8
+  br label %16
+
+16:                                               ; preds = %0, %12
+  %17 = phi %struct.Gio* [ getelementptr inbounds (%struct.GioFile, %struct.GioFile* @log_file_stream, i64 0, i32 0), %12 ], [ %1, %0 ]
+  tail call void @NaClLogUnlock()
+  ret %struct.Gio* %17
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable writeonly
+define hidden void @NaClLogEnableTimestamp() local_unnamed_addr #6 {
+  store i1 false, i1* @timestamp_enabled, align 4
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable writeonly
+define hidden void @NaClLogDisableTimestamp() local_unnamed_addr #6 {
+  store i1 true, i1* @timestamp_enabled, align 4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLogDoLogV_mu(i32, i8*, %struct.__va_list_tag*) local_unnamed_addr #1 {
+  %4 = alloca [128 x i8], align 16
+  %5 = load i32, i32* @g_abort_count, align 4
+  %6 = icmp eq i32 %5, 0
+  br i1 %6, label %7, label %42
+
+7:                                                ; preds = %3
+  %8 = load %struct.Gio*, %struct.Gio** @log_stream, align 8
+  %9 = icmp eq %struct.Gio* %8, null
+  br i1 %9, label %10, label %23
+
+10:                                               ; preds = %7
+  %11 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %12 = tail call i32 @fileno(%struct._IO_FILE* %11) #7
+  %13 = tail call i32 @dup(i32 %12) #7
+  %14 = icmp eq i32 %13, -1
+  br i1 %14, label %19, label %15
+
+15:                                               ; preds = %10
+  %16 = tail call %struct._IO_FILE* @fdopen(i32 %13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @.str.8, i64 0, i64 0)) #7
+  %17 = icmp eq %struct._IO_FILE* %16, null
+  %18 = select i1 %17, %struct._IO_FILE* %11, %struct._IO_FILE* %16
+  br label %19
+
+19:                                               ; preds = %15, %10
+  %20 = phi %struct._IO_FILE* [ %11, %10 ], [ %18, %15 ]
+  %21 = tail call i32 @setvbuf(%struct._IO_FILE* %20, i8* null, i32 0, i64 1024) #7
+  %22 = tail call i32 @GioFileRefCtor(%struct.GioFile* nonnull @log_file_stream, %struct._IO_FILE* %20) #7
+  store %struct.Gio* getelementptr inbounds (%struct.GioFile, %struct.GioFile* @log_file_stream, i64 0, i32 0), %struct.Gio** @log_stream, align 8
+  br label %23
+
+23:                                               ; preds = %7, %19
+  %24 = phi %struct.Gio* [ getelementptr inbounds (%struct.GioFile, %struct.GioFile* @log_file_stream, i64 0, i32 0), %19 ], [ %8, %7 ]
+  %25 = getelementptr inbounds [128 x i8], [128 x i8]* %4, i64 0, i64 0
+  call void @llvm.lifetime.start.p0i8(i64 128, i8* nonnull %25) #7
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %25, i8 -86, i64 128, i1 false) #7
+  %26 = load i1, i1* @timestamp_enabled, align 4
+  %27 = xor i1 %26, true
+  %28 = load i1, i1* @tag_output, align 4
+  %29 = and i1 %28, %27
+  br i1 %29, label %30, label %35
+
+30:                                               ; preds = %23
+  %31 = tail call i32 @getpid() #7
+  %32 = tail call i32 @NaClThreadId() #7
+  %33 = call i8* @NaClTimeStampString(i8* nonnull %25, i64 128) #7
+  %34 = call i64 (%struct.Gio*, i8*, ...) @gprintf(%struct.Gio* %24, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @.str.10, i64 0, i64 0), i32 %31, i32 %32, i8* %33) #7
+  store i1 false, i1* @tag_output, align 4
+  br label %35
+
+35:                                               ; preds = %23, %30
+  call void @llvm.lifetime.end.p0i8(i64 128, i8* nonnull %25) #7
+  %36 = call i64 @gvprintf(%struct.Gio* %24, i8* %1, %struct.__va_list_tag* %2) #7
+  %37 = getelementptr inbounds %struct.Gio, %struct.Gio* %24, i64 0, i32 0
+  %38 = load %struct.GioVtbl*, %struct.GioVtbl** %37, align 8
+  %39 = getelementptr inbounds %struct.GioVtbl, %struct.GioVtbl* %38, i64 0, i32 4
+  %40 = load i32 (%struct.Gio*)*, i32 (%struct.Gio*)** %39, align 8
+  %41 = call i32 %40(%struct.Gio* %24) #7
+  br label %49
+
+42:                                               ; preds = %3
+  %43 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %44 = tail call i32 (%struct._IO_FILE*, i32, i8*, ...) @__fprintf_chk(%struct._IO_FILE* %43, i32 1, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @.str.3, i64 0, i64 0)) #7
+  %45 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %46 = tail call i32 @__vfprintf_chk(%struct._IO_FILE* %45, i32 1, i8* %1, %struct.__va_list_tag* %2) #7
+  %47 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %48 = tail call i32 @fflush(%struct._IO_FILE* %47)
+  br label %49
+
+49:                                               ; preds = %42, %35
+  %50 = icmp eq i32 %0, -4
+  br i1 %50, label %51, label %54
+
+51:                                               ; preds = %49
+  %52 = load i32, i32* @g_abort_count, align 4
+  %53 = add nsw i32 %52, 1
+  store i32 %53, i32* @g_abort_count, align 4
+  br label %54
+
+54:                                               ; preds = %51, %49
+  ret void
+}
+
+declare i64 @gvprintf(%struct.Gio*, i8*, %struct.__va_list_tag*) local_unnamed_addr #0
+
+declare i32 @__fprintf_chk(%struct._IO_FILE*, i32, i8*, ...) local_unnamed_addr #0
+
+; Function Attrs: nofree nounwind
+declare i32 @fflush(%struct._IO_FILE* nocapture) local_unnamed_addr #5
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLogV_mu(i32, i8*, %struct.__va_list_tag*) local_unnamed_addr #1 {
+  %4 = load i32, i32* @verbosity, align 4
+  %5 = icmp eq i32 %4, 2147483647
+  br i1 %5, label %6, label %14
+
+6:                                                ; preds = %3
+  %7 = tail call i8* @getenv(i8* getelementptr inbounds ([14 x i8], [14 x i8]* @.str, i64 0, i64 0)) #7
+  %8 = icmp eq i8* %7, null
+  br i1 %8, label %12, label %9
+
+9:                                                ; preds = %6
+  %10 = tail call i64 @strtol(i8* nocapture nonnull %7, i8** null, i32 0) #7
+  %11 = trunc i64 %10 to i32
+  br label %12
+
+12:                                               ; preds = %6, %9
+  %13 = phi i32 [ %11, %9 ], [ 0, %6 ]
+  store i32 %13, i32* @verbosity, align 4
+  br label %14
+
+14:                                               ; preds = %12, %3
+  %15 = phi i32 [ %13, %12 ], [ %4, %3 ]
+  %16 = icmp slt i32 %15, %0
+  br i1 %16, label %18, label %17
+
+17:                                               ; preds = %14
+  tail call void @NaClLogDoLogV_mu(i32 %0, i8* %1, %struct.__va_list_tag* %2)
+  br label %18
+
+18:                                               ; preds = %14, %17
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLogV(i32, i8*, %struct.__va_list_tag*) local_unnamed_addr #1 {
+  %4 = load i32, i32* @verbosity, align 4
+  %5 = icmp slt i32 %4, %0
+  br i1 %5, label %22, label %6
+
+6:                                                ; preds = %3
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @log_mu) #7
+  store i1 true, i1* @tag_output, align 4
+  %7 = load i32, i32* @verbosity, align 4
+  %8 = icmp eq i32 %7, 2147483647
+  br i1 %8, label %9, label %17
+
+9:                                                ; preds = %6
+  %10 = tail call i8* @getenv(i8* getelementptr inbounds ([14 x i8], [14 x i8]* @.str, i64 0, i64 0)) #7
+  %11 = icmp eq i8* %10, null
+  br i1 %11, label %15, label %12
+
+12:                                               ; preds = %9
+  %13 = tail call i64 @strtol(i8* nocapture nonnull %10, i8** null, i32 0) #7
+  %14 = trunc i64 %13 to i32
+  br label %15
+
+15:                                               ; preds = %12, %9
+  %16 = phi i32 [ %14, %12 ], [ 0, %9 ]
+  store i32 %16, i32* @verbosity, align 4
+  br label %17
+
+17:                                               ; preds = %15, %6
+  %18 = phi i32 [ %16, %15 ], [ %7, %6 ]
+  %19 = icmp slt i32 %18, %0
+  br i1 %19, label %21, label %20
+
+20:                                               ; preds = %17
+  tail call void @NaClLogDoLogV_mu(i32 %0, i8* %1, %struct.__va_list_tag* %2) #7
+  br label %21
+
+21:                                               ; preds = %17, %20
+  tail call void @NaClLogUnlock()
+  br label %22
+
+22:                                               ; preds = %3, %21
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLog(i32, i8*, ...) local_unnamed_addr #1 {
+  %3 = alloca [1 x %struct.__va_list_tag], align 16
+  %4 = bitcast [1 x %struct.__va_list_tag]* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %4) #7
+  %5 = bitcast [1 x %struct.__va_list_tag]* %3 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %5, i8 -86, i64 24, i1 false)
+  %6 = load i32, i32* @verbosity, align 4
+  %7 = icmp slt i32 %6, %0
+  br i1 %7, label %25, label %8, !prof !2
+
+8:                                                ; preds = %2
+  %9 = getelementptr inbounds [1 x %struct.__va_list_tag], [1 x %struct.__va_list_tag]* %3, i64 0, i64 0
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @log_mu) #7
+  store i1 true, i1* @tag_output, align 4
+  call void @llvm.va_start(i8* nonnull %4)
+  %10 = load i32, i32* @verbosity, align 4
+  %11 = icmp eq i32 %10, 2147483647
+  br i1 %11, label %12, label %20
+
+12:                                               ; preds = %8
+  %13 = call i8* @getenv(i8* getelementptr inbounds ([14 x i8], [14 x i8]* @.str, i64 0, i64 0)) #7
+  %14 = icmp eq i8* %13, null
+  br i1 %14, label %18, label %15
+
+15:                                               ; preds = %12
+  %16 = call i64 @strtol(i8* nocapture nonnull %13, i8** null, i32 0) #7
+  %17 = trunc i64 %16 to i32
+  br label %18
+
+18:                                               ; preds = %15, %12
+  %19 = phi i32 [ %17, %15 ], [ 0, %12 ]
+  store i32 %19, i32* @verbosity, align 4
+  br label %20
+
+20:                                               ; preds = %18, %8
+  %21 = phi i32 [ %19, %18 ], [ %10, %8 ]
+  %22 = icmp slt i32 %21, %0
+  br i1 %22, label %24, label %23
+
+23:                                               ; preds = %20
+  call void @NaClLogDoLogV_mu(i32 %0, i8* %1, %struct.__va_list_tag* nonnull %9) #7
+  br label %24
+
+24:                                               ; preds = %20, %23
+  call void @llvm.va_end(i8* nonnull %4)
+  call void @NaClLogUnlock()
+  br label %25
+
+25:                                               ; preds = %2, %24
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %4) #7
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @llvm.va_start(i8*) #7
+
+; Function Attrs: nounwind
+declare void @llvm.va_end(i8*) #7
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClLogSetAbortBehavior(void ()*) local_unnamed_addr #1 {
+  tail call void @NaClXMutexLock(%struct.NaClMutex* nonnull @log_mu) #7
+  store void ()* %0, void ()** @gNaClLogAbortBehavior, align 8
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* nonnull @log_mu) #7
+  ret void
+}
+
+; Function Attrs: nofree nounwind
+declare noalias i8* @malloc(i64) local_unnamed_addr #5
+
+; Function Attrs: nofree nounwind
+declare void @perror(i8* nocapture readonly) local_unnamed_addr #5
+
+declare i32 @GioFileRefCtor(%struct.GioFile*, %struct._IO_FILE*) local_unnamed_addr #0
+
+; Function Attrs: nofree
+declare i32 @open64(i8* nocapture readonly, i32, ...) local_unnamed_addr #8
+
+; Function Attrs: nofree nounwind
+declare noalias %struct._IO_FILE* @fdopen(i32, i8* nocapture readonly) local_unnamed_addr #5
+
+; Function Attrs: nounwind
+declare i32 @dup(i32) local_unnamed_addr #9
+
+; Function Attrs: nofree nounwind
+declare i32 @fileno(%struct._IO_FILE* nocapture) local_unnamed_addr #5
+
+; Function Attrs: nofree nounwind
+declare i32 @setvbuf(%struct._IO_FILE* nocapture, i8*, i32, i64) local_unnamed_addr #5
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #3
+
+; Function Attrs: nounwind
+declare i32 @getpid() local_unnamed_addr #9
+
+declare i64 @gprintf(%struct.Gio*, i8*, ...) local_unnamed_addr #0
+
+declare i32 @NaClThreadId() local_unnamed_addr #0
+
+declare i8* @NaClTimeStampString(i8*, i64) local_unnamed_addr #0
+
+declare i32 @__vfprintf_chk(%struct._IO_FILE*, i32, i8*, %struct.__va_list_tag*) local_unnamed_addr #0
+
+attributes #0 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { nofree nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { argmemonly nounwind }
+attributes #4 = { nofree nounwind readonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nofree nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nofree norecurse nounwind ssp uwtable writeonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { nounwind }
+attributes #8 = { nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #9 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #10 = { cold }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{!"branch_weights", i32 2000, i32 1}

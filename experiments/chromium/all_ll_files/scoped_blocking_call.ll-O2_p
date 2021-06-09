@@ -1,0 +1,989 @@
+; ModuleID = '../../base/threading/scoped_blocking_call.cc'
+source_filename = "../../base/threading/scoped_blocking_call.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"struct.base::trace_event::TraceCategory" = type { i8, i32, i8* }
+%"struct.perfetto::Track" = type { i64, i64 }
+%"class.perfetto::internal::TrackRegistry" = type { %"class.std::__1::mutex", %"class.std::__1::map.74" }
+%"class.std::__1::mutex" = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%"class.std::__1::map.74" = type { %"class.std::__1::__tree.75" }
+%"class.std::__1::__tree.75" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.76", %"class.std::__1::__compressed_pair.80" }
+%"class.std::__1::__tree_end_node" = type { %"class.std::__1::__tree_node_base"* }
+%"class.std::__1::__tree_node_base" = type <{ %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_end_node"*, i8, [7 x i8] }>
+%"class.std::__1::__compressed_pair.76" = type { %"struct.std::__1::__compressed_pair_elem.7" }
+%"struct.std::__1::__compressed_pair_elem.7" = type { %"class.std::__1::__tree_end_node" }
+%"class.std::__1::__compressed_pair.80" = type { %"struct.std::__1::__compressed_pair_elem.10" }
+%"struct.std::__1::__compressed_pair_elem.10" = type { i64 }
+%"class.base::ScopedBlockingCall" = type { %"class.base::internal::UncheckedScopedBlockingCall" }
+%"class.base::internal::UncheckedScopedBlockingCall" = type { %"class.base::internal::BlockingObserver"*, %"class.base::internal::UncheckedScopedBlockingCall"*, i8, [7 x i8], %"class.base::debug::ScopedActivity", %"class.absl::optional" }
+%"class.base::internal::BlockingObserver" = type { i32 (...)** }
+%"class.base::debug::ScopedActivity" = type <{ %"class.base::debug::GlobalActivityTracker::ScopedThreadActivity", i32, [4 x i8] }>
+%"class.base::debug::GlobalActivityTracker::ScopedThreadActivity" = type { %"class.base::debug::ThreadActivityTracker::ScopedActivity.base", %"class.std::__1::unique_ptr" }
+%"class.base::debug::ThreadActivityTracker::ScopedActivity.base" = type <{ %"class.base::debug::ThreadActivityTracker"*, i32 }>
+%"class.base::debug::ThreadActivityTracker" = type <{ i32 (...)**, %"struct.base::debug::ThreadActivityTracker::Header"*, %"struct.base::debug::Activity"*, i32, i8, [3 x i8] }>
+%"struct.base::debug::ThreadActivityTracker::Header" = type opaque
+%"struct.base::debug::Activity" = type { i64, i64, i64, [10 x i64], i32, i32, i8, [7 x i8], %"union.base::debug::ActivityData" }
+%"union.base::debug::ActivityData" = type { %struct.anon.0 }
+%struct.anon.0 = type { i64 }
+%"class.std::__1::unique_ptr" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"class.base::debug::ActivityUserData"* }
+%"class.base::debug::ActivityUserData" = type { i32 (...)**, %"class.std::__1::map", i8*, i64, %"struct.base::debug::ActivityUserData::MemoryHeader"*, i32, i64, i64 }
+%"class.std::__1::map" = type { %"class.std::__1::__tree" }
+%"class.std::__1::__tree" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.6", %"class.std::__1::__compressed_pair.9" }
+%"class.std::__1::__compressed_pair.6" = type { %"struct.std::__1::__compressed_pair_elem.7" }
+%"class.std::__1::__compressed_pair.9" = type { %"struct.std::__1::__compressed_pair_elem.10" }
+%"struct.base::debug::ActivityUserData::MemoryHeader" = type { %"struct.base::debug::OwningProcess" }
+%"struct.base::debug::OwningProcess" = type { %"struct.std::__1::atomic", i32, i64, i64 }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.12" }
+%"struct.std::__1::__atomic_base.12" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"class.absl::optional" = type { %"class.absl::optional_internal::optional_data" }
+%"class.absl::optional_internal::optional_data" = type { %"class.absl::optional_internal::optional_data_base" }
+%"class.absl::optional_internal::optional_data_base" = type { %"class.absl::optional_internal::optional_data_dtor_base" }
+%"class.absl::optional_internal::optional_data_dtor_base" = type { i8, %union.anon }
+%union.anon = type { %"class.base::internal::IOJankMonitoringWindow::ScopedMonitoredCall" }
+%"class.base::internal::IOJankMonitoringWindow::ScopedMonitoredCall" = type { %"class.base::TimeTicks", %class.scoped_refptr }
+%"class.base::TimeTicks" = type { %"class.base::time_internal::TimeBase" }
+%"class.base::time_internal::TimeBase" = type { i64 }
+%class.scoped_refptr = type { %"class.base::internal::IOJankMonitoringWindow"* }
+%"class.base::internal::IOJankMonitoringWindow" = type <{ %"class.base::RefCountedThreadSafe", [4 x i8], %"class.base::Lock", [60 x i64], %"class.base::TimeTicks", %class.scoped_refptr, i8, [7 x i8] }>
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic.14" }
+%"struct.std::__1::atomic.14" = type { %"struct.std::__1::__atomic_base.15" }
+%"struct.std::__1::__atomic_base.15" = type { %"struct.std::__1::__atomic_base.16" }
+%"struct.std::__1::__atomic_base.16" = type { %"struct.std::__1::__cxx_atomic_impl.17" }
+%"struct.std::__1::__cxx_atomic_impl.17" = type { %"struct.std::__1::__cxx_atomic_base_impl.18" }
+%"struct.std::__1::__cxx_atomic_base_impl.18" = type { i32 }
+%"class.base::Lock" = type { %"class.base::internal::LockImpl" }
+%"class.base::internal::LockImpl" = type { %union.pthread_mutex_t }
+%"class.base::Location" = type { i8*, i8*, i32, i8* }
+%"class.base::internal::ScopedBlockingCallWithBaseSyncPrimitives" = type { %"class.base::internal::UncheckedScopedBlockingCall" }
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.67" }
+%"class.std::__1::__compressed_pair.67" = type { %"struct.std::__1::__compressed_pair_elem.68" }
+%"struct.std::__1::__compressed_pair_elem.68" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon.69 }
+%union.anon.69 = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.perfetto::EventContext" = type { %"class.protozero::MessageHandle", %"class.perfetto::protos::pbzero::TrackEvent"*, %"struct.perfetto::internal::TrackEventIncrementalState"* }
+%"class.protozero::MessageHandle" = type { %"class.protozero::MessageHandleBase" }
+%"class.protozero::MessageHandleBase" = type { %"class.protozero::Message"* }
+%"class.protozero::Message" = type <{ %"class.protozero::ScatteredStreamWriter"*, %"class.protozero::MessageArena"*, %"class.protozero::Message"*, i8*, i32, i32, i8, [7 x i8] }>
+%"class.protozero::ScatteredStreamWriter" = type { %"class.protozero::ScatteredStreamWriter::Delegate"*, %"struct.protozero::ContiguousMemoryRange", i8*, i64 }
+%"class.protozero::ScatteredStreamWriter::Delegate" = type { i32 (...)** }
+%"struct.protozero::ContiguousMemoryRange" = type { i8*, i8* }
+%"class.protozero::MessageArena" = type { %"class.std::__1::list" }
+%"class.std::__1::list" = type { %"class.std::__1::__list_imp" }
+%"class.std::__1::__list_imp" = type { %"struct.std::__1::__list_node_base", %"class.std::__1::__compressed_pair.20" }
+%"struct.std::__1::__list_node_base" = type { %"struct.std::__1::__list_node_base"*, %"struct.std::__1::__list_node_base"* }
+%"class.std::__1::__compressed_pair.20" = type { %"struct.std::__1::__compressed_pair_elem.10" }
+%"class.perfetto::protos::pbzero::TrackEvent" = type { %"class.protozero::Message.base", [7 x i8] }
+%"class.protozero::Message.base" = type <{ %"class.protozero::ScatteredStreamWriter"*, %"class.protozero::MessageArena"*, %"class.protozero::Message"*, i8*, i32, i32, i8 }>
+%"struct.perfetto::internal::TrackEventIncrementalState" = type { i8, %"class.protozero::HeapBuffered", %"struct.std::__1::array", %"class.perfetto::base::FlatSet", %"class.std::__1::unordered_map" }
+%"class.protozero::HeapBuffered" = type { %"class.protozero::ScatteredHeapBuffer", %"class.protozero::ScatteredStreamWriter", %"class.protozero::RootMessage" }
+%"class.protozero::ScatteredHeapBuffer" = type { %"class.protozero::ScatteredStreamWriter::Delegate", i64, i64, %"class.protozero::ScatteredStreamWriter"*, %"class.std::__1::vector", %"class.protozero::ScatteredHeapBuffer::Slice" }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"class.protozero::ScatteredHeapBuffer::Slice"*, %"class.protozero::ScatteredHeapBuffer::Slice"*, %"class.std::__1::__compressed_pair.30" }
+%"class.std::__1::__compressed_pair.30" = type { %"struct.std::__1::__compressed_pair_elem.31" }
+%"struct.std::__1::__compressed_pair_elem.31" = type { %"class.protozero::ScatteredHeapBuffer::Slice"* }
+%"class.protozero::ScatteredHeapBuffer::Slice" = type { %"class.std::__1::unique_ptr.24", i64, i64 }
+%"class.std::__1::unique_ptr.24" = type { %"class.std::__1::__compressed_pair.25" }
+%"class.std::__1::__compressed_pair.25" = type { %"struct.std::__1::__compressed_pair_elem.26" }
+%"struct.std::__1::__compressed_pair_elem.26" = type { i8* }
+%"class.protozero::RootMessage" = type { %"class.perfetto::protos::pbzero::InternedData.base", %"class.protozero::MessageArena" }
+%"class.perfetto::protos::pbzero::InternedData.base" = type { %"class.protozero::Message.base" }
+%"struct.std::__1::array" = type { [32 x %"struct.std::__1::pair"] }
+%"struct.std::__1::pair" = type { i64, %"class.std::__1::unique_ptr.35" }
+%"class.std::__1::unique_ptr.35" = type { %"class.std::__1::__compressed_pair.36" }
+%"class.std::__1::__compressed_pair.36" = type { %"struct.std::__1::__compressed_pair_elem.37" }
+%"struct.std::__1::__compressed_pair_elem.37" = type { %"class.perfetto::internal::BaseTrackEventInternedDataIndex"* }
+%"class.perfetto::internal::BaseTrackEventInternedDataIndex" = type { i32 (...)** }
+%"class.perfetto::base::FlatSet" = type { %"class.std::__1::vector.41" }
+%"class.std::__1::vector.41" = type { %"class.std::__1::__vector_base.42" }
+%"class.std::__1::__vector_base.42" = type { i64*, i64*, %"class.std::__1::__compressed_pair.43" }
+%"class.std::__1::__compressed_pair.43" = type { %"struct.std::__1::__compressed_pair_elem.44" }
+%"struct.std::__1::__compressed_pair_elem.44" = type { i64* }
+%"class.std::__1::unordered_map" = type { %"class.std::__1::__hash_table" }
+%"class.std::__1::__hash_table" = type <{ %"class.std::__1::unique_ptr.48", %"class.std::__1::__compressed_pair.56", %"class.std::__1::__compressed_pair.61", %"class.std::__1::__compressed_pair.63", [4 x i8] }>
+%"class.std::__1::unique_ptr.48" = type { %"class.std::__1::__compressed_pair.49" }
+%"class.std::__1::__compressed_pair.49" = type { %"struct.std::__1::__compressed_pair_elem.50", %"struct.std::__1::__compressed_pair_elem.51" }
+%"struct.std::__1::__compressed_pair_elem.50" = type { %"struct.std::__1::__hash_node_base"** }
+%"struct.std::__1::__hash_node_base" = type { %"struct.std::__1::__hash_node_base"* }
+%"struct.std::__1::__compressed_pair_elem.51" = type { %"class.std::__1::__bucket_list_deallocator" }
+%"class.std::__1::__bucket_list_deallocator" = type { %"class.std::__1::__compressed_pair.52" }
+%"class.std::__1::__compressed_pair.52" = type { %"struct.std::__1::__compressed_pair_elem.10" }
+%"class.std::__1::__compressed_pair.56" = type { %"struct.std::__1::__compressed_pair_elem.57" }
+%"struct.std::__1::__compressed_pair_elem.57" = type { %"struct.std::__1::__hash_node_base" }
+%"class.std::__1::__compressed_pair.61" = type { %"struct.std::__1::__compressed_pair_elem.10" }
+%"class.std::__1::__compressed_pair.63" = type { %"struct.std::__1::__compressed_pair_elem.64" }
+%"struct.std::__1::__compressed_pair_elem.64" = type { float }
+%"class.base::trace_event::TrackEventHandle" = type { %"class.perfetto::protos::pbzero::TrackEvent"*, %"struct.perfetto::internal::TrackEventIncrementalState"*, %"class.base::trace_event::TrackEventHandle::CompletionListener"* }
+%"class.base::trace_event::TrackEventHandle::CompletionListener" = type { i32 (...)** }
+%"class.std::__1::__basic_string_common" = type { i8 }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short" = type { [23 x i8], %struct.anon.70 }
+%struct.anon.70 = type { i8 }
+%"class.base::trace_event::TracePacketHandle" = type { %"class.protozero::MessageHandle", %"class.base::trace_event::TracePacketHandle::CompletionListener"* }
+%"class.base::trace_event::TracePacketHandle::CompletionListener" = type { i32 (...)** }
+%"class.std::__1::__tree_node" = type { %"class.std::__1::__tree_node_base.base", %"struct.std::__1::__value_type" }
+%"class.std::__1::__tree_node_base.base" = type <{ %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_node_base"*, %"class.std::__1::__tree_end_node"*, i8 }>
+%"struct.std::__1::__value_type" = type { %"struct.std::__1::pair.85" }
+%"struct.std::__1::pair.85" = type { i64, %"class.std::__1::basic_string" }
+%"class.perfetto::protos::pbzero::TrackDescriptor" = type { %"class.protozero::Message.base", [7 x i8] }
+
+$_ZN8perfetto8internal13TrackRegistry14SerializeTrackINS_5TrackEEEvRKT_N9protozero13MessageHandleINS_6protos6pbzero11TracePacketEEE = comdat any
+
+$_ZN20trace_event_internal22AddTypedTraceEventImplIJEEEvcPKhN8perfetto12StaticStringERKNS3_5TrackEN4base9TimeTicksEDpOT_ = comdat any
+
+@_ZN4base11trace_event16CategoryRegistry11categories_E = external global [300 x %"struct.base::trace_event::TraceCategory"], align 16
+@.str = private unnamed_addr constant [19 x i8] c"ScopedBlockingCall\00", align 1
+@_ZN20trace_event_internalL18kTraceEventEndNameE = internal constant [1 x i8] zeroinitializer, align 1
+@.str.1 = private unnamed_addr constant [41 x i8] c"ScopedBlockingCallWithBaseSyncPrimitives\00", align 1
+@_ZN20trace_event_internal13kDefaultTrackE = external global %"struct.perfetto::Track", align 8
+@_ZN8perfetto8internal13TrackRegistry9instance_E = external local_unnamed_addr global %"class.perfetto::internal::TrackRegistry"*, align 8
+
+@_ZN4base18ScopedBlockingCallC1ERKNS_8LocationENS_12BlockingTypeE = hidden unnamed_addr alias void (%"class.base::ScopedBlockingCall"*, %"class.base::Location"*, i32), void (%"class.base::ScopedBlockingCall"*, %"class.base::Location"*, i32)* @_ZN4base18ScopedBlockingCallC2ERKNS_8LocationENS_12BlockingTypeE
+@_ZN4base18ScopedBlockingCallD1Ev = hidden unnamed_addr alias void (%"class.base::ScopedBlockingCall"*), void (%"class.base::ScopedBlockingCall"*)* @_ZN4base18ScopedBlockingCallD2Ev
+@_ZN4base8internal40ScopedBlockingCallWithBaseSyncPrimitivesC1ERKNS_8LocationENS_12BlockingTypeE = hidden unnamed_addr alias void (%"class.base::internal::ScopedBlockingCallWithBaseSyncPrimitives"*, %"class.base::Location"*, i32), void (%"class.base::internal::ScopedBlockingCallWithBaseSyncPrimitives"*, %"class.base::Location"*, i32)* @_ZN4base8internal40ScopedBlockingCallWithBaseSyncPrimitivesC2ERKNS_8LocationENS_12BlockingTypeE
+@_ZN4base8internal40ScopedBlockingCallWithBaseSyncPrimitivesD1Ev = hidden unnamed_addr alias void (%"class.base::internal::ScopedBlockingCallWithBaseSyncPrimitives"*), void (%"class.base::internal::ScopedBlockingCallWithBaseSyncPrimitives"*)* @_ZN4base8internal40ScopedBlockingCallWithBaseSyncPrimitivesD2Ev
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base18ScopedBlockingCallC2ERKNS_8LocationENS_12BlockingTypeE(%"class.base::ScopedBlockingCall"*, %"class.base::Location"* dereferenceable(32), i32) unnamed_addr #0 align 2 {
+  %4 = alloca %"class.std::__1::basic_string", align 8
+  %5 = alloca %"class.std::__1::basic_string", align 8
+  %6 = alloca %"class.perfetto::EventContext", align 8
+  %7 = alloca %"class.base::trace_event::TrackEventHandle", align 8
+  %8 = alloca %"class.perfetto::EventContext", align 8
+  %9 = getelementptr inbounds %"class.base::ScopedBlockingCall", %"class.base::ScopedBlockingCall"* %0, i64 0, i32 0
+  tail call void @_ZN4base8internal27UncheckedScopedBlockingCallC2ERKNS_8LocationENS_12BlockingTypeENS1_16BlockingCallTypeE(%"class.base::internal::UncheckedScopedBlockingCall"* %9, %"class.base::Location"* dereferenceable(32) %1, i32 %2, i32 0) #9
+  %10 = load i8, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 8, i32 0), align 16
+  %11 = and i8 %10, 25
+  %12 = icmp eq i8 %11, 0
+  br i1 %12, label %127, label %13, !prof !2
+
+13:                                               ; preds = %3
+  %14 = bitcast %"class.perfetto::EventContext"* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %14) #9
+  %15 = bitcast %"class.base::trace_event::TrackEventHandle"* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %15) #9
+  %16 = getelementptr inbounds %"class.base::trace_event::TrackEventHandle", %"class.base::trace_event::TrackEventHandle"* %7, i64 0, i32 0
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %15, i8 -86, i64 24, i1 false) #9
+  %17 = load i64, i64* getelementptr inbounds (%"struct.perfetto::Track", %"struct.perfetto::Track"* @_ZN20trace_event_internal13kDefaultTrackE, i64 0, i32 0), align 8
+  call void @_ZN20trace_event_internal16CreateTrackEventEcPKhN8perfetto12StaticStringEN4base9TimeTicksEmb(%"class.base::trace_event::TrackEventHandle"* nonnull sret %7, i8 signext 66, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 8, i32 0), i8* getelementptr inbounds ([19 x i8], [19 x i8]* @.str, i64 0, i64 0), i64 0, i64 %17, i1 zeroext false) #9
+  %18 = load %"class.perfetto::protos::pbzero::TrackEvent"*, %"class.perfetto::protos::pbzero::TrackEvent"** %16, align 8
+  %19 = icmp eq %"class.perfetto::protos::pbzero::TrackEvent"* %18, null
+  br i1 %19, label %126, label %20
+
+20:                                               ; preds = %13
+  %21 = getelementptr inbounds %"class.base::trace_event::TrackEventHandle", %"class.base::trace_event::TrackEventHandle"* %7, i64 0, i32 1
+  %22 = bitcast %"struct.perfetto::internal::TrackEventIncrementalState"** %21 to i64*
+  %23 = load i64, i64* %22, align 8
+  %24 = getelementptr inbounds %"class.perfetto::EventContext", %"class.perfetto::EventContext"* %8, i64 0, i32 0, i32 0
+  call void @_ZN9protozero17MessageHandleBaseC2EPNS_7MessageE(%"class.protozero::MessageHandleBase"* nonnull %24, %"class.protozero::Message"* null) #9
+  %25 = getelementptr inbounds %"class.perfetto::EventContext", %"class.perfetto::EventContext"* %8, i64 0, i32 1
+  store %"class.perfetto::protos::pbzero::TrackEvent"* %18, %"class.perfetto::protos::pbzero::TrackEvent"** %25, align 8
+  %26 = getelementptr inbounds %"class.perfetto::EventContext", %"class.perfetto::EventContext"* %8, i64 0, i32 2
+  %27 = bitcast %"struct.perfetto::internal::TrackEventIncrementalState"** %26 to i64*
+  store i64 %23, i64* %27, align 8
+  %28 = bitcast %"class.perfetto::EventContext"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %28) #9
+  %29 = getelementptr inbounds %"class.perfetto::EventContext", %"class.perfetto::EventContext"* %6, i64 0, i32 0, i32 0
+  call void @_ZN9protozero17MessageHandleBaseC2EOS0_(%"class.protozero::MessageHandleBase"* nonnull %29, %"class.protozero::MessageHandleBase"* nonnull dereferenceable(8) %24) #9
+  %30 = getelementptr inbounds %"class.perfetto::EventContext", %"class.perfetto::EventContext"* %6, i64 0, i32 1
+  %31 = bitcast %"class.perfetto::protos::pbzero::TrackEvent"** %30 to i8*
+  %32 = bitcast %"class.perfetto::protos::pbzero::TrackEvent"** %25 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %31, i8* align 8 %32, i64 16, i1 false) #9
+  %33 = bitcast %"class.std::__1::basic_string"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %33) #9
+  %34 = bitcast %"class.std::__1::basic_string"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %34) #9
+  %35 = bitcast %"class.perfetto::protos::pbzero::TrackEvent"** %30 to %"class.protozero::Message"**
+  %36 = load %"class.protozero::Message"*, %"class.protozero::Message"** %35, align 8
+  %37 = call %"class.protozero::Message"* @_ZN9protozero7Message26BeginNestedMessageInternalEj(%"class.protozero::Message"* %36, i32 33) #9
+  %38 = getelementptr inbounds %"class.base::Location", %"class.base::Location"* %1, i64 0, i32 1
+  %39 = load i8*, i8** %38, align 8
+  %40 = call i64 @strlen(i8* %39) #9
+  %41 = icmp ugt i64 %40, -17
+  br i1 %41, label %42, label %44
+
+42:                                               ; preds = %20
+  %43 = bitcast %"class.std::__1::basic_string"* %4 to %"class.std::__1::__basic_string_common"*
+  call void @_ZNKSt3__121__basic_string_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__basic_string_common"* nonnull %43) #10
+  unreachable
+
+44:                                               ; preds = %20
+  %45 = icmp ult i64 %40, 23
+  br i1 %45, label %55, label %46
+
+46:                                               ; preds = %44
+  %47 = add nuw i64 %40, 16
+  %48 = and i64 %47, -16
+  %49 = call i8* @_Znwm(i64 %48) #11
+  %50 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %4, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  store i8* %49, i8** %50, align 8
+  %51 = or i64 %48, -9223372036854775808
+  %52 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %4, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 2
+  store i64 %51, i64* %52, align 8
+  %53 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %4, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  store i64 %40, i64* %53, align 8
+  %54 = bitcast %"class.std::__1::basic_string"* %4 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  br label %60
+
+55:                                               ; preds = %44
+  %56 = trunc i64 %40 to i8
+  %57 = bitcast %"class.std::__1::basic_string"* %4 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %58 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %57, i64 0, i32 1, i32 0
+  store i8 %56, i8* %58, align 1
+  %59 = icmp eq i64 %40, 0
+  br i1 %59, label %63, label %60
+
+60:                                               ; preds = %55, %46
+  %61 = phi %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* [ %57, %55 ], [ %54, %46 ]
+  %62 = phi i8* [ %33, %55 ], [ %49, %46 ]
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 1 %62, i8* align 1 %39, i64 %40, i1 false) #9
+  br label %63
+
+63:                                               ; preds = %60, %55
+  %64 = phi %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* [ %57, %55 ], [ %61, %60 ]
+  %65 = phi i8* [ %33, %55 ], [ %62, %60 ]
+  %66 = getelementptr inbounds i8, i8* %65, i64 %40
+  store i8 0, i8* %66, align 1
+  %67 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %64, i64 0, i32 1, i32 0
+  %68 = load i8, i8* %67, align 1
+  %69 = icmp slt i8 %68, 0
+  %70 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %4, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %71 = load i8*, i8** %70, align 8
+  %72 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %4, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %73 = load i64, i64* %72, align 8
+  %74 = zext i8 %68 to i64
+  %75 = select i1 %69, i8* %71, i8* %33
+  %76 = select i1 %69, i64 %73, i64 %74
+  call void @_ZN9protozero7Message11AppendBytesEjPKvm(%"class.protozero::Message"* %37, i32 2, i8* %75, i64 %76) #9
+  %77 = load i8, i8* %67, align 1
+  %78 = icmp slt i8 %77, 0
+  br i1 %78, label %79, label %81
+
+79:                                               ; preds = %63
+  %80 = load i8*, i8** %70, align 8
+  call void @_ZdlPv(i8* %80) #11
+  br label %81
+
+81:                                               ; preds = %79, %63
+  %82 = getelementptr inbounds %"class.base::Location", %"class.base::Location"* %1, i64 0, i32 0
+  %83 = load i8*, i8** %82, align 8
+  %84 = call i64 @strlen(i8* %83) #9
+  %85 = icmp ugt i64 %84, -17
+  br i1 %85, label %86, label %88
+
+86:                                               ; preds = %81
+  %87 = bitcast %"class.std::__1::basic_string"* %5 to %"class.std::__1::__basic_string_common"*
+  call void @_ZNKSt3__121__basic_string_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__basic_string_common"* nonnull %87) #10
+  unreachable
+
+88:                                               ; preds = %81
+  %89 = icmp ult i64 %84, 23
+  br i1 %89, label %99, label %90
+
+90:                                               ; preds = %88
+  %91 = add nuw i64 %84, 16
+  %92 = and i64 %91, -16
+  %93 = call i8* @_Znwm(i64 %92) #11
+  %94 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %5, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  store i8* %93, i8** %94, align 8
+  %95 = or i64 %92, -9223372036854775808
+  %96 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %5, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 2
+  store i64 %95, i64* %96, align 8
+  %97 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %5, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  store i64 %84, i64* %97, align 8
+  %98 = bitcast %"class.std::__1::basic_string"* %5 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  br label %104
+
+99:                                               ; preds = %88
+  %100 = trunc i64 %84 to i8
+  %101 = bitcast %"class.std::__1::basic_string"* %5 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %102 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %101, i64 0, i32 1, i32 0
+  store i8 %100, i8* %102, align 1
+  %103 = icmp eq i64 %84, 0
+  br i1 %103, label %107, label %104
+
+104:                                              ; preds = %99, %90
+  %105 = phi %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* [ %101, %99 ], [ %98, %90 ]
+  %106 = phi i8* [ %34, %99 ], [ %93, %90 ]
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 1 %106, i8* align 1 %83, i64 %84, i1 false) #9
+  br label %107
+
+107:                                              ; preds = %104, %99
+  %108 = phi %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* [ %101, %99 ], [ %105, %104 ]
+  %109 = phi i8* [ %34, %99 ], [ %106, %104 ]
+  %110 = getelementptr inbounds i8, i8* %109, i64 %84
+  store i8 0, i8* %110, align 1
+  %111 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %108, i64 0, i32 1, i32 0
+  %112 = load i8, i8* %111, align 1
+  %113 = icmp slt i8 %112, 0
+  %114 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %5, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %115 = load i8*, i8** %114, align 8
+  %116 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %5, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %117 = load i64, i64* %116, align 8
+  %118 = zext i8 %112 to i64
+  %119 = select i1 %113, i8* %115, i8* %34
+  %120 = select i1 %113, i64 %117, i64 %118
+  call void @_ZN9protozero7Message11AppendBytesEjPKvm(%"class.protozero::Message"* %37, i32 3, i8* %119, i64 %120) #9
+  %121 = load i8, i8* %111, align 1
+  %122 = icmp slt i8 %121, 0
+  br i1 %122, label %123, label %125
+
+123:                                              ; preds = %107
+  %124 = load i8*, i8** %114, align 8
+  call void @_ZdlPv(i8* %124) #11
+  br label %125
+
+125:                                              ; preds = %123, %107
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %33) #9
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %34) #9
+  call void @_ZN8perfetto12EventContextD1Ev(%"class.perfetto::EventContext"* nonnull %6) #9
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %28) #9
+  call void @_ZN8perfetto12EventContextD1Ev(%"class.perfetto::EventContext"* nonnull %8) #9
+  br label %126
+
+126:                                              ; preds = %13, %125
+  call void @_ZN4base11trace_event16TrackEventHandleD1Ev(%"class.base::trace_event::TrackEventHandle"* nonnull %7) #9
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %15) #9
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %14) #9
+  br label %127
+
+127:                                              ; preds = %3, %126
+  ret void
+}
+
+declare void @_ZN4base8internal27UncheckedScopedBlockingCallC2ERKNS_8LocationENS_12BlockingTypeENS1_16BlockingCallTypeE(%"class.base::internal::UncheckedScopedBlockingCall"*, %"class.base::Location"* dereferenceable(32), i32, i32) unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base18ScopedBlockingCallD2Ev(%"class.base::ScopedBlockingCall"*) unnamed_addr #0 align 2 {
+  %2 = load i8, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 8, i32 0), align 16
+  %3 = and i8 %2, 25
+  %4 = icmp eq i8 %3, 0
+  br i1 %4, label %6, label %5, !prof !2
+
+5:                                                ; preds = %1
+  tail call void @_ZN20trace_event_internal22AddTypedTraceEventImplIJEEEvcPKhN8perfetto12StaticStringERKNS3_5TrackEN4base9TimeTicksEDpOT_(i8 signext 69, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 8, i32 0), i8* getelementptr inbounds ([1 x i8], [1 x i8]* @_ZN20trace_event_internalL18kTraceEventEndNameE, i64 0, i64 0), %"struct.perfetto::Track"* nonnull dereferenceable(16) @_ZN20trace_event_internal13kDefaultTrackE, i64 0) #9
+  br label %6
+
+6:                                                ; preds = %1, %5
+  %7 = getelementptr inbounds %"class.base::ScopedBlockingCall", %"class.base::ScopedBlockingCall"* %0, i64 0, i32 0
+  tail call void @_ZN4base8internal27UncheckedScopedBlockingCallD2Ev(%"class.base::internal::UncheckedScopedBlockingCall"* %7) #9
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal27UncheckedScopedBlockingCallD2Ev(%"class.base::internal::UncheckedScopedBlockingCall"*) unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal40ScopedBlockingCallWithBaseSyncPrimitivesC2ERKNS_8LocationENS_12BlockingTypeE(%"class.base::internal::ScopedBlockingCallWithBaseSyncPrimitives"*, %"class.base::Location"* dereferenceable(32), i32) unnamed_addr #0 align 2 {
+  %4 = alloca %"class.std::__1::basic_string", align 8
+  %5 = alloca %"class.std::__1::basic_string", align 8
+  %6 = alloca %"class.perfetto::EventContext", align 8
+  %7 = alloca %"class.base::trace_event::TrackEventHandle", align 8
+  %8 = alloca %"class.perfetto::EventContext", align 8
+  %9 = getelementptr inbounds %"class.base::internal::ScopedBlockingCallWithBaseSyncPrimitives", %"class.base::internal::ScopedBlockingCallWithBaseSyncPrimitives"* %0, i64 0, i32 0
+  tail call void @_ZN4base8internal27UncheckedScopedBlockingCallC2ERKNS_8LocationENS_12BlockingTypeENS1_16BlockingCallTypeE(%"class.base::internal::UncheckedScopedBlockingCall"* %9, %"class.base::Location"* dereferenceable(32) %1, i32 %2, i32 1) #9
+  %10 = load i8, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 8, i32 0), align 16
+  %11 = and i8 %10, 25
+  %12 = icmp eq i8 %11, 0
+  br i1 %12, label %127, label %13, !prof !2
+
+13:                                               ; preds = %3
+  %14 = bitcast %"class.perfetto::EventContext"* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %14) #9
+  %15 = bitcast %"class.base::trace_event::TrackEventHandle"* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %15) #9
+  %16 = getelementptr inbounds %"class.base::trace_event::TrackEventHandle", %"class.base::trace_event::TrackEventHandle"* %7, i64 0, i32 0
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %15, i8 -86, i64 24, i1 false) #9
+  %17 = load i64, i64* getelementptr inbounds (%"struct.perfetto::Track", %"struct.perfetto::Track"* @_ZN20trace_event_internal13kDefaultTrackE, i64 0, i32 0), align 8
+  call void @_ZN20trace_event_internal16CreateTrackEventEcPKhN8perfetto12StaticStringEN4base9TimeTicksEmb(%"class.base::trace_event::TrackEventHandle"* nonnull sret %7, i8 signext 66, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 8, i32 0), i8* getelementptr inbounds ([41 x i8], [41 x i8]* @.str.1, i64 0, i64 0), i64 0, i64 %17, i1 zeroext false) #9
+  %18 = load %"class.perfetto::protos::pbzero::TrackEvent"*, %"class.perfetto::protos::pbzero::TrackEvent"** %16, align 8
+  %19 = icmp eq %"class.perfetto::protos::pbzero::TrackEvent"* %18, null
+  br i1 %19, label %126, label %20
+
+20:                                               ; preds = %13
+  %21 = getelementptr inbounds %"class.base::trace_event::TrackEventHandle", %"class.base::trace_event::TrackEventHandle"* %7, i64 0, i32 1
+  %22 = bitcast %"struct.perfetto::internal::TrackEventIncrementalState"** %21 to i64*
+  %23 = load i64, i64* %22, align 8
+  %24 = getelementptr inbounds %"class.perfetto::EventContext", %"class.perfetto::EventContext"* %8, i64 0, i32 0, i32 0
+  call void @_ZN9protozero17MessageHandleBaseC2EPNS_7MessageE(%"class.protozero::MessageHandleBase"* nonnull %24, %"class.protozero::Message"* null) #9
+  %25 = getelementptr inbounds %"class.perfetto::EventContext", %"class.perfetto::EventContext"* %8, i64 0, i32 1
+  store %"class.perfetto::protos::pbzero::TrackEvent"* %18, %"class.perfetto::protos::pbzero::TrackEvent"** %25, align 8
+  %26 = getelementptr inbounds %"class.perfetto::EventContext", %"class.perfetto::EventContext"* %8, i64 0, i32 2
+  %27 = bitcast %"struct.perfetto::internal::TrackEventIncrementalState"** %26 to i64*
+  store i64 %23, i64* %27, align 8
+  %28 = bitcast %"class.perfetto::EventContext"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %28) #9
+  %29 = getelementptr inbounds %"class.perfetto::EventContext", %"class.perfetto::EventContext"* %6, i64 0, i32 0, i32 0
+  call void @_ZN9protozero17MessageHandleBaseC2EOS0_(%"class.protozero::MessageHandleBase"* nonnull %29, %"class.protozero::MessageHandleBase"* nonnull dereferenceable(8) %24) #9
+  %30 = getelementptr inbounds %"class.perfetto::EventContext", %"class.perfetto::EventContext"* %6, i64 0, i32 1
+  %31 = bitcast %"class.perfetto::protos::pbzero::TrackEvent"** %30 to i8*
+  %32 = bitcast %"class.perfetto::protos::pbzero::TrackEvent"** %25 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %31, i8* align 8 %32, i64 16, i1 false) #9
+  %33 = bitcast %"class.std::__1::basic_string"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %33) #9
+  %34 = bitcast %"class.std::__1::basic_string"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %34) #9
+  %35 = bitcast %"class.perfetto::protos::pbzero::TrackEvent"** %30 to %"class.protozero::Message"**
+  %36 = load %"class.protozero::Message"*, %"class.protozero::Message"** %35, align 8
+  %37 = call %"class.protozero::Message"* @_ZN9protozero7Message26BeginNestedMessageInternalEj(%"class.protozero::Message"* %36, i32 33) #9
+  %38 = getelementptr inbounds %"class.base::Location", %"class.base::Location"* %1, i64 0, i32 1
+  %39 = load i8*, i8** %38, align 8
+  %40 = call i64 @strlen(i8* %39) #9
+  %41 = icmp ugt i64 %40, -17
+  br i1 %41, label %42, label %44
+
+42:                                               ; preds = %20
+  %43 = bitcast %"class.std::__1::basic_string"* %4 to %"class.std::__1::__basic_string_common"*
+  call void @_ZNKSt3__121__basic_string_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__basic_string_common"* nonnull %43) #10
+  unreachable
+
+44:                                               ; preds = %20
+  %45 = icmp ult i64 %40, 23
+  br i1 %45, label %55, label %46
+
+46:                                               ; preds = %44
+  %47 = add nuw i64 %40, 16
+  %48 = and i64 %47, -16
+  %49 = call i8* @_Znwm(i64 %48) #11
+  %50 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %4, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  store i8* %49, i8** %50, align 8
+  %51 = or i64 %48, -9223372036854775808
+  %52 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %4, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 2
+  store i64 %51, i64* %52, align 8
+  %53 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %4, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  store i64 %40, i64* %53, align 8
+  %54 = bitcast %"class.std::__1::basic_string"* %4 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  br label %60
+
+55:                                               ; preds = %44
+  %56 = trunc i64 %40 to i8
+  %57 = bitcast %"class.std::__1::basic_string"* %4 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %58 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %57, i64 0, i32 1, i32 0
+  store i8 %56, i8* %58, align 1
+  %59 = icmp eq i64 %40, 0
+  br i1 %59, label %63, label %60
+
+60:                                               ; preds = %55, %46
+  %61 = phi %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* [ %57, %55 ], [ %54, %46 ]
+  %62 = phi i8* [ %33, %55 ], [ %49, %46 ]
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 1 %62, i8* align 1 %39, i64 %40, i1 false) #9
+  br label %63
+
+63:                                               ; preds = %60, %55
+  %64 = phi %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* [ %57, %55 ], [ %61, %60 ]
+  %65 = phi i8* [ %33, %55 ], [ %62, %60 ]
+  %66 = getelementptr inbounds i8, i8* %65, i64 %40
+  store i8 0, i8* %66, align 1
+  %67 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %64, i64 0, i32 1, i32 0
+  %68 = load i8, i8* %67, align 1
+  %69 = icmp slt i8 %68, 0
+  %70 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %4, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %71 = load i8*, i8** %70, align 8
+  %72 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %4, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %73 = load i64, i64* %72, align 8
+  %74 = zext i8 %68 to i64
+  %75 = select i1 %69, i8* %71, i8* %33
+  %76 = select i1 %69, i64 %73, i64 %74
+  call void @_ZN9protozero7Message11AppendBytesEjPKvm(%"class.protozero::Message"* %37, i32 2, i8* %75, i64 %76) #9
+  %77 = load i8, i8* %67, align 1
+  %78 = icmp slt i8 %77, 0
+  br i1 %78, label %79, label %81
+
+79:                                               ; preds = %63
+  %80 = load i8*, i8** %70, align 8
+  call void @_ZdlPv(i8* %80) #11
+  br label %81
+
+81:                                               ; preds = %79, %63
+  %82 = getelementptr inbounds %"class.base::Location", %"class.base::Location"* %1, i64 0, i32 0
+  %83 = load i8*, i8** %82, align 8
+  %84 = call i64 @strlen(i8* %83) #9
+  %85 = icmp ugt i64 %84, -17
+  br i1 %85, label %86, label %88
+
+86:                                               ; preds = %81
+  %87 = bitcast %"class.std::__1::basic_string"* %5 to %"class.std::__1::__basic_string_common"*
+  call void @_ZNKSt3__121__basic_string_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__basic_string_common"* nonnull %87) #10
+  unreachable
+
+88:                                               ; preds = %81
+  %89 = icmp ult i64 %84, 23
+  br i1 %89, label %99, label %90
+
+90:                                               ; preds = %88
+  %91 = add nuw i64 %84, 16
+  %92 = and i64 %91, -16
+  %93 = call i8* @_Znwm(i64 %92) #11
+  %94 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %5, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  store i8* %93, i8** %94, align 8
+  %95 = or i64 %92, -9223372036854775808
+  %96 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %5, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 2
+  store i64 %95, i64* %96, align 8
+  %97 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %5, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  store i64 %84, i64* %97, align 8
+  %98 = bitcast %"class.std::__1::basic_string"* %5 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  br label %104
+
+99:                                               ; preds = %88
+  %100 = trunc i64 %84 to i8
+  %101 = bitcast %"class.std::__1::basic_string"* %5 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %102 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %101, i64 0, i32 1, i32 0
+  store i8 %100, i8* %102, align 1
+  %103 = icmp eq i64 %84, 0
+  br i1 %103, label %107, label %104
+
+104:                                              ; preds = %99, %90
+  %105 = phi %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* [ %101, %99 ], [ %98, %90 ]
+  %106 = phi i8* [ %34, %99 ], [ %93, %90 ]
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 1 %106, i8* align 1 %83, i64 %84, i1 false) #9
+  br label %107
+
+107:                                              ; preds = %104, %99
+  %108 = phi %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* [ %101, %99 ], [ %105, %104 ]
+  %109 = phi i8* [ %34, %99 ], [ %106, %104 ]
+  %110 = getelementptr inbounds i8, i8* %109, i64 %84
+  store i8 0, i8* %110, align 1
+  %111 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %108, i64 0, i32 1, i32 0
+  %112 = load i8, i8* %111, align 1
+  %113 = icmp slt i8 %112, 0
+  %114 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %5, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %115 = load i8*, i8** %114, align 8
+  %116 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %5, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %117 = load i64, i64* %116, align 8
+  %118 = zext i8 %112 to i64
+  %119 = select i1 %113, i8* %115, i8* %34
+  %120 = select i1 %113, i64 %117, i64 %118
+  call void @_ZN9protozero7Message11AppendBytesEjPKvm(%"class.protozero::Message"* %37, i32 3, i8* %119, i64 %120) #9
+  %121 = load i8, i8* %111, align 1
+  %122 = icmp slt i8 %121, 0
+  br i1 %122, label %123, label %125
+
+123:                                              ; preds = %107
+  %124 = load i8*, i8** %114, align 8
+  call void @_ZdlPv(i8* %124) #11
+  br label %125
+
+125:                                              ; preds = %123, %107
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %33) #9
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %34) #9
+  call void @_ZN8perfetto12EventContextD1Ev(%"class.perfetto::EventContext"* nonnull %6) #9
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %28) #9
+  call void @_ZN8perfetto12EventContextD1Ev(%"class.perfetto::EventContext"* nonnull %8) #9
+  br label %126
+
+126:                                              ; preds = %13, %125
+  call void @_ZN4base11trace_event16TrackEventHandleD1Ev(%"class.base::trace_event::TrackEventHandle"* nonnull %7) #9
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %15) #9
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %14) #9
+  br label %127
+
+127:                                              ; preds = %3, %126
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base8internal40ScopedBlockingCallWithBaseSyncPrimitivesD2Ev(%"class.base::internal::ScopedBlockingCallWithBaseSyncPrimitives"*) unnamed_addr #0 align 2 {
+  %2 = load i8, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 8, i32 0), align 16
+  %3 = and i8 %2, 25
+  %4 = icmp eq i8 %3, 0
+  br i1 %4, label %6, label %5, !prof !2
+
+5:                                                ; preds = %1
+  tail call void @_ZN20trace_event_internal22AddTypedTraceEventImplIJEEEvcPKhN8perfetto12StaticStringERKNS3_5TrackEN4base9TimeTicksEDpOT_(i8 signext 69, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 8, i32 0), i8* getelementptr inbounds ([1 x i8], [1 x i8]* @_ZN20trace_event_internalL18kTraceEventEndNameE, i64 0, i64 0), %"struct.perfetto::Track"* nonnull dereferenceable(16) @_ZN20trace_event_internal13kDefaultTrackE, i64 0) #9
+  br label %6
+
+6:                                                ; preds = %1, %5
+  %7 = getelementptr inbounds %"class.base::internal::ScopedBlockingCallWithBaseSyncPrimitives", %"class.base::internal::ScopedBlockingCallWithBaseSyncPrimitives"* %0, i64 0, i32 0
+  tail call void @_ZN4base8internal27UncheckedScopedBlockingCallD2Ev(%"class.base::internal::UncheckedScopedBlockingCall"* %7) #9
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #2
+
+declare void @_ZN20trace_event_internal16CreateTrackEventEcPKhN8perfetto12StaticStringEN4base9TimeTicksEmb(%"class.base::trace_event::TrackEventHandle"* sret, i8 signext, i8*, i8*, i64, i64, i1 zeroext) local_unnamed_addr #1
+
+declare zeroext i1 @_ZN20trace_event_internal25ShouldEmitTrackDescriptorEmPN8perfetto8internal26TrackEventIncrementalStateE(i64, %"struct.perfetto::internal::TrackEventIncrementalState"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN8perfetto12EventContextD1Ev(%"class.perfetto::EventContext"*) unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN4base11trace_event16TrackEventHandleD1Ev(%"class.base::trace_event::TrackEventHandle"*) unnamed_addr #3
+
+declare void @_ZN9protozero7Message16EndNestedMessageEv(%"class.protozero::Message"*) local_unnamed_addr #1
+
+declare void @_ZN9protozero21ScatteredStreamWriter18WriteBytesSlowPathEPKhm(%"class.protozero::ScatteredStreamWriter"*, i8*, i64) local_unnamed_addr #1
+
+declare %"class.protozero::Message"* @_ZN9protozero7Message26BeginNestedMessageInternalEj(%"class.protozero::Message"*, i32) local_unnamed_addr #1
+
+declare void @_ZN9protozero7Message11AppendBytesEjPKvm(%"class.protozero::Message"*, i32, i8*, i64) local_unnamed_addr #1
+
+; Function Attrs: noreturn
+declare void @_ZNKSt3__121__basic_string_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__basic_string_common"*) local_unnamed_addr #4
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #5
+
+; Function Attrs: argmemonly nofree nounwind readonly
+declare i64 @strlen(i8* nocapture) local_unnamed_addr #6
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #7
+
+; Function Attrs: nounwind
+declare void @_ZN9protozero17MessageHandleBaseC2EOS0_(%"class.protozero::MessageHandleBase"*, %"class.protozero::MessageHandleBase"* dereferenceable(8)) unnamed_addr #3
+
+declare void @_ZN9protozero17MessageHandleBaseC2EPNS_7MessageE(%"class.protozero::MessageHandleBase"*, %"class.protozero::Message"*) unnamed_addr #1
+
+declare void @_ZN20trace_event_internal17CreateTracePacketEv(%"class.base::trace_event::TracePacketHandle"* sret) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN8perfetto8internal13TrackRegistry14SerializeTrackINS_5TrackEEEvRKT_N9protozero13MessageHandleINS_6protos6pbzero11TracePacketEEE(%"class.perfetto::internal::TrackRegistry"*, %"struct.perfetto::Track"* dereferenceable(16), %"class.protozero::MessageHandle"*) local_unnamed_addr #0 comdat align 2 {
+  %4 = alloca %"class.std::__1::basic_string", align 8
+  %5 = alloca %"class.protozero::MessageHandle", align 8
+  %6 = bitcast %"class.std::__1::basic_string"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %6) #9
+  %7 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %4, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %8 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %4, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %6, i8 0, i64 24, i1 false) #9
+  %9 = getelementptr inbounds %"class.perfetto::internal::TrackRegistry", %"class.perfetto::internal::TrackRegistry"* %0, i64 0, i32 0
+  tail call void @_ZNSt3__15mutex4lockEv(%"class.std::__1::mutex"* %9) #9
+  %10 = getelementptr inbounds %"class.perfetto::internal::TrackRegistry", %"class.perfetto::internal::TrackRegistry"* %0, i64 0, i32 1, i32 0, i32 1, i32 0, i32 0
+  %11 = bitcast %"class.std::__1::__tree_end_node"* %10 to %"class.std::__1::__tree_node"**
+  %12 = load %"class.std::__1::__tree_node"*, %"class.std::__1::__tree_node"** %11, align 8
+  %13 = icmp eq %"class.std::__1::__tree_node"* %12, null
+  br i1 %13, label %56, label %14
+
+14:                                               ; preds = %3
+  %15 = getelementptr inbounds %"struct.perfetto::Track", %"struct.perfetto::Track"* %1, i64 0, i32 0
+  %16 = load i64, i64* %15, align 8
+  br label %17
+
+17:                                               ; preds = %17, %14
+  %18 = phi %"class.std::__1::__tree_end_node"* [ %10, %14 ], [ %28, %17 ]
+  %19 = phi %"class.std::__1::__tree_node"* [ %12, %14 ], [ %29, %17 ]
+  %20 = getelementptr inbounds %"class.std::__1::__tree_node", %"class.std::__1::__tree_node"* %19, i64 0, i32 1, i32 0, i32 0
+  %21 = load i64, i64* %20, align 8
+  %22 = icmp ult i64 %21, %16
+  %23 = getelementptr inbounds %"class.std::__1::__tree_node", %"class.std::__1::__tree_node"* %19, i64 0, i32 0, i32 1
+  %24 = bitcast %"class.std::__1::__tree_node_base"** %23 to %"class.std::__1::__tree_node"**
+  %25 = getelementptr inbounds %"class.std::__1::__tree_node", %"class.std::__1::__tree_node"* %19, i64 0, i32 0, i32 0
+  %26 = bitcast %"class.std::__1::__tree_node"* %19 to %"class.std::__1::__tree_node"**
+  %27 = select i1 %22, %"class.std::__1::__tree_node"** %24, %"class.std::__1::__tree_node"** %26
+  %28 = select i1 %22, %"class.std::__1::__tree_end_node"* %18, %"class.std::__1::__tree_end_node"* %25
+  %29 = load %"class.std::__1::__tree_node"*, %"class.std::__1::__tree_node"** %27, align 8
+  %30 = icmp eq %"class.std::__1::__tree_node"* %29, null
+  br i1 %30, label %31, label %17
+
+31:                                               ; preds = %17
+  %32 = icmp eq %"class.std::__1::__tree_end_node"* %28, %10
+  br i1 %32, label %56, label %33
+
+33:                                               ; preds = %31
+  %34 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %28, i64 4
+  %35 = bitcast %"class.std::__1::__tree_end_node"* %34 to i64*
+  %36 = load i64, i64* %35, align 8
+  %37 = icmp ult i64 %16, %36
+  br i1 %37, label %56, label %38
+
+38:                                               ; preds = %33
+  %39 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %28, i64 5
+  %40 = bitcast %"class.std::__1::__tree_end_node"* %39 to %"class.std::__1::basic_string"*
+  %41 = icmp eq %"class.std::__1::basic_string"* %4, %40
+  br i1 %41, label %56, label %42
+
+42:                                               ; preds = %38
+  %43 = bitcast %"class.std::__1::__tree_end_node"* %39 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %44 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %43, i64 0, i32 1, i32 0
+  %45 = load i8, i8* %44, align 1
+  %46 = icmp slt i8 %45, 0
+  br i1 %46, label %49, label %47
+
+47:                                               ; preds = %42
+  %48 = bitcast %"class.std::__1::__tree_end_node"* %39 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %6, i8* align 8 %48, i64 24, i1 false) #9
+  br label %56
+
+49:                                               ; preds = %42
+  %50 = bitcast %"class.std::__1::__tree_end_node"* %39 to i8**
+  %51 = load i8*, i8** %50, align 8
+  %52 = getelementptr inbounds %"class.std::__1::__tree_end_node", %"class.std::__1::__tree_end_node"* %28, i64 6
+  %53 = bitcast %"class.std::__1::__tree_end_node"* %52 to i64*
+  %54 = load i64, i64* %53, align 8
+  %55 = call dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE17__assign_no_aliasILb1EEERS5_PKcm(%"class.std::__1::basic_string"* nonnull %4, i8* %51, i64 %54) #9
+  br label %56
+
+56:                                               ; preds = %33, %31, %3, %49, %47, %38
+  call void @_ZNSt3__15mutex6unlockEv(%"class.std::__1::mutex"* %9) #9
+  %57 = bitcast %"class.std::__1::basic_string"* %4 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %58 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %57, i64 0, i32 1, i32 0
+  %59 = load i8, i8* %58, align 1
+  %60 = icmp slt i8 %59, 0
+  %61 = load i64, i64* %8, align 8
+  %62 = zext i8 %59 to i64
+  %63 = select i1 %60, i64 %61, i64 %62
+  %64 = icmp eq i64 %63, 0
+  br i1 %64, label %68, label %65
+
+65:                                               ; preds = %56
+  %66 = getelementptr inbounds %"class.protozero::MessageHandle", %"class.protozero::MessageHandle"* %5, i64 0, i32 0
+  %67 = getelementptr inbounds %"class.protozero::MessageHandle", %"class.protozero::MessageHandle"* %2, i64 0, i32 0
+  call void @_ZN9protozero17MessageHandleBaseC2EOS0_(%"class.protozero::MessageHandleBase"* nonnull %66, %"class.protozero::MessageHandleBase"* dereferenceable(8) %67) #9
+  call void @_ZN8perfetto8internal13TrackRegistry20WriteTrackDescriptorERKNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEEN9protozero13MessageHandleINS_6protos6pbzero11TracePacketEEE(%"class.std::__1::basic_string"* nonnull dereferenceable(24) %4, %"class.protozero::MessageHandle"* nonnull %5) #9
+  call void @_ZN9protozero17MessageHandleBaseD2Ev(%"class.protozero::MessageHandleBase"* nonnull %66) #9
+  br label %73
+
+68:                                               ; preds = %56
+  %69 = getelementptr inbounds %"class.protozero::MessageHandle", %"class.protozero::MessageHandle"* %2, i64 0, i32 0, i32 0
+  %70 = load %"class.protozero::Message"*, %"class.protozero::Message"** %69, align 8
+  %71 = call %"class.protozero::Message"* @_ZN9protozero7Message26BeginNestedMessageInternalEj(%"class.protozero::Message"* %70, i32 60) #9
+  %72 = bitcast %"class.protozero::Message"* %71 to %"class.perfetto::protos::pbzero::TrackDescriptor"*
+  call void @_ZNK8perfetto5Track9SerializeEPNS_6protos6pbzero15TrackDescriptorE(%"struct.perfetto::Track"* %1, %"class.perfetto::protos::pbzero::TrackDescriptor"* %72) #9
+  br label %73
+
+73:                                               ; preds = %68, %65
+  %74 = load i8, i8* %58, align 1
+  %75 = icmp slt i8 %74, 0
+  br i1 %75, label %76, label %78
+
+76:                                               ; preds = %73
+  %77 = load i8*, i8** %7, align 8
+  call void @_ZdlPv(i8* %77) #11
+  br label %78
+
+78:                                               ; preds = %73, %76
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %6) #9
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @_ZN9protozero17MessageHandleBaseD2Ev(%"class.protozero::MessageHandleBase"*) unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN4base11trace_event17TracePacketHandleD1Ev(%"class.base::trace_event::TracePacketHandle"*) unnamed_addr #3
+
+declare void @_ZN8perfetto8internal13TrackRegistry20WriteTrackDescriptorERKNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEEN9protozero13MessageHandleINS_6protos6pbzero11TracePacketEEE(%"class.std::__1::basic_string"* dereferenceable(24), %"class.protozero::MessageHandle"*) local_unnamed_addr #1
+
+declare void @_ZNK8perfetto5Track9SerializeEPNS_6protos6pbzero15TrackDescriptorE(%"struct.perfetto::Track"*, %"class.perfetto::protos::pbzero::TrackDescriptor"*) local_unnamed_addr #1
+
+declare void @_ZNSt3__15mutex4lockEv(%"class.std::__1::mutex"*) local_unnamed_addr #1
+
+declare dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE17__assign_no_aliasILb1EEERS5_PKcm(%"class.std::__1::basic_string"*, i8*, i64) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZNSt3__15mutex6unlockEv(%"class.std::__1::mutex"*) local_unnamed_addr #3
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN20trace_event_internal22AddTypedTraceEventImplIJEEEvcPKhN8perfetto12StaticStringERKNS3_5TrackEN4base9TimeTicksEDpOT_(i8 signext, i8*, i8*, %"struct.perfetto::Track"* dereferenceable(16), i64) local_unnamed_addr #8 comdat {
+  %6 = alloca [15 x i8], align 1
+  %7 = alloca %"class.base::trace_event::TracePacketHandle", align 8
+  %8 = alloca %"class.protozero::MessageHandle", align 8
+  %9 = alloca %"class.base::trace_event::TrackEventHandle", align 8
+  %10 = alloca %"class.perfetto::EventContext", align 8
+  %11 = icmp ne %"struct.perfetto::Track"* %3, @_ZN20trace_event_internal13kDefaultTrackE
+  %12 = bitcast %"class.base::trace_event::TrackEventHandle"* %9 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %12) #9
+  %13 = getelementptr inbounds %"class.base::trace_event::TrackEventHandle", %"class.base::trace_event::TrackEventHandle"* %9, i64 0, i32 0
+  %14 = getelementptr inbounds %"class.base::trace_event::TrackEventHandle", %"class.base::trace_event::TrackEventHandle"* %9, i64 0, i32 1
+  %15 = getelementptr inbounds %"struct.perfetto::Track", %"struct.perfetto::Track"* %3, i64 0, i32 0
+  %16 = bitcast %"class.base::trace_event::TrackEventHandle"* %9 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %16, i8 -86, i64 24, i1 false)
+  %17 = load i64, i64* %15, align 8
+  call void @_ZN20trace_event_internal16CreateTrackEventEcPKhN8perfetto12StaticStringEN4base9TimeTicksEmb(%"class.base::trace_event::TrackEventHandle"* nonnull sret %9, i8 signext %0, i8* %1, i8* %2, i64 %4, i64 %17, i1 zeroext %11) #9
+  %18 = load %"class.perfetto::protos::pbzero::TrackEvent"*, %"class.perfetto::protos::pbzero::TrackEvent"** %13, align 8
+  %19 = icmp eq %"class.perfetto::protos::pbzero::TrackEvent"* %18, null
+  br i1 %19, label %83, label %20
+
+20:                                               ; preds = %5
+  %21 = ptrtoint %"class.perfetto::protos::pbzero::TrackEvent"* %18 to i64
+  br i1 %11, label %22, label %73
+
+22:                                               ; preds = %20
+  %23 = load i64, i64* %15, align 8
+  %24 = getelementptr inbounds %"class.perfetto::protos::pbzero::TrackEvent", %"class.perfetto::protos::pbzero::TrackEvent"* %18, i64 0, i32 0, i32 2
+  %25 = load %"class.protozero::Message"*, %"class.protozero::Message"** %24, align 8
+  %26 = icmp eq %"class.protozero::Message"* %25, null
+  br i1 %26, label %29, label %27
+
+27:                                               ; preds = %22
+  %28 = bitcast %"class.perfetto::protos::pbzero::TrackEvent"* %18 to %"class.protozero::Message"*
+  call void @_ZN9protozero7Message16EndNestedMessageEv(%"class.protozero::Message"* nonnull %28) #9
+  br label %29
+
+29:                                               ; preds = %27, %22
+  %30 = getelementptr inbounds [15 x i8], [15 x i8]* %6, i64 0, i64 0
+  call void @llvm.lifetime.start.p0i8(i64 15, i8* nonnull %30) #9
+  %31 = getelementptr inbounds [15 x i8], [15 x i8]* %6, i64 0, i64 1
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 1 %31, i8 -86, i64 14, i1 false) #9
+  store i8 88, i8* %30, align 1
+  %32 = icmp ugt i64 %23, 127
+  %33 = trunc i64 %23 to i8
+  br i1 %32, label %34, label %45
+
+34:                                               ; preds = %29, %34
+  %35 = phi i8 [ %42, %34 ], [ %33, %29 ]
+  %36 = phi i64 [ %40, %34 ], [ %23, %29 ]
+  %37 = phi i8* [ %39, %34 ], [ %31, %29 ]
+  %38 = or i8 %35, -128
+  %39 = getelementptr inbounds i8, i8* %37, i64 1
+  store i8 %38, i8* %37, align 1
+  %40 = lshr i64 %36, 7
+  %41 = icmp ugt i64 %36, 16383
+  %42 = trunc i64 %40 to i8
+  br i1 %41, label %34, label %43
+
+43:                                               ; preds = %34
+  %44 = trunc i64 %40 to i8
+  br label %45
+
+45:                                               ; preds = %43, %29
+  %46 = phi i8* [ %31, %29 ], [ %39, %43 ]
+  %47 = phi i8 [ %33, %29 ], [ %44, %43 ]
+  store i8 %47, i8* %46, align 1
+  %48 = getelementptr inbounds i8, i8* %46, i64 1
+  %49 = ptrtoint i8* %48 to i64
+  %50 = ptrtoint [15 x i8]* %6 to i64
+  %51 = sub i64 %49, %50
+  %52 = trunc i64 %51 to i32
+  %53 = getelementptr inbounds %"class.perfetto::protos::pbzero::TrackEvent", %"class.perfetto::protos::pbzero::TrackEvent"* %18, i64 0, i32 0, i32 0
+  %54 = load %"class.protozero::ScatteredStreamWriter"*, %"class.protozero::ScatteredStreamWriter"** %53, align 8
+  %55 = and i64 %51, 4294967295
+  %56 = getelementptr inbounds %"class.protozero::ScatteredStreamWriter", %"class.protozero::ScatteredStreamWriter"* %54, i64 0, i32 2
+  %57 = load i8*, i8** %56, align 8
+  %58 = getelementptr inbounds i8, i8* %57, i64 %55
+  %59 = getelementptr inbounds %"class.protozero::ScatteredStreamWriter", %"class.protozero::ScatteredStreamWriter"* %54, i64 0, i32 1, i32 1
+  %60 = load i8*, i8** %59, align 8
+  %61 = icmp ugt i8* %58, %60
+  br i1 %61, label %63, label %62, !prof !3
+
+62:                                               ; preds = %45
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %57, i8* nonnull align 1 %30, i64 %55, i1 false) #9
+  store i8* %58, i8** %56, align 8
+  br label %64
+
+63:                                               ; preds = %45
+  call void @_ZN9protozero21ScatteredStreamWriter18WriteBytesSlowPathEPKhm(%"class.protozero::ScatteredStreamWriter"* %54, i8* nonnull %30, i64 %55) #9
+  br label %64
+
+64:                                               ; preds = %62, %63
+  %65 = getelementptr inbounds %"class.perfetto::protos::pbzero::TrackEvent", %"class.perfetto::protos::pbzero::TrackEvent"* %18, i64 0, i32 0, i32 4
+  %66 = load i32, i32* %65, align 8
+  %67 = add i32 %66, %52
+  store i32 %67, i32* %65, align 8
+  call void @llvm.lifetime.end.p0i8(i64 15, i8* nonnull %30) #9
+  %68 = load i64, i64* %15, align 8
+  %69 = load %"struct.perfetto::internal::TrackEventIncrementalState"*, %"struct.perfetto::internal::TrackEventIncrementalState"** %14, align 8
+  %70 = call zeroext i1 @_ZN20trace_event_internal25ShouldEmitTrackDescriptorEmPN8perfetto8internal26TrackEventIncrementalStateE(i64 %68, %"struct.perfetto::internal::TrackEventIncrementalState"* %69) #9
+  %71 = bitcast %"class.base::trace_event::TrackEventHandle"* %9 to i64*
+  %72 = load i64, i64* %71, align 8
+  br label %73
+
+73:                                               ; preds = %20, %64
+  %74 = phi i64 [ %72, %64 ], [ %21, %20 ]
+  %75 = phi i1 [ %70, %64 ], [ false, %20 ]
+  %76 = bitcast %"struct.perfetto::internal::TrackEventIncrementalState"** %14 to i64*
+  %77 = load i64, i64* %76, align 8
+  %78 = getelementptr inbounds %"class.perfetto::EventContext", %"class.perfetto::EventContext"* %10, i64 0, i32 0, i32 0
+  call void @_ZN9protozero17MessageHandleBaseC2EPNS_7MessageE(%"class.protozero::MessageHandleBase"* nonnull %78, %"class.protozero::Message"* null) #9
+  %79 = getelementptr inbounds %"class.perfetto::EventContext", %"class.perfetto::EventContext"* %10, i64 0, i32 1
+  %80 = bitcast %"class.perfetto::protos::pbzero::TrackEvent"** %79 to i64*
+  store i64 %74, i64* %80, align 8
+  %81 = getelementptr inbounds %"class.perfetto::EventContext", %"class.perfetto::EventContext"* %10, i64 0, i32 2
+  %82 = bitcast %"struct.perfetto::internal::TrackEventIncrementalState"** %81 to i64*
+  store i64 %77, i64* %82, align 8
+  call void @_ZN8perfetto12EventContextD1Ev(%"class.perfetto::EventContext"* nonnull %10) #9
+  br label %83
+
+83:                                               ; preds = %5, %73
+  %84 = phi i1 [ %75, %73 ], [ false, %5 ]
+  %85 = phi i1 [ false, %73 ], [ true, %5 ]
+  call void @_ZN4base11trace_event16TrackEventHandleD1Ev(%"class.base::trace_event::TrackEventHandle"* nonnull %9) #9
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %12) #9
+  %86 = xor i1 %84, true
+  %87 = or i1 %85, %86
+  br i1 %87, label %99, label %88
+
+88:                                               ; preds = %83
+  %89 = bitcast %"class.protozero::MessageHandle"* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %89)
+  %90 = bitcast %"class.base::trace_event::TracePacketHandle"* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %90) #9
+  %91 = getelementptr inbounds %"class.base::trace_event::TracePacketHandle", %"class.base::trace_event::TracePacketHandle"* %7, i64 0, i32 0, i32 0, i32 0
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %90, i8 -86, i64 16, i1 false) #9
+  call void @_ZN20trace_event_internal17CreateTracePacketEv(%"class.base::trace_event::TracePacketHandle"* nonnull sret %7) #9
+  %92 = load %"class.protozero::Message"*, %"class.protozero::Message"** %91, align 8
+  %93 = icmp eq %"class.protozero::Message"* %92, null
+  br i1 %93, label %98, label %94
+
+94:                                               ; preds = %88
+  %95 = load %"class.perfetto::internal::TrackRegistry"*, %"class.perfetto::internal::TrackRegistry"** @_ZN8perfetto8internal13TrackRegistry9instance_E, align 8
+  %96 = getelementptr inbounds %"class.protozero::MessageHandle", %"class.protozero::MessageHandle"* %8, i64 0, i32 0
+  %97 = getelementptr inbounds %"class.base::trace_event::TracePacketHandle", %"class.base::trace_event::TracePacketHandle"* %7, i64 0, i32 0, i32 0
+  call void @_ZN9protozero17MessageHandleBaseC2EOS0_(%"class.protozero::MessageHandleBase"* nonnull %96, %"class.protozero::MessageHandleBase"* nonnull dereferenceable(8) %97) #9
+  call void @_ZN8perfetto8internal13TrackRegistry14SerializeTrackINS_5TrackEEEvRKT_N9protozero13MessageHandleINS_6protos6pbzero11TracePacketEEE(%"class.perfetto::internal::TrackRegistry"* %95, %"struct.perfetto::Track"* dereferenceable(16) %3, %"class.protozero::MessageHandle"* nonnull %8) #9
+  call void @_ZN9protozero17MessageHandleBaseD2Ev(%"class.protozero::MessageHandleBase"* nonnull %96) #9
+  br label %98
+
+98:                                               ; preds = %88, %94
+  call void @_ZN4base11trace_event17TracePacketHandleD1Ev(%"class.base::trace_event::TracePacketHandle"* nonnull %7) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %90) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %89)
+  br label %99
+
+99:                                               ; preds = %83, %98
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { noreturn "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { argmemonly nofree nounwind readonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { inlinehint nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #9 = { nounwind }
+attributes #10 = { noreturn nounwind }
+attributes #11 = { builtin nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{!"branch_weights", i32 2000, i32 1}
+!3 = !{!"branch_weights", i32 1, i32 2000}

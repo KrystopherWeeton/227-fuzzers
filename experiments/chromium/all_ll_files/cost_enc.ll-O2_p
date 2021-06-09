@@ -1,0 +1,722 @@
+; ModuleID = '../../third_party/libwebp/src/enc/cost_enc.c'
+source_filename = "../../third_party/libwebp/src/enc/cost_enc.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.VP8Residual = type { i32, i32, i16*, i32, [3 x [11 x i8]]*, [3 x [11 x i32]]*, [3 x i16*]* }
+%struct.VP8EncProba = type { [3 x i8], i8, [4 x [8 x [3 x [11 x i8]]]], [4 x [8 x [3 x [11 x i32]]]], [4 x [8 x [3 x [68 x i16]]]], [4 x [16 x [3 x i16*]]], i32, i32, i32 }
+%struct.VP8Encoder = type { %struct.WebPConfig*, %struct.WebPPicture*, %struct.VP8EncFilterHeader, %struct.VP8EncSegmentHeader, i32, i32, i32, i32, i32, %struct.VP8BitWriter, [8 x %struct.VP8BitWriter], %struct.VP8TBuffer, i32, i32, i8*, i32, %struct.WebPWorker, [4 x %struct.VP8SegmentInfo], i32, i32, i32, i32, i32, i32, i32, i32, %struct.VP8EncProba, [4 x i64], i64, i32, [3 x [4 x i32]], [3 x i32], i32, i32, i32, i32, i32, i32, i32, %struct.VP8MBInfo*, i8*, i32*, i8*, i8*, [4 x [64 x double]]*, [2 x [2 x i8]]* }
+%struct.WebPConfig = type { i32, float, i32, i32, i32, float, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32 }
+%struct.WebPPicture = type { i32, i32, i32, i32, i8*, i8*, i8*, i32, i32, i8*, i32, [2 x i32], i32*, i32, [3 x i32], i32 (i8*, i64, %struct.WebPPicture*)*, i8*, i32, i8*, %struct.WebPAuxStats*, i32, i32 (i32, %struct.WebPPicture*)*, i8*, [3 x i32], i8*, i8*, [8 x i32], i8*, i8*, [2 x i8*] }
+%struct.WebPAuxStats = type { i32, [5 x float], [3 x i32], [2 x i32], [3 x [4 x i32]], [4 x i32], [4 x i32], [4 x i32], i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, [2 x i32] }
+%struct.VP8EncFilterHeader = type { i32, i32, i32, i32 }
+%struct.VP8EncSegmentHeader = type { i32, i32, i32 }
+%struct.VP8BitWriter = type { i32, i32, i32, i32, i8*, i64, i64, i32 }
+%struct.VP8TBuffer = type { %struct.VP8Tokens*, %struct.VP8Tokens**, i16*, i32, i32, i32 }
+%struct.VP8Tokens = type opaque
+%struct.WebPWorker = type { i8*, i32, i32 (i8*, i8*)*, i8*, i8*, i32 }
+%struct.VP8SegmentInfo = type { %struct.VP8Matrix, %struct.VP8Matrix, %struct.VP8Matrix, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i64 }
+%struct.VP8Matrix = type { [16 x i16], [16 x i16], [16 x i32], [16 x i32], [16 x i16] }
+%struct.VP8MBInfo = type { i8, i8, [2 x i8] }
+%struct.VP8EncIterator = type { i32, i32, i8*, i8*, i8*, i8*, %struct.VP8Encoder*, %struct.VP8MBInfo*, %struct.VP8BitWriter*, i8*, i32*, [37 x i8], i8*, i32, [9 x i32], [9 x i32], [4 x [3 x i64]], i64, i64, [4 x [64 x double]]*, i32, i32, i32, i32, [2 x [2 x i8]], [2 x [2 x i8]]*, i8*, i8*, i8*, i8*, i8*, [88 x i8], [3359 x i8] }
+%struct.VP8ModeScore = type { i64, i64, i64, i64, i64, [16 x i16], [16 x [16 x i16]], [8 x [16 x i16]], i32, [16 x i8], i32, i32, [2 x [3 x i8]] }
+
+@VP8LevelCodes = hidden local_unnamed_addr constant [67 x [2 x i16]] [[2 x i16] [i16 1, i16 0], [2 x i16] [i16 7, i16 1], [2 x i16] [i16 15, i16 5], [2 x i16] [i16 15, i16 13], [2 x i16] [i16 51, i16 3], [2 x i16] [i16 51, i16 3], [2 x i16] [i16 51, i16 35], [2 x i16] [i16 51, i16 35], [2 x i16] [i16 51, i16 35], [2 x i16] [i16 51, i16 35], [2 x i16] [i16 211, i16 19], [2 x i16] [i16 211, i16 19], [2 x i16] [i16 211, i16 19], [2 x i16] [i16 211, i16 19], [2 x i16] [i16 211, i16 19], [2 x i16] [i16 211, i16 19], [2 x i16] [i16 211, i16 19], [2 x i16] [i16 211, i16 19], [2 x i16] [i16 211, i16 147], [2 x i16] [i16 211, i16 147], [2 x i16] [i16 211, i16 147], [2 x i16] [i16 211, i16 147], [2 x i16] [i16 211, i16 147], [2 x i16] [i16 211, i16 147], [2 x i16] [i16 211, i16 147], [2 x i16] [i16 211, i16 147], [2 x i16] [i16 211, i16 147], [2 x i16] [i16 211, i16 147], [2 x i16] [i16 211, i16 147], [2 x i16] [i16 211, i16 147], [2 x i16] [i16 211, i16 147], [2 x i16] [i16 211, i16 147], [2 x i16] [i16 211, i16 147], [2 x i16] [i16 211, i16 147], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 83], [2 x i16] [i16 339, i16 339]], align 16
+@VP8EncBands = external local_unnamed_addr constant [17 x i8], align 16
+@VP8FixedCostsUV = hidden local_unnamed_addr constant [4 x i16] [i16 302, i16 984, i16 439, i16 642], align 2
+@VP8FixedCostsI16 = hidden local_unnamed_addr constant [4 x i16] [i16 663, i16 919, i16 872, i16 919], align 2
+@VP8FixedCostsI4 = hidden local_unnamed_addr constant [10 x [10 x [10 x i16]]] [[10 x [10 x i16]] [[10 x i16] [i16 40, i16 1151, i16 1723, i16 1874, i16 2103, i16 2019, i16 1628, i16 1777, i16 2226, i16 2137], [10 x i16] [i16 192, i16 469, i16 1296, i16 1308, i16 1849, i16 1794, i16 1781, i16 1703, i16 1713, i16 1522], [10 x i16] [i16 142, i16 910, i16 762, i16 1684, i16 1849, i16 1576, i16 1460, i16 1305, i16 1801, i16 1657], [10 x i16] [i16 559, i16 641, i16 1370, i16 421, i16 1182, i16 1569, i16 1612, i16 1725, i16 863, i16 1007], [10 x i16] [i16 299, i16 1059, i16 1256, i16 1108, i16 636, i16 1068, i16 1581, i16 1883, i16 869, i16 1142], [10 x i16] [i16 277, i16 1111, i16 707, i16 1362, i16 1089, i16 672, i16 1603, i16 1541, i16 1545, i16 1291], [10 x i16] [i16 214, i16 781, i16 1609, i16 1303, i16 1632, i16 2229, i16 726, i16 1560, i16 1713, i16 918], [10 x i16] [i16 152, i16 1037, i16 1046, i16 1759, i16 1983, i16 2174, i16 1358, i16 742, i16 1740, i16 1390], [10 x i16] [i16 512, i16 1046, i16 1420, i16 753, i16 752, i16 1297, i16 1486, i16 1613, i16 460, i16 1207], [10 x i16] [i16 424, i16 827, i16 1362, i16 719, i16 1462, i16 1202, i16 1199, i16 1476, i16 1199, i16 538]], [10 x [10 x i16]] [[10 x i16] [i16 240, i16 402, i16 1134, i16 1491, i16 1659, i16 1505, i16 1517, i16 1555, i16 1979, i16 2099], [10 x i16] [i16 467, i16 242, i16 960, i16 1232, i16 1714, i16 1620, i16 1834, i16 1570, i16 1676, i16 1391], [10 x i16] [i16 500, i16 455, i16 463, i16 1507, i16 1699, i16 1282, i16 1564, i16 982, i16 2114, i16 2114], [10 x i16] [i16 672, i16 643, i16 1372, i16 331, i16 1589, i16 1667, i16 1453, i16 1938, i16 996, i16 876], [10 x i16] [i16 458, i16 783, i16 1037, i16 911, i16 738, i16 968, i16 1165, i16 1518, i16 859, i16 1033], [10 x i16] [i16 504, i16 815, i16 504, i16 1139, i16 1219, i16 719, i16 1506, i16 1085, i16 1268, i16 1268], [10 x i16] [i16 333, i16 630, i16 1445, i16 1239, i16 1883, i16 3672, i16 799, i16 1548, i16 1865, i16 598], [10 x i16] [i16 399, i16 644, i16 746, i16 1342, i16 1856, i16 1350, i16 1493, i16 613, i16 1855, i16 1015], [10 x i16] [i16 622, i16 749, i16 1205, i16 608, i16 1066, i16 1408, i16 1290, i16 1406, i16 546, i16 971], [10 x i16] [i16 500, i16 753, i16 1041, i16 668, i16 1230, i16 1617, i16 1297, i16 1425, i16 1383, i16 523]], [10 x [10 x i16]] [[10 x i16] [i16 394, i16 553, i16 523, i16 1502, i16 1536, i16 981, i16 1608, i16 1142, i16 1666, i16 2181], [10 x i16] [i16 655, i16 430, i16 375, i16 1411, i16 1861, i16 1220, i16 1677, i16 1135, i16 1978, i16 1553], [10 x i16] [i16 690, i16 640, i16 245, i16 1954, i16 2070, i16 1194, i16 1528, i16 982, i16 1972, i16 2232], [10 x i16] [i16 559, i16 834, i16 741, i16 867, i16 1131, i16 980, i16 1225, i16 852, i16 1092, i16 784], [10 x i16] [i16 690, i16 875, i16 516, i16 959, i16 673, i16 894, i16 1056, i16 1190, i16 1528, i16 1126], [10 x i16] [i16 740, i16 951, i16 384, i16 1277, i16 1177, i16 492, i16 1579, i16 1155, i16 1846, i16 1513], [10 x i16] [i16 323, i16 775, i16 1062, i16 1776, i16 3062, i16 1274, i16 813, i16 1188, i16 1372, i16 655], [10 x i16] [i16 488, i16 971, i16 484, i16 1767, i16 1515, i16 1775, i16 1115, i16 503, i16 1539, i16 1461], [10 x i16] [i16 740, i16 1006, i16 998, i16 709, i16 851, i16 1230, i16 1337, i16 788, i16 741, i16 721], [10 x i16] [i16 522, i16 1073, i16 573, i16 1045, i16 1346, i16 887, i16 1046, i16 1146, i16 1203, i16 697]], [10 x [10 x i16]] [[10 x i16] [i16 105, i16 864, i16 1442, i16 1009, i16 1934, i16 1840, i16 1519, i16 1920, i16 1673, i16 1579], [10 x i16] [i16 534, i16 305, i16 1193, i16 683, i16 1388, i16 2164, i16 1802, i16 1894, i16 1264, i16 1170], [10 x i16] [i16 305, i16 518, i16 877, i16 1108, i16 1426, i16 3215, i16 1425, i16 1064, i16 1320, i16 1242], [10 x i16] [i16 683, i16 732, i16 1927, i16 257, i16 1493, i16 2048, i16 1858, i16 1552, i16 1055, i16 947], [10 x i16] [i16 394, i16 814, i16 1024, i16 660, i16 959, i16 1556, i16 1282, i16 1289, i16 893, i16 1047], [10 x i16] [i16 528, i16 615, i16 996, i16 940, i16 1201, i16 635, i16 1094, i16 2515, i16 803, i16 1358], [10 x i16] [i16 347, i16 614, i16 1609, i16 1187, i16 3133, i16 1345, i16 1007, i16 1339, i16 1017, i16 667], [10 x i16] [i16 218, i16 740, i16 878, i16 1605, i16 3650, i16 3650, i16 1345, i16 758, i16 1357, i16 1617], [10 x i16] [i16 672, i16 750, i16 1541, i16 558, i16 1257, i16 1599, i16 1870, i16 2135, i16 402, i16 1087], [10 x i16] [i16 592, i16 684, i16 1161, i16 430, i16 1092, i16 1497, i16 1475, i16 1489, i16 1095, i16 822]], [10 x [10 x i16]] [[10 x i16] [i16 228, i16 1056, i16 1059, i16 1368, i16 752, i16 982, i16 1512, i16 1518, i16 987, i16 1782], [10 x i16] [i16 494, i16 514, i16 818, i16 942, i16 965, i16 892, i16 1610, i16 1356, i16 1048, i16 1363], [10 x i16] [i16 512, i16 648, i16 591, i16 1042, i16 761, i16 991, i16 1196, i16 1454, i16 1309, i16 1463], [10 x i16] [i16 683, i16 749, i16 1043, i16 676, i16 841, i16 1396, i16 1133, i16 1138, i16 654, i16 939], [10 x i16] [i16 622, i16 1101, i16 1126, i16 994, i16 361, i16 1077, i16 1203, i16 1318, i16 877, i16 1219], [10 x i16] [i16 631, i16 1068, i16 857, i16 1650, i16 651, i16 477, i16 1650, i16 1419, i16 828, i16 1170], [10 x i16] [i16 555, i16 727, i16 1068, i16 1335, i16 3127, i16 1339, i16 820, i16 1331, i16 1077, i16 429], [10 x i16] [i16 504, i16 879, i16 624, i16 1398, i16 889, i16 889, i16 1392, i16 808, i16 891, i16 1406], [10 x i16] [i16 683, i16 1602, i16 1289, i16 977, i16 578, i16 983, i16 1280, i16 1708, i16 406, i16 1122], [10 x i16] [i16 399, i16 865, i16 1433, i16 1070, i16 1072, i16 764, i16 968, i16 1477, i16 1223, i16 678]], [10 x [10 x i16]] [[10 x i16] [i16 333, i16 760, i16 935, i16 1638, i16 1010, i16 529, i16 1646, i16 1410, i16 1472, i16 2219], [10 x i16] [i16 512, i16 494, i16 750, i16 1160, i16 1215, i16 610, i16 1870, i16 1868, i16 1628, i16 1169], [10 x i16] [i16 572, i16 646, i16 492, i16 1934, i16 1208, i16 603, i16 1580, i16 1099, i16 1398, i16 1995], [10 x i16] [i16 786, i16 789, i16 942, i16 581, i16 1018, i16 951, i16 1599, i16 1207, i16 731, i16 768], [10 x i16] [i16 690, i16 1015, i16 672, i16 1078, i16 582, i16 504, i16 1693, i16 1438, i16 1108, i16 2897], [10 x i16] [i16 768, i16 1267, i16 571, i16 2005, i16 1243, i16 244, i16 2881, i16 1380, i16 1786, i16 1453], [10 x i16] [i16 452, i16 899, i16 1293, i16 903, i16 1311, i16 3100, i16 465, i16 1311, i16 1319, i16 813], [10 x i16] [i16 394, i16 927, i16 942, i16 1103, i16 1358, i16 1104, i16 946, i16 593, i16 1363, i16 1109], [10 x i16] [i16 559, i16 1005, i16 1007, i16 1016, i16 658, i16 1173, i16 1021, i16 1164, i16 623, i16 1028], [10 x i16] [i16 564, i16 796, i16 632, i16 1005, i16 1014, i16 863, i16 2316, i16 1268, i16 938, i16 764]], [10 x [10 x i16]] [[10 x i16] [i16 266, i16 606, i16 1098, i16 1228, i16 1497, i16 1243, i16 948, i16 1030, i16 1734, i16 1461], [10 x i16] [i16 366, i16 585, i16 901, i16 1060, i16 1407, i16 1247, i16 876, i16 1134, i16 1620, i16 1054], [10 x i16] [i16 452, i16 565, i16 542, i16 1729, i16 1479, i16 1479, i16 1016, i16 886, i16 2938, i16 1150], [10 x i16] [i16 555, i16 1088, i16 1533, i16 950, i16 1354, i16 895, i16 834, i16 1019, i16 1021, i16 496], [10 x i16] [i16 704, i16 815, i16 1193, i16 971, i16 973, i16 640, i16 1217, i16 2214, i16 832, i16 578], [10 x i16] [i16 672, i16 1245, i16 579, i16 871, i16 875, i16 774, i16 872, i16 1273, i16 1027, i16 949], [10 x i16] [i16 296, i16 1134, i16 2050, i16 1784, i16 1636, i16 3425, i16 442, i16 1550, i16 2076, i16 722], [10 x i16] [i16 342, i16 982, i16 1259, i16 1846, i16 1848, i16 1848, i16 622, i16 568, i16 1847, i16 1052], [10 x i16] [i16 555, i16 1064, i16 1304, i16 828, i16 746, i16 1343, i16 1075, i16 1329, i16 1078, i16 494], [10 x i16] [i16 288, i16 1167, i16 1285, i16 1174, i16 1639, i16 1639, i16 833, i16 2254, i16 1304, i16 509]], [10 x [10 x i16]] [[10 x i16] [i16 342, i16 719, i16 767, i16 1866, i16 1757, i16 1270, i16 1246, i16 550, i16 1746, i16 2151], [10 x i16] [i16 483, i16 653, i16 694, i16 1509, i16 1459, i16 1410, i16 1218, i16 507, i16 1914, i16 1266], [10 x i16] [i16 488, i16 757, i16 447, i16 2979, i16 1813, i16 1268, i16 1654, i16 539, i16 1849, i16 2109], [10 x i16] [i16 522, i16 1097, i16 1085, i16 851, i16 1365, i16 1111, i16 851, i16 901, i16 961, i16 605], [10 x i16] [i16 709, i16 716, i16 841, i16 728, i16 736, i16 945, i16 941, i16 862, i16 2845, i16 1057], [10 x i16] [i16 512, i16 1323, i16 500, i16 1336, i16 1083, i16 681, i16 1342, i16 717, i16 1604, i16 1350], [10 x i16] [i16 452, i16 1155, i16 1372, i16 1900, i16 1501, i16 3290, i16 311, i16 944, i16 1919, i16 922], [10 x i16] [i16 403, i16 1520, i16 977, i16 2132, i16 1733, i16 3522, i16 1076, i16 276, i16 3335, i16 1547], [10 x i16] [i16 559, i16 1374, i16 1101, i16 615, i16 673, i16 2462, i16 974, i16 795, i16 984, i16 984], [10 x i16] [i16 547, i16 1122, i16 1062, i16 812, i16 1410, i16 951, i16 1140, i16 622, i16 1268, i16 651]], [10 x [10 x i16]] [[10 x i16] [i16 165, i16 982, i16 1235, i16 938, i16 1334, i16 1366, i16 1659, i16 1578, i16 964, i16 1612], [10 x i16] [i16 592, i16 422, i16 925, i16 847, i16 1139, i16 1112, i16 1387, i16 2036, i16 861, i16 1041], [10 x i16] [i16 403, i16 837, i16 732, i16 770, i16 941, i16 1658, i16 1250, i16 809, i16 1407, i16 1407], [10 x i16] [i16 896, i16 874, i16 1071, i16 381, i16 1568, i16 1722, i16 1437, i16 2192, i16 480, i16 1035], [10 x i16] [i16 640, i16 1098, i16 1012, i16 1032, i16 684, i16 1382, i16 1581, i16 2106, i16 416, i16 865], [10 x i16] [i16 559, i16 1005, i16 819, i16 914, i16 710, i16 770, i16 1418, i16 920, i16 838, i16 1435], [10 x i16] [i16 415, i16 1258, i16 1245, i16 870, i16 1278, i16 3067, i16 770, i16 1021, i16 1287, i16 522], [10 x i16] [i16 406, i16 990, i16 601, i16 1009, i16 1265, i16 1265, i16 1267, i16 759, i16 1017, i16 1277], [10 x i16] [i16 968, i16 1182, i16 1329, i16 788, i16 1032, i16 1292, i16 1705, i16 1714, i16 203, i16 1403], [10 x i16] [i16 732, i16 877, i16 1279, i16 471, i16 901, i16 1161, i16 1545, i16 1294, i16 755, i16 755]], [10 x [10 x i16]] [[10 x i16] [i16 111, i16 931, i16 1378, i16 1185, i16 1933, i16 1648, i16 1148, i16 1714, i16 1873, i16 1307], [10 x i16] [i16 406, i16 414, i16 1030, i16 1023, i16 1910, i16 1404, i16 1313, i16 1647, i16 1509, i16 793], [10 x i16] [i16 342, i16 640, i16 575, i16 1088, i16 1241, i16 1349, i16 1161, i16 1350, i16 1756, i16 1502], [10 x i16] [i16 559, i16 766, i16 1185, i16 357, i16 1682, i16 1428, i16 1329, i16 1897, i16 1219, i16 802], [10 x i16] [i16 473, i16 909, i16 1164, i16 771, i16 719, i16 2508, i16 1427, i16 1432, i16 722, i16 782], [10 x i16] [i16 342, i16 892, i16 785, i16 1145, i16 1150, i16 794, i16 1296, i16 1550, i16 973, i16 1057], [10 x i16] [i16 208, i16 1036, i16 1326, i16 1343, i16 1606, i16 3395, i16 815, i16 1455, i16 1618, i16 712], [10 x i16] [i16 228, i16 928, i16 890, i16 1046, i16 3499, i16 1711, i16 994, i16 829, i16 1720, i16 1318], [10 x i16] [i16 768, i16 724, i16 1058, i16 636, i16 991, i16 1075, i16 1319, i16 1324, i16 616, i16 825], [10 x i16] [i16 305, i16 1167, i16 1358, i16 899, i16 1587, i16 1587, i16 987, i16 1988, i16 1332, i16 501]]], align 16
+@VP8SetResidualCoeffs = external local_unnamed_addr global void (i16*, %struct.VP8Residual*)*, align 8
+@VP8GetResidualCost = external local_unnamed_addr global i32 (i32, %struct.VP8Residual*)*, align 8
+@VP8EntropyCost = external local_unnamed_addr constant [256 x i16], align 16
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @VP8CalculateLevelCosts(%struct.VP8EncProba*) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.VP8EncProba, %struct.VP8EncProba* %0, i64 0, i32 6
+  %3 = load i32, i32* %2, align 8
+  %4 = icmp eq i32 %3, 0
+  br i1 %4, label %99, label %5
+
+5:                                                ; preds = %1, %95
+  %6 = phi i64 [ %96, %95 ], [ 0, %1 ]
+  br label %7
+
+7:                                                ; preds = %79, %5
+  %8 = phi i64 [ 0, %5 ], [ %80, %79 ]
+  br label %9
+
+9:                                                ; preds = %76, %7
+  %10 = phi i64 [ 0, %7 ], [ %77, %76 ]
+  %11 = getelementptr inbounds %struct.VP8EncProba, %struct.VP8EncProba* %0, i64 0, i32 4, i64 %6, i64 %8, i64 %10, i64 0
+  %12 = icmp eq i64 %10, 0
+  br i1 %12, label %21, label %13
+
+13:                                               ; preds = %9
+  %14 = getelementptr inbounds %struct.VP8EncProba, %struct.VP8EncProba* %0, i64 0, i32 2, i64 %6, i64 %8, i64 %10, i64 0
+  %15 = load i8, i8* %14, align 1
+  %16 = xor i8 %15, -1
+  %17 = zext i8 %16 to i64
+  %18 = getelementptr inbounds [256 x i16], [256 x i16]* @VP8EntropyCost, i64 0, i64 %17
+  %19 = load i16, i16* %18, align 2
+  %20 = zext i16 %19 to i32
+  br label %21
+
+21:                                               ; preds = %9, %13
+  %22 = phi i32 [ %20, %13 ], [ 0, %9 ]
+  %23 = getelementptr inbounds %struct.VP8EncProba, %struct.VP8EncProba* %0, i64 0, i32 2, i64 %6, i64 %8, i64 %10, i64 1
+  %24 = load i8, i8* %23, align 1
+  %25 = xor i8 %24, -1
+  %26 = zext i8 %25 to i64
+  %27 = getelementptr inbounds [256 x i16], [256 x i16]* @VP8EntropyCost, i64 0, i64 %26
+  %28 = load i16, i16* %27, align 2
+  %29 = zext i16 %28 to i32
+  %30 = add nuw nsw i32 %22, %29
+  %31 = zext i8 %24 to i64
+  %32 = getelementptr inbounds [256 x i16], [256 x i16]* @VP8EntropyCost, i64 0, i64 %31
+  %33 = load i16, i16* %32, align 2
+  %34 = trunc i32 %22 to i16
+  %35 = add i16 %33, %34
+  store i16 %35, i16* %11, align 2
+  br label %36
+
+36:                                               ; preds = %70, %21
+  %37 = phi i64 [ 1, %21 ], [ %74, %70 ]
+  %38 = add nsw i64 %37, -1
+  %39 = getelementptr inbounds [67 x [2 x i16]], [67 x [2 x i16]]* @VP8LevelCodes, i64 0, i64 %38, i64 1
+  %40 = load i16, i16* %39, align 2
+  %41 = zext i16 %40 to i32
+  %42 = getelementptr inbounds [67 x [2 x i16]], [67 x [2 x i16]]* @VP8LevelCodes, i64 0, i64 %38, i64 0
+  %43 = load i16, i16* %42, align 4
+  %44 = zext i16 %43 to i32
+  br label %45
+
+45:                                               ; preds = %64, %36
+  %46 = phi i64 [ 2, %36 ], [ %68, %64 ]
+  %47 = phi i32 [ 0, %36 ], [ %65, %64 ]
+  %48 = phi i32 [ %41, %36 ], [ %66, %64 ]
+  %49 = phi i32 [ %44, %36 ], [ %67, %64 ]
+  %50 = and i32 %49, 1
+  %51 = icmp eq i32 %50, 0
+  br i1 %51, label %64, label %52
+
+52:                                               ; preds = %45
+  %53 = getelementptr inbounds %struct.VP8EncProba, %struct.VP8EncProba* %0, i64 0, i32 2, i64 %6, i64 %8, i64 %10, i64 %46
+  %54 = load i8, i8* %53, align 1
+  %55 = shl i32 %48, 31
+  %56 = ashr exact i32 %55, 31
+  %57 = trunc i32 %56 to i8
+  %58 = xor i8 %54, %57
+  %59 = zext i8 %58 to i64
+  %60 = getelementptr inbounds [256 x i16], [256 x i16]* @VP8EntropyCost, i64 0, i64 %59
+  %61 = load i16, i16* %60, align 2
+  %62 = zext i16 %61 to i32
+  %63 = add nsw i32 %47, %62
+  br label %64
+
+64:                                               ; preds = %52, %45
+  %65 = phi i32 [ %63, %52 ], [ %47, %45 ]
+  %66 = ashr i32 %48, 1
+  %67 = ashr i32 %49, 1
+  %68 = add nuw nsw i64 %46, 1
+  %69 = icmp eq i32 %67, 0
+  br i1 %69, label %70, label %45
+
+70:                                               ; preds = %64
+  %71 = add nsw i32 %30, %65
+  %72 = trunc i32 %71 to i16
+  %73 = getelementptr inbounds %struct.VP8EncProba, %struct.VP8EncProba* %0, i64 0, i32 4, i64 %6, i64 %8, i64 %10, i64 %37
+  store i16 %72, i16* %73, align 2
+  %74 = add nuw nsw i64 %37, 1
+  %75 = icmp eq i64 %74, 68
+  br i1 %75, label %76, label %36
+
+76:                                               ; preds = %70
+  %77 = add nuw nsw i64 %10, 1
+  %78 = icmp eq i64 %77, 3
+  br i1 %78, label %79, label %9
+
+79:                                               ; preds = %76
+  %80 = add nuw nsw i64 %8, 1
+  %81 = icmp eq i64 %80, 8
+  br i1 %81, label %82, label %7
+
+82:                                               ; preds = %79, %82
+  %83 = phi i64 [ %93, %82 ], [ 0, %79 ]
+  %84 = getelementptr inbounds [17 x i8], [17 x i8]* @VP8EncBands, i64 0, i64 %83
+  %85 = load i8, i8* %84, align 1
+  %86 = zext i8 %85 to i64
+  %87 = getelementptr inbounds %struct.VP8EncProba, %struct.VP8EncProba* %0, i64 0, i32 4, i64 %6, i64 %86, i64 0, i64 0
+  %88 = getelementptr inbounds %struct.VP8EncProba, %struct.VP8EncProba* %0, i64 0, i32 5, i64 %6, i64 %83, i64 0
+  store i16* %87, i16** %88, align 8
+  %89 = getelementptr inbounds %struct.VP8EncProba, %struct.VP8EncProba* %0, i64 0, i32 4, i64 %6, i64 %86, i64 1, i64 0
+  %90 = getelementptr inbounds %struct.VP8EncProba, %struct.VP8EncProba* %0, i64 0, i32 5, i64 %6, i64 %83, i64 1
+  store i16* %89, i16** %90, align 8
+  %91 = getelementptr inbounds %struct.VP8EncProba, %struct.VP8EncProba* %0, i64 0, i32 4, i64 %6, i64 %86, i64 2, i64 0
+  %92 = getelementptr inbounds %struct.VP8EncProba, %struct.VP8EncProba* %0, i64 0, i32 5, i64 %6, i64 %83, i64 2
+  store i16* %91, i16** %92, align 8
+  %93 = add nuw nsw i64 %83, 1
+  %94 = icmp eq i64 %93, 16
+  br i1 %94, label %95, label %82
+
+95:                                               ; preds = %82
+  %96 = add nuw nsw i64 %6, 1
+  %97 = icmp eq i64 %96, 4
+  br i1 %97, label %98, label %5
+
+98:                                               ; preds = %95
+  store i32 0, i32* %2, align 8
+  br label %99
+
+99:                                               ; preds = %1, %98
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable writeonly
+define hidden void @VP8InitResidual(i32, i32, %struct.VP8Encoder*, %struct.VP8Residual* nocapture) local_unnamed_addr #2 {
+  %5 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 3
+  store i32 %1, i32* %5, align 8
+  %6 = sext i32 %1 to i64
+  %7 = getelementptr inbounds %struct.VP8Encoder, %struct.VP8Encoder* %2, i64 0, i32 26, i32 2, i64 %6, i64 0
+  %8 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 4
+  store [3 x [11 x i8]]* %7, [3 x [11 x i8]]** %8, align 8
+  %9 = getelementptr inbounds %struct.VP8Encoder, %struct.VP8Encoder* %2, i64 0, i32 26, i32 3, i64 %6, i64 0
+  %10 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 5
+  store [3 x [11 x i32]]* %9, [3 x [11 x i32]]** %10, align 8
+  %11 = getelementptr inbounds %struct.VP8Encoder, %struct.VP8Encoder* %2, i64 0, i32 26, i32 5, i64 %6, i64 0
+  %12 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 6
+  store [3 x i16*]* %11, [3 x i16*]** %12, align 8
+  %13 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 0
+  store i32 %0, i32* %13, align 8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @VP8GetCostLuma4(%struct.VP8EncIterator* nocapture readonly, i16*) local_unnamed_addr #3 {
+  %3 = alloca %struct.VP8Residual, align 8
+  %4 = getelementptr inbounds %struct.VP8EncIterator, %struct.VP8EncIterator* %0, i64 0, i32 13
+  %5 = load i32, i32* %4, align 8
+  %6 = and i32 %5, 3
+  %7 = ashr i32 %5, 2
+  %8 = bitcast %struct.VP8Residual* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 48, i8* nonnull %8) #5
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %8, i8 -86, i64 24, i1 false)
+  %9 = getelementptr inbounds %struct.VP8EncIterator, %struct.VP8EncIterator* %0, i64 0, i32 6
+  %10 = load %struct.VP8Encoder*, %struct.VP8Encoder** %9, align 8
+  %11 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 3
+  store i32 3, i32* %11, align 8
+  %12 = getelementptr inbounds %struct.VP8Encoder, %struct.VP8Encoder* %10, i64 0, i32 26, i32 2, i64 3, i64 0
+  %13 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 4
+  store [3 x [11 x i8]]* %12, [3 x [11 x i8]]** %13, align 8
+  %14 = getelementptr inbounds %struct.VP8Encoder, %struct.VP8Encoder* %10, i64 0, i32 26, i32 3, i64 3, i64 0
+  %15 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 5
+  store [3 x [11 x i32]]* %14, [3 x [11 x i32]]** %15, align 8
+  %16 = getelementptr inbounds %struct.VP8Encoder, %struct.VP8Encoder* %10, i64 0, i32 26, i32 5, i64 3, i64 0
+  %17 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 6
+  store [3 x i16*]* %16, [3 x i16*]** %17, align 8
+  %18 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 0
+  store i32 0, i32* %18, align 8
+  %19 = zext i32 %6 to i64
+  %20 = getelementptr inbounds %struct.VP8EncIterator, %struct.VP8EncIterator* %0, i64 0, i32 14, i64 %19
+  %21 = load i32, i32* %20, align 4
+  %22 = sext i32 %7 to i64
+  %23 = getelementptr inbounds %struct.VP8EncIterator, %struct.VP8EncIterator* %0, i64 0, i32 15, i64 %22
+  %24 = load i32, i32* %23, align 4
+  %25 = add nsw i32 %24, %21
+  %26 = load void (i16*, %struct.VP8Residual*)*, void (i16*, %struct.VP8Residual*)** @VP8SetResidualCoeffs, align 8
+  call void %26(i16* %1, %struct.VP8Residual* nonnull %3) #5
+  %27 = load i32 (i32, %struct.VP8Residual*)*, i32 (i32, %struct.VP8Residual*)** @VP8GetResidualCost, align 8
+  %28 = call i32 %27(i32 %25, %struct.VP8Residual* nonnull %3) #5
+  call void @llvm.lifetime.end.p0i8(i64 48, i8* nonnull %8) #5
+  ret i32 %28
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @VP8GetCostLuma16(%struct.VP8EncIterator*, %struct.VP8ModeScore*) local_unnamed_addr #3 {
+  %3 = alloca %struct.VP8Residual, align 8
+  %4 = bitcast %struct.VP8Residual* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 48, i8* nonnull %4) #5
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %4, i8 -86, i64 24, i1 false)
+  %5 = getelementptr inbounds %struct.VP8EncIterator, %struct.VP8EncIterator* %0, i64 0, i32 6
+  %6 = load %struct.VP8Encoder*, %struct.VP8Encoder** %5, align 8
+  tail call void @VP8IteratorNzToBytes(%struct.VP8EncIterator* %0) #5
+  %7 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 3
+  store i32 1, i32* %7, align 8
+  %8 = getelementptr inbounds %struct.VP8Encoder, %struct.VP8Encoder* %6, i64 0, i32 26, i32 2, i64 1, i64 0
+  %9 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 4
+  store [3 x [11 x i8]]* %8, [3 x [11 x i8]]** %9, align 8
+  %10 = getelementptr inbounds %struct.VP8Encoder, %struct.VP8Encoder* %6, i64 0, i32 26, i32 3, i64 1, i64 0
+  %11 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 5
+  store [3 x [11 x i32]]* %10, [3 x [11 x i32]]** %11, align 8
+  %12 = getelementptr inbounds %struct.VP8Encoder, %struct.VP8Encoder* %6, i64 0, i32 26, i32 5, i64 1, i64 0
+  %13 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 6
+  store [3 x i16*]* %12, [3 x i16*]** %13, align 8
+  %14 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 0
+  store i32 0, i32* %14, align 8
+  %15 = load void (i16*, %struct.VP8Residual*)*, void (i16*, %struct.VP8Residual*)** @VP8SetResidualCoeffs, align 8
+  %16 = getelementptr inbounds %struct.VP8ModeScore, %struct.VP8ModeScore* %1, i64 0, i32 5, i64 0
+  call void %15(i16* %16, %struct.VP8Residual* nonnull %3) #5
+  %17 = load i32 (i32, %struct.VP8Residual*)*, i32 (i32, %struct.VP8Residual*)** @VP8GetResidualCost, align 8
+  %18 = getelementptr inbounds %struct.VP8EncIterator, %struct.VP8EncIterator* %0, i64 0, i32 14, i64 8
+  %19 = load i32, i32* %18, align 4
+  %20 = getelementptr inbounds %struct.VP8EncIterator, %struct.VP8EncIterator* %0, i64 0, i32 15, i64 8
+  %21 = load i32, i32* %20, align 8
+  %22 = add nsw i32 %21, %19
+  %23 = call i32 %17(i32 %22, %struct.VP8Residual* nonnull %3) #5
+  store i32 0, i32* %7, align 8
+  %24 = getelementptr inbounds %struct.VP8Encoder, %struct.VP8Encoder* %6, i64 0, i32 26, i32 2, i64 0, i64 0
+  store [3 x [11 x i8]]* %24, [3 x [11 x i8]]** %9, align 8
+  %25 = getelementptr inbounds %struct.VP8Encoder, %struct.VP8Encoder* %6, i64 0, i32 26, i32 3, i64 0, i64 0
+  store [3 x [11 x i32]]* %25, [3 x [11 x i32]]** %11, align 8
+  %26 = getelementptr inbounds %struct.VP8Encoder, %struct.VP8Encoder* %6, i64 0, i32 26, i32 5, i64 0, i64 0
+  store [3 x i16*]* %26, [3 x i16*]** %13, align 8
+  store i32 1, i32* %14, align 8
+  %27 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 1
+  %28 = getelementptr inbounds %struct.VP8EncIterator, %struct.VP8EncIterator* %0, i64 0, i32 14, i64 0
+  %29 = getelementptr inbounds %struct.VP8EncIterator, %struct.VP8EncIterator* %0, i64 0, i32 14, i64 1
+  %30 = getelementptr inbounds %struct.VP8EncIterator, %struct.VP8EncIterator* %0, i64 0, i32 14, i64 2
+  %31 = getelementptr inbounds %struct.VP8EncIterator, %struct.VP8EncIterator* %0, i64 0, i32 14, i64 3
+  br label %32
+
+32:                                               ; preds = %32, %2
+  %33 = phi i64 [ 0, %2 ], [ %84, %32 ]
+  %34 = phi i32 [ %23, %2 ], [ %80, %32 ]
+  %35 = getelementptr inbounds %struct.VP8EncIterator, %struct.VP8EncIterator* %0, i64 0, i32 15, i64 %33
+  %36 = shl i64 %33, 2
+  %37 = load i32, i32* %28, align 4
+  %38 = load i32, i32* %35, align 4
+  %39 = add nsw i32 %38, %37
+  %40 = load void (i16*, %struct.VP8Residual*)*, void (i16*, %struct.VP8Residual*)** @VP8SetResidualCoeffs, align 8
+  %41 = getelementptr inbounds %struct.VP8ModeScore, %struct.VP8ModeScore* %1, i64 0, i32 6, i64 %36, i64 0
+  call void %40(i16* %41, %struct.VP8Residual* nonnull %3) #5
+  %42 = load i32 (i32, %struct.VP8Residual*)*, i32 (i32, %struct.VP8Residual*)** @VP8GetResidualCost, align 8
+  %43 = call i32 %42(i32 %39, %struct.VP8Residual* nonnull %3) #5
+  %44 = add nsw i32 %43, %34
+  %45 = load i32, i32* %27, align 4
+  %46 = lshr i32 %45, 31
+  %47 = xor i32 %46, 1
+  store i32 %47, i32* %35, align 4
+  store i32 %47, i32* %28, align 4
+  %48 = load i32, i32* %29, align 4
+  %49 = load i32, i32* %35, align 4
+  %50 = add nsw i32 %49, %48
+  %51 = load void (i16*, %struct.VP8Residual*)*, void (i16*, %struct.VP8Residual*)** @VP8SetResidualCoeffs, align 8
+  %52 = or i64 %36, 1
+  %53 = getelementptr inbounds %struct.VP8ModeScore, %struct.VP8ModeScore* %1, i64 0, i32 6, i64 %52, i64 0
+  call void %51(i16* %53, %struct.VP8Residual* nonnull %3) #5
+  %54 = load i32 (i32, %struct.VP8Residual*)*, i32 (i32, %struct.VP8Residual*)** @VP8GetResidualCost, align 8
+  %55 = call i32 %54(i32 %50, %struct.VP8Residual* nonnull %3) #5
+  %56 = add nsw i32 %55, %44
+  %57 = load i32, i32* %27, align 4
+  %58 = lshr i32 %57, 31
+  %59 = xor i32 %58, 1
+  store i32 %59, i32* %35, align 4
+  store i32 %59, i32* %29, align 4
+  %60 = load i32, i32* %30, align 4
+  %61 = load i32, i32* %35, align 4
+  %62 = add nsw i32 %61, %60
+  %63 = load void (i16*, %struct.VP8Residual*)*, void (i16*, %struct.VP8Residual*)** @VP8SetResidualCoeffs, align 8
+  %64 = or i64 %36, 2
+  %65 = getelementptr inbounds %struct.VP8ModeScore, %struct.VP8ModeScore* %1, i64 0, i32 6, i64 %64, i64 0
+  call void %63(i16* %65, %struct.VP8Residual* nonnull %3) #5
+  %66 = load i32 (i32, %struct.VP8Residual*)*, i32 (i32, %struct.VP8Residual*)** @VP8GetResidualCost, align 8
+  %67 = call i32 %66(i32 %62, %struct.VP8Residual* nonnull %3) #5
+  %68 = add nsw i32 %67, %56
+  %69 = load i32, i32* %27, align 4
+  %70 = lshr i32 %69, 31
+  %71 = xor i32 %70, 1
+  store i32 %71, i32* %35, align 4
+  store i32 %71, i32* %30, align 4
+  %72 = load i32, i32* %31, align 4
+  %73 = load i32, i32* %35, align 4
+  %74 = add nsw i32 %73, %72
+  %75 = load void (i16*, %struct.VP8Residual*)*, void (i16*, %struct.VP8Residual*)** @VP8SetResidualCoeffs, align 8
+  %76 = or i64 %36, 3
+  %77 = getelementptr inbounds %struct.VP8ModeScore, %struct.VP8ModeScore* %1, i64 0, i32 6, i64 %76, i64 0
+  call void %75(i16* %77, %struct.VP8Residual* nonnull %3) #5
+  %78 = load i32 (i32, %struct.VP8Residual*)*, i32 (i32, %struct.VP8Residual*)** @VP8GetResidualCost, align 8
+  %79 = call i32 %78(i32 %74, %struct.VP8Residual* nonnull %3) #5
+  %80 = add nsw i32 %79, %68
+  %81 = load i32, i32* %27, align 4
+  %82 = lshr i32 %81, 31
+  %83 = xor i32 %82, 1
+  store i32 %83, i32* %35, align 4
+  store i32 %83, i32* %31, align 4
+  %84 = add nuw nsw i64 %33, 1
+  %85 = icmp eq i64 %84, 4
+  br i1 %85, label %86, label %32
+
+86:                                               ; preds = %32
+  call void @llvm.lifetime.end.p0i8(i64 48, i8* nonnull %4) #5
+  ret i32 %80
+}
+
+declare void @VP8IteratorNzToBytes(%struct.VP8EncIterator*) local_unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @VP8GetCostUV(%struct.VP8EncIterator*, %struct.VP8ModeScore*) local_unnamed_addr #3 {
+  %3 = alloca %struct.VP8Residual, align 8
+  %4 = bitcast %struct.VP8Residual* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 48, i8* nonnull %4) #5
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %4, i8 -86, i64 24, i1 false)
+  %5 = getelementptr inbounds %struct.VP8EncIterator, %struct.VP8EncIterator* %0, i64 0, i32 6
+  %6 = load %struct.VP8Encoder*, %struct.VP8Encoder** %5, align 8
+  tail call void @VP8IteratorNzToBytes(%struct.VP8EncIterator* %0) #5
+  %7 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 3
+  store i32 2, i32* %7, align 8
+  %8 = getelementptr inbounds %struct.VP8Encoder, %struct.VP8Encoder* %6, i64 0, i32 26, i32 2, i64 2, i64 0
+  %9 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 4
+  store [3 x [11 x i8]]* %8, [3 x [11 x i8]]** %9, align 8
+  %10 = getelementptr inbounds %struct.VP8Encoder, %struct.VP8Encoder* %6, i64 0, i32 26, i32 3, i64 2, i64 0
+  %11 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 5
+  store [3 x [11 x i32]]* %10, [3 x [11 x i32]]** %11, align 8
+  %12 = getelementptr inbounds %struct.VP8Encoder, %struct.VP8Encoder* %6, i64 0, i32 26, i32 5, i64 2, i64 0
+  %13 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 6
+  store [3 x i16*]* %12, [3 x i16*]** %13, align 8
+  %14 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 0
+  store i32 0, i32* %14, align 8
+  %15 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %3, i64 0, i32 1
+  br label %16
+
+16:                                               ; preds = %2, %16
+  %17 = phi i64 [ 0, %2 ], [ 2, %16 ]
+  %18 = phi i32 [ 0, %2 ], [ %68, %16 ]
+  %19 = or i64 %17, 4
+  %20 = getelementptr inbounds %struct.VP8EncIterator, %struct.VP8EncIterator* %0, i64 0, i32 14, i64 %19
+  %21 = getelementptr inbounds %struct.VP8EncIterator, %struct.VP8EncIterator* %0, i64 0, i32 15, i64 %19
+  %22 = shl nuw nsw i64 %17, 1
+  %23 = load i32, i32* %20, align 4
+  %24 = load i32, i32* %21, align 4
+  %25 = add nsw i32 %24, %23
+  %26 = load void (i16*, %struct.VP8Residual*)*, void (i16*, %struct.VP8Residual*)** @VP8SetResidualCoeffs, align 8
+  %27 = getelementptr inbounds %struct.VP8ModeScore, %struct.VP8ModeScore* %1, i64 0, i32 7, i64 %22, i64 0
+  call void %26(i16* %27, %struct.VP8Residual* nonnull %3) #5
+  %28 = load i32 (i32, %struct.VP8Residual*)*, i32 (i32, %struct.VP8Residual*)** @VP8GetResidualCost, align 8
+  %29 = call i32 %28(i32 %25, %struct.VP8Residual* nonnull %3) #5
+  %30 = add nsw i32 %29, %18
+  %31 = load i32, i32* %15, align 4
+  %32 = lshr i32 %31, 31
+  %33 = xor i32 %32, 1
+  store i32 %33, i32* %21, align 4
+  store i32 %33, i32* %20, align 4
+  %34 = or i64 %17, 5
+  %35 = getelementptr inbounds %struct.VP8EncIterator, %struct.VP8EncIterator* %0, i64 0, i32 14, i64 %34
+  %36 = load i32, i32* %35, align 4
+  %37 = add nsw i32 %33, %36
+  %38 = load void (i16*, %struct.VP8Residual*)*, void (i16*, %struct.VP8Residual*)** @VP8SetResidualCoeffs, align 8
+  %39 = or i64 %22, 1
+  %40 = getelementptr inbounds %struct.VP8ModeScore, %struct.VP8ModeScore* %1, i64 0, i32 7, i64 %39, i64 0
+  call void %38(i16* %40, %struct.VP8Residual* nonnull %3) #5
+  %41 = load i32 (i32, %struct.VP8Residual*)*, i32 (i32, %struct.VP8Residual*)** @VP8GetResidualCost, align 8
+  %42 = call i32 %41(i32 %37, %struct.VP8Residual* nonnull %3) #5
+  %43 = add nsw i32 %42, %30
+  %44 = load i32, i32* %15, align 4
+  %45 = lshr i32 %44, 31
+  %46 = xor i32 %45, 1
+  store i32 %46, i32* %21, align 4
+  store i32 %46, i32* %35, align 4
+  %47 = getelementptr inbounds %struct.VP8EncIterator, %struct.VP8EncIterator* %0, i64 0, i32 15, i64 %34
+  %48 = shl nuw nsw i64 %17, 1
+  %49 = or i64 %48, 2
+  %50 = load i32, i32* %20, align 4
+  %51 = load i32, i32* %47, align 4
+  %52 = add nsw i32 %51, %50
+  %53 = load void (i16*, %struct.VP8Residual*)*, void (i16*, %struct.VP8Residual*)** @VP8SetResidualCoeffs, align 8
+  %54 = getelementptr inbounds %struct.VP8ModeScore, %struct.VP8ModeScore* %1, i64 0, i32 7, i64 %49, i64 0
+  call void %53(i16* %54, %struct.VP8Residual* nonnull %3) #5
+  %55 = load i32 (i32, %struct.VP8Residual*)*, i32 (i32, %struct.VP8Residual*)** @VP8GetResidualCost, align 8
+  %56 = call i32 %55(i32 %52, %struct.VP8Residual* nonnull %3) #5
+  %57 = add nsw i32 %56, %43
+  %58 = load i32, i32* %15, align 4
+  %59 = lshr i32 %58, 31
+  %60 = xor i32 %59, 1
+  store i32 %60, i32* %47, align 4
+  store i32 %60, i32* %20, align 4
+  %61 = load i32, i32* %35, align 4
+  %62 = add nsw i32 %60, %61
+  %63 = load void (i16*, %struct.VP8Residual*)*, void (i16*, %struct.VP8Residual*)** @VP8SetResidualCoeffs, align 8
+  %64 = or i64 %48, 3
+  %65 = getelementptr inbounds %struct.VP8ModeScore, %struct.VP8ModeScore* %1, i64 0, i32 7, i64 %64, i64 0
+  call void %63(i16* %65, %struct.VP8Residual* nonnull %3) #5
+  %66 = load i32 (i32, %struct.VP8Residual*)*, i32 (i32, %struct.VP8Residual*)** @VP8GetResidualCost, align 8
+  %67 = call i32 %66(i32 %62, %struct.VP8Residual* nonnull %3) #5
+  %68 = add nsw i32 %67, %57
+  %69 = load i32, i32* %15, align 4
+  %70 = lshr i32 %69, 31
+  %71 = xor i32 %70, 1
+  store i32 %71, i32* %47, align 4
+  store i32 %71, i32* %35, align 4
+  %72 = icmp eq i64 %17, 0
+  br i1 %72, label %16, label %73
+
+73:                                               ; preds = %16
+  call void @llvm.lifetime.end.p0i8(i64 48, i8* nonnull %4) #5
+  ret i32 %68
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden i32 @VP8RecordCoeffs(i32, %struct.VP8Residual* nocapture readonly) local_unnamed_addr #0 {
+  %3 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %1, i64 0, i32 0
+  %4 = load i32, i32* %3, align 8
+  %5 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %1, i64 0, i32 5
+  %6 = load [3 x [11 x i32]]*, [3 x [11 x i32]]** %5, align 8
+  %7 = sext i32 %4 to i64
+  %8 = sext i32 %0 to i64
+  %9 = getelementptr inbounds [3 x [11 x i32]], [3 x [11 x i32]]* %6, i64 %7, i64 %8, i64 0
+  %10 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %1, i64 0, i32 1
+  %11 = load i32, i32* %10, align 4
+  %12 = icmp slt i32 %11, 0
+  br i1 %12, label %17, label %13
+
+13:                                               ; preds = %2
+  %14 = icmp sgt i32 %4, %11
+  br i1 %14, label %161, label %15
+
+15:                                               ; preds = %13
+  %16 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %1, i64 0, i32 2
+  br label %24
+
+17:                                               ; preds = %2
+  %18 = load i32, i32* %9, align 4
+  %19 = icmp ugt i32 %18, -131073
+  br i1 %19, label %20, label %172
+
+20:                                               ; preds = %17
+  %21 = add nsw i32 %18, 1
+  %22 = lshr i32 %21, 1
+  %23 = and i32 %22, 2147450879
+  br label %172
+
+24:                                               ; preds = %15, %151
+  %25 = phi i32* [ %9, %15 ], [ %158, %151 ]
+  %26 = phi i32 [ %4, %15 ], [ %90, %151 ]
+  %27 = load i32, i32* %25, align 4
+  %28 = icmp ugt i32 %27, -131073
+  br i1 %28, label %29, label %33
+
+29:                                               ; preds = %24
+  %30 = add nsw i32 %27, 1
+  %31 = lshr i32 %30, 1
+  %32 = and i32 %31, 2147450879
+  br label %33
+
+33:                                               ; preds = %24, %29
+  %34 = phi i32 [ %32, %29 ], [ %27, %24 ]
+  %35 = add nuw i32 %34, 65537
+  store i32 %35, i32* %25, align 4
+  %36 = load i16*, i16** %16, align 8
+  %37 = add i32 %26, 1
+  %38 = sext i32 %26 to i64
+  %39 = getelementptr inbounds i16, i16* %36, i64 %38
+  %40 = load i16, i16* %39, align 2
+  %41 = icmp eq i16 %40, 0
+  %42 = getelementptr inbounds i32, i32* %25, i64 1
+  %43 = load i32, i32* %42, align 4
+  %44 = icmp ugt i32 %43, -131073
+  br i1 %41, label %45, label %76
+
+45:                                               ; preds = %33
+  %46 = sext i32 %37 to i64
+  br label %47
+
+47:                                               ; preds = %45, %56
+  %48 = phi i64 [ %46, %45 ], [ %64, %56 ]
+  %49 = phi i1 [ %44, %45 ], [ %70, %56 ]
+  %50 = phi i32 [ %43, %45 ], [ %69, %56 ]
+  %51 = phi i32* [ %42, %45 ], [ %68, %56 ]
+  br i1 %49, label %52, label %56
+
+52:                                               ; preds = %47
+  %53 = add nsw i32 %50, 1
+  %54 = lshr i32 %53, 1
+  %55 = and i32 %54, 2147450879
+  br label %56
+
+56:                                               ; preds = %47, %52
+  %57 = phi i32 [ %55, %52 ], [ %50, %47 ]
+  %58 = add nuw i32 %57, 65536
+  store i32 %58, i32* %51, align 4
+  %59 = load [3 x [11 x i32]]*, [3 x [11 x i32]]** %5, align 8
+  %60 = getelementptr inbounds [17 x i8], [17 x i8]* @VP8EncBands, i64 0, i64 %48
+  %61 = load i8, i8* %60, align 1
+  %62 = zext i8 %61 to i64
+  %63 = load i16*, i16** %16, align 8
+  %64 = add i64 %48, 1
+  %65 = getelementptr inbounds i16, i16* %63, i64 %48
+  %66 = load i16, i16* %65, align 2
+  %67 = icmp eq i16 %66, 0
+  %68 = getelementptr inbounds [3 x [11 x i32]], [3 x [11 x i32]]* %59, i64 %62, i64 0, i64 1
+  %69 = load i32, i32* %68, align 4
+  %70 = icmp ugt i32 %69, -131073
+  br i1 %67, label %47, label %71
+
+71:                                               ; preds = %56
+  %72 = zext i8 %61 to i64
+  %73 = trunc i64 %64 to i32
+  %74 = getelementptr inbounds [3 x [11 x i32]], [3 x [11 x i32]]* %59, i64 %72, i64 0, i64 0
+  %75 = sext i16 %66 to i32
+  br i1 %70, label %78, label %87
+
+76:                                               ; preds = %33
+  %77 = sext i16 %40 to i32
+  br i1 %44, label %78, label %87
+
+78:                                               ; preds = %71, %76
+  %79 = phi i32 [ %75, %71 ], [ %77, %76 ]
+  %80 = phi i32 [ %69, %71 ], [ %43, %76 ]
+  %81 = phi i32* [ %68, %71 ], [ %42, %76 ]
+  %82 = phi i32 [ %73, %71 ], [ %37, %76 ]
+  %83 = phi i32* [ %74, %71 ], [ %25, %76 ]
+  %84 = add nsw i32 %80, 1
+  %85 = lshr i32 %84, 1
+  %86 = and i32 %85, 2147450879
+  br label %87
+
+87:                                               ; preds = %71, %76, %78
+  %88 = phi i32 [ %79, %78 ], [ %77, %76 ], [ %75, %71 ]
+  %89 = phi i32* [ %81, %78 ], [ %42, %76 ], [ %68, %71 ]
+  %90 = phi i32 [ %82, %78 ], [ %37, %76 ], [ %73, %71 ]
+  %91 = phi i32* [ %83, %78 ], [ %25, %76 ], [ %74, %71 ]
+  %92 = phi i32 [ %86, %78 ], [ %43, %76 ], [ %69, %71 ]
+  %93 = add nuw i32 %92, 65537
+  store i32 %93, i32* %89, align 4
+  %94 = add nsw i32 %88, 1
+  %95 = icmp ugt i32 %94, 2
+  %96 = getelementptr inbounds i32, i32* %91, i64 2
+  %97 = load i32, i32* %96, align 4
+  %98 = icmp ugt i32 %97, -131073
+  br i1 %98, label %99, label %103
+
+99:                                               ; preds = %87
+  %100 = add nsw i32 %97, 1
+  %101 = lshr i32 %100, 1
+  %102 = and i32 %101, 2147450879
+  br label %103
+
+103:                                              ; preds = %87, %99
+  %104 = phi i32 [ %102, %99 ], [ %97, %87 ]
+  %105 = select i1 %95, i32 65537, i32 65536
+  %106 = add nuw i32 %104, %105
+  store i32 %106, i32* %96, align 4
+  br i1 %95, label %107, label %151
+
+107:                                              ; preds = %103
+  %108 = icmp slt i32 %88, 0
+  %109 = sub nsw i32 0, %88
+  %110 = select i1 %108, i32 %109, i32 %88
+  %111 = icmp slt i32 %110, 67
+  %112 = select i1 %111, i32 %110, i32 67
+  %113 = add nsw i32 %112, -1
+  %114 = sext i32 %113 to i64
+  %115 = getelementptr inbounds [67 x [2 x i16]], [67 x [2 x i16]]* @VP8LevelCodes, i64 0, i64 %114, i64 1
+  %116 = load i16, i16* %115, align 2
+  %117 = zext i16 %116 to i32
+  %118 = getelementptr inbounds [67 x [2 x i16]], [67 x [2 x i16]]* @VP8LevelCodes, i64 0, i64 %114, i64 0
+  %119 = load i16, i16* %118, align 4
+  %120 = zext i16 %119 to i32
+  %121 = lshr i32 %120, 1
+  %122 = icmp eq i32 %121, 0
+  br i1 %122, label %151, label %123
+
+123:                                              ; preds = %107
+  %124 = getelementptr inbounds i32, i32* %91, i64 3
+  br label %125
+
+125:                                              ; preds = %123, %147
+  %126 = phi i64 [ 0, %123 ], [ %148, %147 ]
+  %127 = phi i32 [ %121, %123 ], [ %149, %147 ]
+  %128 = phi i32 [ %120, %123 ], [ %127, %147 ]
+  %129 = and i32 %128, 2
+  %130 = icmp eq i32 %129, 0
+  br i1 %130, label %147, label %131
+
+131:                                              ; preds = %125
+  %132 = trunc i64 %126 to i32
+  %133 = shl i32 2, %132
+  %134 = and i32 %133, %117
+  %135 = icmp eq i32 %134, 0
+  %136 = getelementptr inbounds i32, i32* %124, i64 %126
+  %137 = load i32, i32* %136, align 4
+  %138 = icmp ugt i32 %137, -131073
+  br i1 %138, label %139, label %143
+
+139:                                              ; preds = %131
+  %140 = add nsw i32 %137, 1
+  %141 = lshr i32 %140, 1
+  %142 = and i32 %141, 2147450879
+  br label %143
+
+143:                                              ; preds = %131, %139
+  %144 = phi i32 [ %142, %139 ], [ %137, %131 ]
+  %145 = select i1 %135, i32 65536, i32 65537
+  %146 = add nuw i32 %144, %145
+  store i32 %146, i32* %136, align 4
+  br label %147
+
+147:                                              ; preds = %125, %143
+  %148 = add nuw nsw i64 %126, 1
+  %149 = ashr i32 %127, 1
+  %150 = icmp eq i32 %149, 0
+  br i1 %150, label %151, label %125
+
+151:                                              ; preds = %147, %107, %103
+  %152 = phi i64 [ 1, %103 ], [ 2, %107 ], [ 2, %147 ]
+  %153 = load [3 x [11 x i32]]*, [3 x [11 x i32]]** %5, align 8
+  %154 = sext i32 %90 to i64
+  %155 = getelementptr inbounds [17 x i8], [17 x i8]* @VP8EncBands, i64 0, i64 %154
+  %156 = load i8, i8* %155, align 1
+  %157 = zext i8 %156 to i64
+  %158 = getelementptr inbounds [3 x [11 x i32]], [3 x [11 x i32]]* %153, i64 %157, i64 %152, i64 0
+  %159 = load i32, i32* %10, align 4
+  %160 = icmp sgt i32 %90, %159
+  br i1 %160, label %161, label %24
+
+161:                                              ; preds = %151, %13
+  %162 = phi i32 [ %4, %13 ], [ %90, %151 ]
+  %163 = phi i32* [ %9, %13 ], [ %158, %151 ]
+  %164 = icmp slt i32 %162, 16
+  br i1 %164, label %165, label %177
+
+165:                                              ; preds = %161
+  %166 = load i32, i32* %163, align 4
+  %167 = icmp ugt i32 %166, -131073
+  br i1 %167, label %168, label %172
+
+168:                                              ; preds = %165
+  %169 = add nsw i32 %166, 1
+  %170 = lshr i32 %169, 1
+  %171 = and i32 %170, 2147450879
+  br label %172
+
+172:                                              ; preds = %168, %165, %20, %17
+  %173 = phi i32 [ %23, %20 ], [ %18, %17 ], [ %171, %168 ], [ %166, %165 ]
+  %174 = phi i32* [ %9, %20 ], [ %9, %17 ], [ %163, %168 ], [ %163, %165 ]
+  %175 = phi i32 [ 0, %20 ], [ 0, %17 ], [ 1, %168 ], [ 1, %165 ]
+  %176 = add nuw i32 %173, 65536
+  store i32 %176, i32* %174, align 4
+  br label %177
+
+177:                                              ; preds = %172, %161
+  %178 = phi i32 [ 1, %161 ], [ %175, %172 ]
+  ret i32 %178
+}
+
+attributes #0 = { nofree norecurse nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { argmemonly nounwind }
+attributes #2 = { nofree norecurse nounwind ssp uwtable writeonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}

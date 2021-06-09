@@ -1,0 +1,212 @@
+; ModuleID = '../../native_client/src/trusted/nacl_base/nacl_refcount.c'
+source_filename = "../../native_client/src/trusted/nacl_base/nacl_refcount.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.NaClRefCountVtbl = type { void (%struct.NaClRefCount*)* }
+%struct.NaClRefCount = type { %struct.NaClRefCountVtbl*, %struct.NaClFastMutex, i64 }
+%struct.NaClFastMutex = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+
+@.str = private unnamed_addr constant [28 x i8] c"NaClRefCountCtor(0x%08lx).\0A\00", align 1
+@kNaClRefCountVtbl = hidden constant %struct.NaClRefCountVtbl { void (%struct.NaClRefCount*)* @NaClRefCountDtor }, align 8
+@.str.1 = private unnamed_addr constant [27 x i8] c"NaClRefCountRef(0x%08lx).\0A\00", align 1
+@.str.2 = private unnamed_addr constant [34 x i8] c"NaClRefCountRef integer overflow\0A\00", align 1
+@.str.3 = private unnamed_addr constant [29 x i8] c"NaClRefCountUnref(0x%08lx).\0A\00", align 1
+@.str.4 = private unnamed_addr constant [54 x i8] c"NaClRefCountUnref on 0x%08lx, refcount already zero!\0A\00", align 1
+@.str.5 = private unnamed_addr constant [33 x i8] c"NaClRefCountSafeUnref(0x%08lx).\0A\00", align 1
+@.str.6 = private unnamed_addr constant [54 x i8] c"NaClRefCountDtor(0x%08lx), refcount %lu, destroying.\0A\00", align 1
+@.str.7 = private unnamed_addr constant [147 x i8] c"NaClRefCountDtor invoked on a generic refcounted object at 0x%08lx with refcount 1.  This legitimately occurs only during subclass ctor failures.\0A\00", align 1
+@.str.8 = private unnamed_addr constant [104 x i8] c"NaClRefCountDtor invoked on a generic refcounted object at 0x%08lx with non-zero reference count (%lu)\0A\00", align 1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClRefCountCtor(%struct.NaClRefCount*) local_unnamed_addr #0 {
+  %2 = ptrtoint %struct.NaClRefCount* %0 to i64
+  tail call void (i32, i8*, ...) @NaClLog(i32 4, i8* getelementptr inbounds ([28 x i8], [28 x i8]* @.str, i64 0, i64 0), i64 %2) #3
+  %3 = getelementptr inbounds %struct.NaClRefCount, %struct.NaClRefCount* %0, i64 0, i32 2
+  store i64 1, i64* %3, align 8
+  %4 = getelementptr inbounds %struct.NaClRefCount, %struct.NaClRefCount* %0, i64 0, i32 0
+  store %struct.NaClRefCountVtbl* null, %struct.NaClRefCountVtbl** %4, align 8
+  %5 = getelementptr inbounds %struct.NaClRefCount, %struct.NaClRefCount* %0, i64 0, i32 1
+  %6 = tail call i32 @NaClFastMutexCtor(%struct.NaClFastMutex* %5) #3
+  %7 = icmp eq i32 %6, 0
+  br i1 %7, label %9, label %8
+
+8:                                                ; preds = %1
+  store %struct.NaClRefCountVtbl* @kNaClRefCountVtbl, %struct.NaClRefCountVtbl** %4, align 8
+  br label %9
+
+9:                                                ; preds = %1, %8
+  %10 = phi i32 [ 1, %8 ], [ 0, %1 ]
+  ret i32 %10
+}
+
+declare void @NaClLog(i32, i8*, ...) local_unnamed_addr #1
+
+declare i32 @NaClFastMutexCtor(%struct.NaClFastMutex*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @NaClRefCountDtor(%struct.NaClRefCount*) #0 {
+  %2 = ptrtoint %struct.NaClRefCount* %0 to i64
+  %3 = getelementptr inbounds %struct.NaClRefCount, %struct.NaClRefCount* %0, i64 0, i32 2
+  %4 = load i64, i64* %3, align 8
+  tail call void (i32, i8*, ...) @NaClLog(i32 4, i8* getelementptr inbounds ([54 x i8], [54 x i8]* @.str.6, i64 0, i64 0), i64 %2, i64 %4) #3
+  %5 = load i64, i64* %3, align 8
+  switch i64 %5, label %7 [
+    i64 0, label %8
+    i64 1, label %6
+  ]
+
+6:                                                ; preds = %1
+  tail call void (i32, i8*, ...) @NaClLog(i32 -2, i8* getelementptr inbounds ([147 x i8], [147 x i8]* @.str.7, i64 0, i64 0), i64 %2) #3
+  br label %8
+
+7:                                                ; preds = %1
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([104 x i8], [104 x i8]* @.str.8, i64 0, i64 0), i64 %2, i64 %5) #3
+  br label %8
+
+8:                                                ; preds = %7, %6, %1
+  %9 = getelementptr inbounds %struct.NaClRefCount, %struct.NaClRefCount* %0, i64 0, i32 1
+  tail call void @NaClFastMutexDtor(%struct.NaClFastMutex* %9) #3
+  %10 = getelementptr inbounds %struct.NaClRefCount, %struct.NaClRefCount* %0, i64 0, i32 0
+  store %struct.NaClRefCountVtbl* null, %struct.NaClRefCountVtbl** %10, align 8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden %struct.NaClRefCount* @NaClRefCountRef(%struct.NaClRefCount* returned) local_unnamed_addr #0 {
+  %2 = ptrtoint %struct.NaClRefCount* %0 to i64
+  tail call void (i32, i8*, ...) @NaClLog(i32 4, i8* getelementptr inbounds ([27 x i8], [27 x i8]* @.str.1, i64 0, i64 0), i64 %2) #3
+  %3 = getelementptr inbounds %struct.NaClRefCount, %struct.NaClRefCount* %0, i64 0, i32 1
+  tail call void @NaClFastMutexLock(%struct.NaClFastMutex* %3) #3
+  %4 = getelementptr inbounds %struct.NaClRefCount, %struct.NaClRefCount* %0, i64 0, i32 2
+  %5 = load i64, i64* %4, align 8
+  %6 = add i64 %5, 1
+  store i64 %6, i64* %4, align 8
+  %7 = icmp eq i64 %6, 0
+  br i1 %7, label %8, label %9
+
+8:                                                ; preds = %1
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([34 x i8], [34 x i8]* @.str.2, i64 0, i64 0)) #3
+  br label %9
+
+9:                                                ; preds = %8, %1
+  tail call void @NaClFastMutexUnlock(%struct.NaClFastMutex* %3) #3
+  ret %struct.NaClRefCount* %0
+}
+
+declare void @NaClFastMutexLock(%struct.NaClFastMutex*) local_unnamed_addr #1
+
+declare void @NaClFastMutexUnlock(%struct.NaClFastMutex*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClRefCountUnref(%struct.NaClRefCount*) local_unnamed_addr #0 {
+  %2 = ptrtoint %struct.NaClRefCount* %0 to i64
+  tail call void (i32, i8*, ...) @NaClLog(i32 4, i8* getelementptr inbounds ([29 x i8], [29 x i8]* @.str.3, i64 0, i64 0), i64 %2) #3
+  %3 = getelementptr inbounds %struct.NaClRefCount, %struct.NaClRefCount* %0, i64 0, i32 1
+  tail call void @NaClFastMutexLock(%struct.NaClFastMutex* %3) #3
+  %4 = getelementptr inbounds %struct.NaClRefCount, %struct.NaClRefCount* %0, i64 0, i32 2
+  %5 = load i64, i64* %4, align 8
+  %6 = icmp eq i64 %5, 0
+  br i1 %6, label %7, label %9
+
+7:                                                ; preds = %1
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([54 x i8], [54 x i8]* @.str.4, i64 0, i64 0), i64 %2) #3
+  %8 = load i64, i64* %4, align 8
+  br label %9
+
+9:                                                ; preds = %7, %1
+  %10 = phi i64 [ %8, %7 ], [ %5, %1 ]
+  %11 = add i64 %10, -1
+  store i64 %11, i64* %4, align 8
+  %12 = icmp eq i64 %11, 0
+  tail call void @NaClFastMutexUnlock(%struct.NaClFastMutex* %3) #3
+  br i1 %12, label %13, label %19
+
+13:                                               ; preds = %9
+  %14 = getelementptr inbounds %struct.NaClRefCount, %struct.NaClRefCount* %0, i64 0, i32 0
+  %15 = load %struct.NaClRefCountVtbl*, %struct.NaClRefCountVtbl** %14, align 8
+  %16 = getelementptr inbounds %struct.NaClRefCountVtbl, %struct.NaClRefCountVtbl* %15, i64 0, i32 0
+  %17 = load void (%struct.NaClRefCount*)*, void (%struct.NaClRefCount*)** %16, align 8
+  tail call void %17(%struct.NaClRefCount* %0) #3
+  %18 = bitcast %struct.NaClRefCount* %0 to i8*
+  tail call void @free(i8* %18) #3
+  br label %19
+
+19:                                               ; preds = %13, %9
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @free(i8* nocapture) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClRefCountSafeUnref(%struct.NaClRefCount*) local_unnamed_addr #0 {
+  %2 = ptrtoint %struct.NaClRefCount* %0 to i64
+  tail call void (i32, i8*, ...) @NaClLog(i32 4, i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.5, i64 0, i64 0), i64 %2) #3
+  %3 = icmp eq %struct.NaClRefCount* %0, null
+  br i1 %3, label %21, label %4
+
+4:                                                ; preds = %1
+  tail call void (i32, i8*, ...) @NaClLog(i32 4, i8* getelementptr inbounds ([29 x i8], [29 x i8]* @.str.3, i64 0, i64 0), i64 %2) #3
+  %5 = getelementptr inbounds %struct.NaClRefCount, %struct.NaClRefCount* %0, i64 0, i32 1
+  tail call void @NaClFastMutexLock(%struct.NaClFastMutex* %5) #3
+  %6 = getelementptr inbounds %struct.NaClRefCount, %struct.NaClRefCount* %0, i64 0, i32 2
+  %7 = load i64, i64* %6, align 8
+  %8 = icmp eq i64 %7, 0
+  br i1 %8, label %9, label %11
+
+9:                                                ; preds = %4
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([54 x i8], [54 x i8]* @.str.4, i64 0, i64 0), i64 %2) #3
+  %10 = load i64, i64* %6, align 8
+  br label %11
+
+11:                                               ; preds = %9, %4
+  %12 = phi i64 [ %10, %9 ], [ %7, %4 ]
+  %13 = add i64 %12, -1
+  store i64 %13, i64* %6, align 8
+  %14 = icmp eq i64 %13, 0
+  tail call void @NaClFastMutexUnlock(%struct.NaClFastMutex* %5) #3
+  br i1 %14, label %15, label %21
+
+15:                                               ; preds = %11
+  %16 = getelementptr inbounds %struct.NaClRefCount, %struct.NaClRefCount* %0, i64 0, i32 0
+  %17 = load %struct.NaClRefCountVtbl*, %struct.NaClRefCountVtbl** %16, align 8
+  %18 = getelementptr inbounds %struct.NaClRefCountVtbl, %struct.NaClRefCountVtbl* %17, i64 0, i32 0
+  %19 = load void (%struct.NaClRefCount*)*, void (%struct.NaClRefCount*)** %18, align 8
+  tail call void %19(%struct.NaClRefCount* nonnull %0) #3
+  %20 = bitcast %struct.NaClRefCount* %0 to i8*
+  tail call void @free(i8* %20) #3
+  br label %21
+
+21:                                               ; preds = %15, %11, %1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClRefCountLock(%struct.NaClRefCount*) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClRefCount, %struct.NaClRefCount* %0, i64 0, i32 1
+  tail call void @NaClFastMutexLock(%struct.NaClFastMutex* %2) #3
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClRefCountUnlock(%struct.NaClRefCount*) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClRefCount, %struct.NaClRefCount* %0, i64 0, i32 1
+  tail call void @NaClFastMutexUnlock(%struct.NaClFastMutex* %2) #3
+  ret void
+}
+
+declare void @NaClFastMutexDtor(%struct.NaClFastMutex*) local_unnamed_addr #1
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}

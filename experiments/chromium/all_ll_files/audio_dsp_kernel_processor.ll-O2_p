@@ -1,0 +1,1105 @@
+; ModuleID = '../../third_party/blink/renderer/platform/audio/audio_dsp_kernel_processor.cc'
+source_filename = "../../third_party/blink/renderer/platform/audio/audio_dsp_kernel_processor.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.blink::AudioDSPKernelProcessor" = type <{ %"class.blink::AudioProcessor", %"class.WTF::Vector", %"class.WTF::Mutex", i8, [7 x i8] }>
+%"class.blink::AudioProcessor" = type { i32 (...)**, i8, i32, float, i32 }
+%"class.WTF::Vector" = type { %"class.WTF::VectorBuffer" }
+%"class.WTF::VectorBuffer" = type { %"class.WTF::VectorBufferBase" }
+%"class.WTF::VectorBufferBase" = type { %"class.std::__1::unique_ptr"*, i32, i32 }
+%"class.std::__1::unique_ptr" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"class.blink::AudioDSPKernel"* }
+%"class.blink::AudioDSPKernel" = type { i32 (...)**, %"class.blink::AudioDSPKernelProcessor"*, float, i32 }
+%"class.WTF::Mutex" = type { %"class.WTF::MutexBase" }
+%"class.WTF::MutexBase" = type { %"struct.WTF::PlatformMutex" }
+%"struct.WTF::PlatformMutex" = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%"class.blink::AudioBus" = type { %"class.WTF::ThreadSafeRefCounted", i32, %"class.WTF::Vector.2", i32, float }
+%"class.WTF::ThreadSafeRefCounted" = type { %"class.base::RefCountedThreadSafe" }
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.1" }
+%"struct.std::__1::__atomic_base.1" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"class.WTF::Vector.2" = type { %"class.WTF::VectorBuffer.3" }
+%"class.WTF::VectorBuffer.3" = type { %"class.WTF::VectorBufferBase.4", [64 x i8] }
+%"class.WTF::VectorBufferBase.4" = type { %"class.blink::AudioChannel"*, i32, i32 }
+%"class.blink::AudioChannel" = type <{ i64, float*, %"class.std::__1::unique_ptr.5", i8, [7 x i8] }>
+%"class.std::__1::unique_ptr.5" = type { %"class.std::__1::__compressed_pair.6" }
+%"class.std::__1::__compressed_pair.6" = type { %"struct.std::__1::__compressed_pair_elem.7" }
+%"struct.std::__1::__compressed_pair_elem.7" = type { %"class.blink::AudioArray"* }
+%"class.blink::AudioArray" = type <{ float*, float*, i32, [4 x i8] }>
+%"class.logging::CheckOpResult" = type { i8* }
+%"class.logging::CheckError" = type { %"class.logging::LogMessage"* }
+%"class.logging::LogMessage" = type { i32 (...)**, i32, %"class.std::__1::basic_ostringstream", i64, i8*, i32, %"class.base::ScopedClearLastErrorBase" }
+%"class.std::__1::basic_ostringstream" = type { %"class.std::__1::basic_ostream.base", %"class.std::__1::basic_stringbuf", %"class.std::__1::basic_ios.base" }
+%"class.std::__1::basic_ostream.base" = type { i32 (...)** }
+%"class.std::__1::basic_stringbuf" = type <{ %"class.std::__1::basic_streambuf", %"class.std::__1::basic_string", i8*, i32, [4 x i8] }>
+%"class.std::__1::basic_streambuf" = type { i32 (...)**, %"class.std::__1::locale", i8*, i8*, i8*, i8*, i8*, i8* }
+%"class.std::__1::locale" = type { %"class.std::__1::locale::__imp"* }
+%"class.std::__1::locale::__imp" = type opaque
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.13" }
+%"class.std::__1::__compressed_pair.13" = type { %"struct.std::__1::__compressed_pair_elem.14" }
+%"struct.std::__1::__compressed_pair_elem.14" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon }
+%union.anon = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.std::__1::basic_ios.base" = type <{ %"class.std::__1::ios_base", %"class.std::__1::basic_ostream"*, i32 }>
+%"class.std::__1::ios_base" = type { i32 (...)**, i32, i64, i64, i32, i32, i8*, i8*, void (i32, %"class.std::__1::ios_base"*, i32)**, i32*, i64, i64, i64*, i64, i64, i8**, i64, i64 }
+%"class.std::__1::basic_ostream" = type { i32 (...)**, %"class.std::__1::basic_ios.base" }
+%"class.base::ScopedClearLastErrorBase" = type { i32 }
+
+$_ZN5blink23AudioDSPKernelProcessorD2Ev = comdat any
+
+$_ZN5blink23AudioDSPKernelProcessorD0Ev = comdat any
+
+$_ZNK5blink23AudioDSPKernelProcessor16NumberOfChannelsEv = comdat any
+
+$_ZNK3WTF6VectorIN5blink12AudioChannelELj2ENS_18PartitionAllocatorEE2atEj = comdat any
+
+$_ZN3WTF6VectorIN5blink12AudioChannelELj2ENS_18PartitionAllocatorEE2atEj = comdat any
+
+$_ZN3WTF6VectorINSt3__110unique_ptrIN5blink14AudioDSPKernelENS1_14default_deleteIS4_EEEELj0ENS_18PartitionAllocatorEE14AppendSlowCaseIS7_EEvOT_ = comdat any
+
+$_ZN3WTF18PartitionAllocator13QuantizedSizeINSt3__110unique_ptrIN5blink14AudioDSPKernelENS2_14default_deleteIS5_EEEEEEmm = comdat any
+
+$_ZN3WTF6VectorINSt3__110unique_ptrIN5blink14AudioDSPKernelENS1_14default_deleteIS4_EEEELj0ENS_18PartitionAllocatorEE2atEj = comdat any
+
+$_ZNK3WTF6VectorINSt3__110unique_ptrIN5blink14AudioDSPKernelENS1_14default_deleteIS4_EEEELj0ENS_18PartitionAllocatorEE2atEj = comdat any
+
+@_ZTVN5blink23AudioDSPKernelProcessorE = hidden unnamed_addr constant { [15 x i8*] } { [15 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.blink::AudioDSPKernelProcessor"*)* @_ZN5blink23AudioDSPKernelProcessorD2Ev to i8*), i8* bitcast (void (%"class.blink::AudioDSPKernelProcessor"*)* @_ZN5blink23AudioDSPKernelProcessorD0Ev to i8*), i8* bitcast (void (%"class.blink::AudioDSPKernelProcessor"*)* @_ZN5blink23AudioDSPKernelProcessor10InitializeEv to i8*), i8* bitcast (void (%"class.blink::AudioDSPKernelProcessor"*)* @_ZN5blink23AudioDSPKernelProcessor12UninitializeEv to i8*), i8* bitcast (void (%"class.blink::AudioDSPKernelProcessor"*, %"class.blink::AudioBus"*, %"class.blink::AudioBus"*, i32)* @_ZN5blink23AudioDSPKernelProcessor7ProcessEPKNS_8AudioBusEPS1_j to i8*), i8* bitcast (void (%"class.blink::AudioDSPKernelProcessor"*, i32)* @_ZN5blink23AudioDSPKernelProcessor22ProcessOnlyAudioParamsEj to i8*), i8* bitcast (void (%"class.blink::AudioDSPKernelProcessor"*)* @_ZN5blink23AudioDSPKernelProcessor5ResetEv to i8*), i8* bitcast (void (%"class.blink::AudioDSPKernelProcessor"*, i32)* @_ZN5blink23AudioDSPKernelProcessor19SetNumberOfChannelsEj to i8*), i8* bitcast (i32 (%"class.blink::AudioDSPKernelProcessor"*)* @_ZNK5blink23AudioDSPKernelProcessor16NumberOfChannelsEv to i8*), i8* bitcast (double (%"class.blink::AudioDSPKernelProcessor"*)* @_ZNK5blink23AudioDSPKernelProcessor8TailTimeEv to i8*), i8* bitcast (double (%"class.blink::AudioDSPKernelProcessor"*)* @_ZNK5blink23AudioDSPKernelProcessor11LatencyTimeEv to i8*), i8* bitcast (i1 (%"class.blink::AudioDSPKernelProcessor"*)* @_ZNK5blink23AudioDSPKernelProcessor22RequiresTailProcessingEv to i8*), i8* bitcast (void ()* @__cxa_pure_virtual to i8*)] }, align 8
+@.str = private unnamed_addr constant [11 x i8] c"i < size()\00", align 1
+@.str.1 = private unnamed_addr constant [55 x i8] c"../../third_party/blink/renderer/platform/wtf/vector.h\00", align 1
+@.str.3 = private unnamed_addr constant [44 x i8] c"count <= MaxElementCountInBackingStore<T>()\00", align 1
+@.str.4 = private unnamed_addr constant [78 x i8] c"../../third_party/blink/renderer/platform/wtf/allocator/partition_allocator.h\00", align 1
+@__PRETTY_FUNCTION__._ZN3WTF21GetStringWithTypeNameINSt3__110unique_ptrIN5blink14AudioDSPKernelENS1_14default_deleteIS4_EEEEEEPKcv = private unnamed_addr constant [141 x i8] c"const char *WTF::GetStringWithTypeName() [T = std::__1::unique_ptr<blink::AudioDSPKernel, std::__1::default_delete<blink::AudioDSPKernel> >]\00", align 1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink23AudioDSPKernelProcessorC2Efjj(%"class.blink::AudioDSPKernelProcessor"*, float, i32, i32) unnamed_addr #0 align 2 {
+  %5 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 0, i32 0
+  %6 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 0, i32 1
+  store i8 0, i8* %6, align 8
+  %7 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 0, i32 2
+  store i32 %2, i32* %7, align 4
+  %8 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 0, i32 3
+  store float %1, float* %8, align 8
+  %9 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 0, i32 4
+  store i32 %3, i32* %9, align 4
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [15 x i8*] }, { [15 x i8*] }* @_ZTVN5blink23AudioDSPKernelProcessorE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %5, align 8
+  %10 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 1
+  %11 = bitcast %"class.WTF::Vector"* %10 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %11, i8 0, i64 16, i1 false) #9
+  %12 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 2, i32 0
+  tail call void @_ZN3WTF9MutexBaseC2Eb(%"class.WTF::MutexBase"* %12, i1 zeroext false) #9
+  %13 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 3
+  store i8 1, i8* %13, align 8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink23AudioDSPKernelProcessor10InitializeEv(%"class.blink::AudioDSPKernelProcessor"*) unnamed_addr #0 align 2 {
+  %2 = alloca %"class.std::__1::unique_ptr", align 8
+  %3 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 0, i32 1
+  %4 = load i8, i8* %3, align 8, !range !2
+  %5 = icmp eq i8 %4, 0
+  br i1 %5, label %6, label %57
+
+6:                                                ; preds = %1
+  %7 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 2, i32 0
+  tail call void @_ZN3WTF9MutexBase4lockEv(%"class.WTF::MutexBase"* %7) #9
+  %8 = bitcast %"class.blink::AudioDSPKernelProcessor"* %0 to i32 (%"class.blink::AudioDSPKernelProcessor"*)***
+  %9 = load i32 (%"class.blink::AudioDSPKernelProcessor"*)**, i32 (%"class.blink::AudioDSPKernelProcessor"*)*** %8, align 8
+  %10 = getelementptr inbounds i32 (%"class.blink::AudioDSPKernelProcessor"*)*, i32 (%"class.blink::AudioDSPKernelProcessor"*)** %9, i64 8
+  %11 = load i32 (%"class.blink::AudioDSPKernelProcessor"*)*, i32 (%"class.blink::AudioDSPKernelProcessor"*)** %10, align 8
+  %12 = call i32 %11(%"class.blink::AudioDSPKernelProcessor"* %0) #9
+  %13 = icmp eq i32 %12, 0
+  br i1 %13, label %22, label %14
+
+14:                                               ; preds = %6
+  %15 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 1
+  %16 = bitcast %"class.std::__1::unique_ptr"* %2 to i8*
+  %17 = bitcast %"class.blink::AudioDSPKernelProcessor"* %0 to %"class.blink::AudioDSPKernel"* (%"class.blink::AudioDSPKernelProcessor"*)***
+  %18 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %2, i64 0, i32 0, i32 0, i32 0
+  %19 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 1, i32 0, i32 0, i32 2
+  %20 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 1, i32 0, i32 0, i32 1
+  %21 = getelementptr inbounds %"class.WTF::Vector", %"class.WTF::Vector"* %15, i64 0, i32 0, i32 0, i32 0
+  br label %24
+
+22:                                               ; preds = %50, %6
+  store i8 1, i8* %3, align 8
+  %23 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 3
+  store i8 1, i8* %23, align 8
+  call void @_ZN3WTF9MutexBase6unlockEv(%"class.WTF::MutexBase"* %7) #9
+  br label %57
+
+24:                                               ; preds = %14, %50
+  %25 = phi i32 [ 0, %14 ], [ %51, %50 ]
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %16) #9
+  %26 = load %"class.blink::AudioDSPKernel"* (%"class.blink::AudioDSPKernelProcessor"*)**, %"class.blink::AudioDSPKernel"* (%"class.blink::AudioDSPKernelProcessor"*)*** %17, align 8
+  %27 = getelementptr inbounds %"class.blink::AudioDSPKernel"* (%"class.blink::AudioDSPKernelProcessor"*)*, %"class.blink::AudioDSPKernel"* (%"class.blink::AudioDSPKernelProcessor"*)** %26, i64 12
+  %28 = load %"class.blink::AudioDSPKernel"* (%"class.blink::AudioDSPKernelProcessor"*)*, %"class.blink::AudioDSPKernel"* (%"class.blink::AudioDSPKernelProcessor"*)** %27, align 8
+  %29 = call %"class.blink::AudioDSPKernel"* %28(%"class.blink::AudioDSPKernelProcessor"* %0) #9
+  store %"class.blink::AudioDSPKernel"* %29, %"class.blink::AudioDSPKernel"** %18, align 8
+  %30 = load i32, i32* %19, align 4
+  %31 = load i32, i32* %20, align 8
+  %32 = icmp eq i32 %30, %31
+  br i1 %32, label %41, label %33, !prof !3
+
+33:                                               ; preds = %24
+  %34 = ptrtoint %"class.blink::AudioDSPKernel"* %29 to i64
+  %35 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %21, align 8
+  %36 = zext i32 %30 to i64
+  %37 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %35, i64 %36
+  store %"class.blink::AudioDSPKernel"* null, %"class.blink::AudioDSPKernel"** %18, align 8
+  %38 = bitcast %"class.std::__1::unique_ptr"* %37 to i64*
+  store i64 %34, i64* %38, align 8
+  %39 = load i32, i32* %19, align 4
+  %40 = add i32 %39, 1
+  store i32 %40, i32* %19, align 4
+  br label %42
+
+41:                                               ; preds = %24
+  call void @_ZN3WTF6VectorINSt3__110unique_ptrIN5blink14AudioDSPKernelENS1_14default_deleteIS4_EEEELj0ENS_18PartitionAllocatorEE14AppendSlowCaseIS7_EEvOT_(%"class.WTF::Vector"* %15, %"class.std::__1::unique_ptr"* nonnull dereferenceable(8) %2) #9
+  br label %42
+
+42:                                               ; preds = %33, %41
+  %43 = load %"class.blink::AudioDSPKernel"*, %"class.blink::AudioDSPKernel"** %18, align 8
+  store %"class.blink::AudioDSPKernel"* null, %"class.blink::AudioDSPKernel"** %18, align 8
+  %44 = icmp eq %"class.blink::AudioDSPKernel"* %43, null
+  br i1 %44, label %50, label %45
+
+45:                                               ; preds = %42
+  %46 = bitcast %"class.blink::AudioDSPKernel"* %43 to void (%"class.blink::AudioDSPKernel"*)***
+  %47 = load void (%"class.blink::AudioDSPKernel"*)**, void (%"class.blink::AudioDSPKernel"*)*** %46, align 8
+  %48 = getelementptr inbounds void (%"class.blink::AudioDSPKernel"*)*, void (%"class.blink::AudioDSPKernel"*)** %47, i64 1
+  %49 = load void (%"class.blink::AudioDSPKernel"*)*, void (%"class.blink::AudioDSPKernel"*)** %48, align 8
+  call void %49(%"class.blink::AudioDSPKernel"* nonnull %43) #9
+  br label %50
+
+50:                                               ; preds = %42, %45
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %16) #9
+  %51 = add nuw i32 %25, 1
+  %52 = load i32 (%"class.blink::AudioDSPKernelProcessor"*)**, i32 (%"class.blink::AudioDSPKernelProcessor"*)*** %8, align 8
+  %53 = getelementptr inbounds i32 (%"class.blink::AudioDSPKernelProcessor"*)*, i32 (%"class.blink::AudioDSPKernelProcessor"*)** %52, i64 8
+  %54 = load i32 (%"class.blink::AudioDSPKernelProcessor"*)*, i32 (%"class.blink::AudioDSPKernelProcessor"*)** %53, align 8
+  %55 = call i32 %54(%"class.blink::AudioDSPKernelProcessor"* %0) #9
+  %56 = icmp ult i32 %51, %55
+  br i1 %56, label %24, label %22
+
+57:                                               ; preds = %1, %22
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink23AudioDSPKernelProcessor12UninitializeEv(%"class.blink::AudioDSPKernelProcessor"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 0, i32 1
+  %3 = load i8, i8* %2, align 8, !range !2
+  %4 = icmp eq i8 %3, 0
+  br i1 %4, label %39, label %5
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 2, i32 0
+  tail call void @_ZN3WTF9MutexBase4lockEv(%"class.WTF::MutexBase"* %6) #9
+  %7 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 1
+  %8 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 1, i32 0, i32 0, i32 1
+  %9 = load i32, i32* %8, align 8
+  %10 = icmp eq i32 %9, 0
+  br i1 %10, label %38, label %11
+
+11:                                               ; preds = %5
+  %12 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 1, i32 0, i32 0, i32 2
+  %13 = load i32, i32* %12, align 4
+  %14 = icmp eq i32 %13, 0
+  br i1 %14, label %34, label %15
+
+15:                                               ; preds = %11
+  %16 = getelementptr inbounds %"class.WTF::Vector", %"class.WTF::Vector"* %7, i64 0, i32 0, i32 0, i32 0
+  %17 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %16, align 8
+  %18 = zext i32 %13 to i64
+  %19 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %17, i64 %18
+  br label %20
+
+20:                                               ; preds = %30, %15
+  %21 = phi %"class.std::__1::unique_ptr"* [ %31, %30 ], [ %17, %15 ]
+  %22 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %21, i64 0, i32 0, i32 0, i32 0
+  %23 = load %"class.blink::AudioDSPKernel"*, %"class.blink::AudioDSPKernel"** %22, align 8
+  store %"class.blink::AudioDSPKernel"* null, %"class.blink::AudioDSPKernel"** %22, align 8
+  %24 = icmp eq %"class.blink::AudioDSPKernel"* %23, null
+  br i1 %24, label %30, label %25
+
+25:                                               ; preds = %20
+  %26 = bitcast %"class.blink::AudioDSPKernel"* %23 to void (%"class.blink::AudioDSPKernel"*)***
+  %27 = load void (%"class.blink::AudioDSPKernel"*)**, void (%"class.blink::AudioDSPKernel"*)*** %26, align 8
+  %28 = getelementptr inbounds void (%"class.blink::AudioDSPKernel"*)*, void (%"class.blink::AudioDSPKernel"*)** %27, i64 1
+  %29 = load void (%"class.blink::AudioDSPKernel"*)*, void (%"class.blink::AudioDSPKernel"*)** %28, align 8
+  tail call void %29(%"class.blink::AudioDSPKernel"* nonnull %23) #9
+  br label %30
+
+30:                                               ; preds = %25, %20
+  %31 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %21, i64 1
+  %32 = icmp eq %"class.std::__1::unique_ptr"* %31, %19
+  br i1 %32, label %33, label %20
+
+33:                                               ; preds = %30
+  store i32 0, i32* %12, align 4
+  br label %34
+
+34:                                               ; preds = %33, %11
+  %35 = bitcast %"class.WTF::Vector"* %7 to i8**
+  %36 = load i8*, i8** %35, align 8
+  %37 = bitcast %"class.WTF::Vector"* %7 to i64*
+  store atomic i64 0, i64* %37 monotonic, align 8
+  store i32 0, i32* %8, align 8
+  tail call void @_ZN3WTF18PartitionAllocator11FreeBackingEPv(i8* %36) #9
+  br label %38
+
+38:                                               ; preds = %5, %34
+  store i8 0, i8* %2, align 8
+  tail call void @_ZN3WTF9MutexBase6unlockEv(%"class.WTF::MutexBase"* %6) #9
+  br label %39
+
+39:                                               ; preds = %1, %38
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink23AudioDSPKernelProcessor7ProcessEPKNS_8AudioBusEPS1_j(%"class.blink::AudioDSPKernelProcessor"*, %"class.blink::AudioBus"*, %"class.blink::AudioBus"*, i32) unnamed_addr #0 align 2 {
+  %5 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 0, i32 1
+  %6 = load i8, i8* %5, align 8, !range !2
+  %7 = icmp eq i8 %6, 0
+  br i1 %7, label %8, label %9
+
+8:                                                ; preds = %4
+  tail call void @_ZN5blink8AudioBus4ZeroEv(%"class.blink::AudioBus"* %2) #9
+  br label %58
+
+9:                                                ; preds = %4
+  %10 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 2
+  %11 = tail call zeroext i1 @_ZN3WTF5Mutex7TryLockEv(%"class.WTF::Mutex"* %10) #9
+  br i1 %11, label %12, label %55
+
+12:                                               ; preds = %9
+  %13 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 1, i32 0, i32 0, i32 2
+  %14 = load i32, i32* %13, align 4
+  %15 = icmp eq i32 %14, 0
+  br i1 %15, label %56, label %16
+
+16:                                               ; preds = %12
+  %17 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 1
+  %18 = getelementptr inbounds %"class.blink::AudioBus", %"class.blink::AudioBus"* %1, i64 0, i32 2
+  %19 = getelementptr inbounds %"class.blink::AudioBus", %"class.blink::AudioBus"* %2, i64 0, i32 2
+  br label %20
+
+20:                                               ; preds = %16, %46
+  %21 = phi i32 [ 0, %16 ], [ %52, %46 ]
+  %22 = tail call dereferenceable(8) %"class.std::__1::unique_ptr"* @_ZN3WTF6VectorINSt3__110unique_ptrIN5blink14AudioDSPKernelENS1_14default_deleteIS4_EEEELj0ENS_18PartitionAllocatorEE2atEj(%"class.WTF::Vector"* %17, i32 %21) #9
+  %23 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %22, i64 0, i32 0, i32 0, i32 0
+  %24 = load %"class.blink::AudioDSPKernel"*, %"class.blink::AudioDSPKernel"** %23, align 8
+  %25 = tail call dereferenceable(32) %"class.blink::AudioChannel"* @_ZNK3WTF6VectorIN5blink12AudioChannelELj2ENS_18PartitionAllocatorEE2atEj(%"class.WTF::Vector.2"* %18, i32 %21) #9
+  %26 = getelementptr inbounds %"class.blink::AudioChannel", %"class.blink::AudioChannel"* %25, i64 0, i32 1
+  %27 = load float*, float** %26, align 8
+  %28 = icmp eq float* %27, null
+  br i1 %28, label %29, label %34
+
+29:                                               ; preds = %20
+  %30 = getelementptr inbounds %"class.blink::AudioChannel", %"class.blink::AudioChannel"* %25, i64 0, i32 2, i32 0, i32 0, i32 0
+  %31 = load %"class.blink::AudioArray"*, %"class.blink::AudioArray"** %30, align 8
+  %32 = getelementptr inbounds %"class.blink::AudioArray", %"class.blink::AudioArray"* %31, i64 0, i32 1
+  %33 = load float*, float** %32, align 8
+  br label %34
+
+34:                                               ; preds = %20, %29
+  %35 = phi float* [ %33, %29 ], [ %27, %20 ]
+  %36 = tail call dereferenceable(32) %"class.blink::AudioChannel"* @_ZN3WTF6VectorIN5blink12AudioChannelELj2ENS_18PartitionAllocatorEE2atEj(%"class.WTF::Vector.2"* %19, i32 %21) #9
+  %37 = getelementptr inbounds %"class.blink::AudioChannel", %"class.blink::AudioChannel"* %36, i64 0, i32 3
+  store i8 0, i8* %37, align 8
+  %38 = getelementptr inbounds %"class.blink::AudioChannel", %"class.blink::AudioChannel"* %36, i64 0, i32 1
+  %39 = load float*, float** %38, align 8
+  %40 = icmp eq float* %39, null
+  br i1 %40, label %41, label %46
+
+41:                                               ; preds = %34
+  %42 = getelementptr inbounds %"class.blink::AudioChannel", %"class.blink::AudioChannel"* %36, i64 0, i32 2, i32 0, i32 0, i32 0
+  %43 = load %"class.blink::AudioArray"*, %"class.blink::AudioArray"** %42, align 8
+  %44 = getelementptr inbounds %"class.blink::AudioArray", %"class.blink::AudioArray"* %43, i64 0, i32 1
+  %45 = load float*, float** %44, align 8
+  br label %46
+
+46:                                               ; preds = %34, %41
+  %47 = phi float* [ %45, %41 ], [ %39, %34 ]
+  %48 = bitcast %"class.blink::AudioDSPKernel"* %24 to void (%"class.blink::AudioDSPKernel"*, float*, float*, i32)***
+  %49 = load void (%"class.blink::AudioDSPKernel"*, float*, float*, i32)**, void (%"class.blink::AudioDSPKernel"*, float*, float*, i32)*** %48, align 8
+  %50 = getelementptr inbounds void (%"class.blink::AudioDSPKernel"*, float*, float*, i32)*, void (%"class.blink::AudioDSPKernel"*, float*, float*, i32)** %49, i64 2
+  %51 = load void (%"class.blink::AudioDSPKernel"*, float*, float*, i32)*, void (%"class.blink::AudioDSPKernel"*, float*, float*, i32)** %50, align 8
+  tail call void %51(%"class.blink::AudioDSPKernel"* %24, float* %35, float* %47, i32 %3) #9
+  %52 = add nuw i32 %21, 1
+  %53 = load i32, i32* %13, align 4
+  %54 = icmp ult i32 %52, %53
+  br i1 %54, label %20, label %56
+
+55:                                               ; preds = %9
+  tail call void @_ZN5blink8AudioBus4ZeroEv(%"class.blink::AudioBus"* %2) #9
+  br label %58
+
+56:                                               ; preds = %46, %12
+  %57 = getelementptr inbounds %"class.WTF::Mutex", %"class.WTF::Mutex"* %10, i64 0, i32 0
+  tail call void @_ZN3WTF9MutexBase6unlockEv(%"class.WTF::MutexBase"* %57) #9
+  br label %58
+
+58:                                               ; preds = %56, %55, %8
+  ret void
+}
+
+declare void @_ZN5blink8AudioBus4ZeroEv(%"class.blink::AudioBus"*) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink23AudioDSPKernelProcessor22ProcessOnlyAudioParamsEj(%"class.blink::AudioDSPKernelProcessor"*, i32) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 0, i32 1
+  %4 = load i8, i8* %3, align 8, !range !2
+  %5 = icmp eq i8 %4, 0
+  br i1 %5, label %29, label %6
+
+6:                                                ; preds = %2
+  %7 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 2
+  %8 = tail call zeroext i1 @_ZN3WTF5Mutex7TryLockEv(%"class.WTF::Mutex"* %7) #9
+  br i1 %8, label %9, label %29
+
+9:                                                ; preds = %6
+  %10 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 1, i32 0, i32 0, i32 2
+  %11 = load i32, i32* %10, align 4
+  %12 = icmp eq i32 %11, 0
+  br i1 %12, label %27, label %13
+
+13:                                               ; preds = %9
+  %14 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 1
+  br label %15
+
+15:                                               ; preds = %13, %15
+  %16 = phi i32 [ 0, %13 ], [ %24, %15 ]
+  %17 = tail call dereferenceable(8) %"class.std::__1::unique_ptr"* @_ZN3WTF6VectorINSt3__110unique_ptrIN5blink14AudioDSPKernelENS1_14default_deleteIS4_EEEELj0ENS_18PartitionAllocatorEE2atEj(%"class.WTF::Vector"* %14, i32 %16) #9
+  %18 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %17, i64 0, i32 0, i32 0, i32 0
+  %19 = load %"class.blink::AudioDSPKernel"*, %"class.blink::AudioDSPKernel"** %18, align 8
+  %20 = bitcast %"class.blink::AudioDSPKernel"* %19 to void (%"class.blink::AudioDSPKernel"*, i32)***
+  %21 = load void (%"class.blink::AudioDSPKernel"*, i32)**, void (%"class.blink::AudioDSPKernel"*, i32)*** %20, align 8
+  %22 = getelementptr inbounds void (%"class.blink::AudioDSPKernel"*, i32)*, void (%"class.blink::AudioDSPKernel"*, i32)** %21, i64 3
+  %23 = load void (%"class.blink::AudioDSPKernel"*, i32)*, void (%"class.blink::AudioDSPKernel"*, i32)** %22, align 8
+  tail call void %23(%"class.blink::AudioDSPKernel"* %19, i32 %1) #9
+  %24 = add nuw i32 %16, 1
+  %25 = load i32, i32* %10, align 4
+  %26 = icmp ult i32 %24, %25
+  br i1 %26, label %15, label %27
+
+27:                                               ; preds = %15, %9
+  %28 = getelementptr inbounds %"class.WTF::Mutex", %"class.WTF::Mutex"* %7, i64 0, i32 0
+  tail call void @_ZN3WTF9MutexBase6unlockEv(%"class.WTF::MutexBase"* %28) #9
+  br label %29
+
+29:                                               ; preds = %2, %6, %27
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink23AudioDSPKernelProcessor5ResetEv(%"class.blink::AudioDSPKernelProcessor"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 0, i32 1
+  %3 = load i8, i8* %2, align 8, !range !2
+  %4 = icmp eq i8 %3, 0
+  br i1 %4, label %26, label %5
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 3
+  store i8 1, i8* %6, align 8
+  %7 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 2, i32 0
+  tail call void @_ZN3WTF9MutexBase4lockEv(%"class.WTF::MutexBase"* %7) #9
+  %8 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 1, i32 0, i32 0, i32 2
+  %9 = load i32, i32* %8, align 4
+  %10 = icmp eq i32 %9, 0
+  br i1 %10, label %13, label %11
+
+11:                                               ; preds = %5
+  %12 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 1
+  br label %14
+
+13:                                               ; preds = %14, %5
+  tail call void @_ZN3WTF9MutexBase6unlockEv(%"class.WTF::MutexBase"* %7) #9
+  br label %26
+
+14:                                               ; preds = %11, %14
+  %15 = phi i32 [ 0, %11 ], [ %23, %14 ]
+  %16 = tail call dereferenceable(8) %"class.std::__1::unique_ptr"* @_ZN3WTF6VectorINSt3__110unique_ptrIN5blink14AudioDSPKernelENS1_14default_deleteIS4_EEEELj0ENS_18PartitionAllocatorEE2atEj(%"class.WTF::Vector"* %12, i32 %15) #9
+  %17 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %16, i64 0, i32 0, i32 0, i32 0
+  %18 = load %"class.blink::AudioDSPKernel"*, %"class.blink::AudioDSPKernel"** %17, align 8
+  %19 = bitcast %"class.blink::AudioDSPKernel"* %18 to void (%"class.blink::AudioDSPKernel"*)***
+  %20 = load void (%"class.blink::AudioDSPKernel"*)**, void (%"class.blink::AudioDSPKernel"*)*** %19, align 8
+  %21 = getelementptr inbounds void (%"class.blink::AudioDSPKernel"*)*, void (%"class.blink::AudioDSPKernel"*)** %20, i64 4
+  %22 = load void (%"class.blink::AudioDSPKernel"*)*, void (%"class.blink::AudioDSPKernel"*)** %21, align 8
+  tail call void %22(%"class.blink::AudioDSPKernel"* %18) #9
+  %23 = add nuw i32 %15, 1
+  %24 = load i32, i32* %8, align 4
+  %25 = icmp ult i32 %23, %24
+  br i1 %25, label %14, label %13
+
+26:                                               ; preds = %1, %13
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN5blink23AudioDSPKernelProcessor19SetNumberOfChannelsEj(%"class.blink::AudioDSPKernelProcessor"* nocapture, i32) unnamed_addr #3 align 2 {
+  %3 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 0, i32 2
+  %4 = load i32, i32* %3, align 4
+  %5 = icmp eq i32 %4, %1
+  br i1 %5, label %7, label %6
+
+6:                                                ; preds = %2
+  store i32 %1, i32* %3, align 4
+  br label %7
+
+7:                                                ; preds = %2, %6
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden zeroext i1 @_ZNK5blink23AudioDSPKernelProcessor22RequiresTailProcessingEv(%"class.blink::AudioDSPKernelProcessor"* nocapture readnone) unnamed_addr #4 align 2 {
+  ret i1 true
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden double @_ZNK5blink23AudioDSPKernelProcessor8TailTimeEv(%"class.blink::AudioDSPKernelProcessor"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 2
+  %3 = tail call zeroext i1 @_ZN3WTF5Mutex7TryLockEv(%"class.WTF::Mutex"* %2) #9
+  br i1 %3, label %4, label %21
+
+4:                                                ; preds = %1
+  %5 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 1, i32 0, i32 0, i32 2
+  %6 = load i32, i32* %5, align 4
+  %7 = icmp eq i32 %6, 0
+  br i1 %7, label %18, label %8
+
+8:                                                ; preds = %4
+  %9 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 1
+  %10 = tail call dereferenceable(8) %"class.std::__1::unique_ptr"* @_ZNK3WTF6VectorINSt3__110unique_ptrIN5blink14AudioDSPKernelENS1_14default_deleteIS4_EEEELj0ENS_18PartitionAllocatorEE2atEj(%"class.WTF::Vector"* %9, i32 0) #9
+  %11 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %10, i64 0, i32 0, i32 0, i32 0
+  %12 = load %"class.blink::AudioDSPKernel"*, %"class.blink::AudioDSPKernel"** %11, align 8
+  %13 = bitcast %"class.blink::AudioDSPKernel"* %12 to double (%"class.blink::AudioDSPKernel"*)***
+  %14 = load double (%"class.blink::AudioDSPKernel"*)**, double (%"class.blink::AudioDSPKernel"*)*** %13, align 8
+  %15 = getelementptr inbounds double (%"class.blink::AudioDSPKernel"*)*, double (%"class.blink::AudioDSPKernel"*)** %14, i64 5
+  %16 = load double (%"class.blink::AudioDSPKernel"*)*, double (%"class.blink::AudioDSPKernel"*)** %15, align 8
+  %17 = tail call double %16(%"class.blink::AudioDSPKernel"* %12) #9
+  br label %18
+
+18:                                               ; preds = %8, %4
+  %19 = phi double [ 0.000000e+00, %4 ], [ %17, %8 ]
+  %20 = getelementptr inbounds %"class.WTF::Mutex", %"class.WTF::Mutex"* %2, i64 0, i32 0
+  tail call void @_ZN3WTF9MutexBase6unlockEv(%"class.WTF::MutexBase"* %20) #9
+  br label %21
+
+21:                                               ; preds = %1, %18
+  %22 = phi double [ %19, %18 ], [ 0x7FF0000000000000, %1 ]
+  ret double %22
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden double @_ZNK5blink23AudioDSPKernelProcessor11LatencyTimeEv(%"class.blink::AudioDSPKernelProcessor"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 2
+  %3 = tail call zeroext i1 @_ZN3WTF5Mutex7TryLockEv(%"class.WTF::Mutex"* %2) #9
+  br i1 %3, label %4, label %21
+
+4:                                                ; preds = %1
+  %5 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 1, i32 0, i32 0, i32 2
+  %6 = load i32, i32* %5, align 4
+  %7 = icmp eq i32 %6, 0
+  br i1 %7, label %18, label %8
+
+8:                                                ; preds = %4
+  %9 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 1
+  %10 = tail call dereferenceable(8) %"class.std::__1::unique_ptr"* @_ZNK3WTF6VectorINSt3__110unique_ptrIN5blink14AudioDSPKernelENS1_14default_deleteIS4_EEEELj0ENS_18PartitionAllocatorEE2atEj(%"class.WTF::Vector"* %9, i32 0) #9
+  %11 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %10, i64 0, i32 0, i32 0, i32 0
+  %12 = load %"class.blink::AudioDSPKernel"*, %"class.blink::AudioDSPKernel"** %11, align 8
+  %13 = bitcast %"class.blink::AudioDSPKernel"* %12 to double (%"class.blink::AudioDSPKernel"*)***
+  %14 = load double (%"class.blink::AudioDSPKernel"*)**, double (%"class.blink::AudioDSPKernel"*)*** %13, align 8
+  %15 = getelementptr inbounds double (%"class.blink::AudioDSPKernel"*)*, double (%"class.blink::AudioDSPKernel"*)** %14, i64 6
+  %16 = load double (%"class.blink::AudioDSPKernel"*)*, double (%"class.blink::AudioDSPKernel"*)** %15, align 8
+  %17 = tail call double %16(%"class.blink::AudioDSPKernel"* %12) #9
+  br label %18
+
+18:                                               ; preds = %8, %4
+  %19 = phi double [ 0.000000e+00, %4 ], [ %17, %8 ]
+  %20 = getelementptr inbounds %"class.WTF::Mutex", %"class.WTF::Mutex"* %2, i64 0, i32 0
+  tail call void @_ZN3WTF9MutexBase6unlockEv(%"class.WTF::MutexBase"* %20) #9
+  br label %21
+
+21:                                               ; preds = %1, %18
+  %22 = phi double [ %19, %18 ], [ 0x7FF0000000000000, %1 ]
+  ret double %22
+}
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN5blink23AudioDSPKernelProcessorD2Ev(%"class.blink::AudioDSPKernelProcessor"*) unnamed_addr #5 comdat align 2 {
+  %2 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [15 x i8*] }, { [15 x i8*] }* @_ZTVN5blink23AudioDSPKernelProcessorE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 2, i32 0
+  tail call void @_ZN3WTF9MutexBaseD2Ev(%"class.WTF::MutexBase"* %3) #9
+  %4 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 1
+  %5 = getelementptr inbounds %"class.WTF::Vector", %"class.WTF::Vector"* %4, i64 0, i32 0, i32 0, i32 0
+  %6 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %5, align 8
+  %7 = icmp eq %"class.std::__1::unique_ptr"* %6, null
+  br i1 %7, label %34, label %8, !prof !4
+
+8:                                                ; preds = %1
+  %9 = bitcast %"class.std::__1::unique_ptr"* %6 to i8*
+  %10 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 1, i32 0, i32 0, i32 2
+  %11 = load i32, i32* %10, align 4
+  %12 = icmp eq i32 %11, 0
+  br i1 %12, label %32, label %13, !prof !3
+
+13:                                               ; preds = %8
+  %14 = zext i32 %11 to i64
+  %15 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %6, i64 %14
+  br label %16
+
+16:                                               ; preds = %26, %13
+  %17 = phi %"class.std::__1::unique_ptr"* [ %27, %26 ], [ %6, %13 ]
+  %18 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %17, i64 0, i32 0, i32 0, i32 0
+  %19 = load %"class.blink::AudioDSPKernel"*, %"class.blink::AudioDSPKernel"** %18, align 8
+  store %"class.blink::AudioDSPKernel"* null, %"class.blink::AudioDSPKernel"** %18, align 8
+  %20 = icmp eq %"class.blink::AudioDSPKernel"* %19, null
+  br i1 %20, label %26, label %21
+
+21:                                               ; preds = %16
+  %22 = bitcast %"class.blink::AudioDSPKernel"* %19 to void (%"class.blink::AudioDSPKernel"*)***
+  %23 = load void (%"class.blink::AudioDSPKernel"*)**, void (%"class.blink::AudioDSPKernel"*)*** %22, align 8
+  %24 = getelementptr inbounds void (%"class.blink::AudioDSPKernel"*)*, void (%"class.blink::AudioDSPKernel"*)** %23, i64 1
+  %25 = load void (%"class.blink::AudioDSPKernel"*)*, void (%"class.blink::AudioDSPKernel"*)** %24, align 8
+  tail call void %25(%"class.blink::AudioDSPKernel"* nonnull %19) #9
+  br label %26
+
+26:                                               ; preds = %21, %16
+  %27 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %17, i64 1
+  %28 = icmp eq %"class.std::__1::unique_ptr"* %27, %15
+  br i1 %28, label %29, label %16
+
+29:                                               ; preds = %26
+  store i32 0, i32* %10, align 4
+  %30 = bitcast %"class.WTF::Vector"* %4 to i8**
+  %31 = load i8*, i8** %30, align 8
+  br label %32
+
+32:                                               ; preds = %29, %8
+  %33 = phi i8* [ %31, %29 ], [ %9, %8 ]
+  tail call void @_ZN3WTF18PartitionAllocator11FreeBackingEPv(i8* %33) #9
+  store %"class.std::__1::unique_ptr"* null, %"class.std::__1::unique_ptr"** %5, align 8
+  br label %34
+
+34:                                               ; preds = %1, %32
+  %35 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 0
+  tail call void @_ZN5blink14AudioProcessorD2Ev(%"class.blink::AudioProcessor"* %35) #9
+  ret void
+}
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN5blink23AudioDSPKernelProcessorD0Ev(%"class.blink::AudioDSPKernelProcessor"*) unnamed_addr #5 comdat align 2 {
+  tail call void @llvm.trap() #10
+  unreachable
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden i32 @_ZNK5blink23AudioDSPKernelProcessor16NumberOfChannelsEv(%"class.blink::AudioDSPKernelProcessor"*) unnamed_addr #0 comdat align 2 {
+  %2 = getelementptr inbounds %"class.blink::AudioDSPKernelProcessor", %"class.blink::AudioDSPKernelProcessor"* %0, i64 0, i32 0, i32 2
+  %3 = load i32, i32* %2, align 4
+  ret i32 %3
+}
+
+declare void @__cxa_pure_virtual() unnamed_addr
+
+declare void @_ZN3WTF9MutexBaseC2Eb(%"class.WTF::MutexBase"*, i1 zeroext) unnamed_addr #2
+
+declare void @_ZN3WTF9MutexBase4lockEv(%"class.WTF::MutexBase"*) local_unnamed_addr #2
+
+declare void @_ZN3WTF9MutexBase6unlockEv(%"class.WTF::MutexBase"*) local_unnamed_addr #2
+
+declare zeroext i1 @_ZN3WTF5Mutex7TryLockEv(%"class.WTF::Mutex"*) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden dereferenceable(32) %"class.blink::AudioChannel"* @_ZNK3WTF6VectorIN5blink12AudioChannelELj2ENS_18PartitionAllocatorEE2atEj(%"class.WTF::Vector.2"*, i32) local_unnamed_addr #0 comdat align 2 {
+  %3 = alloca %"class.logging::CheckOpResult", align 8
+  %4 = alloca %"class.logging::CheckOpResult", align 8
+  %5 = alloca %"class.logging::CheckError", align 8
+  %6 = bitcast %"class.logging::CheckOpResult"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %6) #9
+  %7 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %4, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %7, align 8
+  %8 = getelementptr inbounds %"class.WTF::Vector.2", %"class.WTF::Vector.2"* %0, i64 0, i32 0, i32 0, i32 2
+  %9 = load i32, i32* %8, align 4
+  %10 = bitcast %"class.logging::CheckOpResult"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %10)
+  %11 = icmp ugt i32 %9, %1
+  br i1 %11, label %12, label %13
+
+12:                                               ; preds = %2
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* null, i8** %7, align 8
+  br label %22
+
+13:                                               ; preds = %2
+  %14 = tail call i8* @_ZN7logging15CheckOpValueStrEj(i32 %1) #9
+  %15 = tail call i8* @_ZN7logging15CheckOpValueStrEj(i32 %9) #9
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %3, i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str, i64 0, i64 0), i8* %14, i8* %15) #9
+  %16 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %3, i64 0, i32 0
+  %17 = load i8*, i8** %16, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* %17, i8** %7, align 8
+  %18 = icmp eq i8* %17, null
+  br i1 %18, label %22, label %19
+
+19:                                               ; preds = %13
+  %20 = bitcast %"class.logging::CheckError"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %20) #9
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %5, i8* getelementptr inbounds ([55 x i8], [55 x i8]* @.str.1, i64 0, i64 0), i32 1176, %"class.logging::CheckOpResult"* nonnull %4) #9
+  %21 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %5) #9
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %5) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %20) #9
+  br label %22
+
+22:                                               ; preds = %12, %13, %19
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %6) #9
+  %23 = getelementptr inbounds %"class.WTF::Vector.2", %"class.WTF::Vector.2"* %0, i64 0, i32 0, i32 0, i32 0
+  %24 = load %"class.blink::AudioChannel"*, %"class.blink::AudioChannel"** %23, align 8
+  %25 = zext i32 %1 to i64
+  %26 = getelementptr inbounds %"class.blink::AudioChannel", %"class.blink::AudioChannel"* %24, i64 %25
+  ret %"class.blink::AudioChannel"* %26
+}
+
+declare void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* sret, i8*, i32, %"class.logging::CheckOpResult"*) local_unnamed_addr #2
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"*) local_unnamed_addr #2
+
+; Function Attrs: nounwind
+declare void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"*) unnamed_addr #6
+
+declare i8* @_ZN7logging15CheckOpValueStrEj(i32) local_unnamed_addr #2
+
+declare void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"*, i8*, i8*, i8*) unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden dereferenceable(32) %"class.blink::AudioChannel"* @_ZN3WTF6VectorIN5blink12AudioChannelELj2ENS_18PartitionAllocatorEE2atEj(%"class.WTF::Vector.2"*, i32) local_unnamed_addr #0 comdat align 2 {
+  %3 = alloca %"class.logging::CheckOpResult", align 8
+  %4 = alloca %"class.logging::CheckOpResult", align 8
+  %5 = alloca %"class.logging::CheckError", align 8
+  %6 = bitcast %"class.logging::CheckOpResult"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %6) #9
+  %7 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %4, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %7, align 8
+  %8 = getelementptr inbounds %"class.WTF::Vector.2", %"class.WTF::Vector.2"* %0, i64 0, i32 0, i32 0, i32 2
+  %9 = load i32, i32* %8, align 4
+  %10 = bitcast %"class.logging::CheckOpResult"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %10)
+  %11 = icmp ugt i32 %9, %1
+  br i1 %11, label %12, label %13
+
+12:                                               ; preds = %2
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* null, i8** %7, align 8
+  br label %22
+
+13:                                               ; preds = %2
+  %14 = tail call i8* @_ZN7logging15CheckOpValueStrEj(i32 %1) #9
+  %15 = tail call i8* @_ZN7logging15CheckOpValueStrEj(i32 %9) #9
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %3, i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str, i64 0, i64 0), i8* %14, i8* %15) #9
+  %16 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %3, i64 0, i32 0
+  %17 = load i8*, i8** %16, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* %17, i8** %7, align 8
+  %18 = icmp eq i8* %17, null
+  br i1 %18, label %22, label %19
+
+19:                                               ; preds = %13
+  %20 = bitcast %"class.logging::CheckError"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %20) #9
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %5, i8* getelementptr inbounds ([55 x i8], [55 x i8]* @.str.1, i64 0, i64 0), i32 1172, %"class.logging::CheckOpResult"* nonnull %4) #9
+  %21 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %5) #9
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %5) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %20) #9
+  br label %22
+
+22:                                               ; preds = %12, %13, %19
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %6) #9
+  %23 = getelementptr inbounds %"class.WTF::Vector.2", %"class.WTF::Vector.2"* %0, i64 0, i32 0, i32 0, i32 0
+  %24 = load %"class.blink::AudioChannel"*, %"class.blink::AudioChannel"** %23, align 8
+  %25 = zext i32 %1 to i64
+  %26 = getelementptr inbounds %"class.blink::AudioChannel", %"class.blink::AudioChannel"* %24, i64 %25
+  ret %"class.blink::AudioChannel"* %26
+}
+
+; Function Attrs: nounwind
+declare void @_ZN3WTF9MutexBaseD2Ev(%"class.WTF::MutexBase"*) unnamed_addr #6
+
+; Function Attrs: nounwind
+declare void @_ZN5blink14AudioProcessorD2Ev(%"class.blink::AudioProcessor"*) unnamed_addr #6
+
+declare void @_ZN3WTF18PartitionAllocator11FreeBackingEPv(i8*) local_unnamed_addr #2
+
+; Function Attrs: cold noreturn nounwind
+declare void @llvm.trap() #7
+
+; Function Attrs: noinline nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN3WTF6VectorINSt3__110unique_ptrIN5blink14AudioDSPKernelENS1_14default_deleteIS4_EEEELj0ENS_18PartitionAllocatorEE14AppendSlowCaseIS7_EEvOT_(%"class.WTF::Vector"*, %"class.std::__1::unique_ptr"* dereferenceable(8)) local_unnamed_addr #8 comdat align 2 {
+  %3 = getelementptr inbounds %"class.WTF::Vector", %"class.WTF::Vector"* %0, i64 0, i32 0, i32 0, i32 2
+  %4 = load i32, i32* %3, align 4
+  %5 = add i32 %4, 1
+  %6 = getelementptr inbounds %"class.WTF::Vector", %"class.WTF::Vector"* %0, i64 0, i32 0, i32 0, i32 0
+  %7 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %6, align 8
+  %8 = icmp ugt %"class.std::__1::unique_ptr"* %7, %1
+  br i1 %8, label %13, label %9
+
+9:                                                ; preds = %2
+  %10 = zext i32 %4 to i64
+  %11 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %7, i64 %10
+  %12 = icmp ugt %"class.std::__1::unique_ptr"* %11, %1
+  br i1 %12, label %54, label %13
+
+13:                                               ; preds = %9, %2
+  %14 = getelementptr inbounds %"class.WTF::Vector", %"class.WTF::Vector"* %0, i64 0, i32 0, i32 0, i32 1
+  %15 = load i32, i32* %14, align 8
+  %16 = lshr i32 %15, 2
+  %17 = add i32 %15, 1
+  %18 = add i32 %17, %16
+  %19 = icmp ugt i32 %18, 4
+  %20 = select i1 %19, i32 %18, i32 4
+  %21 = icmp ugt i32 %20, %5
+  %22 = select i1 %21, i32 %20, i32 %5
+  %23 = icmp ult i32 %15, %22
+  br i1 %23, label %24, label %99, !prof !4
+
+24:                                               ; preds = %13
+  %25 = icmp eq %"class.std::__1::unique_ptr"* %7, null
+  %26 = zext i32 %22 to i64
+  %27 = tail call i64 @_ZN3WTF18PartitionAllocator13QuantizedSizeINSt3__110unique_ptrIN5blink14AudioDSPKernelENS2_14default_deleteIS5_EEEEEEmm(i64 %26) #9
+  %28 = tail call i8* @_ZN3WTF18PartitionAllocator15AllocateBackingEmPKc(i64 %27, i8* getelementptr inbounds ([141 x i8], [141 x i8]* @__PRETTY_FUNCTION__._ZN3WTF21GetStringWithTypeNameINSt3__110unique_ptrIN5blink14AudioDSPKernelENS1_14default_deleteIS4_EEEEEEPKcv, i64 0, i64 0)) #9
+  br i1 %25, label %29, label %35
+
+29:                                               ; preds = %24
+  %30 = ptrtoint i8* %28 to i64
+  %31 = bitcast %"class.WTF::Vector"* %0 to i64*
+  store atomic i64 %30, i64* %31 monotonic, align 8
+  %32 = lshr i64 %27, 3
+  %33 = trunc i64 %32 to i32
+  store i32 %33, i32* %14, align 8
+  %34 = bitcast i8* %28 to %"class.std::__1::unique_ptr"*
+  br label %99
+
+35:                                               ; preds = %24
+  %36 = lshr i64 %27, 3
+  %37 = ptrtoint i8* %28 to i64
+  %38 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %6, align 8
+  %39 = icmp ne i8* %28, null
+  %40 = icmp ne %"class.std::__1::unique_ptr"* %38, null
+  %41 = and i1 %39, %40
+  %42 = bitcast %"class.std::__1::unique_ptr"* %38 to i8*
+  br i1 %41, label %43, label %49, !prof !4
+
+43:                                               ; preds = %35
+  %44 = load i32, i32* %3, align 4
+  %45 = zext i32 %44 to i64
+  %46 = shl nuw nsw i64 %45, 3
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %28, i8* nonnull align 8 %42, i64 %46, i1 false) #9
+  %47 = bitcast %"class.WTF::Vector"* %0 to i8**
+  %48 = load i8*, i8** %47, align 8
+  br label %49
+
+49:                                               ; preds = %43, %35
+  %50 = phi i8* [ %48, %43 ], [ %42, %35 ]
+  tail call void @_ZN3WTF18PartitionAllocator11FreeBackingEPv(i8* %50) #9
+  %51 = bitcast %"class.WTF::Vector"* %0 to i64*
+  store atomic i64 %37, i64* %51 monotonic, align 8
+  %52 = trunc i64 %36 to i32
+  store i32 %52, i32* %14, align 8
+  %53 = bitcast i8* %28 to %"class.std::__1::unique_ptr"*
+  br label %99
+
+54:                                               ; preds = %9
+  %55 = ptrtoint %"class.std::__1::unique_ptr"* %1 to i64
+  %56 = ptrtoint %"class.std::__1::unique_ptr"* %7 to i64
+  %57 = sub i64 %55, %56
+  %58 = ashr exact i64 %57, 3
+  %59 = getelementptr inbounds %"class.WTF::Vector", %"class.WTF::Vector"* %0, i64 0, i32 0, i32 0, i32 1
+  %60 = load i32, i32* %59, align 8
+  %61 = lshr i32 %60, 2
+  %62 = add i32 %60, 1
+  %63 = add i32 %62, %61
+  %64 = icmp ugt i32 %63, 4
+  %65 = select i1 %64, i32 %63, i32 4
+  %66 = icmp ugt i32 %65, %5
+  %67 = select i1 %66, i32 %65, i32 %5
+  %68 = icmp ult i32 %60, %67
+  br i1 %68, label %69, label %96, !prof !4
+
+69:                                               ; preds = %54
+  %70 = icmp eq %"class.std::__1::unique_ptr"* %7, null
+  %71 = zext i32 %67 to i64
+  %72 = tail call i64 @_ZN3WTF18PartitionAllocator13QuantizedSizeINSt3__110unique_ptrIN5blink14AudioDSPKernelENS2_14default_deleteIS5_EEEEEEmm(i64 %71) #9
+  %73 = tail call i8* @_ZN3WTF18PartitionAllocator15AllocateBackingEmPKc(i64 %72, i8* getelementptr inbounds ([141 x i8], [141 x i8]* @__PRETTY_FUNCTION__._ZN3WTF21GetStringWithTypeNameINSt3__110unique_ptrIN5blink14AudioDSPKernelENS1_14default_deleteIS4_EEEEEEPKcv, i64 0, i64 0)) #9
+  %74 = ptrtoint i8* %73 to i64
+  br i1 %70, label %75, label %77
+
+75:                                               ; preds = %69
+  %76 = bitcast %"class.WTF::Vector"* %0 to i64*
+  store atomic i64 %74, i64* %76 monotonic, align 8
+  br label %92
+
+77:                                               ; preds = %69
+  %78 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %6, align 8
+  %79 = icmp ne i8* %73, null
+  %80 = icmp ne %"class.std::__1::unique_ptr"* %78, null
+  %81 = and i1 %79, %80
+  %82 = bitcast %"class.std::__1::unique_ptr"* %78 to i8*
+  br i1 %81, label %83, label %89, !prof !4
+
+83:                                               ; preds = %77
+  %84 = load i32, i32* %3, align 4
+  %85 = zext i32 %84 to i64
+  %86 = shl nuw nsw i64 %85, 3
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %73, i8* nonnull align 8 %82, i64 %86, i1 false) #9
+  %87 = bitcast %"class.WTF::Vector"* %0 to i8**
+  %88 = load i8*, i8** %87, align 8
+  br label %89
+
+89:                                               ; preds = %83, %77
+  %90 = phi i8* [ %88, %83 ], [ %82, %77 ]
+  tail call void @_ZN3WTF18PartitionAllocator11FreeBackingEPv(i8* %90) #9
+  %91 = bitcast %"class.WTF::Vector"* %0 to i64*
+  store atomic i64 %74, i64* %91 monotonic, align 8
+  br label %92
+
+92:                                               ; preds = %89, %75
+  %93 = lshr i64 %72, 3
+  %94 = trunc i64 %93 to i32
+  store i32 %94, i32* %59, align 8
+  %95 = bitcast i8* %73 to %"class.std::__1::unique_ptr"*
+  br label %96
+
+96:                                               ; preds = %92, %54
+  %97 = phi %"class.std::__1::unique_ptr"* [ %7, %54 ], [ %95, %92 ]
+  %98 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %97, i64 %58
+  br label %99
+
+99:                                               ; preds = %49, %29, %13, %96
+  %100 = phi %"class.std::__1::unique_ptr"* [ %97, %96 ], [ %7, %13 ], [ %34, %29 ], [ %53, %49 ]
+  %101 = phi %"class.std::__1::unique_ptr"* [ %98, %96 ], [ %1, %13 ], [ %1, %29 ], [ %1, %49 ]
+  %102 = load i32, i32* %3, align 4
+  %103 = zext i32 %102 to i64
+  %104 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %100, i64 %103
+  %105 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %101, i64 0, i32 0, i32 0, i32 0
+  %106 = bitcast %"class.std::__1::unique_ptr"* %101 to i64*
+  %107 = load i64, i64* %106, align 8
+  store %"class.blink::AudioDSPKernel"* null, %"class.blink::AudioDSPKernel"** %105, align 8
+  %108 = bitcast %"class.std::__1::unique_ptr"* %104 to i64*
+  store i64 %107, i64* %108, align 8
+  %109 = load i32, i32* %3, align 4
+  %110 = add i32 %109, 1
+  store i32 %110, i32* %3, align 4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden i64 @_ZN3WTF18PartitionAllocator13QuantizedSizeINSt3__110unique_ptrIN5blink14AudioDSPKernelENS2_14default_deleteIS5_EEEEEEmm(i64) local_unnamed_addr #0 comdat align 2 {
+  %2 = alloca %"class.logging::CheckOpResult", align 8
+  %3 = alloca %"class.logging::CheckOpResult", align 8
+  %4 = alloca %"class.logging::CheckError", align 8
+  %5 = bitcast %"class.logging::CheckOpResult"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %5) #9
+  %6 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %3, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %6, align 8
+  %7 = bitcast %"class.logging::CheckOpResult"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %7)
+  %8 = icmp ugt i64 %0, 268173312
+  br i1 %8, label %10, label %9
+
+9:                                                ; preds = %1
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %7)
+  store i8* null, i8** %6, align 8
+  br label %19
+
+10:                                               ; preds = %1
+  %11 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 %0) #9
+  %12 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 268173312) #9
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %2, i8* getelementptr inbounds ([44 x i8], [44 x i8]* @.str.3, i64 0, i64 0), i8* %11, i8* %12) #9
+  %13 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %2, i64 0, i32 0
+  %14 = load i8*, i8** %13, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %7)
+  store i8* %14, i8** %6, align 8
+  %15 = icmp eq i8* %14, null
+  br i1 %15, label %19, label %16
+
+16:                                               ; preds = %10
+  %17 = bitcast %"class.logging::CheckError"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %17) #9
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %4, i8* getelementptr inbounds ([78 x i8], [78 x i8]* @.str.4, i64 0, i64 0), i32 31, %"class.logging::CheckOpResult"* nonnull %3) #9
+  %18 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %4) #9
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %4) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %17) #9
+  br label %19
+
+19:                                               ; preds = %9, %10, %16
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %5) #9
+  %20 = shl i64 %0, 3
+  %21 = call i64 @_ZN3WTF10Partitions23BufferPotentialCapacityEm(i64 %20) #9
+  ret i64 %21
+}
+
+declare i64 @_ZN3WTF10Partitions23BufferPotentialCapacityEm(i64) local_unnamed_addr #2
+
+declare i8* @_ZN7logging15CheckOpValueStrEm(i64) local_unnamed_addr #2
+
+declare i8* @_ZN3WTF18PartitionAllocator15AllocateBackingEmPKc(i64, i8*) local_unnamed_addr #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #1
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden dereferenceable(8) %"class.std::__1::unique_ptr"* @_ZN3WTF6VectorINSt3__110unique_ptrIN5blink14AudioDSPKernelENS1_14default_deleteIS4_EEEELj0ENS_18PartitionAllocatorEE2atEj(%"class.WTF::Vector"*, i32) local_unnamed_addr #0 comdat align 2 {
+  %3 = alloca %"class.logging::CheckOpResult", align 8
+  %4 = alloca %"class.logging::CheckOpResult", align 8
+  %5 = alloca %"class.logging::CheckError", align 8
+  %6 = bitcast %"class.logging::CheckOpResult"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %6) #9
+  %7 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %4, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %7, align 8
+  %8 = getelementptr inbounds %"class.WTF::Vector", %"class.WTF::Vector"* %0, i64 0, i32 0, i32 0, i32 2
+  %9 = load i32, i32* %8, align 4
+  %10 = bitcast %"class.logging::CheckOpResult"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %10)
+  %11 = icmp ugt i32 %9, %1
+  br i1 %11, label %12, label %13
+
+12:                                               ; preds = %2
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* null, i8** %7, align 8
+  br label %22
+
+13:                                               ; preds = %2
+  %14 = tail call i8* @_ZN7logging15CheckOpValueStrEj(i32 %1) #9
+  %15 = tail call i8* @_ZN7logging15CheckOpValueStrEj(i32 %9) #9
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %3, i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str, i64 0, i64 0), i8* %14, i8* %15) #9
+  %16 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %3, i64 0, i32 0
+  %17 = load i8*, i8** %16, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* %17, i8** %7, align 8
+  %18 = icmp eq i8* %17, null
+  br i1 %18, label %22, label %19
+
+19:                                               ; preds = %13
+  %20 = bitcast %"class.logging::CheckError"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %20) #9
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %5, i8* getelementptr inbounds ([55 x i8], [55 x i8]* @.str.1, i64 0, i64 0), i32 1172, %"class.logging::CheckOpResult"* nonnull %4) #9
+  %21 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %5) #9
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %5) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %20) #9
+  br label %22
+
+22:                                               ; preds = %12, %13, %19
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %6) #9
+  %23 = getelementptr inbounds %"class.WTF::Vector", %"class.WTF::Vector"* %0, i64 0, i32 0, i32 0, i32 0
+  %24 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %23, align 8
+  %25 = zext i32 %1 to i64
+  %26 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %24, i64 %25
+  ret %"class.std::__1::unique_ptr"* %26
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden dereferenceable(8) %"class.std::__1::unique_ptr"* @_ZNK3WTF6VectorINSt3__110unique_ptrIN5blink14AudioDSPKernelENS1_14default_deleteIS4_EEEELj0ENS_18PartitionAllocatorEE2atEj(%"class.WTF::Vector"*, i32) local_unnamed_addr #0 comdat align 2 {
+  %3 = alloca %"class.logging::CheckOpResult", align 8
+  %4 = alloca %"class.logging::CheckOpResult", align 8
+  %5 = alloca %"class.logging::CheckError", align 8
+  %6 = bitcast %"class.logging::CheckOpResult"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %6) #9
+  %7 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %4, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %7, align 8
+  %8 = getelementptr inbounds %"class.WTF::Vector", %"class.WTF::Vector"* %0, i64 0, i32 0, i32 0, i32 2
+  %9 = load i32, i32* %8, align 4
+  %10 = bitcast %"class.logging::CheckOpResult"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %10)
+  %11 = icmp ugt i32 %9, %1
+  br i1 %11, label %12, label %13
+
+12:                                               ; preds = %2
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* null, i8** %7, align 8
+  br label %22
+
+13:                                               ; preds = %2
+  %14 = tail call i8* @_ZN7logging15CheckOpValueStrEj(i32 %1) #9
+  %15 = tail call i8* @_ZN7logging15CheckOpValueStrEj(i32 %9) #9
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %3, i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str, i64 0, i64 0), i8* %14, i8* %15) #9
+  %16 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %3, i64 0, i32 0
+  %17 = load i8*, i8** %16, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* %17, i8** %7, align 8
+  %18 = icmp eq i8* %17, null
+  br i1 %18, label %22, label %19
+
+19:                                               ; preds = %13
+  %20 = bitcast %"class.logging::CheckError"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %20) #9
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %5, i8* getelementptr inbounds ([55 x i8], [55 x i8]* @.str.1, i64 0, i64 0), i32 1176, %"class.logging::CheckOpResult"* nonnull %4) #9
+  %21 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %5) #9
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %5) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %20) #9
+  br label %22
+
+22:                                               ; preds = %12, %13, %19
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %6) #9
+  %23 = getelementptr inbounds %"class.WTF::Vector", %"class.WTF::Vector"* %0, i64 0, i32 0, i32 0, i32 0
+  %24 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %23, align 8
+  %25 = zext i32 %1 to i64
+  %26 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %24, i64 %25
+  ret %"class.std::__1::unique_ptr"* %26
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { argmemonly nounwind }
+attributes #2 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nofree norecurse nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { norecurse nounwind readnone ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { inlinehint nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { cold noreturn nounwind }
+attributes #8 = { noinline nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #9 = { nounwind }
+attributes #10 = { noreturn nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{i8 0, i8 2}
+!3 = !{!"branch_weights", i32 1, i32 2000}
+!4 = !{!"branch_weights", i32 2000, i32 1}

@@ -1,0 +1,987 @@
+; ModuleID = '../../third_party/blink/renderer/modules/webaudio/delay_dsp_kernel.cc'
+source_filename = "../../third_party/blink/renderer/modules/webaudio/delay_dsp_kernel.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.blink::DelayDSPKernel" = type { %"class.blink::AudioDelayDSPKernel" }
+%"class.blink::AudioDelayDSPKernel" = type { %"class.blink::AudioDSPKernel", %"class.blink::AudioArray", float, i32, double, %"class.blink::AudioArray", %"class.blink::AudioArray" }
+%"class.blink::AudioDSPKernel" = type { i32 (...)**, %"class.blink::AudioDSPKernelProcessor"*, float, i32 }
+%"class.blink::AudioDSPKernelProcessor" = type <{ %"class.blink::AudioProcessor", %"class.WTF::Vector", %"class.WTF::Mutex", i8, [7 x i8] }>
+%"class.blink::AudioProcessor" = type { i32 (...)**, i8, i32, float, i32 }
+%"class.WTF::Vector" = type { %"class.WTF::VectorBuffer" }
+%"class.WTF::VectorBuffer" = type { %"class.WTF::VectorBufferBase" }
+%"class.WTF::VectorBufferBase" = type { %"class.std::__1::unique_ptr"*, i32, i32 }
+%"class.std::__1::unique_ptr" = type opaque
+%"class.WTF::Mutex" = type { %"class.WTF::MutexBase" }
+%"class.WTF::MutexBase" = type { %"struct.WTF::PlatformMutex" }
+%"struct.WTF::PlatformMutex" = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%"class.blink::AudioArray" = type <{ float*, float*, i32, [4 x i8] }>
+%"class.blink::DelayProcessor" = type { %"class.blink::AudioDSPKernelProcessor.base", %class.scoped_refptr, double }
+%"class.blink::AudioDSPKernelProcessor.base" = type <{ %"class.blink::AudioProcessor", %"class.WTF::Vector", %"class.WTF::Mutex", i8 }>
+%class.scoped_refptr = type { %"class.blink::AudioParamHandler"* }
+%"class.blink::AudioParamHandler" = type { %"class.blink::AudioSummingJunction.base", %"class.WTF::ThreadSafeRefCounted", i32, %"class.WTF::String", %"struct.std::__1::atomic.44", float, i32, i32, float, float, %"class.blink::AudioParamTimeline", %class.scoped_refptr.59, %class.scoped_refptr.305 }
+%"class.blink::AudioSummingJunction.base" = type <{ i32 (...)**, %class.scoped_refptr.1, %"class.WTF::HashSet.27", %"class.WTF::Vector.33", i8 }>
+%class.scoped_refptr.1 = type { %"class.blink::DeferredTaskHandler"* }
+%"class.blink::DeferredTaskHandler" = type <{ %"class.WTF::ThreadSafeRefCounted.2", [4 x i8], %"class.base::SupportsWeakPtr", %"class.WTF::HashSet", %"class.WTF::Vector.14", i8, [3 x i8], i32, %"class.WTF::HashSet.19", %"class.WTF::HashSet.19", %"class.WTF::HashSet.23", %"class.WTF::HashSet.27", %"class.WTF::Vector.14", %"class.WTF::Vector.14", %"class.WTF::Vector.14", %"class.WTF::Vector.14", i8, [7 x i8], %"class.WTF::HashSet", %"class.WTF::Vector.14", %class.scoped_refptr.31, %"class.WTF::RecursiveMutex", %"class.WTF::Mutex", %"struct.std::__1::atomic", [4 x i8] }>
+%"class.WTF::ThreadSafeRefCounted.2" = type { %"class.base::RefCountedThreadSafe.3" }
+%"class.base::RefCountedThreadSafe.3" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%"class.base::SupportsWeakPtr" = type { %"class.base::internal::WeakReferenceOwner" }
+%"class.base::internal::WeakReferenceOwner" = type { %class.scoped_refptr.4 }
+%class.scoped_refptr.4 = type { %"class.base::internal::WeakReference::Flag"* }
+%"class.base::internal::WeakReference::Flag" = type <{ %"class.base::RefCountedThreadSafe.5", %"class.base::AtomicFlag", [3 x i8] }>
+%"class.base::RefCountedThreadSafe.5" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::AtomicFlag" = type { %"struct.std::__1::atomic.6" }
+%"struct.std::__1::atomic.6" = type { %"struct.std::__1::__atomic_base.7" }
+%"struct.std::__1::__atomic_base.7" = type { %"struct.std::__1::__atomic_base.8" }
+%"struct.std::__1::__atomic_base.8" = type { %"struct.std::__1::__cxx_atomic_impl.9" }
+%"struct.std::__1::__cxx_atomic_impl.9" = type { %"struct.std::__1::__cxx_atomic_base_impl.10" }
+%"struct.std::__1::__cxx_atomic_base_impl.10" = type { i8 }
+%"class.WTF::HashSet.19" = type { %"class.WTF::HashTable.20" }
+%"class.WTF::HashTable.20" = type <{ %"class.blink::AudioHandler"**, i32, i32, i32, [4 x i8] }>
+%"class.blink::AudioHandler" = type <{ i32 (...)**, %"class.WTF::ThreadSafeRefCounted.60", [4 x i8], double, double, i8, [3 x i8], i32, %"class.blink::WeakPersistent", %"class.blink::UntracedMember", %class.scoped_refptr.1, %"class.WTF::Vector.293", %"class.WTF::Vector.299", i32, i8, i8, [2 x i8], i32, i32, i32, i32, i32, [4 x i8] }>
+%"class.WTF::ThreadSafeRefCounted.60" = type { %"class.base::RefCountedThreadSafe.61" }
+%"class.base::RefCountedThreadSafe.61" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.blink::WeakPersistent" = type { %"class.blink::PersistentBase" }
+%"class.blink::PersistentBase" = type { %"class.blink::AudioNode"*, %"class.blink::PersistentNodePtr" }
+%"class.blink::AudioNode" = type { %"class.blink::EventTargetWithInlineData", %"class.blink::InspectorHelperMixin", %"class.blink::ThreadState::PrefinalizerRegistration", %"class.blink::Member.92", %class.scoped_refptr.1, %class.scoped_refptr.13, %"class.blink::HeapVector.94", %"class.blink::HeapVector.102" }
+%"class.blink::EventTargetWithInlineData" = type { %"class.blink::EventTarget", %"class.blink::EventTargetData" }
+%"class.blink::EventTarget" = type { %"class.blink::ScriptWrappable" }
+%"class.blink::ScriptWrappable" = type { %"class.blink::NameClient", %"class.blink::TraceWrapperV8Reference" }
+%"class.blink::NameClient" = type { i32 (...)** }
+%"class.blink::TraceWrapperV8Reference" = type { %"class.v8::TracedReference" }
+%"class.v8::TracedReference" = type { %"class.v8::BasicTracedReference" }
+%"class.v8::BasicTracedReference" = type { %"class.v8::TracedReferenceBase" }
+%"class.v8::TracedReferenceBase" = type { i64* }
+%"class.blink::EventTargetData" = type { %"class.blink::EventListenerMap", %"class.std::__1::unique_ptr.72" }
+%"class.blink::EventListenerMap" = type { %"class.blink::HeapVector" }
+%"class.blink::HeapVector" = type { %"class.WTF::Vector.66" }
+%"class.WTF::Vector.66" = type { %"class.WTF::VectorBuffer.67" }
+%"class.WTF::VectorBuffer.67" = type { %"class.WTF::VectorBufferBase.68", [32 x i8] }
+%"class.WTF::VectorBufferBase.68" = type { %"struct.std::__1::pair"*, i32, i32 }
+%"struct.std::__1::pair" = type { %"class.WTF::AtomicString", %"class.blink::Member" }
+%"class.WTF::AtomicString" = type { %"class.WTF::String" }
+%"class.blink::Member" = type { %"class.blink::MemberBase" }
+%"class.blink::MemberBase" = type { %"class.blink::HeapVector.69"* }
+%"class.blink::HeapVector.69" = type opaque
+%"class.std::__1::unique_ptr.72" = type { %"class.std::__1::__compressed_pair.73" }
+%"class.std::__1::__compressed_pair.73" = type { %"struct.std::__1::__compressed_pair_elem.74" }
+%"struct.std::__1::__compressed_pair_elem.74" = type { %"class.WTF::Vector.75"* }
+%"class.WTF::Vector.75" = type opaque
+%"class.blink::InspectorHelperMixin" = type { %"class.blink::GarbageCollectedMixin", %"class.blink::Member.79", %"class.WTF::String", %"class.WTF::String" }
+%"class.blink::GarbageCollectedMixin" = type { i32 (...)** }
+%"class.blink::Member.79" = type { %"class.blink::MemberBase.80" }
+%"class.blink::MemberBase.80" = type { %"class.blink::AudioGraphTracer"* }
+%"class.blink::AudioGraphTracer" = type { %"class.blink::Supplement", %"class.blink::Member.85", %"class.blink::HeapHashSet" }
+%"class.blink::Supplement" = type { %"class.blink::GarbageCollectedMixin", %"class.blink::Member.83" }
+%"class.blink::Member.83" = type { %"class.blink::MemberBase.84" }
+%"class.blink::MemberBase.84" = type { %"class.blink::Page"* }
+%"class.blink::Page" = type { %"class.blink::Supplementable", %"class.blink::SettingsDelegate", %"class.blink::PageScheduler::Delegate", %"class.blink::Member.402", %"class.blink::scheduler::WebAgentGroupScheduler"*, %"class.blink::Member.404", %"class.blink::Member.408", %"class.blink::Member.410", %"class.blink::Member.412", %"class.blink::Member.414", %"class.blink::Member.416", %"class.blink::Member.418", %"class.blink::Member.420", %"class.blink::HeapObserverSet.422", %"class.blink::Member.430", %"class.blink::Member.432", %"class.blink::Member.434", %"class.blink::Member.436", %"class.blink::Member.438", %"class.blink::Member.440", %"class.blink::Member.442", %"class.blink::Member.444", %"class.blink::Member.446", %"class.blink::Member.448", %"class.blink::Member.450", %"class.blink::InspectorIssueStorage", %"class.blink::Deprecation", %"struct.blink::WebWindowFeatures", i8, i8, i8, float, %"class.mojo::StructPtr", i8, i8, i8, i8, i32, %"class.blink::HeapHashSet.481", %"class.blink::Member.83", %"class.blink::Member.83", %"class.blink::FrameOrWorkerScheduler::SchedulingAffectingFeatureHandle", %"class.std::__1::unique_ptr.489", %"class.std::__1::unique_ptr.495", i32, i32, i8, %"class.blink::mojom::blink::TextAutosizerPageInfo", %"class.blink::WebScopedVirtualTimePauser" }
+%"class.blink::Supplementable" = type { %"class.blink::GarbageCollectedMixin", %"class.blink::HeapHashMap.389" }
+%"class.blink::HeapHashMap.389" = type { %"class.WTF::HashMap.392" }
+%"class.WTF::HashMap.392" = type { %"class.WTF::HashTable.393" }
+%"class.WTF::HashTable.393" = type <{ %"struct.WTF::KeyValuePair.395"*, i32, i32, i32, [4 x i8] }>
+%"struct.WTF::KeyValuePair.395" = type opaque
+%"class.blink::SettingsDelegate" = type { i32 (...)**, %"class.std::__1::unique_ptr.396" }
+%"class.std::__1::unique_ptr.396" = type { %"class.std::__1::__compressed_pair.397" }
+%"class.std::__1::__compressed_pair.397" = type { %"struct.std::__1::__compressed_pair_elem.398" }
+%"struct.std::__1::__compressed_pair_elem.398" = type { %"class.blink::Settings"* }
+%"class.blink::Settings" = type opaque
+%"class.blink::PageScheduler::Delegate" = type { i32 (...)** }
+%"class.blink::Member.402" = type { %"class.blink::MemberBase.403" }
+%"class.blink::MemberBase.403" = type { %"class.blink::Frame"* }
+%"class.blink::Frame" = type opaque
+%"class.blink::scheduler::WebAgentGroupScheduler" = type { i32 (...)** }
+%"class.blink::Member.404" = type { %"class.blink::MemberBase.405" }
+%"class.blink::MemberBase.405" = type { %"class.blink::PageAnimator"* }
+%"class.blink::PageAnimator" = type <{ %"class.blink::Member.83", i8, i8, i8, [5 x i8], %"class.blink::AnimationClock", i8, i8, i8, i8, i8, [3 x i8] }>
+%"class.blink::AnimationClock" = type <{ %"class.base::TimeTicks", i8, [7 x i8], %"class.base::TickClock"*, i32, [4 x i8] }>
+%"class.base::TimeTicks" = type { %"class.base::time_internal::TimeBase" }
+%"class.base::time_internal::TimeBase" = type { i64 }
+%"class.base::TickClock" = type { i32 (...)** }
+%"class.blink::Member.408" = type { %"class.blink::MemberBase.409" }
+%"class.blink::MemberBase.409" = type { %"class.blink::AutoscrollController"* }
+%"class.blink::AutoscrollController" = type opaque
+%"class.blink::Member.410" = type { %"class.blink::MemberBase.411" }
+%"class.blink::MemberBase.411" = type { %"class.blink::ChromeClient"* }
+%"class.blink::ChromeClient" = type opaque
+%"class.blink::Member.412" = type { %"class.blink::MemberBase.413" }
+%"class.blink::MemberBase.413" = type { %"class.blink::DragCaret"* }
+%"class.blink::DragCaret" = type opaque
+%"class.blink::Member.414" = type { %"class.blink::MemberBase.415" }
+%"class.blink::MemberBase.415" = type { %"class.blink::DragController"* }
+%"class.blink::DragController" = type opaque
+%"class.blink::Member.416" = type { %"class.blink::MemberBase.417" }
+%"class.blink::MemberBase.417" = type { %"class.blink::FocusController"* }
+%"class.blink::FocusController" = type opaque
+%"class.blink::Member.418" = type { %"class.blink::MemberBase.419" }
+%"class.blink::MemberBase.419" = type { %"class.blink::ContextMenuController"* }
+%"class.blink::ContextMenuController" = type opaque
+%"class.blink::Member.420" = type { %"class.blink::MemberBase.421" }
+%"class.blink::MemberBase.421" = type { %"class.blink::PageScaleConstraintsSet"* }
+%"class.blink::PageScaleConstraintsSet" = type opaque
+%"class.blink::HeapObserverSet.422" = type { i32, [4 x i8], %"class.blink::HeapHashSet.423" }
+%"class.blink::HeapHashSet.423" = type { %"class.WTF::HashSet.426" }
+%"class.WTF::HashSet.426" = type { %"class.WTF::HashTable.427" }
+%"class.WTF::HashTable.427" = type <{ %"class.blink::WeakMember.429"*, i32, i32, i32, [4 x i8] }>
+%"class.blink::WeakMember.429" = type opaque
+%"class.blink::Member.430" = type { %"class.blink::MemberBase.431" }
+%"class.blink::MemberBase.431" = type { %"class.blink::PointerLockController"* }
+%"class.blink::PointerLockController" = type opaque
+%"class.blink::Member.432" = type { %"class.blink::MemberBase.433" }
+%"class.blink::MemberBase.433" = type { %"class.blink::ScrollingCoordinator"* }
+%"class.blink::ScrollingCoordinator" = type opaque
+%"class.blink::Member.434" = type { %"class.blink::MemberBase.435" }
+%"class.blink::MemberBase.435" = type { %"class.blink::BrowserControls"* }
+%"class.blink::BrowserControls" = type opaque
+%"class.blink::Member.436" = type { %"class.blink::MemberBase.437" }
+%"class.blink::MemberBase.437" = type { %"class.blink::ConsoleMessageStorage"* }
+%"class.blink::ConsoleMessageStorage" = type opaque
+%"class.blink::Member.438" = type { %"class.blink::MemberBase.439" }
+%"class.blink::MemberBase.439" = type { %"class.blink::TopDocumentRootScrollerController"* }
+%"class.blink::TopDocumentRootScrollerController" = type opaque
+%"class.blink::Member.440" = type { %"class.blink::MemberBase.441" }
+%"class.blink::MemberBase.441" = type { %"class.blink::VisualViewport"* }
+%"class.blink::VisualViewport" = type opaque
+%"class.blink::Member.442" = type { %"class.blink::MemberBase.443" }
+%"class.blink::MemberBase.443" = type { %"class.blink::OverscrollController"* }
+%"class.blink::OverscrollController" = type opaque
+%"class.blink::Member.444" = type { %"class.blink::MemberBase.445" }
+%"class.blink::MemberBase.445" = type { %"class.blink::LinkHighlight"* }
+%"class.blink::LinkHighlight" = type opaque
+%"class.blink::Member.446" = type { %"class.blink::MemberBase.447" }
+%"class.blink::MemberBase.447" = type { %"class.blink::SpatialNavigationController"* }
+%"class.blink::SpatialNavigationController" = type opaque
+%"class.blink::Member.448" = type { %"class.blink::MemberBase.449" }
+%"class.blink::MemberBase.449" = type { %"class.blink::PluginData"* }
+%"class.blink::PluginData" = type opaque
+%"class.blink::Member.450" = type { %"class.blink::MemberBase.451" }
+%"class.blink::MemberBase.451" = type { %"class.blink::ValidationMessageClient"* }
+%"class.blink::ValidationMessageClient" = type opaque
+%"class.blink::InspectorIssueStorage" = type { i32 (...)**, %"class.WTF::Deque.452" }
+%"class.WTF::Deque.452" = type { %"class.WTF::Deque<std::__1::unique_ptr<blink::protocol::Audits::InspectorIssue, std::__1::default_delete<blink::protocol::Audits::InspectorIssue> >, 0, WTF::PartitionAllocator>::BackingBuffer", i32, i32 }
+%"class.WTF::Deque<std::__1::unique_ptr<blink::protocol::Audits::InspectorIssue, std::__1::default_delete<blink::protocol::Audits::InspectorIssue> >, 0, WTF::PartitionAllocator>::BackingBuffer" = type { %"class.WTF::VectorBuffer.455" }
+%"class.WTF::VectorBuffer.455" = type { %"class.WTF::VectorBufferBase.456" }
+%"class.WTF::VectorBufferBase.456" = type { %"class.std::__1::unique_ptr.457"*, i32, i32 }
+%"class.std::__1::unique_ptr.457" = type { %"class.std::__1::__compressed_pair.458" }
+%"class.std::__1::__compressed_pair.458" = type { %"struct.std::__1::__compressed_pair_elem.459" }
+%"struct.std::__1::__compressed_pair_elem.459" = type { %"class.blink::protocol::Audits::InspectorIssue"* }
+%"class.blink::protocol::Audits::InspectorIssue" = type opaque
+%"class.blink::Deprecation" = type <{ %"class.std::__1::bitset", %"class.std::__1::bitset.463", i32, [4 x i8] }>
+%"class.std::__1::bitset" = type { %"class.std::__1::__bitset" }
+%"class.std::__1::__bitset" = type { [62 x i64] }
+%"class.std::__1::bitset.463" = type { %"class.std::__1::__bitset.464" }
+%"class.std::__1::__bitset.464" = type { [25 x i64] }
+%"struct.blink::WebWindowFeatures" = type { i32, i8, i32, i8, i32, i8, i32, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, %"class.absl::optional" }
+%"class.absl::optional" = type { %"class.absl::optional_internal::optional_data" }
+%"class.absl::optional_internal::optional_data" = type { %"class.absl::optional_internal::optional_data_base" }
+%"class.absl::optional_internal::optional_data_base" = type { %"class.absl::optional_internal::optional_data_dtor_base" }
+%"class.absl::optional_internal::optional_data_dtor_base" = type { i8, %union.anon }
+%union.anon = type { %"struct.blink::WebImpression" }
+%"struct.blink::WebImpression" = type { %"class.blink::WebSecurityOrigin", %"class.absl::optional.465", i64, %"class.absl::optional.470", i64 }
+%"class.blink::WebSecurityOrigin" = type { %"class.blink::WebPrivatePtr" }
+%"class.blink::WebPrivatePtr" = type { i8* }
+%"class.absl::optional.465" = type { %"class.absl::optional_internal::optional_data.466" }
+%"class.absl::optional_internal::optional_data.466" = type { %"class.absl::optional_internal::optional_data_base.467" }
+%"class.absl::optional_internal::optional_data_base.467" = type { %"class.absl::optional_internal::optional_data_dtor_base.468" }
+%"class.absl::optional_internal::optional_data_dtor_base.468" = type { i8, %union.anon.469 }
+%union.anon.469 = type { %"class.blink::WebSecurityOrigin" }
+%"class.absl::optional.470" = type { %"class.absl::optional_internal::optional_data.471" }
+%"class.absl::optional_internal::optional_data.471" = type { %"class.absl::optional_internal::optional_data_base.472" }
+%"class.absl::optional_internal::optional_data_base.472" = type { %"class.absl::optional_internal::optional_data_dtor_base.473" }
+%"class.absl::optional_internal::optional_data_dtor_base.473" = type { i8, %union.anon.474 }
+%union.anon.474 = type { %"class.base::TimeDelta" }
+%"class.base::TimeDelta" = type { i64 }
+%"class.mojo::StructPtr" = type { %"class.std::__1::unique_ptr.475" }
+%"class.std::__1::unique_ptr.475" = type { %"class.std::__1::__compressed_pair.476" }
+%"class.std::__1::__compressed_pair.476" = type { %"struct.std::__1::__compressed_pair_elem.477" }
+%"struct.std::__1::__compressed_pair_elem.477" = type { %"class.blink::mojom::blink::PageLifecycleState"* }
+%"class.blink::mojom::blink::PageLifecycleState" = type <{ i8, [3 x i8], i32, i8, [3 x i8], i32, i8, [3 x i8] }>
+%"class.blink::HeapHashSet.481" = type { %"class.WTF::HashSet.484" }
+%"class.WTF::HashSet.484" = type { %"class.WTF::HashTable.485" }
+%"class.WTF::HashTable.485" = type <{ %"class.blink::WeakMember.487"*, i32, i32, i32, [4 x i8] }>
+%"class.blink::WeakMember.487" = type opaque
+%"class.blink::FrameOrWorkerScheduler::SchedulingAffectingFeatureHandle" = type { i32, %"struct.blink::SchedulingPolicy", %"class.base::WeakPtr" }
+%"struct.blink::SchedulingPolicy" = type { i8, i8 }
+%"class.base::WeakPtr" = type { %"class.base::internal::WeakPtrBase" }
+%"class.base::internal::WeakPtrBase" = type { %"class.base::internal::WeakReference", i64 }
+%"class.base::internal::WeakReference" = type { %class.scoped_refptr.488 }
+%class.scoped_refptr.488 = type { %"class.base::internal::WeakReference::Flag"* }
+%"class.std::__1::unique_ptr.489" = type { %"class.std::__1::__compressed_pair.490" }
+%"class.std::__1::__compressed_pair.490" = type { %"struct.std::__1::__compressed_pair_elem.491" }
+%"struct.std::__1::__compressed_pair_elem.491" = type { %"class.blink::PageScheduler"* }
+%"class.blink::PageScheduler" = type { i32 (...)** }
+%"class.std::__1::unique_ptr.495" = type { %"class.std::__1::__compressed_pair.496" }
+%"class.std::__1::__compressed_pair.496" = type { %"struct.std::__1::__compressed_pair_elem.497" }
+%"struct.std::__1::__compressed_pair_elem.497" = type { %"class.blink::MediaFeatureOverrides"* }
+%"class.blink::MediaFeatureOverrides" = type opaque
+%"class.blink::mojom::blink::TextAutosizerPageInfo" = type { i32, i32, float }
+%"class.blink::WebScopedVirtualTimePauser" = type { %"class.base::TimeTicks", i8, i8, i32, %"class.blink::scheduler::MainThreadSchedulerImpl"*, %"class.blink::WebString", i64 }
+%"class.blink::scheduler::MainThreadSchedulerImpl" = type opaque
+%"class.blink::WebString" = type { %class.scoped_refptr.38 }
+%class.scoped_refptr.38 = type { %"class.WTF::StringImpl"* }
+%"class.WTF::StringImpl" = type { i32, i32, %"struct.std::__1::atomic.39" }
+%"struct.std::__1::atomic.39" = type { %"struct.std::__1::__atomic_base.40" }
+%"struct.std::__1::__atomic_base.40" = type { %"struct.std::__1::__atomic_base.41" }
+%"struct.std::__1::__atomic_base.41" = type { %"struct.std::__1::__cxx_atomic_impl.42" }
+%"struct.std::__1::__cxx_atomic_impl.42" = type { %"struct.std::__1::__cxx_atomic_base_impl.43" }
+%"struct.std::__1::__cxx_atomic_base_impl.43" = type { i32 }
+%"class.blink::Member.85" = type { %"class.blink::MemberBase.86" }
+%"class.blink::MemberBase.86" = type { %"class.blink::InspectorWebAudioAgent"* }
+%"class.blink::InspectorWebAudioAgent" = type opaque
+%"class.blink::HeapHashSet" = type { %"class.WTF::HashSet.89" }
+%"class.WTF::HashSet.89" = type { %"class.WTF::HashTable.90" }
+%"class.WTF::HashTable.90" = type <{ %"class.blink::WeakMember"*, i32, i32, i32, [4 x i8] }>
+%"class.blink::WeakMember" = type opaque
+%"class.blink::ThreadState::PrefinalizerRegistration" = type { i8 }
+%"class.blink::Member.92" = type { %"class.blink::MemberBase.93" }
+%"class.blink::MemberBase.93" = type { %"class.blink::BaseAudioContext"* }
+%"class.blink::BaseAudioContext" = type { %"class.blink::EventTargetWithInlineData", %"class.blink::ActiveScriptWrappable", %"class.blink::ExecutionContextLifecycleStateObserver.base", %"class.blink::InspectorHelperMixin", %"class.blink::ThreadState::PrefinalizerRegistration.333", %"class.blink::Member.334", %"class.blink::HeapVector.336", i8, %class.scoped_refptr.31, i8, %"class.blink::Member.375", i8, %class.scoped_refptr.1, i32, %"class.blink::AsyncAudioDecoder", [3 x i8], %"class.blink::HeapHashSet.377", %"class.blink::Member.383", %"class.blink::Member.383", %"class.blink::Member.383", %"class.blink::Member.383", %class.scoped_refptr.59, %"class.blink::Member.385", %"class.blink::WorkerThread"* }
+%"class.blink::ActiveScriptWrappable" = type { %"class.blink::ActiveScriptWrappableBase" }
+%"class.blink::ActiveScriptWrappableBase" = type { %"class.blink::GarbageCollectedMixin" }
+%"class.blink::ExecutionContextLifecycleStateObserver.base" = type { %"class.blink::ExecutionContextLifecycleObserver.base" }
+%"class.blink::ExecutionContextLifecycleObserver.base" = type <{ %"class.blink::ContextLifecycleObserver", i32 }>
+%"class.blink::ContextLifecycleObserver" = type { %"class.blink::GarbageCollectedMixin", %"class.blink::WeakMember.324" }
+%"class.blink::WeakMember.324" = type { %"class.blink::MemberBase.325" }
+%"class.blink::MemberBase.325" = type { %"class.blink::ContextLifecycleNotifier"* }
+%"class.blink::ContextLifecycleNotifier" = type { %"class.blink::GarbageCollectedMixin", %"class.blink::HeapObserverSet" }
+%"class.blink::HeapObserverSet" = type { i32, [4 x i8], %"class.blink::HeapHashSet.326" }
+%"class.blink::HeapHashSet.326" = type { %"class.WTF::HashSet.329" }
+%"class.WTF::HashSet.329" = type { %"class.WTF::HashTable.330" }
+%"class.WTF::HashTable.330" = type <{ %"class.blink::WeakMember.332"*, i32, i32, i32, [4 x i8] }>
+%"class.blink::WeakMember.332" = type opaque
+%"class.blink::ThreadState::PrefinalizerRegistration.333" = type { i8 }
+%"class.blink::Member.334" = type { %"class.blink::MemberBase.335" }
+%"class.blink::MemberBase.335" = type { %"class.blink::AudioDestinationNode"* }
+%"class.blink::AudioDestinationNode" = type { %"class.blink::AudioNode" }
+%"class.blink::HeapVector.336" = type { %"class.WTF::Vector.339" }
+%"class.WTF::Vector.339" = type { %"class.WTF::VectorBuffer.340" }
+%"class.WTF::VectorBuffer.340" = type { %"class.WTF::VectorBufferBase.341" }
+%"class.WTF::VectorBufferBase.341" = type { %"class.blink::Member.342"*, i32, i32 }
+%"class.blink::Member.342" = type { %"class.blink::MemberBase.343" }
+%"class.blink::MemberBase.343" = type { %"class.blink::ScriptPromiseResolver"* }
+%"class.blink::ScriptPromiseResolver" = type { %"class.blink::ExecutionContextLifecycleObserver.base", %"class.blink::ThreadState::PrefinalizerRegistration.346", i32, %"class.blink::Member.347", %"class.blink::TaskHandle", %"class.blink::ScriptPromise::InternalResolver", %"class.blink::TraceWrapperV8Reference.367", %"class.blink::SelfKeepAlive.371" }
+%"class.blink::ThreadState::PrefinalizerRegistration.346" = type { i8 }
+%"class.blink::Member.347" = type { %"class.blink::MemberBase.348" }
+%"class.blink::MemberBase.348" = type { %"class.blink::ScriptState"* }
+%"class.blink::ScriptState" = type { %"class.v8::Isolate"*, %"class.blink::ScopedPersistent", %class.scoped_refptr.351, %"class.blink::Member.362", %"class.blink::SelfKeepAlive", %"class.util::TokenType" }
+%"class.v8::Isolate" = type { i8 }
+%"class.blink::ScopedPersistent" = type { %"class.v8::Persistent" }
+%"class.v8::Persistent" = type { %"class.v8::PersistentBase" }
+%"class.v8::PersistentBase" = type { %"class.v8::Context"* }
+%"class.v8::Context" = type { i8 }
+%class.scoped_refptr.351 = type { %"class.blink::DOMWrapperWorld"* }
+%"class.blink::DOMWrapperWorld" = type { %"class.WTF::RefCounted", i32, i32, %"class.blink::Persistent" }
+%"class.WTF::RefCounted" = type { %"class.base::RefCounted" }
+%"class.base::RefCounted" = type { %"class.base::subtle::RefCountedBase" }
+%"class.base::subtle::RefCountedBase" = type { i32 }
+%"class.blink::Persistent" = type { %"class.blink::PersistentBase.352" }
+%"class.blink::PersistentBase.352" = type { %"class.blink::DOMDataStore"*, %"class.blink::PersistentNodePtr.361" }
+%"class.blink::DOMDataStore" = type { i32 (...)**, i8, [7 x i8], %"class.blink::HeapHashMap" }
+%"class.blink::HeapHashMap" = type { %"class.WTF::HashMap" }
+%"class.WTF::HashMap" = type { %"class.WTF::HashTable.357" }
+%"class.WTF::HashTable.357" = type <{ %"struct.WTF::KeyValuePair"*, i32, i32, i32, [4 x i8] }>
+%"struct.WTF::KeyValuePair" = type { %"class.blink::WeakMember.359", %"class.blink::TraceWrapperV8Reference" }
+%"class.blink::WeakMember.359" = type { %"class.blink::MemberBase.360" }
+%"class.blink::MemberBase.360" = type { %"class.blink::ScriptWrappable"* }
+%"class.blink::PersistentNodePtr.361" = type { %"class.blink::PersistentNode"* }
+%"class.blink::PersistentNode" = type { i8*, void (%"class.blink::Visitor"*, i8*)* }
+%"class.blink::Visitor" = type { i32 (...)**, %"class.blink::ThreadState"* }
+%"class.blink::ThreadState" = type <{ %"class.std::__1::unique_ptr.110", i32, [4 x i8], %"class.std::__1::unique_ptr.246", %"class.std::__1::unique_ptr.246", i8**, i8, i8, i8, i8, i8, i8, [2 x i8], i64, i64, i32, i32, i32, [4 x i8], %"class.WTF::Deque", %"class.v8::Isolate"*, void (%"class.v8::Isolate"*, %"class.v8::EmbedderGraph"*, i8*)*, %"class.std::__1::unique_ptr.257", %"class.std::__1::unique_ptr.263", %"struct.blink::ThreadState::GCData", %"class.std::__1::unique_ptr.275", %"class.std::__1::unique_ptr.281", %"class.base::JobHandle", %"class.base::JobHandle", %"struct.std::__1::atomic.288", [7 x i8], i64, i8, [7 x i8], i64, %"class.base::TimeTicks", i8, i8, [6 x i8] }>
+%"class.std::__1::unique_ptr.110" = type { %"class.std::__1::__compressed_pair.111" }
+%"class.std::__1::__compressed_pair.111" = type { %"struct.std::__1::__compressed_pair_elem.112" }
+%"struct.std::__1::__compressed_pair_elem.112" = type { %"class.blink::ThreadHeap"* }
+%"class.blink::ThreadHeap" = type { %"class.blink::ThreadState"*, %"class.std::__1::unique_ptr.113", %"class.std::__1::unique_ptr.119", %"class.std::__1::unique_ptr.125", %"class.std::__1::unique_ptr.131", %"class.std::__1::unique_ptr.137", %"class.std::__1::unique_ptr.143", %"class.std::__1::unique_ptr.154", %"class.std::__1::unique_ptr.161", %"class.std::__1::unique_ptr.161", %"class.std::__1::unique_ptr.168", %"class.std::__1::unique_ptr.175", %"class.std::__1::unique_ptr.182", %"class.std::__1::unique_ptr.182", %"class.std::__1::unique_ptr.189", %"class.std::__1::unique_ptr.196", %"class.std::__1::unique_ptr.203", %"class.std::__1::unique_ptr.226", %"struct.blink::ThreadHeap::LastAllocatedRegion", [9 x %"class.blink::BaseArena"*], i64, i64 }
+%"class.std::__1::unique_ptr.113" = type { %"class.std::__1::__compressed_pair.114" }
+%"class.std::__1::__compressed_pair.114" = type { %"struct.std::__1::__compressed_pair_elem.115" }
+%"struct.std::__1::__compressed_pair_elem.115" = type { %"class.blink::ThreadHeapStatsCollector"* }
+%"class.blink::ThreadHeapStatsCollector" = type opaque
+%"class.std::__1::unique_ptr.119" = type { %"class.std::__1::__compressed_pair.120" }
+%"class.std::__1::__compressed_pair.120" = type { %"struct.std::__1::__compressed_pair_elem.121" }
+%"struct.std::__1::__compressed_pair_elem.121" = type { %"class.blink::RegionTree"* }
+%"class.blink::RegionTree" = type opaque
+%"class.std::__1::unique_ptr.125" = type { %"class.std::__1::__compressed_pair.126" }
+%"class.std::__1::__compressed_pair.126" = type { %"struct.std::__1::__compressed_pair_elem.127" }
+%"struct.std::__1::__compressed_pair_elem.127" = type { %"class.blink::PageBloomFilter"* }
+%"class.blink::PageBloomFilter" = type opaque
+%"class.std::__1::unique_ptr.131" = type { %"class.std::__1::__compressed_pair.132" }
+%"class.std::__1::__compressed_pair.132" = type { %"struct.std::__1::__compressed_pair_elem.133" }
+%"struct.std::__1::__compressed_pair_elem.133" = type { %"class.blink::PagePool"* }
+%"class.blink::PagePool" = type opaque
+%"class.std::__1::unique_ptr.137" = type { %"class.std::__1::__compressed_pair.138" }
+%"class.std::__1::__compressed_pair.138" = type { %"struct.std::__1::__compressed_pair_elem.139" }
+%"struct.std::__1::__compressed_pair_elem.139" = type { %"class.blink::ProcessHeapReporter"* }
+%"class.blink::ProcessHeapReporter" = type opaque
+%"class.std::__1::unique_ptr.143" = type { %"class.std::__1::__compressed_pair.144" }
+%"class.std::__1::__compressed_pair.144" = type { %"struct.std::__1::__compressed_pair_elem.145" }
+%"struct.std::__1::__compressed_pair_elem.145" = type { %"class.blink::Worklist"* }
+%"class.blink::Worklist" = type { [4 x %"struct.blink::Worklist<blink::TraceDescriptor, 512, 4>::PrivateSegmentHolder"], %"class.blink::Worklist<blink::TraceDescriptor, 512, 4>::GlobalPool" }
+%"struct.blink::Worklist<blink::TraceDescriptor, 512, 4>::PrivateSegmentHolder" = type { %"class.blink::Worklist<blink::TraceDescriptor, 512, 4>::Segment"*, %"class.blink::Worklist<blink::TraceDescriptor, 512, 4>::Segment"*, [64 x i8] }
+%"class.blink::Worklist<blink::TraceDescriptor, 512, 4>::Segment" = type { %"class.blink::Worklist<blink::TraceDescriptor, 512, 4>::Segment"*, i64, [512 x %"struct.blink::TraceDescriptor"] }
+%"struct.blink::TraceDescriptor" = type { i8*, void (%"class.blink::Visitor"*, i8*)* }
+%"class.blink::Worklist<blink::TraceDescriptor, 512, 4>::GlobalPool" = type { %"class.base::Lock", %"class.blink::Worklist<blink::TraceDescriptor, 512, 4>::Segment"*, %"struct.std::__1::atomic.146" }
+%"class.base::Lock" = type { %"class.base::internal::LockImpl" }
+%"class.base::internal::LockImpl" = type { %union.pthread_mutex_t }
+%"struct.std::__1::atomic.146" = type { %"struct.std::__1::__atomic_base.147" }
+%"struct.std::__1::__atomic_base.147" = type { %"struct.std::__1::__atomic_base.148" }
+%"struct.std::__1::__atomic_base.148" = type { %"struct.std::__1::__cxx_atomic_impl.149" }
+%"struct.std::__1::__cxx_atomic_impl.149" = type { %"struct.std::__1::__cxx_atomic_base_impl.150" }
+%"struct.std::__1::__cxx_atomic_base_impl.150" = type { i64 }
+%"class.std::__1::unique_ptr.154" = type { %"class.std::__1::__compressed_pair.155" }
+%"class.std::__1::__compressed_pair.155" = type { %"struct.std::__1::__compressed_pair_elem.156" }
+%"struct.std::__1::__compressed_pair_elem.156" = type { %"class.blink::Worklist.157"* }
+%"class.blink::Worklist.157" = type { [4 x %"struct.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::PrivateSegmentHolder"], %"class.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::GlobalPool" }
+%"struct.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::PrivateSegmentHolder" = type { %"class.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::Segment"*, %"class.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::Segment"*, [64 x i8] }
+%"class.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::Segment" = type opaque
+%"class.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::GlobalPool" = type { %"class.base::Lock", %"class.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::Segment"*, %"struct.std::__1::atomic.146" }
+%"class.std::__1::unique_ptr.161" = type { %"class.std::__1::__compressed_pair.162" }
+%"class.std::__1::__compressed_pair.162" = type { %"struct.std::__1::__compressed_pair_elem.163" }
+%"struct.std::__1::__compressed_pair_elem.163" = type { %"class.blink::Worklist.164"* }
+%"class.blink::Worklist.164" = type { [4 x %"struct.blink::Worklist<const void *, 16, 4>::PrivateSegmentHolder"], %"class.blink::Worklist<const void *, 16, 4>::GlobalPool" }
+%"struct.blink::Worklist<const void *, 16, 4>::PrivateSegmentHolder" = type { %"class.blink::Worklist<const void *, 16, 4>::Segment"*, %"class.blink::Worklist<const void *, 16, 4>::Segment"*, [64 x i8] }
+%"class.blink::Worklist<const void *, 16, 4>::Segment" = type { %"class.blink::Worklist<const void *, 16, 4>::Segment"*, i64, [16 x i8*] }
+%"class.blink::Worklist<const void *, 16, 4>::GlobalPool" = type { %"class.base::Lock", %"class.blink::Worklist<const void *, 16, 4>::Segment"*, %"struct.std::__1::atomic.146" }
+%"class.std::__1::unique_ptr.168" = type { %"class.std::__1::__compressed_pair.169" }
+%"class.std::__1::__compressed_pair.169" = type { %"struct.std::__1::__compressed_pair_elem.170" }
+%"struct.std::__1::__compressed_pair_elem.170" = type { %"class.blink::Worklist.171"* }
+%"class.blink::Worklist.171" = type { [4 x %"struct.blink::Worklist<blink::CustomCallbackItem, 64, 4>::PrivateSegmentHolder"], %"class.blink::Worklist<blink::CustomCallbackItem, 64, 4>::GlobalPool" }
+%"struct.blink::Worklist<blink::CustomCallbackItem, 64, 4>::PrivateSegmentHolder" = type { %"class.blink::Worklist<blink::CustomCallbackItem, 64, 4>::Segment"*, %"class.blink::Worklist<blink::CustomCallbackItem, 64, 4>::Segment"*, [64 x i8] }
+%"class.blink::Worklist<blink::CustomCallbackItem, 64, 4>::Segment" = type opaque
+%"class.blink::Worklist<blink::CustomCallbackItem, 64, 4>::GlobalPool" = type { %"class.base::Lock", %"class.blink::Worklist<blink::CustomCallbackItem, 64, 4>::Segment"*, %"struct.std::__1::atomic.146" }
+%"class.std::__1::unique_ptr.175" = type { %"class.std::__1::__compressed_pair.176" }
+%"class.std::__1::__compressed_pair.176" = type { %"struct.std::__1::__compressed_pair_elem.177" }
+%"struct.std::__1::__compressed_pair_elem.177" = type { %"class.blink::Worklist.178"* }
+%"class.blink::Worklist.178" = type { [4 x %"struct.blink::Worklist<const void *const *, 256, 4>::PrivateSegmentHolder"], %"class.blink::Worklist<const void *const *, 256, 4>::GlobalPool" }
+%"struct.blink::Worklist<const void *const *, 256, 4>::PrivateSegmentHolder" = type { %"class.blink::Worklist<const void *const *, 256, 4>::Segment"*, %"class.blink::Worklist<const void *const *, 256, 4>::Segment"*, [64 x i8] }
+%"class.blink::Worklist<const void *const *, 256, 4>::Segment" = type opaque
+%"class.blink::Worklist<const void *const *, 256, 4>::GlobalPool" = type { %"class.base::Lock", %"class.blink::Worklist<const void *const *, 256, 4>::Segment"*, %"struct.std::__1::atomic.146" }
+%"class.std::__1::unique_ptr.182" = type { %"class.std::__1::__compressed_pair.183" }
+%"class.std::__1::__compressed_pair.183" = type { %"struct.std::__1::__compressed_pair_elem.184" }
+%"struct.std::__1::__compressed_pair_elem.184" = type { %"class.blink::Worklist.185"* }
+%"class.blink::Worklist.185" = type { [4 x %"struct.blink::Worklist<blink::EphemeronPairItem, 64, 4>::PrivateSegmentHolder"], %"class.blink::Worklist<blink::EphemeronPairItem, 64, 4>::GlobalPool" }
+%"struct.blink::Worklist<blink::EphemeronPairItem, 64, 4>::PrivateSegmentHolder" = type { %"class.blink::Worklist<blink::EphemeronPairItem, 64, 4>::Segment"*, %"class.blink::Worklist<blink::EphemeronPairItem, 64, 4>::Segment"*, [64 x i8] }
+%"class.blink::Worklist<blink::EphemeronPairItem, 64, 4>::Segment" = type opaque
+%"class.blink::Worklist<blink::EphemeronPairItem, 64, 4>::GlobalPool" = type { %"class.base::Lock", %"class.blink::Worklist<blink::EphemeronPairItem, 64, 4>::Segment"*, %"struct.std::__1::atomic.146" }
+%"class.std::__1::unique_ptr.189" = type { %"class.std::__1::__compressed_pair.190" }
+%"class.std::__1::__compressed_pair.190" = type { %"struct.std::__1::__compressed_pair_elem.191" }
+%"struct.std::__1::__compressed_pair_elem.191" = type { %"class.blink::Worklist.192"* }
+%"class.blink::Worklist.192" = type { [4 x %"struct.blink::Worklist<const blink::TraceWrapperV8Reference<v8::Value> *, 16, 4>::PrivateSegmentHolder"], %"class.blink::Worklist<const blink::TraceWrapperV8Reference<v8::Value> *, 16, 4>::GlobalPool" }
+%"struct.blink::Worklist<const blink::TraceWrapperV8Reference<v8::Value> *, 16, 4>::PrivateSegmentHolder" = type { %"class.blink::Worklist<const blink::TraceWrapperV8Reference<v8::Value> *, 16, 4>::Segment"*, %"class.blink::Worklist<const blink::TraceWrapperV8Reference<v8::Value> *, 16, 4>::Segment"*, [64 x i8] }
+%"class.blink::Worklist<const blink::TraceWrapperV8Reference<v8::Value> *, 16, 4>::Segment" = type opaque
+%"class.blink::Worklist<const blink::TraceWrapperV8Reference<v8::Value> *, 16, 4>::GlobalPool" = type { %"class.base::Lock", %"class.blink::Worklist<const blink::TraceWrapperV8Reference<v8::Value> *, 16, 4>::Segment"*, %"struct.std::__1::atomic.146" }
+%"class.std::__1::unique_ptr.196" = type { %"class.std::__1::__compressed_pair.197" }
+%"class.std::__1::__compressed_pair.197" = type { %"struct.std::__1::__compressed_pair_elem.198" }
+%"struct.std::__1::__compressed_pair_elem.198" = type { %"class.blink::Worklist.199"* }
+%"class.blink::Worklist.199" = type { [4 x %"struct.blink::Worklist<blink::NotSafeToConcurrentlyTraceItem, 64, 4>::PrivateSegmentHolder"], %"class.blink::Worklist<blink::NotSafeToConcurrentlyTraceItem, 64, 4>::GlobalPool" }
+%"struct.blink::Worklist<blink::NotSafeToConcurrentlyTraceItem, 64, 4>::PrivateSegmentHolder" = type { %"class.blink::Worklist<blink::NotSafeToConcurrentlyTraceItem, 64, 4>::Segment"*, %"class.blink::Worklist<blink::NotSafeToConcurrentlyTraceItem, 64, 4>::Segment"*, [64 x i8] }
+%"class.blink::Worklist<blink::NotSafeToConcurrentlyTraceItem, 64, 4>::Segment" = type { %"class.blink::Worklist<blink::NotSafeToConcurrentlyTraceItem, 64, 4>::Segment"*, i64, [64 x %"struct.blink::NotSafeToConcurrentlyTraceItem"] }
+%"struct.blink::NotSafeToConcurrentlyTraceItem" = type { %"struct.blink::TraceDescriptor", i64 }
+%"class.blink::Worklist<blink::NotSafeToConcurrentlyTraceItem, 64, 4>::GlobalPool" = type { %"class.base::Lock", %"class.blink::Worklist<blink::NotSafeToConcurrentlyTraceItem, 64, 4>::Segment"*, %"struct.std::__1::atomic.146" }
+%"class.std::__1::unique_ptr.203" = type { %"class.std::__1::__compressed_pair.204" }
+%"class.std::__1::__compressed_pair.204" = type { %"struct.std::__1::__compressed_pair_elem.205" }
+%"struct.std::__1::__compressed_pair_elem.205" = type { %"class.blink::WeakContainersWorklist"* }
+%"class.blink::WeakContainersWorklist" = type { %"class.WTF::Mutex", %"class.std::__1::unordered_set" }
+%"class.std::__1::unordered_set" = type { %"class.std::__1::__hash_table" }
+%"class.std::__1::__hash_table" = type <{ %"class.std::__1::unique_ptr.206", %"class.std::__1::__compressed_pair.213", %"class.std::__1::__compressed_pair.218", %"class.std::__1::__compressed_pair.220", [4 x i8] }>
+%"class.std::__1::unique_ptr.206" = type { %"class.std::__1::__compressed_pair.207" }
+%"class.std::__1::__compressed_pair.207" = type { %"struct.std::__1::__compressed_pair_elem.208", %"struct.std::__1::__compressed_pair_elem.209" }
+%"struct.std::__1::__compressed_pair_elem.208" = type { %"struct.std::__1::__hash_node_base"** }
+%"struct.std::__1::__hash_node_base" = type { %"struct.std::__1::__hash_node_base"* }
+%"struct.std::__1::__compressed_pair_elem.209" = type { %"class.std::__1::__bucket_list_deallocator" }
+%"class.std::__1::__bucket_list_deallocator" = type { %"class.std::__1::__compressed_pair.210" }
+%"class.std::__1::__compressed_pair.210" = type { %"struct.std::__1::__compressed_pair_elem.211" }
+%"struct.std::__1::__compressed_pair_elem.211" = type { i64 }
+%"class.std::__1::__compressed_pair.213" = type { %"struct.std::__1::__compressed_pair_elem.214" }
+%"struct.std::__1::__compressed_pair_elem.214" = type { %"struct.std::__1::__hash_node_base" }
+%"class.std::__1::__compressed_pair.218" = type { %"struct.std::__1::__compressed_pair_elem.211" }
+%"class.std::__1::__compressed_pair.220" = type { %"struct.std::__1::__compressed_pair_elem.221" }
+%"struct.std::__1::__compressed_pair_elem.221" = type { float }
+%"class.std::__1::unique_ptr.226" = type { %"class.std::__1::__compressed_pair.227" }
+%"class.std::__1::__compressed_pair.227" = type { %"struct.std::__1::__compressed_pair_elem.228" }
+%"struct.std::__1::__compressed_pair_elem.228" = type { %"class.blink::HeapCompact"* }
+%"class.blink::HeapCompact" = type <{ %"class.blink::ThreadHeap"*, %"class.std::__1::unique_ptr.229", i8, [7 x i8], i64, i64, i32, [4 x i8], i64, i8, [7 x i8] }>
+%"class.std::__1::unique_ptr.229" = type { %"class.std::__1::__compressed_pair.230" }
+%"class.std::__1::__compressed_pair.230" = type { %"struct.std::__1::__compressed_pair_elem.231" }
+%"struct.std::__1::__compressed_pair_elem.231" = type { %"class.blink::HeapCompact::MovableObjectFixups"* }
+%"class.blink::HeapCompact::MovableObjectFixups" = type opaque
+%"struct.blink::ThreadHeap::LastAllocatedRegion" = type { i8*, i64 }
+%"class.blink::BaseArena" = type <{ i32 (...)**, %"class.blink::PageStackThreadSafe", %"class.blink::PageStackThreadSafe", %"class.blink::PageStackThreadSafe", %"class.blink::PageStackThreadSafe", %"class.blink::ThreadState"*, i32, [4 x i8] }>
+%"class.blink::PageStackThreadSafe" = type { %"class.blink::PageStack", %"class.WTF::Mutex" }
+%"class.blink::PageStack" = type { %"class.WTF::Vector.238" }
+%"class.WTF::Vector.238" = type { %"class.WTF::VectorBuffer.239" }
+%"class.WTF::VectorBuffer.239" = type { %"class.WTF::VectorBufferBase.240" }
+%"class.WTF::VectorBufferBase.240" = type { %"class.blink::BasePage"**, i32, i32 }
+%"class.blink::BasePage" = type <{ i32 (...)**, %"class.blink::PageMemory"*, %"class.blink::BaseArena"*, %"class.blink::ThreadState"*, i64, i8, i8, i8, [5 x i8] }>
+%"class.blink::PageMemory" = type opaque
+%"class.std::__1::unique_ptr.246" = type { %"class.std::__1::__compressed_pair.247" }
+%"class.std::__1::__compressed_pair.247" = type { %"struct.std::__1::__compressed_pair_elem.248" }
+%"struct.std::__1::__compressed_pair_elem.248" = type { %"class.blink::PersistentRegion"* }
+%"class.blink::PersistentRegion" = type { %"class.blink::PersistentRegionBase" }
+%"class.blink::PersistentRegionBase" = type { %"class.blink::PersistentNode"*, %"struct.blink::PersistentNodeSlots"* }
+%"struct.blink::PersistentNodeSlots" = type { %"struct.blink::PersistentNodeSlots"*, [256 x %"class.blink::PersistentNode"] }
+%"class.WTF::Deque" = type { %"class.WTF::Deque<std::__1::pair<void *, bool (*)(const blink::LivenessBroker &, void *)>, 0, WTF::PartitionAllocator>::BackingBuffer", i32, i32 }
+%"class.WTF::Deque<std::__1::pair<void *, bool (*)(const blink::LivenessBroker &, void *)>, 0, WTF::PartitionAllocator>::BackingBuffer" = type { %"class.WTF::VectorBuffer.254" }
+%"class.WTF::VectorBuffer.254" = type { %"class.WTF::VectorBufferBase.255" }
+%"class.WTF::VectorBufferBase.255" = type { %"struct.std::__1::pair.256"*, i32, i32 }
+%"struct.std::__1::pair.256" = type { i8*, i1 (%"class.blink::LivenessBroker"*, i8*)* }
+%"class.blink::LivenessBroker" = type { i8 }
+%"class.v8::EmbedderGraph" = type opaque
+%"class.std::__1::unique_ptr.257" = type { %"class.std::__1::__compressed_pair.258" }
+%"class.std::__1::__compressed_pair.258" = type { %"struct.std::__1::__compressed_pair_elem.259" }
+%"struct.std::__1::__compressed_pair_elem.259" = type { %"class.blink::UnifiedHeapController"* }
+%"class.blink::UnifiedHeapController" = type opaque
+%"class.std::__1::unique_ptr.263" = type { %"class.std::__1::__compressed_pair.264" }
+%"class.std::__1::__compressed_pair.264" = type { %"struct.std::__1::__compressed_pair_elem.265" }
+%"struct.std::__1::__compressed_pair_elem.265" = type { %"class.v8::EmbedderRootsHandler"* }
+%"class.v8::EmbedderRootsHandler" = type { i32 (...)** }
+%"struct.blink::ThreadState::GCData" = type { i32, i32, i32, i32, %"class.std::__1::unique_ptr.269" }
+%"class.std::__1::unique_ptr.269" = type { %"class.std::__1::__compressed_pair.270" }
+%"class.std::__1::__compressed_pair.270" = type { %"struct.std::__1::__compressed_pair_elem.271" }
+%"struct.std::__1::__compressed_pair_elem.271" = type { %"class.blink::MarkingVisitor"* }
+%"class.blink::MarkingVisitor" = type { %"class.blink::MarkingVisitorBase", %"class.blink::MarkingVisitor::RecentlyRetracedWeakContainers" }
+%"class.blink::MarkingVisitorBase" = type { %"class.blink::Visitor", %"class.blink::Worklist<blink::TraceDescriptor, 512, 4>::View", %"class.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::View", %"class.blink::Worklist<const void *, 16, 4>::View", %"class.blink::Worklist<blink::CustomCallbackItem, 64, 4>::View", %"class.blink::Worklist<const void *const *, 256, 4>::View", %"class.blink::Worklist<blink::EphemeronPairItem, 64, 4>::View", %"class.blink::Worklist<blink::EphemeronPairItem, 64, 4>::View", %"class.blink::WeakContainersWorklist"*, i64, i32, i32 }
+%"class.blink::Worklist<blink::TraceDescriptor, 512, 4>::View" = type <{ %"class.blink::Worklist"*, i32, [4 x i8] }>
+%"class.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::View" = type <{ %"class.blink::Worklist.157"*, i32, [4 x i8] }>
+%"class.blink::Worklist<const void *, 16, 4>::View" = type <{ %"class.blink::Worklist.164"*, i32, [4 x i8] }>
+%"class.blink::Worklist<blink::CustomCallbackItem, 64, 4>::View" = type <{ %"class.blink::Worklist.171"*, i32, [4 x i8] }>
+%"class.blink::Worklist<const void *const *, 256, 4>::View" = type <{ %"class.blink::Worklist.178"*, i32, [4 x i8] }>
+%"class.blink::Worklist<blink::EphemeronPairItem, 64, 4>::View" = type <{ %"class.blink::Worklist.185"*, i32, [4 x i8] }>
+%"class.blink::MarkingVisitor::RecentlyRetracedWeakContainers" = type { %"class.std::__1::vector", i64 }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"class.blink::HeapObjectHeader"**, %"class.blink::HeapObjectHeader"**, %"class.std::__1::__compressed_pair.319" }
+%"class.blink::HeapObjectHeader" = type { i32, i16, i16 }
+%"class.std::__1::__compressed_pair.319" = type { %"struct.std::__1::__compressed_pair_elem.320" }
+%"struct.std::__1::__compressed_pair_elem.320" = type { %"class.blink::HeapObjectHeader"** }
+%"class.std::__1::unique_ptr.275" = type { %"class.std::__1::__compressed_pair.276" }
+%"class.std::__1::__compressed_pair.276" = type { %"struct.std::__1::__compressed_pair_elem.277" }
+%"struct.std::__1::__compressed_pair_elem.277" = type { %"class.blink::ThreadState::IncrementalMarkingScheduler"* }
+%"class.blink::ThreadState::IncrementalMarkingScheduler" = type opaque
+%"class.std::__1::unique_ptr.281" = type { %"class.std::__1::__compressed_pair.282" }
+%"class.std::__1::__compressed_pair.282" = type { %"struct.std::__1::__compressed_pair_elem.283" }
+%"struct.std::__1::__compressed_pair_elem.283" = type { %"class.blink::MarkingSchedulingOracle"* }
+%"class.blink::MarkingSchedulingOracle" = type opaque
+%"class.base::JobHandle" = type { %class.scoped_refptr.287 }
+%class.scoped_refptr.287 = type { %"class.base::internal::JobTaskSource"* }
+%"class.base::internal::JobTaskSource" = type opaque
+%"struct.std::__1::atomic.288" = type { %"struct.std::__1::__atomic_base.289" }
+%"struct.std::__1::__atomic_base.289" = type { %"struct.std::__1::__cxx_atomic_impl.290" }
+%"struct.std::__1::__cxx_atomic_impl.290" = type { %"struct.std::__1::__cxx_atomic_base_impl.291" }
+%"struct.std::__1::__cxx_atomic_base_impl.291" = type { i8 }
+%"class.blink::Member.362" = type { %"class.blink::MemberBase.363" }
+%"class.blink::MemberBase.363" = type { %"class.blink::V8PerContextData"* }
+%"class.blink::V8PerContextData" = type opaque
+%"class.blink::SelfKeepAlive" = type { %"class.blink::Persistent.364" }
+%"class.blink::Persistent.364" = type { %"class.blink::PersistentBase.365" }
+%"class.blink::PersistentBase.365" = type { %"class.blink::ScriptState"*, %"class.blink::PersistentNodePtr.361" }
+%"class.util::TokenType" = type { %"class.base::StrongAlias" }
+%"class.base::StrongAlias" = type { %"class.base::UnguessableToken" }
+%"class.base::UnguessableToken" = type { %"class.base::Token" }
+%"class.base::Token" = type { i64, i64 }
+%"class.blink::TaskHandle" = type { %class.scoped_refptr.366 }
+%class.scoped_refptr.366 = type { %"class.blink::TaskHandle::Runner"* }
+%"class.blink::TaskHandle::Runner" = type opaque
+%"class.blink::ScriptPromise::InternalResolver" = type { %"class.blink::Member.347", %"class.blink::ScriptValue" }
+%"class.blink::ScriptValue" = type { %"class.v8::Isolate"*, %"class.blink::WorldSafeV8Reference" }
+%"class.blink::WorldSafeV8Reference" = type { %"class.blink::TraceWrapperV8Reference.367", %class.scoped_refptr.370 }
+%class.scoped_refptr.370 = type { %"class.blink::DOMWrapperWorld"* }
+%"class.blink::TraceWrapperV8Reference.367" = type { %"class.v8::TracedReference.368" }
+%"class.v8::TracedReference.368" = type { %"class.v8::BasicTracedReference.369" }
+%"class.v8::BasicTracedReference.369" = type { %"class.v8::TracedReferenceBase" }
+%"class.blink::SelfKeepAlive.371" = type { %"class.blink::Persistent.372" }
+%"class.blink::Persistent.372" = type { %"class.blink::PersistentBase.373" }
+%"class.blink::PersistentBase.373" = type { %"class.blink::ScriptPromiseResolver"*, %"class.blink::PersistentNodePtr.361" }
+%"class.blink::Member.375" = type { %"class.blink::MemberBase.376" }
+%"class.blink::MemberBase.376" = type { %"class.blink::AudioListener"* }
+%"class.blink::AudioListener" = type opaque
+%"class.blink::AsyncAudioDecoder" = type { i8 }
+%"class.blink::HeapHashSet.377" = type { %"class.WTF::HashSet.380" }
+%"class.WTF::HashSet.380" = type { %"class.WTF::HashTable.381" }
+%"class.WTF::HashTable.381" = type <{ %"class.blink::Member.342"*, i32, i32, i32, [4 x i8] }>
+%"class.blink::Member.383" = type { %"class.blink::MemberBase.384" }
+%"class.blink::MemberBase.384" = type { %"class.blink::PeriodicWave"* }
+%"class.blink::PeriodicWave" = type opaque
+%"class.blink::Member.385" = type { %"class.blink::MemberBase.386" }
+%"class.blink::MemberBase.386" = type { %"class.blink::AudioWorklet"* }
+%"class.blink::AudioWorklet" = type opaque
+%"class.blink::WorkerThread" = type opaque
+%class.scoped_refptr.13 = type { %"class.blink::AudioHandler"* }
+%"class.blink::HeapVector.94" = type { %"class.WTF::Vector.97" }
+%"class.WTF::Vector.97" = type { %"class.WTF::VectorBuffer.98" }
+%"class.WTF::VectorBuffer.98" = type { %"class.WTF::VectorBufferBase.99" }
+%"class.WTF::VectorBufferBase.99" = type { %"class.blink::Member.100"*, i32, i32 }
+%"class.blink::Member.100" = type opaque
+%"class.blink::HeapVector.102" = type { %"class.WTF::Vector.105" }
+%"class.WTF::Vector.105" = type { %"class.WTF::VectorBuffer.106" }
+%"class.WTF::VectorBuffer.106" = type { %"class.WTF::VectorBufferBase.107" }
+%"class.WTF::VectorBufferBase.107" = type { %"class.blink::Member.108"*, i32, i32 }
+%"class.blink::Member.108" = type opaque
+%"class.blink::PersistentNodePtr" = type { %"class.blink::PersistentNode"* }
+%"class.blink::UntracedMember" = type { %"class.blink::MemberBase.292" }
+%"class.blink::MemberBase.292" = type { %"class.blink::BaseAudioContext"* }
+%"class.WTF::Vector.293" = type { %"class.WTF::VectorBuffer.294" }
+%"class.WTF::VectorBuffer.294" = type { %"class.WTF::VectorBufferBase.295" }
+%"class.WTF::VectorBufferBase.295" = type { %"class.std::__1::unique_ptr.296"*, i32, i32 }
+%"class.std::__1::unique_ptr.296" = type opaque
+%"class.WTF::Vector.299" = type { %"class.WTF::VectorBuffer.300" }
+%"class.WTF::VectorBuffer.300" = type { %"class.WTF::VectorBufferBase.301" }
+%"class.WTF::VectorBufferBase.301" = type { %"class.std::__1::unique_ptr.302"*, i32, i32 }
+%"class.std::__1::unique_ptr.302" = type opaque
+%"class.WTF::HashSet.23" = type { %"class.WTF::HashTable.24" }
+%"class.WTF::HashTable.24" = type <{ %"class.blink::AudioSummingJunction"**, i32, i32, i32, [4 x i8] }>
+%"class.blink::AudioSummingJunction" = type <{ i32 (...)**, %class.scoped_refptr.1, %"class.WTF::HashSet.27", %"class.WTF::Vector.33", i8, [7 x i8] }>
+%"class.WTF::HashSet" = type { %"class.WTF::HashTable" }
+%"class.WTF::HashTable" = type <{ %class.scoped_refptr.13*, i32, i32, i32, [4 x i8] }>
+%"class.WTF::Vector.14" = type { %"class.WTF::VectorBuffer.15" }
+%"class.WTF::VectorBuffer.15" = type { %"class.WTF::VectorBufferBase.16" }
+%"class.WTF::VectorBufferBase.16" = type { %class.scoped_refptr.13*, i32, i32 }
+%class.scoped_refptr.31 = type { %"class.base::SingleThreadTaskRunner"* }
+%"class.base::SingleThreadTaskRunner" = type { %"class.base::SequencedTaskRunner.base", [4 x i8] }
+%"class.base::SequencedTaskRunner.base" = type { %"class.base::TaskRunner.base" }
+%"class.base::TaskRunner.base" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe.32" }>
+%"class.base::RefCountedThreadSafe.32" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.WTF::RecursiveMutex" = type { %"class.WTF::MutexBase" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.0" }
+%"struct.std::__1::__atomic_base.0" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"class.WTF::HashSet.27" = type { %"class.WTF::HashTable.28" }
+%"class.WTF::HashTable.28" = type <{ %"class.blink::AudioNodeOutput"**, i32, i32, i32, [4 x i8] }>
+%"class.blink::AudioNodeOutput" = type opaque
+%"class.WTF::Vector.33" = type { %"class.WTF::VectorBuffer.34" }
+%"class.WTF::VectorBuffer.34" = type { %"class.WTF::VectorBufferBase.35" }
+%"class.WTF::VectorBufferBase.35" = type { %"class.blink::AudioNodeOutput"**, i32, i32 }
+%"class.WTF::ThreadSafeRefCounted" = type { %"class.base::RefCountedThreadSafe" }
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.WTF::String" = type { %class.scoped_refptr.38 }
+%"struct.std::__1::atomic.44" = type { %"struct.std::__1::__atomic_base.45" }
+%"struct.std::__1::__atomic_base.45" = type { %"struct.std::__1::__cxx_atomic_impl.46" }
+%"struct.std::__1::__cxx_atomic_impl.46" = type { %"struct.std::__1::__cxx_atomic_base_impl.47" }
+%"struct.std::__1::__cxx_atomic_base_impl.47" = type { float }
+%"class.blink::AudioParamTimeline" = type <{ %"class.WTF::Vector.48", %"class.WTF::HashSet.55", %"class.WTF::Mutex", float, [4 x i8] }>
+%"class.WTF::Vector.48" = type { %"class.WTF::VectorBuffer.49" }
+%"class.WTF::VectorBuffer.49" = type { %"class.WTF::VectorBufferBase.50" }
+%"class.WTF::VectorBufferBase.50" = type { %"class.std::__1::unique_ptr.51"*, i32, i32 }
+%"class.std::__1::unique_ptr.51" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"class.blink::AudioParamTimeline::ParamEvent"* }
+%"class.blink::AudioParamTimeline::ParamEvent" = type <{ i32, float, double, float, [4 x i8], double, double, double, %"class.WTF::Vector.501", double, float, [4 x i8], %"class.std::__1::unique_ptr.51", i8, [7 x i8] }>
+%"class.WTF::Vector.501" = type { %"class.WTF::VectorBuffer.502" }
+%"class.WTF::VectorBuffer.502" = type { %"class.WTF::VectorBufferBase.503" }
+%"class.WTF::VectorBufferBase.503" = type { float*, i32, i32 }
+%"class.WTF::HashSet.55" = type { %"class.WTF::HashTable.56" }
+%"class.WTF::HashTable.56" = type <{ %"class.blink::AudioParamTimeline::ParamEvent"**, i32, i32, i32, [4 x i8] }>
+%class.scoped_refptr.59 = type { %"class.blink::AudioDestinationHandler"* }
+%"class.blink::AudioDestinationHandler" = type <{ %"class.blink::AudioHandler.base", [4 x i8], %"struct.std::__1::atomic.146", i8, [7 x i8] }>
+%"class.blink::AudioHandler.base" = type <{ i32 (...)**, %"class.WTF::ThreadSafeRefCounted.60", [4 x i8], double, double, i8, [3 x i8], i32, %"class.blink::WeakPersistent", %"class.blink::UntracedMember", %class.scoped_refptr.1, %"class.WTF::Vector.293", %"class.WTF::Vector.299", i32, i8, i8, [2 x i8], i32, i32, i32, i32, i32 }>
+%class.scoped_refptr.305 = type { %"class.blink::AudioBus"* }
+%"class.blink::AudioBus" = type { %"class.WTF::ThreadSafeRefCounted.306", i32, %"class.WTF::Vector.308", i32, float }
+%"class.WTF::ThreadSafeRefCounted.306" = type { %"class.base::RefCountedThreadSafe.307" }
+%"class.base::RefCountedThreadSafe.307" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.WTF::Vector.308" = type { %"class.WTF::VectorBuffer.309" }
+%"class.WTF::VectorBuffer.309" = type { %"class.WTF::VectorBufferBase.310", [64 x i8] }
+%"class.WTF::VectorBufferBase.310" = type { %"class.blink::AudioChannel"*, i32, i32 }
+%"class.blink::AudioChannel" = type <{ i64, float*, %"class.std::__1::unique_ptr.311", i8, [7 x i8] }>
+%"class.std::__1::unique_ptr.311" = type { %"class.std::__1::__compressed_pair.312" }
+%"class.std::__1::__compressed_pair.312" = type { %"struct.std::__1::__compressed_pair_elem.313" }
+%"struct.std::__1::__compressed_pair_elem.313" = type { %"class.blink::AudioArray"* }
+%"class.logging::CheckOpResult" = type { i8* }
+%"class.logging::CheckError" = type { %"class.logging::LogMessage"* }
+%"class.logging::LogMessage" = type { i32 (...)**, i32, %"class.std::__1::basic_ostringstream", i64, i8*, i32, %"class.base::ScopedClearLastErrorBase" }
+%"class.std::__1::basic_ostringstream" = type { %"class.std::__1::basic_ostream.base", %"class.std::__1::basic_stringbuf", %"class.std::__1::basic_ios.base" }
+%"class.std::__1::basic_ostream.base" = type { i32 (...)** }
+%"class.std::__1::basic_stringbuf" = type <{ %"class.std::__1::basic_streambuf", %"class.std::__1::basic_string", i8*, i32, [4 x i8] }>
+%"class.std::__1::basic_streambuf" = type { i32 (...)**, %"class.std::__1::locale", i8*, i8*, i8*, i8*, i8*, i8* }
+%"class.std::__1::locale" = type { %"class.std::__1::locale::__imp"* }
+%"class.std::__1::locale::__imp" = type opaque
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.506" }
+%"class.std::__1::__compressed_pair.506" = type { %"struct.std::__1::__compressed_pair_elem.507" }
+%"struct.std::__1::__compressed_pair_elem.507" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon.508 }
+%union.anon.508 = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.std::__1::basic_ios.base" = type <{ %"class.std::__1::ios_base", %"class.std::__1::basic_ostream"*, i32 }>
+%"class.std::__1::ios_base" = type { i32 (...)**, i32, i64, i64, i32, i32, i8*, i8*, void (i32, %"class.std::__1::ios_base"*, i32)**, i32*, i64, i64, i64*, i64, i64, i8**, i64, i64 }
+%"class.std::__1::basic_ostream" = type { i32 (...)**, %"class.std::__1::basic_ios.base" }
+%"class.base::ScopedClearLastErrorBase" = type { i32 }
+
+$_ZN5blink10AudioArrayIfE8AllocateEm = comdat any
+
+$_ZN5blink19AudioDelayDSPKernelD2Ev = comdat any
+
+$_ZN5blink14DelayDSPKernelD0Ev = comdat any
+
+@_ZTVN5blink14DelayDSPKernelE = hidden unnamed_addr constant { [14 x i8*] } { [14 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.blink::AudioDelayDSPKernel"*)* @_ZN5blink19AudioDelayDSPKernelD2Ev to i8*), i8* bitcast (void (%"class.blink::DelayDSPKernel"*)* @_ZN5blink14DelayDSPKernelD0Ev to i8*), i8* bitcast (void (%"class.blink::AudioDelayDSPKernel"*, float*, float*, i32)* @_ZN5blink19AudioDelayDSPKernel7ProcessEPKfPfj to i8*), i8* bitcast (void (%"class.blink::DelayDSPKernel"*, i32)* @_ZN5blink14DelayDSPKernel22ProcessOnlyAudioParamsEj to i8*), i8* bitcast (void (%"class.blink::AudioDelayDSPKernel"*)* @_ZN5blink19AudioDelayDSPKernel5ResetEv to i8*), i8* bitcast (double (%"class.blink::AudioDelayDSPKernel"*)* @_ZNK5blink19AudioDelayDSPKernel8TailTimeEv to i8*), i8* bitcast (double (%"class.blink::AudioDelayDSPKernel"*)* @_ZNK5blink19AudioDelayDSPKernel11LatencyTimeEv to i8*), i8* bitcast (i1 (%"class.blink::AudioDelayDSPKernel"*)* @_ZNK5blink19AudioDelayDSPKernel22RequiresTailProcessingEv to i8*), i8* bitcast (i1 (%"class.blink::DelayDSPKernel"*)* @_ZN5blink14DelayDSPKernel23HasSampleAccurateValuesEv to i8*), i8* bitcast (void (%"class.blink::DelayDSPKernel"*, float*, i32)* @_ZN5blink14DelayDSPKernel29CalculateSampleAccurateValuesEPfj to i8*), i8* bitcast (double (%"class.blink::DelayDSPKernel"*, float)* @_ZN5blink14DelayDSPKernel9DelayTimeEf to i8*), i8* bitcast (i1 (%"class.blink::DelayDSPKernel"*)* @_ZN5blink14DelayDSPKernel11IsAudioRateEv to i8*)] }, align 8
+@_ZTVN5blink19AudioDelayDSPKernelE = external unnamed_addr constant { [14 x i8*] }, align 8
+@.str = private unnamed_addr constant [54 x i8] c"n <= std::numeric_limits<unsigned>::max() / sizeof(T)\00", align 1
+@.str.1 = private unnamed_addr constant [62 x i8] c"../../third_party/blink/renderer/platform/audio/audio_array.h\00", align 1
+@.str.2 = private unnamed_addr constant [12 x i8] c"allocation_\00", align 1
+@__PRETTY_FUNCTION__._ZN3WTF21GetStringWithTypeNameIN5blink10AudioArrayIfEEEEPKcv = private unnamed_addr constant [72 x i8] c"const char *WTF::GetStringWithTypeName() [T = blink::AudioArray<float>]\00", align 1
+
+@_ZN5blink14DelayDSPKernelC1EPNS_14DelayProcessorE = hidden unnamed_addr alias void (%"class.blink::DelayDSPKernel"*, %"class.blink::DelayProcessor"*), void (%"class.blink::DelayDSPKernel"*, %"class.blink::DelayProcessor"*)* @_ZN5blink14DelayDSPKernelC2EPNS_14DelayProcessorE
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink14DelayDSPKernelC2EPNS_14DelayProcessorE(%"class.blink::DelayDSPKernel"*, %"class.blink::DelayProcessor"*) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.blink::DelayDSPKernel", %"class.blink::DelayDSPKernel"* %0, i64 0, i32 0
+  %4 = bitcast %"class.blink::DelayProcessor"* %1 to %"class.blink::AudioDSPKernelProcessor"*
+  %5 = getelementptr inbounds %"class.blink::DelayProcessor", %"class.blink::DelayProcessor"* %1, i64 0, i32 0, i32 0, i32 4
+  %6 = load i32, i32* %5, align 4
+  %7 = zext i32 %6 to i64
+  tail call void @_ZN5blink19AudioDelayDSPKernelC2EPNS_23AudioDSPKernelProcessorEm(%"class.blink::AudioDelayDSPKernel"* %3, %"class.blink::AudioDSPKernelProcessor"* %4, i64 %7) #8
+  %8 = getelementptr inbounds %"class.blink::DelayDSPKernel", %"class.blink::DelayDSPKernel"* %0, i64 0, i32 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [14 x i8*] }, { [14 x i8*] }* @_ZTVN5blink14DelayDSPKernelE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %8, align 8
+  %9 = getelementptr inbounds %"class.blink::DelayProcessor", %"class.blink::DelayProcessor"* %1, i64 0, i32 2
+  %10 = load double, double* %9, align 8
+  %11 = fptrunc double %10 to float
+  %12 = getelementptr inbounds %"class.blink::DelayDSPKernel", %"class.blink::DelayDSPKernel"* %0, i64 0, i32 0, i32 2
+  store float %11, float* %12, align 8
+  %13 = getelementptr inbounds %"class.blink::DelayDSPKernel", %"class.blink::DelayDSPKernel"* %0, i64 0, i32 0, i32 1
+  %14 = fpext float %11 to double
+  %15 = getelementptr inbounds %"class.blink::DelayProcessor", %"class.blink::DelayProcessor"* %1, i64 0, i32 0, i32 0, i32 3
+  %16 = load float, float* %15, align 8
+  %17 = fpext float %16 to double
+  %18 = load i32, i32* %5, align 4
+  %19 = tail call i64 @_ZNK5blink19AudioDelayDSPKernel20BufferLengthForDelayEddj(%"class.blink::AudioDelayDSPKernel"* %3, double %14, double %17, i32 %18) #8
+  tail call void @_ZN5blink10AudioArrayIfE8AllocateEm(%"class.blink::AudioArray"* %13, i64 %19)
+  %20 = getelementptr inbounds %"class.blink::DelayDSPKernel", %"class.blink::DelayDSPKernel"* %0, i64 0, i32 0, i32 1, i32 1
+  %21 = bitcast float** %20 to i8**
+  %22 = load i8*, i8** %21, align 8
+  %23 = getelementptr inbounds %"class.blink::DelayDSPKernel", %"class.blink::DelayDSPKernel"* %0, i64 0, i32 0, i32 1, i32 2
+  %24 = load i32, i32* %23, align 8
+  %25 = zext i32 %24 to i64
+  %26 = shl nuw nsw i64 %25, 2
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %22, i8 0, i64 %26, i1 false) #8
+  ret void
+}
+
+declare void @_ZN5blink19AudioDelayDSPKernelC2EPNS_23AudioDSPKernelProcessorEm(%"class.blink::AudioDelayDSPKernel"*, %"class.blink::AudioDSPKernelProcessor"*, i64) unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN5blink10AudioArrayIfE8AllocateEm(%"class.blink::AudioArray"*, i64) local_unnamed_addr #0 comdat align 2 {
+  %3 = alloca %"class.logging::CheckOpResult", align 8
+  %4 = alloca %"class.logging::CheckOpResult", align 8
+  %5 = alloca %"class.logging::CheckError", align 8
+  %6 = alloca %"class.logging::CheckError", align 8
+  %7 = bitcast %"class.logging::CheckOpResult"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %7) #8
+  %8 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %4, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %8, align 8
+  %9 = bitcast %"class.logging::CheckOpResult"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %9)
+  %10 = icmp ugt i64 %1, 1073741823
+  br i1 %10, label %12, label %11
+
+11:                                               ; preds = %2
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %9)
+  store i8* null, i8** %8, align 8
+  br label %21
+
+12:                                               ; preds = %2
+  %13 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 %1) #8
+  %14 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 1073741823) #8
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %3, i8* getelementptr inbounds ([54 x i8], [54 x i8]* @.str, i64 0, i64 0), i8* %13, i8* %14) #8
+  %15 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %3, i64 0, i32 0
+  %16 = load i8*, i8** %15, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %9)
+  store i8* %16, i8** %8, align 8
+  %17 = icmp eq i8* %16, null
+  br i1 %17, label %21, label %18
+
+18:                                               ; preds = %12
+  %19 = bitcast %"class.logging::CheckError"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %19) #8
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %5, i8* getelementptr inbounds ([62 x i8], [62 x i8]* @.str.1, i64 0, i64 0), i32 63, %"class.logging::CheckOpResult"* nonnull %4) #8
+  %20 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %5) #8
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %5) #8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %19) #8
+  br label %21
+
+21:                                               ; preds = %11, %12, %18
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %7) #8
+  %22 = trunc i64 %1 to i32
+  %23 = shl i32 %22, 2
+  %24 = getelementptr inbounds %"class.blink::AudioArray", %"class.blink::AudioArray"* %0, i64 0, i32 0
+  %25 = load float*, float** %24, align 8
+  %26 = icmp eq float* %25, null
+  br i1 %26, label %29, label %27
+
+27:                                               ; preds = %21
+  %28 = bitcast float* %25 to i8*
+  call void @_ZN3WTF10Partitions8FastFreeEPv(i8* nonnull %28) #8
+  br label %29
+
+29:                                               ; preds = %21, %27
+  %30 = call { i32, i1 } @llvm.uadd.with.overflow.i32(i32 %23, i32 32) #8
+  %31 = extractvalue { i32, i1 } %30, 1
+  br i1 %31, label %32, label %33, !prof !2
+
+32:                                               ; preds = %29
+  call void @llvm.trap() #8
+  unreachable
+
+33:                                               ; preds = %29
+  %34 = extractvalue { i32, i1 } %30, 0
+  %35 = zext i32 %34 to i64
+  %36 = call i8* @_ZN3WTF10Partitions16FastZeroedMallocEmPKc(i64 %35, i8* getelementptr inbounds ([72 x i8], [72 x i8]* @__PRETTY_FUNCTION__._ZN3WTF21GetStringWithTypeNameIN5blink10AudioArrayIfEEEEPKcv, i64 0, i64 0)) #8
+  %37 = bitcast %"class.blink::AudioArray"* %0 to i8**
+  store i8* %36, i8** %37, align 8
+  %38 = icmp eq i8* %36, null
+  br i1 %38, label %41, label %39
+
+39:                                               ; preds = %33
+  %40 = ptrtoint i8* %36 to i64
+  br label %46
+
+41:                                               ; preds = %33
+  %42 = bitcast %"class.logging::CheckError"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %42) #8
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %6, i8* getelementptr inbounds ([62 x i8], [62 x i8]* @.str.1, i64 0, i64 0), i32 84, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @.str.2, i64 0, i64 0)) #8
+  %43 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %6) #8
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %6) #8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %42) #8
+  %44 = bitcast %"class.blink::AudioArray"* %0 to i64*
+  %45 = load i64, i64* %44, align 8
+  br label %46
+
+46:                                               ; preds = %39, %41
+  %47 = phi i64 [ %40, %39 ], [ %45, %41 ]
+  %48 = add i64 %47, 31
+  %49 = and i64 %48, -32
+  %50 = inttoptr i64 %49 to float*
+  %51 = getelementptr inbounds %"class.blink::AudioArray", %"class.blink::AudioArray"* %0, i64 0, i32 1
+  store float* %50, float** %51, align 8
+  %52 = getelementptr inbounds %"class.blink::AudioArray", %"class.blink::AudioArray"* %0, i64 0, i32 2
+  store i32 %22, i32* %52, align 8
+  ret void
+}
+
+declare i64 @_ZNK5blink19AudioDelayDSPKernel20BufferLengthForDelayEddj(%"class.blink::AudioDelayDSPKernel"*, double, double, i32) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN5blink14DelayDSPKernel23HasSampleAccurateValuesEv(%"class.blink::DelayDSPKernel"* nocapture readonly) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.blink::DelayDSPKernel", %"class.blink::DelayDSPKernel"* %0, i64 0, i32 0, i32 0, i32 1
+  %3 = bitcast %"class.blink::AudioDSPKernelProcessor"** %2 to %"class.blink::DelayProcessor"**
+  %4 = load %"class.blink::DelayProcessor"*, %"class.blink::DelayProcessor"** %3, align 8
+  %5 = getelementptr inbounds %"class.blink::DelayProcessor", %"class.blink::DelayProcessor"* %4, i64 0, i32 1, i32 0
+  %6 = load %"class.blink::AudioParamHandler"*, %"class.blink::AudioParamHandler"** %5, align 8
+  %7 = getelementptr inbounds %"class.blink::AudioParamHandler", %"class.blink::AudioParamHandler"* %6, i64 0, i32 10
+  %8 = getelementptr inbounds %"class.blink::AudioParamHandler", %"class.blink::AudioParamHandler"* %6, i64 0, i32 11, i32 0
+  %9 = load %"class.blink::AudioDestinationHandler"*, %"class.blink::AudioDestinationHandler"** %8, align 8
+  %10 = getelementptr inbounds %"class.blink::AudioDestinationHandler", %"class.blink::AudioDestinationHandler"* %9, i64 0, i32 2, i32 0, i32 0, i32 0, i32 0, i32 0
+  %11 = load atomic i64, i64* %10 acquire, align 8
+  %12 = load %"class.blink::AudioDestinationHandler"*, %"class.blink::AudioDestinationHandler"** %8, align 8
+  %13 = bitcast %"class.blink::AudioDestinationHandler"* %12 to double (%"class.blink::AudioDestinationHandler"*)***
+  %14 = load double (%"class.blink::AudioDestinationHandler"*)**, double (%"class.blink::AudioDestinationHandler"*)*** %13, align 8
+  %15 = getelementptr inbounds double (%"class.blink::AudioDestinationHandler"*)*, double (%"class.blink::AudioDestinationHandler"*)** %14, i64 25
+  %16 = load double (%"class.blink::AudioDestinationHandler"*)*, double (%"class.blink::AudioDestinationHandler"*)** %15, align 8
+  %17 = tail call double %16(%"class.blink::AudioDestinationHandler"* %12) #8
+  %18 = getelementptr inbounds %"class.blink::AudioParamHandler", %"class.blink::AudioParamHandler"* %6, i64 0, i32 0, i32 1, i32 0
+  %19 = load %"class.blink::DeferredTaskHandler"*, %"class.blink::DeferredTaskHandler"** %18, align 8
+  %20 = getelementptr inbounds %"class.blink::DeferredTaskHandler", %"class.blink::DeferredTaskHandler"* %19, i64 0, i32 7
+  %21 = load i32, i32* %20, align 4
+  %22 = tail call zeroext i1 @_ZNK5blink18AudioParamTimeline9HasValuesEmdj(%"class.blink::AudioParamTimeline"* %7, i64 %11, double %17, i32 %21) #8
+  br i1 %22, label %27, label %23
+
+23:                                               ; preds = %1
+  %24 = getelementptr inbounds %"class.blink::AudioParamHandler", %"class.blink::AudioParamHandler"* %6, i64 0, i32 0, i32 3, i32 0, i32 0, i32 2
+  %25 = load i32, i32* %24, align 4
+  %26 = icmp ne i32 %25, 0
+  br label %27
+
+27:                                               ; preds = %1, %23
+  %28 = phi i1 [ true, %1 ], [ %26, %23 ]
+  ret i1 %28
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink14DelayDSPKernel29CalculateSampleAccurateValuesEPfj(%"class.blink::DelayDSPKernel"* nocapture readonly, float*, i32) unnamed_addr #0 align 2 {
+  %4 = getelementptr inbounds %"class.blink::DelayDSPKernel", %"class.blink::DelayDSPKernel"* %0, i64 0, i32 0, i32 0, i32 1
+  %5 = bitcast %"class.blink::AudioDSPKernelProcessor"** %4 to %"class.blink::DelayProcessor"**
+  %6 = load %"class.blink::DelayProcessor"*, %"class.blink::DelayProcessor"** %5, align 8
+  %7 = getelementptr inbounds %"class.blink::DelayProcessor", %"class.blink::DelayProcessor"* %6, i64 0, i32 1, i32 0
+  %8 = load %"class.blink::AudioParamHandler"*, %"class.blink::AudioParamHandler"** %7, align 8
+  tail call void @_ZN5blink17AudioParamHandler29CalculateSampleAccurateValuesEPfj(%"class.blink::AudioParamHandler"* %8, float* %1, i32 %2) #8
+  ret void
+}
+
+declare void @_ZN5blink17AudioParamHandler29CalculateSampleAccurateValuesEPfj(%"class.blink::AudioParamHandler"*, float*, i32) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden double @_ZN5blink14DelayDSPKernel9DelayTimeEf(%"class.blink::DelayDSPKernel"* nocapture readonly, float) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.blink::DelayDSPKernel", %"class.blink::DelayDSPKernel"* %0, i64 0, i32 0, i32 0, i32 1
+  %4 = bitcast %"class.blink::AudioDSPKernelProcessor"** %3 to %"class.blink::DelayProcessor"**
+  %5 = load %"class.blink::DelayProcessor"*, %"class.blink::DelayProcessor"** %4, align 8
+  %6 = getelementptr inbounds %"class.blink::DelayProcessor", %"class.blink::DelayProcessor"* %5, i64 0, i32 1, i32 0
+  %7 = load %"class.blink::AudioParamHandler"*, %"class.blink::AudioParamHandler"** %6, align 8
+  %8 = tail call float @_ZN5blink17AudioParamHandler10FinalValueEv(%"class.blink::AudioParamHandler"* %7) #8
+  %9 = fpext float %8 to double
+  ret double %9
+}
+
+declare float @_ZN5blink17AudioParamHandler10FinalValueEv(%"class.blink::AudioParamHandler"*) local_unnamed_addr #1
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden zeroext i1 @_ZN5blink14DelayDSPKernel11IsAudioRateEv(%"class.blink::DelayDSPKernel"* nocapture readonly) unnamed_addr #2 align 2 {
+  %2 = getelementptr inbounds %"class.blink::DelayDSPKernel", %"class.blink::DelayDSPKernel"* %0, i64 0, i32 0, i32 0, i32 1
+  %3 = bitcast %"class.blink::AudioDSPKernelProcessor"** %2 to %"class.blink::DelayProcessor"**
+  %4 = load %"class.blink::DelayProcessor"*, %"class.blink::DelayProcessor"** %3, align 8
+  %5 = getelementptr inbounds %"class.blink::DelayProcessor", %"class.blink::DelayProcessor"* %4, i64 0, i32 1, i32 0
+  %6 = load %"class.blink::AudioParamHandler"*, %"class.blink::AudioParamHandler"** %5, align 8
+  %7 = getelementptr inbounds %"class.blink::AudioParamHandler", %"class.blink::AudioParamHandler"* %6, i64 0, i32 6
+  %8 = load i32, i32* %7, align 8
+  %9 = icmp eq i32 %8, 0
+  ret i1 %9
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink14DelayDSPKernel22ProcessOnlyAudioParamsEj(%"class.blink::DelayDSPKernel"* nocapture readonly, i32) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.blink::DelayDSPKernel", %"class.blink::DelayDSPKernel"* %0, i64 0, i32 0, i32 0, i32 3
+  %4 = load i32, i32* %3, align 4
+  %5 = zext i32 %4 to i64
+  %6 = alloca float, i64 %5, align 16
+  %7 = icmp eq i32 %4, 0
+  br i1 %7, label %11, label %8
+
+8:                                                ; preds = %2
+  %9 = bitcast float* %6 to i8*
+  %10 = shl nuw nsw i64 %5, 2
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %9, i8 -1, i64 %10, i1 false)
+  br label %11
+
+11:                                               ; preds = %8, %2
+  %12 = getelementptr inbounds %"class.blink::DelayDSPKernel", %"class.blink::DelayDSPKernel"* %0, i64 0, i32 0, i32 0, i32 1
+  %13 = bitcast %"class.blink::AudioDSPKernelProcessor"** %12 to %"class.blink::DelayProcessor"**
+  %14 = load %"class.blink::DelayProcessor"*, %"class.blink::DelayProcessor"** %13, align 8
+  %15 = getelementptr inbounds %"class.blink::DelayProcessor", %"class.blink::DelayProcessor"* %14, i64 0, i32 1, i32 0
+  %16 = load %"class.blink::AudioParamHandler"*, %"class.blink::AudioParamHandler"** %15, align 8
+  call void @_ZN5blink17AudioParamHandler29CalculateSampleAccurateValuesEPfj(%"class.blink::AudioParamHandler"* %16, float* nonnull %6, i32 %1) #8
+  ret void
+}
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN5blink19AudioDelayDSPKernelD2Ev(%"class.blink::AudioDelayDSPKernel"*) unnamed_addr #3 comdat align 2 {
+  %2 = getelementptr inbounds %"class.blink::AudioDelayDSPKernel", %"class.blink::AudioDelayDSPKernel"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [14 x i8*] }, { [14 x i8*] }* @_ZTVN5blink19AudioDelayDSPKernelE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.blink::AudioDelayDSPKernel", %"class.blink::AudioDelayDSPKernel"* %0, i64 0, i32 6
+  %4 = bitcast %"class.blink::AudioArray"* %3 to i8**
+  %5 = load i8*, i8** %4, align 8
+  tail call void @_ZN3WTF10Partitions8FastFreeEPv(i8* %5) #8
+  %6 = getelementptr inbounds %"class.blink::AudioDelayDSPKernel", %"class.blink::AudioDelayDSPKernel"* %0, i64 0, i32 5
+  %7 = bitcast %"class.blink::AudioArray"* %6 to i8**
+  %8 = load i8*, i8** %7, align 8
+  tail call void @_ZN3WTF10Partitions8FastFreeEPv(i8* %8) #8
+  %9 = getelementptr inbounds %"class.blink::AudioDelayDSPKernel", %"class.blink::AudioDelayDSPKernel"* %0, i64 0, i32 1
+  %10 = bitcast %"class.blink::AudioArray"* %9 to i8**
+  %11 = load i8*, i8** %10, align 8
+  tail call void @_ZN3WTF10Partitions8FastFreeEPv(i8* %11) #8
+  %12 = getelementptr inbounds %"class.blink::AudioDelayDSPKernel", %"class.blink::AudioDelayDSPKernel"* %0, i64 0, i32 0
+  tail call void @_ZN5blink14AudioDSPKernelD2Ev(%"class.blink::AudioDSPKernel"* %12) #8
+  ret void
+}
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN5blink14DelayDSPKernelD0Ev(%"class.blink::DelayDSPKernel"*) unnamed_addr #3 comdat align 2 {
+  %2 = getelementptr inbounds %"class.blink::DelayDSPKernel", %"class.blink::DelayDSPKernel"* %0, i64 0, i32 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [14 x i8*] }, { [14 x i8*] }* @_ZTVN5blink19AudioDelayDSPKernelE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.blink::DelayDSPKernel", %"class.blink::DelayDSPKernel"* %0, i64 0, i32 0, i32 6
+  %4 = bitcast %"class.blink::AudioArray"* %3 to i8**
+  %5 = load i8*, i8** %4, align 8
+  tail call void @_ZN3WTF10Partitions8FastFreeEPv(i8* %5) #8
+  %6 = getelementptr inbounds %"class.blink::DelayDSPKernel", %"class.blink::DelayDSPKernel"* %0, i64 0, i32 0, i32 5
+  %7 = bitcast %"class.blink::AudioArray"* %6 to i8**
+  %8 = load i8*, i8** %7, align 8
+  tail call void @_ZN3WTF10Partitions8FastFreeEPv(i8* %8) #8
+  %9 = getelementptr inbounds %"class.blink::DelayDSPKernel", %"class.blink::DelayDSPKernel"* %0, i64 0, i32 0, i32 1
+  %10 = bitcast %"class.blink::AudioArray"* %9 to i8**
+  %11 = load i8*, i8** %10, align 8
+  tail call void @_ZN3WTF10Partitions8FastFreeEPv(i8* %11) #8
+  %12 = getelementptr inbounds %"class.blink::DelayDSPKernel", %"class.blink::DelayDSPKernel"* %0, i64 0, i32 0, i32 0
+  tail call void @_ZN5blink14AudioDSPKernelD2Ev(%"class.blink::AudioDSPKernel"* %12) #8
+  %13 = bitcast %"class.blink::DelayDSPKernel"* %0 to i8*
+  tail call void @free(i8* %13) #8
+  ret void
+}
+
+declare void @_ZN5blink19AudioDelayDSPKernel7ProcessEPKfPfj(%"class.blink::AudioDelayDSPKernel"*, float*, float*, i32) unnamed_addr #1
+
+declare void @_ZN5blink19AudioDelayDSPKernel5ResetEv(%"class.blink::AudioDelayDSPKernel"*) unnamed_addr #1
+
+declare double @_ZNK5blink19AudioDelayDSPKernel8TailTimeEv(%"class.blink::AudioDelayDSPKernel"*) unnamed_addr #1
+
+declare double @_ZNK5blink19AudioDelayDSPKernel11LatencyTimeEv(%"class.blink::AudioDelayDSPKernel"*) unnamed_addr #1
+
+declare zeroext i1 @_ZNK5blink19AudioDelayDSPKernel22RequiresTailProcessingEv(%"class.blink::AudioDelayDSPKernel"*) unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #4
+
+declare zeroext i1 @_ZNK5blink18AudioParamTimeline9HasValuesEmdj(%"class.blink::AudioParamTimeline"*, i64, double, i32) local_unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #4
+
+; Function Attrs: nounwind
+declare void @_ZN5blink14AudioDSPKernelD2Ev(%"class.blink::AudioDSPKernel"*) unnamed_addr #5
+
+declare void @_ZN3WTF10Partitions8FastFreeEPv(i8*) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @free(i8* nocapture) local_unnamed_addr #5
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #4
+
+declare void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* sret, i8*, i32, %"class.logging::CheckOpResult"*) local_unnamed_addr #1
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"*) unnamed_addr #5
+
+declare i8* @_ZN3WTF10Partitions16FastZeroedMallocEmPKc(i64, i8*) local_unnamed_addr #1
+
+declare void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* sret, i8*, i32, i8*) local_unnamed_addr #1
+
+declare i8* @_ZN7logging15CheckOpValueStrEm(i64) local_unnamed_addr #1
+
+declare void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"*, i8*, i8*, i8*) unnamed_addr #1
+
+; Function Attrs: nounwind readnone speculatable
+declare { i32, i1 } @llvm.uadd.with.overflow.i32(i32, i32) #6
+
+; Function Attrs: cold noreturn nounwind
+declare void @llvm.trap() #7
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { norecurse nounwind readonly ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { inlinehint nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { argmemonly nounwind }
+attributes #5 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nounwind readnone speculatable }
+attributes #7 = { cold noreturn nounwind }
+attributes #8 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{!"branch_weights", i32 1, i32 2000}

@@ -1,0 +1,2121 @@
+; ModuleID = '../../media/parsers/vp8_parser.cc'
+source_filename = "../../media/parsers/vp8_parser.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%"struct.media::Vp8FrameHeader" = type <{ i32, i8, i8, i8, i8, i64, i16, i8, i8, i16, i8, i8, %"struct.media::Vp8SegmentationHeader", %"struct.media::Vp8LoopFilterHeader", %"struct.media::Vp8QuantizationHeader", [6 x i8], i64, %"struct.media::Vp8EntropyHeader", i8, i8, i8, i32, i32, i8, i8, i8, i8, i8, i8, i8, i8, i8*, i64, [8 x i64], i64, i64, i8, i8, i8, i8, [4 x i8] }>
+%"struct.media::Vp8SegmentationHeader" = type { i8, i8, i8, i32, [4 x i8], [4 x i8], [3 x i8] }
+%"struct.media::Vp8LoopFilterHeader" = type { i32, i8, i8, i8, i8, [4 x i8], [4 x i8] }
+%"struct.media::Vp8QuantizationHeader" = type { i8, i8, i8, i8, i8, i8 }
+%"struct.media::Vp8EntropyHeader" = type { [4 x [8 x [3 x [11 x i8]]]], [4 x i8], [3 x i8], [2 x [19 x i8]] }
+%"class.media::Vp8Parser" = type { %"struct.media::Vp8SegmentationHeader", %"struct.media::Vp8LoopFilterHeader", %"struct.media::Vp8EntropyHeader", i8*, i64, %"class.media::Vp8BoolDecoder" }
+%"class.media::Vp8BoolDecoder" = type { i8*, i8*, i8*, i64, i32, i64 }
+%"class.logging::CheckOpResult" = type { i8* }
+%"class.logging::CheckError" = type { %"class.logging::LogMessage"* }
+%"class.logging::LogMessage" = type { i32 (...)**, i32, %"class.std::__1::basic_ostringstream", i64, i8*, i32, %"class.base::ScopedClearLastErrorBase" }
+%"class.std::__1::basic_ostringstream" = type { %"class.std::__1::basic_ostream.base", %"class.std::__1::basic_stringbuf", %"class.std::__1::basic_ios.base" }
+%"class.std::__1::basic_ostream.base" = type { i32 (...)** }
+%"class.std::__1::basic_stringbuf" = type <{ %"class.std::__1::basic_streambuf", %"class.std::__1::basic_string", i8*, i32, [4 x i8] }>
+%"class.std::__1::basic_streambuf" = type { i32 (...)**, %"class.std::__1::locale", i8*, i8*, i8*, i8*, i8*, i8* }
+%"class.std::__1::locale" = type { %"class.std::__1::locale::__imp"* }
+%"class.std::__1::locale::__imp" = type opaque
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon }
+%union.anon = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.std::__1::basic_ios.base" = type <{ %"class.std::__1::ios_base", %"class.std::__1::basic_ostream"*, i32 }>
+%"class.std::__1::ios_base" = type { i32 (...)**, i32, i64, i64, i32, i32, i8*, i8*, void (i32, %"class.std::__1::ios_base"*, i32)**, i32*, i64, i64, i64*, i64, i64, i8**, i64, i64 }
+%"class.std::__1::basic_ostream" = type { i32 (...)**, %"class.std::__1::basic_ios.base" }
+%"class.base::ScopedClearLastErrorBase" = type { i32 }
+
+@_ZZN5media9Vp8Parser13ParseFrameTagEPNS_14Vp8FrameHeaderEE13kVp8StartCode = internal constant [3 x i8] c"\9D\01*", align 1
+@_ZN5mediaL18kDefaultCoeffProbsE = internal unnamed_addr constant [4 x [8 x [3 x [11 x i8]]]] [[8 x [3 x [11 x i8]]] [[3 x [11 x i8]] [[11 x i8] c"\80\80\80\80\80\80\80\80\80\80\80", [11 x i8] c"\80\80\80\80\80\80\80\80\80\80\80", [11 x i8] c"\80\80\80\80\80\80\80\80\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\FD\88\FE\FF\E4\DB\80\80\80\80\80", [11 x i8] c"\BD\81\F2\FF\E3\D5\FF\DB\80\80\80", [11 x i8] c"j~\E3\FC\D6\D1\FF\FF\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01b\F8\FF\EC\E2\FF\FF\80\80\80", [11 x i8] c"\B5\85\EE\FE\DD\EA\FF\9A\80\80\80", [11 x i8] c"N\86\CA\F7\C6\B4\FF\DB\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\B9\F9\FF\F3\FF\80\80\80\80\80", [11 x i8] c"\B8\96\F7\FF\EC\E0\80\80\80\80\80", [11 x i8] c"Mn\D8\FF\EC\E6\80\80\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01e\FB\FF\F1\FF\80\80\80\80\80", [11 x i8] c"\AA\8B\F1\FC\EC\D1\FF\FF\80\80\80", [11 x i8] c"%t\C4\F3\E4\FF\FF\FF\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\CC\FE\FF\F5\FF\80\80\80\80\80", [11 x i8] c"\CF\A0\FA\FF\EE\80\80\80\80\80\80", [11 x i8] c"fg\E7\FF\D3\AB\80\80\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\98\FC\FF\F0\FF\80\80\80\80\80", [11 x i8] c"\B1\87\F3\FF\EA\E1\80\80\80\80\80", [11 x i8] c"P\81\D3\FF\C2\E0\80\80\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\01\FF\80\80\80\80\80\80\80\80", [11 x i8] c"\F6\01\FF\80\80\80\80\80\80\80\80", [11 x i8] c"\FF\80\80\80\80\80\80\80\80\80\80"]], [8 x [3 x [11 x i8]]] [[3 x [11 x i8]] [[11 x i8] c"\C6#\ED\DF\C1\BB\A2\A0\91\9B>", [11 x i8] c"\83-\C6\DD\AC\B0\DC\9D\FC\DD\01", [11 x i8] c"D/\92\D0\95\A7\DD\A2\FF\DF\80"], [3 x [11 x i8]] [[11 x i8] c"\01\95\F1\FF\DD\E0\FF\FF\80\80\80", [11 x i8] c"\B8\8D\EA\FD\DE\DC\FF\C7\80\80\80", [11 x i8] c"Qc\B5\F2\B0\BE\F9\CA\FF\FF\80"], [3 x [11 x i8]] [[11 x i8] c"\01\81\E8\FD\D6\C5\F2\C4\FF\FF\80", [11 x i8] c"cy\D2\FA\C9\C6\FF\CA\80\80\80", [11 x i8] c"\17[\A3\F2\AA\BB\F7\D2\FF\FF\80"], [3 x [11 x i8]] [[11 x i8] c"\01\C8\F6\FF\EA\FF\80\80\80\80\80", [11 x i8] c"m\B2\F1\FF\E7\F5\FF\FF\80\80\80", [11 x i8] c",\82\C9\FD\CD\C0\FF\FF\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\84\EF\FB\DB\D1\FF\A5\80\80\80", [11 x i8] c"^\88\E1\FB\DA\BE\FF\FF\80\80\80", [11 x i8] c"\16d\AE\F5\BA\A1\FF\C7\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\B6\F9\FF\E8\EB\80\80\80\80\80", [11 x i8] c"|\8F\F1\FF\E3\EA\80\80\80\80\80", [11 x i8] c"#M\B5\FB\C1\D3\FF\CD\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\9D\F7\FF\EC\E7\FF\FF\80\80\80", [11 x i8] c"y\8D\EB\FF\E1\E3\FF\FF\80\80\80", [11 x i8] c"-c\BC\FB\C3\D9\FF\E0\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\01\FB\FF\D5\FF\80\80\80\80\80", [11 x i8] c"\CB\01\F8\FF\FF\80\80\80\80\80\80", [11 x i8] c"\89\01\B1\FF\E0\FF\80\80\80\80\80"]], [8 x [3 x [11 x i8]]] [[3 x [11 x i8]] [[11 x i8] c"\FD\09\F8\FB\CF\D0\FF\C0\80\80\80", [11 x i8] c"\AF\0D\E0\F3\C1\B9\F9\C6\FF\FF\80", [11 x i8] c"I\11\AB\DD\A1\B3\EC\A7\FF\EA\80"], [3 x [11 x i8]] [[11 x i8] c"\01_\F7\FD\D4\B7\FF\FF\80\80\80", [11 x i8] c"\EFZ\F4\FA\D3\D1\FF\FF\80\80\80", [11 x i8] c"\9BM\C3\F8\BC\C3\FF\FF\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\18\EF\FB\DA\DB\FF\CD\80\80\80", [11 x i8] c"\C93\DB\FF\C4\BA\80\80\80\80\80", [11 x i8] c"E.\BE\EF\C9\DA\FF\E4\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\BF\FB\FF\FF\80\80\80\80\80\80", [11 x i8] c"\DF\A5\F9\FF\D5\FF\80\80\80\80\80", [11 x i8] c"\8D|\F8\FF\FF\80\80\80\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\10\F8\FF\FF\80\80\80\80\80\80", [11 x i8] c"\BE$\E6\FF\EC\FF\80\80\80\80\80", [11 x i8] c"\95\01\FF\80\80\80\80\80\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\E2\FF\80\80\80\80\80\80\80\80", [11 x i8] c"\F7\C0\FF\80\80\80\80\80\80\80\80", [11 x i8] c"\F0\80\FF\80\80\80\80\80\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\86\FC\FF\FF\80\80\80\80\80\80", [11 x i8] c"\D5>\FA\FF\FF\80\80\80\80\80\80", [11 x i8] c"7]\FF\80\80\80\80\80\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\80\80\80\80\80\80\80\80\80\80\80", [11 x i8] c"\80\80\80\80\80\80\80\80\80\80\80", [11 x i8] c"\80\80\80\80\80\80\80\80\80\80\80"]], [8 x [3 x [11 x i8]]] [[3 x [11 x i8]] [[11 x i8] c"\CA\18\D5\EB\BA\BF\DC\A0\F0\AF\FF", [11 x i8] c"~&\B6\E8\A9\B8\E4\AE\FF\BB\80", [11 x i8] c"=.\8A\DB\97\B2\F0\AA\FF\D8\80"], [3 x [11 x i8]] [[11 x i8] c"\01p\E6\FA\C7\BF\F7\9F\FF\FF\80", [11 x i8] c"\A6m\E4\FC\D3\D7\FF\AE\80\80\80", [11 x i8] c"'M\A2\E8\AC\B4\F5\B2\FF\FF\80"], [3 x [11 x i8]] [[11 x i8] c"\014\DC\F6\C6\C7\F9\DC\FF\FF\80", [11 x i8] c"|J\BF\F3\B7\C1\FA\DD\FF\FF\80", [11 x i8] c"\18G\82\DB\9A\AA\F3\B6\FF\FF\80"], [3 x [11 x i8]] [[11 x i8] c"\01\B6\E1\F9\DB\F0\FF\E0\80\80\80", [11 x i8] c"\95\96\E2\FC\D8\CD\FF\AB\80\80\80", [11 x i8] c"\1Cl\AA\F2\B7\C2\FE\DF\FF\FF\80"], [3 x [11 x i8]] [[11 x i8] c"\01Q\E6\FC\CC\CB\FF\C0\80\80\80", [11 x i8] c"{f\D1\F7\BC\C4\FF\E9\80\80\80", [11 x i8] c"\14_\99\F3\A4\AD\FF\CB\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\DE\F8\FF\D8\D5\80\80\80\80\80", [11 x i8] c"\A8\AF\F6\FC\EB\CD\FF\FF\80\80\80", [11 x i8] c"/t\D7\FF\D3\D4\FF\FF\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01y\EC\FD\D4\D6\FF\FF\80\80\80", [11 x i8] c"\8DT\D5\FC\C9\CA\FF\DB\80\80\80", [11 x i8] c"*P\A0\F0\A2\B9\FF\CD\80\80\80"], [3 x [11 x i8]] [[11 x i8] c"\01\01\FF\80\80\80\80\80\80\80\80", [11 x i8] c"\F4\01\FF\80\80\80\80\80\80\80\80", [11 x i8] c"\EE\01\FF\80\80\80\80\80\80\80\80"]]], align 16
+@_ZN5mediaL15kDefaultMVProbsE = internal unnamed_addr constant [2 x [19 x i8]] [[19 x i8] c"\A2\80\E1\92\AC\93\D6'\9C\80\81\84K\91\B2\CE\EF\FE\FE", [19 x i8] c"\A4\80\CC\AAw\EB\8C\E6\E4\80\82\82J\94\B4\CB\EC\FE\FE"], align 16
+@_ZN5mediaL19kDefaultUVModeProbsE = internal unnamed_addr constant [3 x i8] c"\A2e\CC", align 1
+@_ZN5mediaL17kCoeffUpdateProbsE = internal unnamed_addr constant [4 x [8 x [3 x [11 x i8]]]] [[8 x [3 x [11 x i8]]] [[3 x [11 x i8]] [[11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\B0\F6\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\DF\F1\FC\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\F9\FD\FD\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\F4\FC\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\EA\FE\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FD\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\F6\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\EF\FD\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FE\FF\FE\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\F8\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FB\FF\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FD\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FB\FE\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FE\FF\FE\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FE\FD\FF\FE\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FA\FF\FE\FF\FE\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"]], [8 x [3 x [11 x i8]]] [[3 x [11 x i8]] [[11 x i8] c"\D9\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\E1\FC\F1\FD\FF\FF\FE\FF\FF\FF\FF", [11 x i8] c"\EA\FA\F1\FA\FD\FF\FD\FE\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\DF\FE\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\EE\FD\FE\FE\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\F8\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\F9\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FD\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\F7\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FD\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FC\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FE\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FD\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FE\FD\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FA\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"]], [8 x [3 x [11 x i8]]] [[3 x [11 x i8]] [[11 x i8] c"\BA\FB\FA\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\EA\FB\F4\FE\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FB\FB\F3\FD\FE\FF\FE\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FD\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\EC\FD\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FB\FD\FD\FE\FE\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FE\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FE\FE\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FE\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"]], [8 x [3 x [11 x i8]]] [[3 x [11 x i8]] [[11 x i8] c"\F8\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FA\FE\FC\FE\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\F8\FE\F9\FD\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FD\FD\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\F6\FD\FD\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FC\FE\FB\FE\FE\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FE\FC\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\F8\FE\FD\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FD\FF\FE\FE\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FB\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\F5\FB\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FD\FD\FE\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FB\FD\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FC\FD\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FC\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\F9\FF\FE\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FE\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FF\FD\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FA\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"], [3 x [11 x i8]] [[11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FE\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF", [11 x i8] c"\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"]]], align 16
+@_ZN5mediaL20kKeyframeUVModeProbsE = internal unnamed_addr constant [3 x i8] c"\8Er\B7", align 1
+@_ZN5mediaL14kMVUpdateProbsE = internal unnamed_addr constant [2 x [19 x i8]] [[19 x i8] c"\ED\F6\FD\FD\FE\FE\FE\FE\FE\FE\FE\FE\FE\FE\FA\FA\FC\FE\FE", [19 x i8] c"\E7\F3\F5\FD\FE\FE\FE\FE\FE\FE\FE\FE\FE\FE\FB\FB\FE\FE\FE"], align 16
+@.str = private unnamed_addr constant [34 x i8] c"fhdr->num_of_dct_partitions >= 1u\00", align 1
+@.str.1 = private unnamed_addr constant [34 x i8] c"../../media/parsers/vp8_parser.cc\00", align 1
+@.str.2 = private unnamed_addr constant [49 x i8] c"fhdr->num_of_dct_partitions <= kMaxDCTPartitions\00", align 1
+
+@_ZN5media14Vp8FrameHeaderC1Ev = hidden unnamed_addr alias void (%"struct.media::Vp8FrameHeader"*), void (%"struct.media::Vp8FrameHeader"*)* @_ZN5media14Vp8FrameHeaderC2Ev
+@_ZN5media9Vp8ParserC1Ev = hidden unnamed_addr alias void (%"class.media::Vp8Parser"*), void (%"class.media::Vp8Parser"*)* @_ZN5media9Vp8ParserC2Ev
+@_ZN5media9Vp8ParserD1Ev = hidden unnamed_addr alias void (%"class.media::Vp8Parser"*), void (%"class.media::Vp8Parser"*)* @_ZN5media9Vp8ParserD2Ev
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media14Vp8FrameHeaderC2Ev(%"struct.media::Vp8FrameHeader"* nocapture) unnamed_addr #0 align 2 {
+  %2 = bitcast %"struct.media::Vp8FrameHeader"* %0 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %2, i8 0, i64 1304, i1 false)
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media9Vp8ParserC2Ev(%"class.media::Vp8Parser"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 3
+  %3 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 5
+  %4 = bitcast i8** %2 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %4, i8 0, i64 16, i1 false)
+  tail call void @_ZN5media14Vp8BoolDecoderC1Ev(%"class.media::Vp8BoolDecoder"* %3) #7
+  ret void
+}
+
+declare void @_ZN5media14Vp8BoolDecoderC1Ev(%"class.media::Vp8BoolDecoder"*) unnamed_addr #2
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden void @_ZN5media9Vp8ParserD2Ev(%"class.media::Vp8Parser"* nocapture) unnamed_addr #3 align 2 {
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN5media9Vp8Parser10ParseFrameEPKhmPNS_14Vp8FrameHeaderE(%"class.media::Vp8Parser"*, i8*, i64, %"struct.media::Vp8FrameHeader"*) local_unnamed_addr #0 align 2 {
+  %5 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 3
+  store i8* %1, i8** %5, align 8
+  %6 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 4
+  store i64 %2, i64* %6, align 8
+  %7 = bitcast %"struct.media::Vp8FrameHeader"* %3 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %7, i8 0, i64 1304, i1 false)
+  %8 = bitcast i8** %5 to i64*
+  %9 = load i64, i64* %8, align 8
+  %10 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %3, i64 0, i32 31
+  %11 = bitcast i8** %10 to i64*
+  store i64 %9, i64* %11, align 8
+  %12 = load i64, i64* %6, align 8
+  %13 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %3, i64 0, i32 32
+  store i64 %12, i64* %13, align 8
+  %14 = tail call zeroext i1 @_ZN5media9Vp8Parser13ParseFrameTagEPNS_14Vp8FrameHeaderE(%"class.media::Vp8Parser"* %0, %"struct.media::Vp8FrameHeader"* %3)
+  br i1 %14, label %15, label %23
+
+15:                                               ; preds = %4
+  %16 = load i64, i64* %8, align 8
+  %17 = load i64, i64* %11, align 8
+  %18 = sub i64 %16, %17
+  %19 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %3, i64 0, i32 34
+  store i64 %18, i64* %19, align 8
+  %20 = tail call zeroext i1 @_ZN5media9Vp8Parser16ParseFrameHeaderEPNS_14Vp8FrameHeaderE(%"class.media::Vp8Parser"* %0, %"struct.media::Vp8FrameHeader"* %3)
+  br i1 %20, label %21, label %23
+
+21:                                               ; preds = %15
+  %22 = tail call zeroext i1 @_ZN5media9Vp8Parser15ParsePartitionsEPNS_14Vp8FrameHeaderE(%"class.media::Vp8Parser"* undef, %"struct.media::Vp8FrameHeader"* %3)
+  br label %23
+
+23:                                               ; preds = %21, %15, %4
+  %24 = phi i1 [ false, %4 ], [ false, %15 ], [ %22, %21 ]
+  ret i1 %24
+}
+
+; Function Attrs: nofree nounwind ssp uwtable
+define hidden zeroext i1 @_ZN5media9Vp8Parser13ParseFrameTagEPNS_14Vp8FrameHeaderE(%"class.media::Vp8Parser"* nocapture, %"struct.media::Vp8FrameHeader"* nocapture) local_unnamed_addr #4 align 2 {
+  %3 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 4
+  %4 = load i64, i64* %3, align 8
+  %5 = icmp ult i64 %4, 3
+  br i1 %5, label %77, label %6
+
+6:                                                ; preds = %2
+  %7 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 3
+  %8 = load i8*, i8** %7, align 8
+  %9 = getelementptr inbounds i8, i8* %8, i64 2
+  %10 = load i8, i8* %9, align 1
+  %11 = zext i8 %10 to i32
+  %12 = shl nuw nsw i32 %11, 16
+  %13 = getelementptr inbounds i8, i8* %8, i64 1
+  %14 = load i8, i8* %13, align 1
+  %15 = zext i8 %14 to i32
+  %16 = shl nuw nsw i32 %15, 8
+  %17 = or i32 %16, %12
+  %18 = load i8, i8* %8, align 1
+  %19 = zext i8 %18 to i32
+  %20 = or i32 %17, %19
+  %21 = and i32 %19, 1
+  %22 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 0
+  store i32 %21, i32* %22, align 8
+  %23 = lshr i8 %18, 1
+  %24 = and i8 %23, 3
+  %25 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 1
+  store i8 %24, i8* %25, align 4
+  %26 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 2
+  %27 = lshr i8 %18, 3
+  %28 = and i8 %27, 1
+  store i8 %28, i8* %26, align 1
+  %29 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 3
+  %30 = lshr i8 %18, 4
+  %31 = and i8 %30, 1
+  store i8 %31, i8* %29, align 2
+  %32 = lshr i32 %20, 5
+  %33 = zext i32 %32 to i64
+  %34 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 5
+  store i64 %33, i64* %34, align 8
+  %35 = load i8*, i8** %7, align 8
+  %36 = getelementptr inbounds i8, i8* %35, i64 3
+  store i8* %36, i8** %7, align 8
+  %37 = load i64, i64* %3, align 8
+  %38 = add i64 %37, -3
+  store i64 %38, i64* %3, align 8
+  %39 = load i32, i32* %22, align 8
+  %40 = icmp eq i32 %39, 0
+  br i1 %40, label %41, label %77
+
+41:                                               ; preds = %6
+  %42 = icmp ult i64 %38, 7
+  br i1 %42, label %77, label %43
+
+43:                                               ; preds = %41
+  %44 = tail call i32 @bcmp(i8* %36, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @_ZZN5media9Vp8Parser13ParseFrameTagEPNS_14Vp8FrameHeaderEE13kVp8StartCode, i64 0, i64 0), i64 3)
+  %45 = icmp eq i32 %44, 0
+  br i1 %45, label %46, label %77
+
+46:                                               ; preds = %43
+  %47 = getelementptr inbounds i8, i8* %35, i64 6
+  store i8* %47, i8** %7, align 8
+  %48 = add i64 %37, -6
+  store i64 %48, i64* %3, align 8
+  %49 = getelementptr inbounds i8, i8* %35, i64 7
+  %50 = load i8, i8* %49, align 1
+  %51 = zext i8 %50 to i16
+  %52 = shl nuw i16 %51, 8
+  %53 = load i8, i8* %47, align 1
+  %54 = zext i8 %53 to i16
+  %55 = and i16 %52, 16128
+  %56 = or i16 %55, %54
+  %57 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 6
+  store i16 %56, i16* %57, align 8
+  %58 = lshr i8 %50, 6
+  %59 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 7
+  store i8 %58, i8* %59, align 2
+  %60 = load i8*, i8** %7, align 8
+  %61 = getelementptr inbounds i8, i8* %60, i64 3
+  %62 = load i8, i8* %61, align 1
+  %63 = zext i8 %62 to i16
+  %64 = shl nuw i16 %63, 8
+  %65 = getelementptr inbounds i8, i8* %60, i64 2
+  %66 = load i8, i8* %65, align 1
+  %67 = zext i8 %66 to i16
+  %68 = and i16 %64, 16128
+  %69 = or i16 %68, %67
+  %70 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 9
+  store i16 %69, i16* %70, align 4
+  %71 = lshr i8 %62, 6
+  %72 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 10
+  store i8 %71, i8* %72, align 2
+  %73 = load i8*, i8** %7, align 8
+  %74 = getelementptr inbounds i8, i8* %73, i64 4
+  store i8* %74, i8** %7, align 8
+  %75 = load i64, i64* %3, align 8
+  %76 = add i64 %75, -4
+  store i64 %76, i64* %3, align 8
+  br label %77
+
+77:                                               ; preds = %43, %41, %46, %6, %2
+  %78 = phi i1 [ false, %2 ], [ false, %43 ], [ false, %41 ], [ true, %46 ], [ true, %6 ]
+  ret i1 %78
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN5media9Vp8Parser16ParseFrameHeaderEPNS_14Vp8FrameHeaderE(%"class.media::Vp8Parser"*, %"struct.media::Vp8FrameHeader"*) local_unnamed_addr #0 align 2 {
+  %3 = alloca i32, align 4
+  %4 = alloca i32, align 4
+  %5 = alloca i32, align 4
+  %6 = alloca i32, align 4
+  %7 = alloca i32, align 4
+  %8 = alloca i32, align 4
+  %9 = alloca i32, align 4
+  %10 = alloca i32, align 4
+  %11 = alloca i32, align 4
+  %12 = alloca i32, align 4
+  %13 = alloca i32, align 4
+  %14 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 5
+  %15 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 3
+  %16 = load i8*, i8** %15, align 8
+  %17 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 4
+  %18 = load i64, i64* %17, align 8
+  %19 = tail call zeroext i1 @_ZN5media14Vp8BoolDecoder10InitializeEPKhm(%"class.media::Vp8BoolDecoder"* %14, i8* %16, i64 %18) #7
+  br i1 %19, label %20, label %178
+
+20:                                               ; preds = %2
+  %21 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 0
+  %22 = load i32, i32* %21, align 8
+  %23 = icmp eq i32 %22, 0
+  br i1 %23, label %24, label %35
+
+24:                                               ; preds = %20
+  %25 = bitcast i32* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %25) #7
+  store i32 -1431655766, i32* %3, align 4
+  %26 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %14, i64 1, i32* nonnull %3) #7
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %25) #7
+  br i1 %26, label %27, label %178
+
+27:                                               ; preds = %24
+  %28 = bitcast i32* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %28) #7
+  store i32 -1431655766, i32* %4, align 4
+  %29 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %14, i64 1, i32* nonnull %4) #7
+  %30 = load i32, i32* %4, align 4
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %28) #7
+  br i1 %29, label %31, label %178
+
+31:                                               ; preds = %27
+  %32 = icmp eq i32 %30, 1
+  %33 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 39
+  %34 = zext i1 %32 to i8
+  store i8 %34, i8* %33, align 1
+  br label %37
+
+35:                                               ; preds = %20
+  %36 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 39
+  store i8 0, i8* %36, align 1
+  br label %37
+
+37:                                               ; preds = %31, %35
+  %38 = call zeroext i1 @_ZN5media9Vp8Parser23ParseSegmentationHeaderEb(%"class.media::Vp8Parser"* %0, i1 zeroext %23)
+  br i1 %38, label %39, label %178
+
+39:                                               ; preds = %37
+  %40 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 12, i32 0
+  %41 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 0
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %40, i8* align 4 %41, i64 20, i1 false)
+  %42 = call zeroext i1 @_ZN5media9Vp8Parser21ParseLoopFilterHeaderEb(%"class.media::Vp8Parser"* %0, i1 zeroext %23)
+  br i1 %42, label %43, label %178
+
+43:                                               ; preds = %39
+  %44 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 1
+  %45 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 13
+  %46 = bitcast %"struct.media::Vp8LoopFilterHeader"* %45 to i8*
+  %47 = bitcast %"struct.media::Vp8LoopFilterHeader"* %44 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %46, i8* align 4 %47, i64 16, i1 false)
+  %48 = bitcast i32* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %48) #7
+  store i32 -1431655766, i32* %5, align 4
+  %49 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %14, i64 2, i32* nonnull %5) #7
+  %50 = load i32, i32* %5, align 4
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %48) #7
+  br i1 %49, label %51, label %178
+
+51:                                               ; preds = %43
+  %52 = zext i32 %50 to i64
+  %53 = shl i64 1, %52
+  %54 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 16
+  store i64 %53, i64* %54, align 8
+  %55 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 14
+  %56 = call zeroext i1 @_ZN5media9Vp8Parser23ParseQuantizationHeaderEPNS_21Vp8QuantizationHeaderE(%"class.media::Vp8Parser"* %0, %"struct.media::Vp8QuantizationHeader"* %55)
+  br i1 %56, label %57, label %178
+
+57:                                               ; preds = %51
+  br i1 %23, label %58, label %61
+
+58:                                               ; preds = %57
+  %59 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 18
+  %60 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %14, i8* %59) #7
+  br i1 %60, label %105, label %178
+
+61:                                               ; preds = %57
+  %62 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 19
+  %63 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %14, i8* %62) #7
+  br i1 %63, label %64, label %178
+
+64:                                               ; preds = %61
+  %65 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 20
+  %66 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %14, i8* %65) #7
+  br i1 %66, label %67, label %178
+
+67:                                               ; preds = %64
+  %68 = load i8, i8* %62, align 2, !range !2
+  %69 = icmp eq i8 %68, 0
+  br i1 %69, label %70, label %76
+
+70:                                               ; preds = %67
+  %71 = bitcast i32* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %71) #7
+  store i32 -1431655766, i32* %6, align 4
+  %72 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %14, i64 2, i32* nonnull %6) #7
+  %73 = load i32, i32* %6, align 4
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %71) #7
+  br i1 %72, label %74, label %178
+
+74:                                               ; preds = %70
+  %75 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 21
+  store i32 %73, i32* %75, align 8
+  br label %76
+
+76:                                               ; preds = %67, %74
+  %77 = load i8, i8* %65, align 1, !range !2
+  %78 = icmp eq i8 %77, 0
+  br i1 %78, label %79, label %85
+
+79:                                               ; preds = %76
+  %80 = bitcast i32* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %80) #7
+  store i32 -1431655766, i32* %7, align 4
+  %81 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %14, i64 2, i32* nonnull %7) #7
+  %82 = load i32, i32* %7, align 4
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %80) #7
+  br i1 %81, label %83, label %178
+
+83:                                               ; preds = %79
+  %84 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 22
+  store i32 %82, i32* %84, align 4
+  br label %85
+
+85:                                               ; preds = %76, %83
+  %86 = bitcast i32* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %86) #7
+  store i32 -1431655766, i32* %8, align 4
+  %87 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %14, i64 1, i32* nonnull %8) #7
+  br i1 %87, label %89, label %88
+
+88:                                               ; preds = %85
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %86) #7
+  br label %178
+
+89:                                               ; preds = %85
+  %90 = load i32, i32* %8, align 4
+  %91 = trunc i32 %90 to i8
+  %92 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 23
+  store i8 %91, i8* %92, align 8
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %86) #7
+  %93 = bitcast i32* %9 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %93) #7
+  store i32 -1431655766, i32* %9, align 4
+  %94 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %14, i64 1, i32* nonnull %9) #7
+  br i1 %94, label %96, label %95
+
+95:                                               ; preds = %89
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %93) #7
+  br label %178
+
+96:                                               ; preds = %89
+  %97 = load i32, i32* %9, align 4
+  %98 = trunc i32 %97 to i8
+  %99 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 24
+  store i8 %98, i8* %99, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %93) #7
+  %100 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 18
+  %101 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %14, i8* %100) #7
+  br i1 %101, label %102, label %178
+
+102:                                              ; preds = %96
+  %103 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 25
+  %104 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %14, i8* %103) #7
+  br i1 %104, label %111, label %178
+
+105:                                              ; preds = %58
+  %106 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 2, i32 0, i64 0, i64 0, i64 0, i64 0
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %106, i8* align 16 getelementptr inbounds ([4 x [8 x [3 x [11 x i8]]]], [4 x [8 x [3 x [11 x i8]]]]* @_ZN5mediaL18kDefaultCoeffProbsE, i64 0, i64 0, i64 0, i64 0, i64 0), i64 1056, i1 false) #7
+  %107 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 2, i32 3, i64 0, i64 0
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %107, i8* align 16 getelementptr inbounds ([2 x [19 x i8]], [2 x [19 x i8]]* @_ZN5mediaL15kDefaultMVProbsE, i64 0, i64 0, i64 0), i64 38, i1 false) #7
+  %108 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 2, i32 1, i64 0
+  %109 = bitcast i8* %108 to i32*
+  store i32 629954160, i32* %109, align 4
+  %110 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 2, i32 2, i64 0
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %110, i8* align 1 getelementptr inbounds ([3 x i8], [3 x i8]* @_ZN5mediaL19kDefaultUVModeProbsE, i64 0, i64 0), i64 3, i1 false) #7
+  br label %111
+
+111:                                              ; preds = %102, %105
+  %112 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 17
+  %113 = getelementptr inbounds %"struct.media::Vp8EntropyHeader", %"struct.media::Vp8EntropyHeader"* %112, i64 0, i32 0, i64 0, i64 0, i64 0, i64 0
+  %114 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 2, i32 0, i64 0, i64 0, i64 0, i64 0
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %113, i8* align 1 %114, i64 1101, i1 false)
+  %115 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 18
+  %116 = load i8, i8* %115, align 1, !range !2
+  %117 = icmp ne i8 %116, 0
+  %118 = call zeroext i1 @_ZN5media9Vp8Parser15ParseTokenProbsEPNS_16Vp8EntropyHeaderEb(%"class.media::Vp8Parser"* %0, %"struct.media::Vp8EntropyHeader"* %112, i1 zeroext %117)
+  br i1 %118, label %119, label %178
+
+119:                                              ; preds = %111
+  %120 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 26
+  %121 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %14, i8* %120) #7
+  br i1 %121, label %122, label %178
+
+122:                                              ; preds = %119
+  %123 = load i8, i8* %120, align 1, !range !2
+  %124 = icmp eq i8 %123, 0
+  br i1 %124, label %133, label %125
+
+125:                                              ; preds = %122
+  %126 = bitcast i32* %10 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %126) #7
+  store i32 -1431655766, i32* %10, align 4
+  %127 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %14, i64 8, i32* nonnull %10) #7
+  br i1 %127, label %128, label %132
+
+128:                                              ; preds = %125
+  %129 = load i32, i32* %10, align 4
+  %130 = trunc i32 %129 to i8
+  %131 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 27
+  store i8 %130, i8* %131, align 4
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %126) #7
+  br label %133
+
+132:                                              ; preds = %125
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %126) #7
+  br label %178
+
+133:                                              ; preds = %128, %122
+  br i1 %23, label %156, label %134
+
+134:                                              ; preds = %133
+  %135 = bitcast i32* %11 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %135) #7
+  store i32 -1431655766, i32* %11, align 4
+  %136 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %14, i64 8, i32* nonnull %11) #7
+  br i1 %136, label %137, label %143
+
+137:                                              ; preds = %134
+  %138 = load i32, i32* %11, align 4
+  %139 = trunc i32 %138 to i8
+  %140 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 28
+  store i8 %139, i8* %140, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %135) #7
+  %141 = bitcast i32* %12 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %141) #7
+  store i32 -1431655766, i32* %12, align 4
+  %142 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %14, i64 8, i32* nonnull %12) #7
+  br i1 %142, label %144, label %150
+
+143:                                              ; preds = %134
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %135) #7
+  br label %178
+
+144:                                              ; preds = %137
+  %145 = load i32, i32* %12, align 4
+  %146 = trunc i32 %145 to i8
+  %147 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 29
+  store i8 %146, i8* %147, align 2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %141) #7
+  %148 = bitcast i32* %13 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %148) #7
+  store i32 -1431655766, i32* %13, align 4
+  %149 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %14, i64 8, i32* nonnull %13) #7
+  br i1 %149, label %151, label %155
+
+150:                                              ; preds = %137
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %141) #7
+  br label %178
+
+151:                                              ; preds = %144
+  %152 = load i32, i32* %13, align 4
+  %153 = trunc i32 %152 to i8
+  %154 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 30
+  store i8 %153, i8* %154, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %148) #7
+  br label %156
+
+155:                                              ; preds = %144
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %148) #7
+  br label %178
+
+156:                                              ; preds = %151, %133
+  %157 = load i8, i8* %115, align 1, !range !2
+  %158 = icmp ne i8 %157, 0
+  %159 = call zeroext i1 @_ZN5media9Vp8Parser15ParseIntraProbsEPNS_16Vp8EntropyHeaderEbb(%"class.media::Vp8Parser"* %0, %"struct.media::Vp8EntropyHeader"* %112, i1 zeroext %158, i1 zeroext %23)
+  br i1 %159, label %160, label %178
+
+160:                                              ; preds = %156
+  br i1 %23, label %165, label %161
+
+161:                                              ; preds = %160
+  %162 = load i8, i8* %115, align 1, !range !2
+  %163 = icmp ne i8 %162, 0
+  %164 = call zeroext i1 @_ZN5media9Vp8Parser12ParseMVProbsEPNS_16Vp8EntropyHeaderEb(%"class.media::Vp8Parser"* %0, %"struct.media::Vp8EntropyHeader"* %112, i1 zeroext %163)
+  br i1 %164, label %165, label %178
+
+165:                                              ; preds = %161, %160
+  %166 = call i64 @_ZN5media14Vp8BoolDecoder9BitOffsetEv(%"class.media::Vp8BoolDecoder"* %14) #7
+  %167 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 35
+  store i64 %166, i64* %167, align 8
+  %168 = call zeroext i8 @_ZN5media14Vp8BoolDecoder8GetRangeEv(%"class.media::Vp8BoolDecoder"* %14) #7
+  %169 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 36
+  store i8 %168, i8* %169, align 8
+  %170 = call zeroext i8 @_ZN5media14Vp8BoolDecoder9GetBottomEv(%"class.media::Vp8BoolDecoder"* %14) #7
+  %171 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 37
+  store i8 %170, i8* %171, align 1
+  %172 = call i64 @_ZN5media14Vp8BoolDecoder9BitOffsetEv(%"class.media::Vp8BoolDecoder"* %14) #7
+  %173 = trunc i64 %172 to i8
+  %174 = add i8 %173, 7
+  %175 = and i8 %174, 7
+  %176 = xor i8 %175, 7
+  %177 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 38
+  store i8 %176, i8* %177, align 2
+  br label %178
+
+178:                                              ; preds = %70, %79, %24, %27, %102, %96, %88, %95, %37, %39, %161, %156, %155, %150, %143, %132, %119, %111, %64, %61, %58, %51, %43, %165, %2
+  %179 = phi i1 [ false, %2 ], [ false, %37 ], [ false, %39 ], [ true, %165 ], [ false, %155 ], [ false, %150 ], [ false, %143 ], [ false, %132 ], [ false, %43 ], [ false, %51 ], [ false, %58 ], [ false, %61 ], [ false, %64 ], [ false, %111 ], [ false, %119 ], [ false, %156 ], [ false, %161 ], [ false, %95 ], [ false, %88 ], [ false, %96 ], [ false, %102 ], [ false, %27 ], [ false, %24 ], [ false, %79 ], [ false, %70 ]
+  ret i1 %179
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN5media9Vp8Parser15ParsePartitionsEPNS_14Vp8FrameHeaderE(%"class.media::Vp8Parser"* nocapture readnone, %"struct.media::Vp8FrameHeader"* nocapture) local_unnamed_addr #0 align 2 {
+  %3 = alloca %"class.logging::CheckOpResult", align 8
+  %4 = alloca %"class.logging::CheckOpResult", align 8
+  %5 = alloca %"class.logging::CheckOpResult", align 8
+  %6 = alloca %"class.logging::CheckError", align 8
+  %7 = alloca %"class.logging::CheckOpResult", align 8
+  %8 = alloca %"class.logging::CheckError", align 8
+  %9 = bitcast %"class.logging::CheckOpResult"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %9) #7
+  %10 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %5, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %10, align 8
+  %11 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 16
+  %12 = load i64, i64* %11, align 8
+  %13 = bitcast %"class.logging::CheckOpResult"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %13)
+  %14 = icmp eq i64 %12, 0
+  br i1 %14, label %16, label %15
+
+15:                                               ; preds = %2
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %13)
+  store i8* null, i8** %10, align 8
+  br label %25
+
+16:                                               ; preds = %2
+  %17 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 0) #7
+  %18 = tail call i8* @_ZN7logging15CheckOpValueStrEj(i32 1) #7
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %4, i8* getelementptr inbounds ([34 x i8], [34 x i8]* @.str, i64 0, i64 0), i8* %17, i8* %18) #7
+  %19 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %4, i64 0, i32 0
+  %20 = load i8*, i8** %19, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %13)
+  store i8* %20, i8** %10, align 8
+  %21 = icmp eq i8* %20, null
+  br i1 %21, label %25, label %22
+
+22:                                               ; preds = %16
+  %23 = bitcast %"class.logging::CheckError"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %23) #7
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %6, i8* getelementptr inbounds ([34 x i8], [34 x i8]* @.str.1, i64 0, i64 0), i32 835, %"class.logging::CheckOpResult"* nonnull %5) #7
+  %24 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %6) #7
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %6) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %23) #7
+  br label %25
+
+25:                                               ; preds = %15, %16, %22
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %9) #7
+  %26 = bitcast %"class.logging::CheckOpResult"* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %26) #7
+  %27 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %7, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %27, align 8
+  %28 = load i64, i64* %11, align 8
+  %29 = bitcast %"class.logging::CheckOpResult"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %29)
+  %30 = icmp ugt i64 %28, 8
+  br i1 %30, label %32, label %31
+
+31:                                               ; preds = %25
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %29)
+  store i8* null, i8** %27, align 8
+  br label %41
+
+32:                                               ; preds = %25
+  %33 = call i8* @_ZN7logging15CheckOpValueStrEm(i64 %28) #7
+  %34 = call i8* @_ZN7logging15CheckOpValueStrEm(i64 8) #7
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %3, i8* getelementptr inbounds ([49 x i8], [49 x i8]* @.str.2, i64 0, i64 0), i8* %33, i8* %34) #7
+  %35 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %3, i64 0, i32 0
+  %36 = load i8*, i8** %35, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %29)
+  store i8* %36, i8** %27, align 8
+  %37 = icmp eq i8* %36, null
+  br i1 %37, label %41, label %38
+
+38:                                               ; preds = %32
+  %39 = bitcast %"class.logging::CheckError"* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %39) #7
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %8, i8* getelementptr inbounds ([34 x i8], [34 x i8]* @.str.1, i64 0, i64 0), i32 836, %"class.logging::CheckOpResult"* nonnull %7) #7
+  %40 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %8) #7
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %8) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %39) #7
+  br label %41
+
+41:                                               ; preds = %31, %32, %38
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %26) #7
+  %42 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 34
+  %43 = load i64, i64* %42, align 8
+  %44 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 5
+  %45 = load i64, i64* %44, align 8
+  %46 = load i64, i64* %11, align 8
+  %47 = mul i64 %46, 3
+  %48 = add i64 %43, -3
+  %49 = add i64 %48, %45
+  %50 = add i64 %49, %47
+  %51 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 32
+  %52 = load i64, i64* %51, align 8
+  %53 = icmp ult i64 %52, %50
+  br i1 %53, label %91, label %54
+
+54:                                               ; preds = %41
+  %55 = sub i64 %52, %50
+  %56 = icmp eq i64 %46, 1
+  br i1 %56, label %87, label %57
+
+57:                                               ; preds = %54
+  %58 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 31
+  %59 = load i8*, i8** %58, align 8
+  %60 = getelementptr inbounds i8, i8* %59, i64 %43
+  %61 = getelementptr inbounds i8, i8* %60, i64 %45
+  br label %62
+
+62:                                               ; preds = %57, %80
+  %63 = phi i64 [ %83, %80 ], [ 0, %57 ]
+  %64 = phi i8* [ %82, %80 ], [ %61, %57 ]
+  %65 = phi i64 [ %81, %80 ], [ %55, %57 ]
+  %66 = getelementptr inbounds i8, i8* %64, i64 2
+  %67 = load i8, i8* %66, align 1
+  %68 = zext i8 %67 to i64
+  %69 = shl nuw nsw i64 %68, 16
+  %70 = getelementptr inbounds i8, i8* %64, i64 1
+  %71 = load i8, i8* %70, align 1
+  %72 = zext i8 %71 to i64
+  %73 = shl nuw nsw i64 %72, 8
+  %74 = or i64 %73, %69
+  %75 = load i8, i8* %64, align 1
+  %76 = zext i8 %75 to i64
+  %77 = or i64 %74, %76
+  %78 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 33, i64 %63
+  store i64 %77, i64* %78, align 8
+  %79 = icmp ult i64 %65, %77
+  br i1 %79, label %91, label %80
+
+80:                                               ; preds = %62
+  %81 = sub i64 %65, %77
+  %82 = getelementptr inbounds i8, i8* %64, i64 3
+  %83 = add nuw i64 %63, 1
+  %84 = load i64, i64* %11, align 8
+  %85 = add i64 %84, -1
+  %86 = icmp ult i64 %83, %85
+  br i1 %86, label %62, label %87
+
+87:                                               ; preds = %80, %54
+  %88 = phi i64 [ %55, %54 ], [ %81, %80 ]
+  %89 = phi i64 [ 0, %54 ], [ %85, %80 ]
+  %90 = getelementptr inbounds %"struct.media::Vp8FrameHeader", %"struct.media::Vp8FrameHeader"* %1, i64 0, i32 33, i64 %89
+  store i64 %88, i64* %90, align 8
+  br label %91
+
+91:                                               ; preds = %62, %87, %41
+  %92 = phi i1 [ false, %41 ], [ true, %87 ], [ false, %62 ]
+  ret i1 %92
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #1
+
+declare zeroext i1 @_ZN5media14Vp8BoolDecoder10InitializeEPKhm(%"class.media::Vp8BoolDecoder"*, i8*, i64) local_unnamed_addr #2
+
+declare zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"*, i64, i32*) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN5media9Vp8Parser23ParseSegmentationHeaderEb(%"class.media::Vp8Parser"*, i1 zeroext) local_unnamed_addr #0 align 2 {
+  %3 = alloca i32, align 4
+  %4 = alloca i8, align 1
+  %5 = alloca i32, align 4
+  %6 = alloca i8, align 1
+  %7 = alloca i32, align 4
+  %8 = alloca i8, align 1
+  %9 = alloca i32, align 4
+  br i1 %1, label %10, label %12
+
+10:                                               ; preds = %2
+  %11 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 0
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %11, i8 0, i64 20, i1 false)
+  br label %12
+
+12:                                               ; preds = %2, %10
+  %13 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 5
+  %14 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 0
+  %15 = tail call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %13, i8* %14) #7
+  br i1 %15, label %16, label %87
+
+16:                                               ; preds = %12
+  %17 = load i8, i8* %14, align 4, !range !2
+  %18 = icmp eq i8 %17, 0
+  br i1 %18, label %87, label %19
+
+19:                                               ; preds = %16
+  %20 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 1
+  %21 = tail call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %13, i8* %20) #7
+  br i1 %21, label %22, label %87
+
+22:                                               ; preds = %19
+  %23 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 2
+  %24 = tail call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %13, i8* %23) #7
+  br i1 %24, label %25, label %87
+
+25:                                               ; preds = %22
+  %26 = load i8, i8* %23, align 2, !range !2
+  %27 = icmp eq i8 %26, 0
+  br i1 %27, label %66, label %28
+
+28:                                               ; preds = %25
+  %29 = bitcast i32* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %29) #7
+  store i32 -1431655766, i32* %3, align 4
+  %30 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %13, i64 1, i32* nonnull %3) #7
+  %31 = load i32, i32* %3, align 4
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %29) #7
+  br i1 %30, label %32, label %87
+
+32:                                               ; preds = %28
+  %33 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 3
+  store i32 %31, i32* %33, align 4
+  %34 = bitcast i32* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %4) #7
+  store i8 -86, i8* %4, align 1
+  %35 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %13, i8* nonnull %4) #7
+  br i1 %35, label %36, label %48
+
+36:                                               ; preds = %32
+  %37 = load i8, i8* %4, align 1, !range !2
+  %38 = icmp eq i8 %37, 0
+  br i1 %38, label %46, label %39
+
+39:                                               ; preds = %36
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %34) #7
+  store i32 -1431655766, i32* %5, align 4
+  %40 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %13, i64 7, i32* nonnull %5) #7
+  br i1 %40, label %41, label %45
+
+41:                                               ; preds = %39
+  %42 = load i32, i32* %5, align 4
+  %43 = trunc i32 %42 to i8
+  %44 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 4, i64 0
+  store i8 %43, i8* %44, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %34) #7
+  br label %49
+
+45:                                               ; preds = %181, %168, %155, %39
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %34) #7
+  br label %48
+
+46:                                               ; preds = %36
+  %47 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 4, i64 0
+  store i8 0, i8* %47, align 1
+  br label %49
+
+48:                                               ; preds = %32, %49, %163, %176, %45
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %4) #7
+  br label %87
+
+49:                                               ; preds = %41, %46
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %4) #7
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %4) #7
+  store i8 -86, i8* %4, align 1
+  %50 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %13, i8* nonnull %4) #7
+  br i1 %50, label %152, label %48
+
+51:                                               ; preds = %189
+  %52 = load i8, i8* %6, align 1, !range !2
+  %53 = icmp eq i8 %52, 0
+  br i1 %53, label %61, label %54
+
+54:                                               ; preds = %51
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %190) #7
+  store i32 -1431655766, i32* %7, align 4
+  %55 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %13, i64 6, i32* nonnull %7) #7
+  br i1 %55, label %56, label %60
+
+56:                                               ; preds = %54
+  %57 = load i32, i32* %7, align 4
+  %58 = trunc i32 %57 to i8
+  %59 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 5, i64 0
+  store i8 %58, i8* %59, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %190) #7
+  br label %63
+
+60:                                               ; preds = %143, %130, %117, %54
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %190) #7
+  br label %65
+
+61:                                               ; preds = %51
+  %62 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 5, i64 0
+  store i8 0, i8* %62, align 1
+  br label %63
+
+63:                                               ; preds = %56, %61
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %6) #7
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %6) #7
+  store i8 -86, i8* %6, align 1
+  %64 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %13, i8* nonnull %6) #7
+  br i1 %64, label %114, label %65
+
+65:                                               ; preds = %189, %63, %125, %138, %60
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %6) #7
+  br label %87
+
+66:                                               ; preds = %151, %25
+  %67 = load i8, i8* %20, align 1, !range !2
+  %68 = icmp eq i8 %67, 0
+  br i1 %68, label %87, label %69
+
+69:                                               ; preds = %66
+  %70 = bitcast i32* %9 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %8) #7
+  store i8 -86, i8* %8, align 1
+  %71 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %13, i8* nonnull %8) #7
+  br i1 %71, label %72, label %86
+
+72:                                               ; preds = %69
+  %73 = load i8, i8* %8, align 1, !range !2
+  %74 = icmp eq i8 %73, 0
+  br i1 %74, label %82, label %75
+
+75:                                               ; preds = %72
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %70) #7
+  store i32 -1431655766, i32* %9, align 4
+  %76 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %13, i64 8, i32* nonnull %9) #7
+  br i1 %76, label %77, label %81
+
+77:                                               ; preds = %75
+  %78 = load i32, i32* %9, align 4
+  %79 = trunc i32 %78 to i8
+  %80 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 6, i64 0
+  store i8 %79, i8* %80, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %70) #7
+  br label %84
+
+81:                                               ; preds = %105, %92, %75
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %70) #7
+  br label %86
+
+82:                                               ; preds = %72
+  %83 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 6, i64 0
+  store i8 -1, i8* %83, align 1
+  br label %84
+
+84:                                               ; preds = %77, %82
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %8) #7
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %8) #7
+  store i8 -86, i8* %8, align 1
+  %85 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %13, i8* nonnull %8) #7
+  br i1 %85, label %89, label %86
+
+86:                                               ; preds = %69, %84, %100, %81
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %8) #7
+  br label %87
+
+87:                                               ; preds = %113, %28, %65, %48, %66, %86, %22, %19, %16, %12
+  %88 = phi i1 [ false, %86 ], [ false, %12 ], [ true, %16 ], [ false, %19 ], [ false, %22 ], [ true, %66 ], [ false, %48 ], [ false, %65 ], [ false, %28 ], [ true, %113 ]
+  ret i1 %88
+
+89:                                               ; preds = %84
+  %90 = load i8, i8* %8, align 1, !range !2
+  %91 = icmp eq i8 %90, 0
+  br i1 %91, label %98, label %92
+
+92:                                               ; preds = %89
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %70) #7
+  store i32 -1431655766, i32* %9, align 4
+  %93 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %13, i64 8, i32* nonnull %9) #7
+  br i1 %93, label %94, label %81
+
+94:                                               ; preds = %92
+  %95 = load i32, i32* %9, align 4
+  %96 = trunc i32 %95 to i8
+  %97 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 6, i64 1
+  store i8 %96, i8* %97, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %70) #7
+  br label %100
+
+98:                                               ; preds = %89
+  %99 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 6, i64 1
+  store i8 -1, i8* %99, align 1
+  br label %100
+
+100:                                              ; preds = %98, %94
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %8) #7
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %8) #7
+  store i8 -86, i8* %8, align 1
+  %101 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %13, i8* nonnull %8) #7
+  br i1 %101, label %102, label %86
+
+102:                                              ; preds = %100
+  %103 = load i8, i8* %8, align 1, !range !2
+  %104 = icmp eq i8 %103, 0
+  br i1 %104, label %111, label %105
+
+105:                                              ; preds = %102
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %70) #7
+  store i32 -1431655766, i32* %9, align 4
+  %106 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %13, i64 8, i32* nonnull %9) #7
+  br i1 %106, label %107, label %81
+
+107:                                              ; preds = %105
+  %108 = load i32, i32* %9, align 4
+  %109 = trunc i32 %108 to i8
+  %110 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 6, i64 2
+  store i8 %109, i8* %110, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %70) #7
+  br label %113
+
+111:                                              ; preds = %102
+  %112 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 6, i64 2
+  store i8 -1, i8* %112, align 1
+  br label %113
+
+113:                                              ; preds = %111, %107
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %8) #7
+  br label %87
+
+114:                                              ; preds = %63
+  %115 = load i8, i8* %6, align 1, !range !2
+  %116 = icmp eq i8 %115, 0
+  br i1 %116, label %123, label %117
+
+117:                                              ; preds = %114
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %190) #7
+  store i32 -1431655766, i32* %7, align 4
+  %118 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %13, i64 6, i32* nonnull %7) #7
+  br i1 %118, label %119, label %60
+
+119:                                              ; preds = %117
+  %120 = load i32, i32* %7, align 4
+  %121 = trunc i32 %120 to i8
+  %122 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 5, i64 1
+  store i8 %121, i8* %122, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %190) #7
+  br label %125
+
+123:                                              ; preds = %114
+  %124 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 5, i64 1
+  store i8 0, i8* %124, align 1
+  br label %125
+
+125:                                              ; preds = %123, %119
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %6) #7
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %6) #7
+  store i8 -86, i8* %6, align 1
+  %126 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %13, i8* nonnull %6) #7
+  br i1 %126, label %127, label %65
+
+127:                                              ; preds = %125
+  %128 = load i8, i8* %6, align 1, !range !2
+  %129 = icmp eq i8 %128, 0
+  br i1 %129, label %136, label %130
+
+130:                                              ; preds = %127
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %190) #7
+  store i32 -1431655766, i32* %7, align 4
+  %131 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %13, i64 6, i32* nonnull %7) #7
+  br i1 %131, label %132, label %60
+
+132:                                              ; preds = %130
+  %133 = load i32, i32* %7, align 4
+  %134 = trunc i32 %133 to i8
+  %135 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 5, i64 2
+  store i8 %134, i8* %135, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %190) #7
+  br label %138
+
+136:                                              ; preds = %127
+  %137 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 5, i64 2
+  store i8 0, i8* %137, align 1
+  br label %138
+
+138:                                              ; preds = %136, %132
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %6) #7
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %6) #7
+  store i8 -86, i8* %6, align 1
+  %139 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %13, i8* nonnull %6) #7
+  br i1 %139, label %140, label %65
+
+140:                                              ; preds = %138
+  %141 = load i8, i8* %6, align 1, !range !2
+  %142 = icmp eq i8 %141, 0
+  br i1 %142, label %149, label %143
+
+143:                                              ; preds = %140
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %190) #7
+  store i32 -1431655766, i32* %7, align 4
+  %144 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %13, i64 6, i32* nonnull %7) #7
+  br i1 %144, label %145, label %60
+
+145:                                              ; preds = %143
+  %146 = load i32, i32* %7, align 4
+  %147 = trunc i32 %146 to i8
+  %148 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 5, i64 3
+  store i8 %147, i8* %148, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %190) #7
+  br label %151
+
+149:                                              ; preds = %140
+  %150 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 5, i64 3
+  store i8 0, i8* %150, align 1
+  br label %151
+
+151:                                              ; preds = %149, %145
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %6) #7
+  br label %66
+
+152:                                              ; preds = %49
+  %153 = load i8, i8* %4, align 1, !range !2
+  %154 = icmp eq i8 %153, 0
+  br i1 %154, label %161, label %155
+
+155:                                              ; preds = %152
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %34) #7
+  store i32 -1431655766, i32* %5, align 4
+  %156 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %13, i64 7, i32* nonnull %5) #7
+  br i1 %156, label %157, label %45
+
+157:                                              ; preds = %155
+  %158 = load i32, i32* %5, align 4
+  %159 = trunc i32 %158 to i8
+  %160 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 4, i64 1
+  store i8 %159, i8* %160, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %34) #7
+  br label %163
+
+161:                                              ; preds = %152
+  %162 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 4, i64 1
+  store i8 0, i8* %162, align 1
+  br label %163
+
+163:                                              ; preds = %161, %157
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %4) #7
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %4) #7
+  store i8 -86, i8* %4, align 1
+  %164 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %13, i8* nonnull %4) #7
+  br i1 %164, label %165, label %48
+
+165:                                              ; preds = %163
+  %166 = load i8, i8* %4, align 1, !range !2
+  %167 = icmp eq i8 %166, 0
+  br i1 %167, label %174, label %168
+
+168:                                              ; preds = %165
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %34) #7
+  store i32 -1431655766, i32* %5, align 4
+  %169 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %13, i64 7, i32* nonnull %5) #7
+  br i1 %169, label %170, label %45
+
+170:                                              ; preds = %168
+  %171 = load i32, i32* %5, align 4
+  %172 = trunc i32 %171 to i8
+  %173 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 4, i64 2
+  store i8 %172, i8* %173, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %34) #7
+  br label %176
+
+174:                                              ; preds = %165
+  %175 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 4, i64 2
+  store i8 0, i8* %175, align 1
+  br label %176
+
+176:                                              ; preds = %174, %170
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %4) #7
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %4) #7
+  store i8 -86, i8* %4, align 1
+  %177 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %13, i8* nonnull %4) #7
+  br i1 %177, label %178, label %48
+
+178:                                              ; preds = %176
+  %179 = load i8, i8* %4, align 1, !range !2
+  %180 = icmp eq i8 %179, 0
+  br i1 %180, label %187, label %181
+
+181:                                              ; preds = %178
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %34) #7
+  store i32 -1431655766, i32* %5, align 4
+  %182 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %13, i64 7, i32* nonnull %5) #7
+  br i1 %182, label %183, label %45
+
+183:                                              ; preds = %181
+  %184 = load i32, i32* %5, align 4
+  %185 = trunc i32 %184 to i8
+  %186 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 4, i64 3
+  store i8 %185, i8* %186, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %34) #7
+  br label %189
+
+187:                                              ; preds = %178
+  %188 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 0, i32 4, i64 3
+  store i8 0, i8* %188, align 1
+  br label %189
+
+189:                                              ; preds = %187, %183
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %4) #7
+  %190 = bitcast i32* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %6) #7
+  store i8 -86, i8* %6, align 1
+  %191 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %13, i8* nonnull %6) #7
+  br i1 %191, label %51, label %65
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN5media9Vp8Parser21ParseLoopFilterHeaderEb(%"class.media::Vp8Parser"*, i1 zeroext) local_unnamed_addr #0 align 2 {
+  %3 = alloca i32, align 4
+  %4 = alloca i32, align 4
+  %5 = alloca i32, align 4
+  %6 = alloca i8, align 1
+  %7 = alloca i32, align 4
+  %8 = alloca i8, align 1
+  %9 = alloca i32, align 4
+  %10 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 1
+  br i1 %1, label %11, label %13
+
+11:                                               ; preds = %2
+  %12 = bitcast %"struct.media::Vp8LoopFilterHeader"* %10 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %12, i8 0, i64 16, i1 false)
+  br label %13
+
+13:                                               ; preds = %11, %2
+  %14 = bitcast i32* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %14) #7
+  store i32 -1431655766, i32* %3, align 4
+  %15 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 5
+  %16 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %15, i64 1, i32* nonnull %3) #7
+  %17 = load i32, i32* %3, align 4
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %14) #7
+  br i1 %16, label %18, label %74
+
+18:                                               ; preds = %13
+  %19 = getelementptr inbounds %"struct.media::Vp8LoopFilterHeader", %"struct.media::Vp8LoopFilterHeader"* %10, i64 0, i32 0
+  store i32 %17, i32* %19, align 4
+  %20 = bitcast i32* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %20) #7
+  store i32 -1431655766, i32* %4, align 4
+  %21 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %15, i64 6, i32* nonnull %4) #7
+  br i1 %21, label %22, label %28
+
+22:                                               ; preds = %18
+  %23 = load i32, i32* %4, align 4
+  %24 = trunc i32 %23 to i8
+  %25 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 1, i32 1
+  store i8 %24, i8* %25, align 4
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %20) #7
+  %26 = bitcast i32* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %26) #7
+  store i32 -1431655766, i32* %5, align 4
+  %27 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %15, i64 3, i32* nonnull %5) #7
+  br i1 %27, label %29, label %35
+
+28:                                               ; preds = %18
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %20) #7
+  br label %74
+
+29:                                               ; preds = %22
+  %30 = load i32, i32* %5, align 4
+  %31 = trunc i32 %30 to i8
+  %32 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 1, i32 2
+  store i8 %31, i8* %32, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %26) #7
+  %33 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 1, i32 3
+  %34 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %15, i8* %33) #7
+  br i1 %34, label %36, label %74
+
+35:                                               ; preds = %22
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %26) #7
+  br label %74
+
+36:                                               ; preds = %29
+  %37 = load i8, i8* %33, align 2, !range !2
+  %38 = icmp eq i8 %37, 0
+  br i1 %38, label %74, label %39
+
+39:                                               ; preds = %36
+  %40 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 1, i32 4
+  %41 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %15, i8* %40) #7
+  br i1 %41, label %42, label %74
+
+42:                                               ; preds = %39
+  %43 = load i8, i8* %40, align 1, !range !2
+  %44 = icmp eq i8 %43, 0
+  br i1 %44, label %74, label %45
+
+45:                                               ; preds = %42
+  %46 = bitcast i32* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %6) #7
+  store i8 -86, i8* %6, align 1
+  %47 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %15, i8* nonnull %6) #7
+  br i1 %47, label %48, label %58
+
+48:                                               ; preds = %45
+  %49 = load i8, i8* %6, align 1, !range !2
+  %50 = icmp eq i8 %49, 0
+  br i1 %50, label %59, label %51
+
+51:                                               ; preds = %48
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %46) #7
+  store i32 -1431655766, i32* %7, align 4
+  %52 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %15, i64 6, i32* nonnull %7) #7
+  br i1 %52, label %53, label %57
+
+53:                                               ; preds = %51
+  %54 = load i32, i32* %7, align 4
+  %55 = trunc i32 %54 to i8
+  %56 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 1, i32 5, i64 0
+  store i8 %55, i8* %56, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %46) #7
+  br label %59
+
+57:                                               ; preds = %133, %122, %111, %51
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %46) #7
+  br label %58
+
+58:                                               ; preds = %45, %59, %117, %128, %57
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %6) #7
+  br label %74
+
+59:                                               ; preds = %53, %48
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %6) #7
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %6) #7
+  store i8 -86, i8* %6, align 1
+  %60 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %15, i8* nonnull %6) #7
+  br i1 %60, label %108, label %58
+
+61:                                               ; preds = %139
+  %62 = load i8, i8* %8, align 1, !range !2
+  %63 = icmp eq i8 %62, 0
+  br i1 %63, label %71, label %64
+
+64:                                               ; preds = %61
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %140) #7
+  store i32 -1431655766, i32* %9, align 4
+  %65 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %15, i64 6, i32* nonnull %9) #7
+  br i1 %65, label %66, label %70
+
+66:                                               ; preds = %64
+  %67 = load i32, i32* %9, align 4
+  %68 = trunc i32 %67 to i8
+  %69 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 1, i32 6, i64 0
+  store i8 %68, i8* %69, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %140) #7
+  br label %71
+
+70:                                               ; preds = %101, %90, %79, %64
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %140) #7
+  br label %73
+
+71:                                               ; preds = %66, %61
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %8) #7
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %8) #7
+  store i8 -86, i8* %8, align 1
+  %72 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %15, i8* nonnull %8) #7
+  br i1 %72, label %76, label %73
+
+73:                                               ; preds = %139, %71, %85, %96, %70
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %8) #7
+  br label %74
+
+74:                                               ; preds = %107, %36, %42, %73, %58, %39, %29, %35, %28, %13
+  %75 = phi i1 [ false, %73 ], [ false, %35 ], [ false, %28 ], [ false, %13 ], [ false, %29 ], [ false, %39 ], [ false, %58 ], [ true, %42 ], [ true, %36 ], [ true, %107 ]
+  ret i1 %75
+
+76:                                               ; preds = %71
+  %77 = load i8, i8* %8, align 1, !range !2
+  %78 = icmp eq i8 %77, 0
+  br i1 %78, label %85, label %79
+
+79:                                               ; preds = %76
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %140) #7
+  store i32 -1431655766, i32* %9, align 4
+  %80 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %15, i64 6, i32* nonnull %9) #7
+  br i1 %80, label %81, label %70
+
+81:                                               ; preds = %79
+  %82 = load i32, i32* %9, align 4
+  %83 = trunc i32 %82 to i8
+  %84 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 1, i32 6, i64 1
+  store i8 %83, i8* %84, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %140) #7
+  br label %85
+
+85:                                               ; preds = %81, %76
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %8) #7
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %8) #7
+  store i8 -86, i8* %8, align 1
+  %86 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %15, i8* nonnull %8) #7
+  br i1 %86, label %87, label %73
+
+87:                                               ; preds = %85
+  %88 = load i8, i8* %8, align 1, !range !2
+  %89 = icmp eq i8 %88, 0
+  br i1 %89, label %96, label %90
+
+90:                                               ; preds = %87
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %140) #7
+  store i32 -1431655766, i32* %9, align 4
+  %91 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %15, i64 6, i32* nonnull %9) #7
+  br i1 %91, label %92, label %70
+
+92:                                               ; preds = %90
+  %93 = load i32, i32* %9, align 4
+  %94 = trunc i32 %93 to i8
+  %95 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 1, i32 6, i64 2
+  store i8 %94, i8* %95, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %140) #7
+  br label %96
+
+96:                                               ; preds = %92, %87
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %8) #7
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %8) #7
+  store i8 -86, i8* %8, align 1
+  %97 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %15, i8* nonnull %8) #7
+  br i1 %97, label %98, label %73
+
+98:                                               ; preds = %96
+  %99 = load i8, i8* %8, align 1, !range !2
+  %100 = icmp eq i8 %99, 0
+  br i1 %100, label %107, label %101
+
+101:                                              ; preds = %98
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %140) #7
+  store i32 -1431655766, i32* %9, align 4
+  %102 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %15, i64 6, i32* nonnull %9) #7
+  br i1 %102, label %103, label %70
+
+103:                                              ; preds = %101
+  %104 = load i32, i32* %9, align 4
+  %105 = trunc i32 %104 to i8
+  %106 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 1, i32 6, i64 3
+  store i8 %105, i8* %106, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %140) #7
+  br label %107
+
+107:                                              ; preds = %103, %98
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %8) #7
+  br label %74
+
+108:                                              ; preds = %59
+  %109 = load i8, i8* %6, align 1, !range !2
+  %110 = icmp eq i8 %109, 0
+  br i1 %110, label %117, label %111
+
+111:                                              ; preds = %108
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %46) #7
+  store i32 -1431655766, i32* %7, align 4
+  %112 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %15, i64 6, i32* nonnull %7) #7
+  br i1 %112, label %113, label %57
+
+113:                                              ; preds = %111
+  %114 = load i32, i32* %7, align 4
+  %115 = trunc i32 %114 to i8
+  %116 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 1, i32 5, i64 1
+  store i8 %115, i8* %116, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %46) #7
+  br label %117
+
+117:                                              ; preds = %113, %108
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %6) #7
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %6) #7
+  store i8 -86, i8* %6, align 1
+  %118 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %15, i8* nonnull %6) #7
+  br i1 %118, label %119, label %58
+
+119:                                              ; preds = %117
+  %120 = load i8, i8* %6, align 1, !range !2
+  %121 = icmp eq i8 %120, 0
+  br i1 %121, label %128, label %122
+
+122:                                              ; preds = %119
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %46) #7
+  store i32 -1431655766, i32* %7, align 4
+  %123 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %15, i64 6, i32* nonnull %7) #7
+  br i1 %123, label %124, label %57
+
+124:                                              ; preds = %122
+  %125 = load i32, i32* %7, align 4
+  %126 = trunc i32 %125 to i8
+  %127 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 1, i32 5, i64 2
+  store i8 %126, i8* %127, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %46) #7
+  br label %128
+
+128:                                              ; preds = %124, %119
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %6) #7
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %6) #7
+  store i8 -86, i8* %6, align 1
+  %129 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %15, i8* nonnull %6) #7
+  br i1 %129, label %130, label %58
+
+130:                                              ; preds = %128
+  %131 = load i8, i8* %6, align 1, !range !2
+  %132 = icmp eq i8 %131, 0
+  br i1 %132, label %139, label %133
+
+133:                                              ; preds = %130
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %46) #7
+  store i32 -1431655766, i32* %7, align 4
+  %134 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %15, i64 6, i32* nonnull %7) #7
+  br i1 %134, label %135, label %57
+
+135:                                              ; preds = %133
+  %136 = load i32, i32* %7, align 4
+  %137 = trunc i32 %136 to i8
+  %138 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 1, i32 5, i64 3
+  store i8 %137, i8* %138, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %46) #7
+  br label %139
+
+139:                                              ; preds = %135, %130
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %6) #7
+  %140 = bitcast i32* %9 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %8) #7
+  store i8 -86, i8* %8, align 1
+  %141 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %15, i8* nonnull %8) #7
+  br i1 %141, label %61, label %73
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN5media9Vp8Parser23ParseQuantizationHeaderEPNS_21Vp8QuantizationHeaderE(%"class.media::Vp8Parser"*, %"struct.media::Vp8QuantizationHeader"* nocapture) local_unnamed_addr #0 align 2 {
+  %3 = alloca i32, align 4
+  %4 = alloca i8, align 1
+  %5 = alloca i32, align 4
+  %6 = alloca i32, align 4
+  %7 = alloca i32, align 4
+  %8 = alloca i32, align 4
+  %9 = alloca i32, align 4
+  %10 = getelementptr inbounds %"struct.media::Vp8QuantizationHeader", %"struct.media::Vp8QuantizationHeader"* %1, i64 0, i32 0
+  tail call void @llvm.memset.p0i8.i64(i8* align 1 %10, i8 0, i64 6, i1 false)
+  %11 = bitcast i32* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %11) #7
+  store i32 -1431655766, i32* %3, align 4
+  %12 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 5
+  %13 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %12, i64 7, i32* nonnull %3) #7
+  br i1 %13, label %14, label %18
+
+14:                                               ; preds = %2
+  %15 = load i32, i32* %3, align 4
+  %16 = trunc i32 %15 to i8
+  store i8 %16, i8* %10, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %11) #7
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %4) #7
+  store i8 -86, i8* %4, align 1
+  %17 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %12, i8* nonnull %4) #7
+  br i1 %17, label %19, label %82
+
+18:                                               ; preds = %2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %11) #7
+  br label %84
+
+19:                                               ; preds = %14
+  %20 = load i8, i8* %4, align 1, !range !2
+  %21 = icmp eq i8 %20, 0
+  br i1 %21, label %30, label %22
+
+22:                                               ; preds = %19
+  %23 = bitcast i32* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %23) #7
+  store i32 -1431655766, i32* %5, align 4
+  %24 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %12, i64 4, i32* nonnull %5) #7
+  br i1 %24, label %25, label %29
+
+25:                                               ; preds = %22
+  %26 = load i32, i32* %5, align 4
+  %27 = trunc i32 %26 to i8
+  %28 = getelementptr inbounds %"struct.media::Vp8QuantizationHeader", %"struct.media::Vp8QuantizationHeader"* %1, i64 0, i32 1
+  store i8 %27, i8* %28, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %23) #7
+  br label %30
+
+29:                                               ; preds = %22
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %23) #7
+  br label %82
+
+30:                                               ; preds = %25, %19
+  %31 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %12, i8* nonnull %4) #7
+  br i1 %31, label %32, label %82
+
+32:                                               ; preds = %30
+  %33 = load i8, i8* %4, align 1, !range !2
+  %34 = icmp eq i8 %33, 0
+  br i1 %34, label %43, label %35
+
+35:                                               ; preds = %32
+  %36 = bitcast i32* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %36) #7
+  store i32 -1431655766, i32* %6, align 4
+  %37 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %12, i64 4, i32* nonnull %6) #7
+  br i1 %37, label %38, label %42
+
+38:                                               ; preds = %35
+  %39 = load i32, i32* %6, align 4
+  %40 = trunc i32 %39 to i8
+  %41 = getelementptr inbounds %"struct.media::Vp8QuantizationHeader", %"struct.media::Vp8QuantizationHeader"* %1, i64 0, i32 2
+  store i8 %40, i8* %41, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %36) #7
+  br label %43
+
+42:                                               ; preds = %35
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %36) #7
+  br label %82
+
+43:                                               ; preds = %38, %32
+  %44 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %12, i8* nonnull %4) #7
+  br i1 %44, label %45, label %82
+
+45:                                               ; preds = %43
+  %46 = load i8, i8* %4, align 1, !range !2
+  %47 = icmp eq i8 %46, 0
+  br i1 %47, label %56, label %48
+
+48:                                               ; preds = %45
+  %49 = bitcast i32* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %49) #7
+  store i32 -1431655766, i32* %7, align 4
+  %50 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %12, i64 4, i32* nonnull %7) #7
+  br i1 %50, label %51, label %55
+
+51:                                               ; preds = %48
+  %52 = load i32, i32* %7, align 4
+  %53 = trunc i32 %52 to i8
+  %54 = getelementptr inbounds %"struct.media::Vp8QuantizationHeader", %"struct.media::Vp8QuantizationHeader"* %1, i64 0, i32 3
+  store i8 %53, i8* %54, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %49) #7
+  br label %56
+
+55:                                               ; preds = %48
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %49) #7
+  br label %82
+
+56:                                               ; preds = %51, %45
+  %57 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %12, i8* nonnull %4) #7
+  br i1 %57, label %58, label %82
+
+58:                                               ; preds = %56
+  %59 = load i8, i8* %4, align 1, !range !2
+  %60 = icmp eq i8 %59, 0
+  br i1 %60, label %69, label %61
+
+61:                                               ; preds = %58
+  %62 = bitcast i32* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %62) #7
+  store i32 -1431655766, i32* %8, align 4
+  %63 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %12, i64 4, i32* nonnull %8) #7
+  br i1 %63, label %64, label %68
+
+64:                                               ; preds = %61
+  %65 = load i32, i32* %8, align 4
+  %66 = trunc i32 %65 to i8
+  %67 = getelementptr inbounds %"struct.media::Vp8QuantizationHeader", %"struct.media::Vp8QuantizationHeader"* %1, i64 0, i32 4
+  store i8 %66, i8* %67, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %62) #7
+  br label %69
+
+68:                                               ; preds = %61
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %62) #7
+  br label %82
+
+69:                                               ; preds = %64, %58
+  %70 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %12, i8* nonnull %4) #7
+  br i1 %70, label %71, label %82
+
+71:                                               ; preds = %69
+  %72 = load i8, i8* %4, align 1, !range !2
+  %73 = icmp eq i8 %72, 0
+  br i1 %73, label %82, label %74
+
+74:                                               ; preds = %71
+  %75 = bitcast i32* %9 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %75) #7
+  store i32 -1431655766, i32* %9, align 4
+  %76 = call zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"* %12, i64 4, i32* nonnull %9) #7
+  br i1 %76, label %77, label %81
+
+77:                                               ; preds = %74
+  %78 = load i32, i32* %9, align 4
+  %79 = trunc i32 %78 to i8
+  %80 = getelementptr inbounds %"struct.media::Vp8QuantizationHeader", %"struct.media::Vp8QuantizationHeader"* %1, i64 0, i32 5
+  store i8 %79, i8* %80, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %75) #7
+  br label %82
+
+81:                                               ; preds = %74
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %75) #7
+  br label %82
+
+82:                                               ; preds = %71, %77, %81, %69, %68, %56, %55, %43, %42, %30, %29, %14
+  %83 = phi i1 [ false, %81 ], [ false, %68 ], [ false, %55 ], [ false, %42 ], [ false, %29 ], [ false, %14 ], [ false, %30 ], [ false, %43 ], [ false, %56 ], [ false, %69 ], [ true, %77 ], [ true, %71 ]
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %4) #7
+  br label %84
+
+84:                                               ; preds = %18, %82
+  %85 = phi i1 [ %83, %82 ], [ false, %18 ]
+  ret i1 %85
+}
+
+declare zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"*, i8*) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media9Vp8Parser10ResetProbsEv(%"class.media::Vp8Parser"* nocapture) local_unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 2, i32 0, i64 0, i64 0, i64 0, i64 0
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %2, i8* align 16 getelementptr inbounds ([4 x [8 x [3 x [11 x i8]]]], [4 x [8 x [3 x [11 x i8]]]]* @_ZN5mediaL18kDefaultCoeffProbsE, i64 0, i64 0, i64 0, i64 0, i64 0), i64 1056, i1 false)
+  %3 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 2, i32 3, i64 0, i64 0
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %3, i8* align 16 getelementptr inbounds ([2 x [19 x i8]], [2 x [19 x i8]]* @_ZN5mediaL15kDefaultMVProbsE, i64 0, i64 0, i64 0), i64 38, i1 false)
+  %4 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 2, i32 1, i64 0
+  %5 = bitcast i8* %4 to i32*
+  store i32 629954160, i32* %5, align 4
+  %6 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 2, i32 2, i64 0
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %6, i8* align 1 getelementptr inbounds ([3 x i8], [3 x i8]* @_ZN5mediaL19kDefaultUVModeProbsE, i64 0, i64 0), i64 3, i1 false)
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN5media9Vp8Parser15ParseTokenProbsEPNS_16Vp8EntropyHeaderEb(%"class.media::Vp8Parser"*, %"struct.media::Vp8EntropyHeader"* nocapture, i1 zeroext) local_unnamed_addr #0 align 2 {
+  %4 = alloca i8, align 1
+  %5 = alloca i32, align 4
+  %6 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 5
+  %7 = bitcast i32* %5 to i8*
+  br label %8
+
+8:                                                ; preds = %31, %3
+  %9 = phi i64 [ 0, %3 ], [ %32, %31 ]
+  br label %10
+
+10:                                               ; preds = %74, %8
+  %11 = phi i64 [ 0, %8 ], [ %75, %74 ]
+  br label %12
+
+12:                                               ; preds = %27, %10
+  %13 = phi i64 [ 0, %10 ], [ %28, %27 ]
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %4) #7
+  store i8 -86, i8* %4, align 1
+  %14 = getelementptr inbounds [4 x [8 x [3 x [11 x i8]]]], [4 x [8 x [3 x [11 x i8]]]]* @_ZN5mediaL17kCoeffUpdateProbsE, i64 0, i64 %9, i64 %11, i64 0, i64 %13
+  %15 = load i8, i8* %14, align 1
+  %16 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPbh(%"class.media::Vp8BoolDecoder"* %6, i8* nonnull %4, i8 zeroext %15) #7
+  br i1 %16, label %17, label %30
+
+17:                                               ; preds = %12
+  %18 = load i8, i8* %4, align 1, !range !2
+  %19 = icmp eq i8 %18, 0
+  br i1 %19, label %27, label %20
+
+20:                                               ; preds = %17
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %7) #7
+  store i32 -1431655766, i32* %5, align 4
+  %21 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %6, i64 8, i32* nonnull %5) #7
+  br i1 %21, label %22, label %26
+
+22:                                               ; preds = %20
+  %23 = load i32, i32* %5, align 4
+  %24 = trunc i32 %23 to i8
+  %25 = getelementptr inbounds %"struct.media::Vp8EntropyHeader", %"struct.media::Vp8EntropyHeader"* %1, i64 0, i32 0, i64 %9, i64 %11, i64 0, i64 %13
+  store i8 %24, i8* %25, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %7) #7
+  br label %27
+
+26:                                               ; preds = %20, %48, %65
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %7) #7
+  br label %30
+
+27:                                               ; preds = %22, %17
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %4) #7
+  %28 = add nuw nsw i64 %13, 1
+  %29 = icmp eq i64 %28, 11
+  br i1 %29, label %40, label %12
+
+30:                                               ; preds = %12, %40, %57, %26
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %4) #7
+  br label %38
+
+31:                                               ; preds = %74
+  %32 = add nuw nsw i64 %9, 1
+  %33 = icmp eq i64 %32, 4
+  br i1 %33, label %34, label %8
+
+34:                                               ; preds = %31
+  br i1 %2, label %35, label %38
+
+35:                                               ; preds = %34
+  %36 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 2, i32 0, i64 0, i64 0, i64 0, i64 0
+  %37 = getelementptr inbounds %"struct.media::Vp8EntropyHeader", %"struct.media::Vp8EntropyHeader"* %1, i64 0, i32 0, i64 0, i64 0, i64 0, i64 0
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %36, i8* align 1 %37, i64 1056, i1 false)
+  br label %38
+
+38:                                               ; preds = %34, %30, %35
+  %39 = phi i1 [ true, %34 ], [ true, %35 ], [ false, %30 ]
+  ret i1 %39
+
+40:                                               ; preds = %27, %54
+  %41 = phi i64 [ %55, %54 ], [ 0, %27 ]
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %4) #7
+  store i8 -86, i8* %4, align 1
+  %42 = getelementptr inbounds [4 x [8 x [3 x [11 x i8]]]], [4 x [8 x [3 x [11 x i8]]]]* @_ZN5mediaL17kCoeffUpdateProbsE, i64 0, i64 %9, i64 %11, i64 1, i64 %41
+  %43 = load i8, i8* %42, align 1
+  %44 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPbh(%"class.media::Vp8BoolDecoder"* %6, i8* nonnull %4, i8 zeroext %43) #7
+  br i1 %44, label %45, label %30
+
+45:                                               ; preds = %40
+  %46 = load i8, i8* %4, align 1, !range !2
+  %47 = icmp eq i8 %46, 0
+  br i1 %47, label %54, label %48
+
+48:                                               ; preds = %45
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %7) #7
+  store i32 -1431655766, i32* %5, align 4
+  %49 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %6, i64 8, i32* nonnull %5) #7
+  br i1 %49, label %50, label %26
+
+50:                                               ; preds = %48
+  %51 = load i32, i32* %5, align 4
+  %52 = trunc i32 %51 to i8
+  %53 = getelementptr inbounds %"struct.media::Vp8EntropyHeader", %"struct.media::Vp8EntropyHeader"* %1, i64 0, i32 0, i64 %9, i64 %11, i64 1, i64 %41
+  store i8 %52, i8* %53, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %7) #7
+  br label %54
+
+54:                                               ; preds = %50, %45
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %4) #7
+  %55 = add nuw nsw i64 %41, 1
+  %56 = icmp eq i64 %55, 11
+  br i1 %56, label %57, label %40
+
+57:                                               ; preds = %54, %71
+  %58 = phi i64 [ %72, %71 ], [ 0, %54 ]
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %4) #7
+  store i8 -86, i8* %4, align 1
+  %59 = getelementptr inbounds [4 x [8 x [3 x [11 x i8]]]], [4 x [8 x [3 x [11 x i8]]]]* @_ZN5mediaL17kCoeffUpdateProbsE, i64 0, i64 %9, i64 %11, i64 2, i64 %58
+  %60 = load i8, i8* %59, align 1
+  %61 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPbh(%"class.media::Vp8BoolDecoder"* %6, i8* nonnull %4, i8 zeroext %60) #7
+  br i1 %61, label %62, label %30
+
+62:                                               ; preds = %57
+  %63 = load i8, i8* %4, align 1, !range !2
+  %64 = icmp eq i8 %63, 0
+  br i1 %64, label %71, label %65
+
+65:                                               ; preds = %62
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %7) #7
+  store i32 -1431655766, i32* %5, align 4
+  %66 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %6, i64 8, i32* nonnull %5) #7
+  br i1 %66, label %67, label %26
+
+67:                                               ; preds = %65
+  %68 = load i32, i32* %5, align 4
+  %69 = trunc i32 %68 to i8
+  %70 = getelementptr inbounds %"struct.media::Vp8EntropyHeader", %"struct.media::Vp8EntropyHeader"* %1, i64 0, i32 0, i64 %9, i64 %11, i64 2, i64 %58
+  store i8 %69, i8* %70, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %7) #7
+  br label %71
+
+71:                                               ; preds = %67, %62
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %4) #7
+  %72 = add nuw nsw i64 %58, 1
+  %73 = icmp eq i64 %72, 11
+  br i1 %73, label %74, label %57
+
+74:                                               ; preds = %71
+  %75 = add nuw nsw i64 %11, 1
+  %76 = icmp eq i64 %75, 8
+  br i1 %76, label %31, label %10
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN5media9Vp8Parser15ParseIntraProbsEPNS_16Vp8EntropyHeaderEbb(%"class.media::Vp8Parser"*, %"struct.media::Vp8EntropyHeader"* nocapture, i1 zeroext, i1 zeroext) local_unnamed_addr #0 align 2 {
+  %5 = alloca i8, align 1
+  %6 = alloca i32, align 4
+  %7 = alloca i8, align 1
+  %8 = alloca i32, align 4
+  br i1 %3, label %9, label %13
+
+9:                                                ; preds = %4
+  %10 = getelementptr inbounds %"struct.media::Vp8EntropyHeader", %"struct.media::Vp8EntropyHeader"* %1, i64 0, i32 1, i64 0
+  %11 = bitcast i8* %10 to i32*
+  store i32 -2136761199, i32* %11, align 1
+  %12 = getelementptr inbounds %"struct.media::Vp8EntropyHeader", %"struct.media::Vp8EntropyHeader"* %1, i64 0, i32 2, i64 0
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %12, i8* align 1 getelementptr inbounds ([3 x i8], [3 x i8]* @_ZN5mediaL20kKeyframeUVModeProbsE, i64 0, i64 0), i64 3, i1 false)
+  br label %53
+
+13:                                               ; preds = %4
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %5) #7
+  store i8 -86, i8* %5, align 1
+  %14 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 5
+  %15 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %14, i8* nonnull %5) #7
+  br i1 %15, label %16, label %49
+
+16:                                               ; preds = %13
+  %17 = load i8, i8* %5, align 1, !range !2
+  %18 = icmp eq i8 %17, 0
+  br i1 %18, label %33, label %19
+
+19:                                               ; preds = %16
+  %20 = bitcast i32* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %20) #7
+  store i32 -1431655766, i32* %6, align 4
+  %21 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %14, i64 8, i32* nonnull %6) #7
+  br i1 %21, label %22, label %27
+
+22:                                               ; preds = %19
+  %23 = load i32, i32* %6, align 4
+  %24 = trunc i32 %23 to i8
+  %25 = getelementptr inbounds %"struct.media::Vp8EntropyHeader", %"struct.media::Vp8EntropyHeader"* %1, i64 0, i32 1, i64 0
+  store i8 %24, i8* %25, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %20) #7
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %20) #7
+  store i32 -1431655766, i32* %6, align 4
+  %26 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %14, i64 8, i32* nonnull %6) #7
+  br i1 %26, label %64, label %27
+
+27:                                               ; preds = %69, %64, %22, %19
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %20) #7
+  br label %49
+
+28:                                               ; preds = %74
+  %29 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 2, i32 1, i64 0
+  %30 = bitcast i8* %25 to i32*
+  %31 = bitcast i8* %29 to i32*
+  %32 = load i32, i32* %30, align 1
+  store i32 %32, i32* %31, align 4
+  br label %33
+
+33:                                               ; preds = %16, %74, %28
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %7) #7
+  store i8 -86, i8* %7, align 1
+  %34 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPb(%"class.media::Vp8BoolDecoder"* %14, i8* nonnull %7) #7
+  br i1 %34, label %35, label %51
+
+35:                                               ; preds = %33
+  %36 = load i8, i8* %7, align 1, !range !2
+  %37 = icmp eq i8 %36, 0
+  br i1 %37, label %50, label %38
+
+38:                                               ; preds = %35
+  %39 = bitcast i32* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %39) #7
+  store i32 -1431655766, i32* %8, align 4
+  %40 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %14, i64 8, i32* nonnull %8) #7
+  br i1 %40, label %42, label %41
+
+41:                                               ; preds = %55, %42, %38
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %39) #7
+  br label %51
+
+42:                                               ; preds = %38
+  %43 = load i32, i32* %8, align 4
+  %44 = trunc i32 %43 to i8
+  %45 = getelementptr inbounds %"struct.media::Vp8EntropyHeader", %"struct.media::Vp8EntropyHeader"* %1, i64 0, i32 2, i64 0
+  store i8 %44, i8* %45, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %39) #7
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %39) #7
+  store i32 -1431655766, i32* %8, align 4
+  %46 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %14, i64 8, i32* nonnull %8) #7
+  br i1 %46, label %55, label %41
+
+47:                                               ; preds = %60
+  %48 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 2, i32 2, i64 0
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %48, i8* align 1 %45, i64 3, i1 false)
+  br label %50
+
+49:                                               ; preds = %27, %13
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %5) #7
+  br label %53
+
+50:                                               ; preds = %35, %47
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %7) #7
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %5) #7
+  br label %53
+
+51:                                               ; preds = %33, %41
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %7) #7
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %5) #7
+  br label %53
+
+52:                                               ; preds = %60
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %7) #7
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %5) #7
+  br label %53
+
+53:                                               ; preds = %9, %50, %52, %51, %49
+  %54 = phi i1 [ false, %49 ], [ false, %51 ], [ true, %52 ], [ true, %50 ], [ true, %9 ]
+  ret i1 %54
+
+55:                                               ; preds = %42
+  %56 = load i32, i32* %8, align 4
+  %57 = trunc i32 %56 to i8
+  %58 = getelementptr inbounds %"struct.media::Vp8EntropyHeader", %"struct.media::Vp8EntropyHeader"* %1, i64 0, i32 2, i64 1
+  store i8 %57, i8* %58, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %39) #7
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %39) #7
+  store i32 -1431655766, i32* %8, align 4
+  %59 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %14, i64 8, i32* nonnull %8) #7
+  br i1 %59, label %60, label %41
+
+60:                                               ; preds = %55
+  %61 = load i32, i32* %8, align 4
+  %62 = trunc i32 %61 to i8
+  %63 = getelementptr inbounds %"struct.media::Vp8EntropyHeader", %"struct.media::Vp8EntropyHeader"* %1, i64 0, i32 2, i64 2
+  store i8 %62, i8* %63, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %39) #7
+  br i1 %2, label %47, label %52
+
+64:                                               ; preds = %22
+  %65 = load i32, i32* %6, align 4
+  %66 = trunc i32 %65 to i8
+  %67 = getelementptr inbounds %"struct.media::Vp8EntropyHeader", %"struct.media::Vp8EntropyHeader"* %1, i64 0, i32 1, i64 1
+  store i8 %66, i8* %67, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %20) #7
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %20) #7
+  store i32 -1431655766, i32* %6, align 4
+  %68 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %14, i64 8, i32* nonnull %6) #7
+  br i1 %68, label %69, label %27
+
+69:                                               ; preds = %64
+  %70 = load i32, i32* %6, align 4
+  %71 = trunc i32 %70 to i8
+  %72 = getelementptr inbounds %"struct.media::Vp8EntropyHeader", %"struct.media::Vp8EntropyHeader"* %1, i64 0, i32 1, i64 2
+  store i8 %71, i8* %72, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %20) #7
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %20) #7
+  store i32 -1431655766, i32* %6, align 4
+  %73 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %14, i64 8, i32* nonnull %6) #7
+  br i1 %73, label %74, label %27
+
+74:                                               ; preds = %69
+  %75 = load i32, i32* %6, align 4
+  %76 = trunc i32 %75 to i8
+  %77 = getelementptr inbounds %"struct.media::Vp8EntropyHeader", %"struct.media::Vp8EntropyHeader"* %1, i64 0, i32 1, i64 3
+  store i8 %76, i8* %77, align 1
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %20) #7
+  br i1 %2, label %28, label %33
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN5media9Vp8Parser12ParseMVProbsEPNS_16Vp8EntropyHeaderEb(%"class.media::Vp8Parser"*, %"struct.media::Vp8EntropyHeader"* nocapture, i1 zeroext) local_unnamed_addr #0 align 2 {
+  %4 = alloca i8, align 1
+  %5 = alloca i32, align 4
+  %6 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 5
+  %7 = bitcast i32* %5 to i8*
+  br label %8
+
+8:                                                ; preds = %26, %3
+  %9 = phi i64 [ 0, %3 ], [ %27, %26 ]
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %4) #7
+  store i8 -86, i8* %4, align 1
+  %10 = getelementptr inbounds [2 x [19 x i8]], [2 x [19 x i8]]* @_ZN5mediaL14kMVUpdateProbsE, i64 0, i64 0, i64 %9
+  %11 = load i8, i8* %10, align 1
+  %12 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPbh(%"class.media::Vp8BoolDecoder"* %6, i8* nonnull %4, i8 zeroext %11) #7
+  br i1 %12, label %13, label %29
+
+13:                                               ; preds = %8
+  %14 = load i8, i8* %4, align 1, !range !2
+  %15 = icmp eq i8 %14, 0
+  br i1 %15, label %26, label %16
+
+16:                                               ; preds = %13
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %7) #7
+  store i32 -1431655766, i32* %5, align 4
+  %17 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %6, i64 7, i32* nonnull %5) #7
+  %18 = load i32, i32* %5, align 4
+  %19 = trunc i32 %18 to i8
+  %20 = select i1 %17, i8 %19, i8 -86
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %7) #7
+  br i1 %17, label %21, label %29
+
+21:                                               ; preds = %16
+  %22 = icmp eq i8 %20, 0
+  %23 = shl i8 %20, 1
+  %24 = select i1 %22, i8 1, i8 %23
+  %25 = getelementptr inbounds %"struct.media::Vp8EntropyHeader", %"struct.media::Vp8EntropyHeader"* %1, i64 0, i32 3, i64 0, i64 %9
+  store i8 %24, i8* %25, align 1
+  br label %26
+
+26:                                               ; preds = %13, %21
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %4) #7
+  %27 = add nuw nsw i64 %9, 1
+  %28 = icmp eq i64 %27, 19
+  br i1 %28, label %35, label %8
+
+29:                                               ; preds = %16, %8, %43, %35
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %4) #7
+  br label %33
+
+30:                                               ; preds = %56
+  %31 = getelementptr inbounds %"class.media::Vp8Parser", %"class.media::Vp8Parser"* %0, i64 0, i32 2, i32 3, i64 0, i64 0
+  %32 = getelementptr inbounds %"struct.media::Vp8EntropyHeader", %"struct.media::Vp8EntropyHeader"* %1, i64 0, i32 3, i64 0, i64 0
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %31, i8* align 1 %32, i64 38, i1 false)
+  br label %33
+
+33:                                               ; preds = %56, %29, %30
+  %34 = phi i1 [ true, %56 ], [ true, %30 ], [ false, %29 ]
+  ret i1 %34
+
+35:                                               ; preds = %26, %53
+  %36 = phi i64 [ %54, %53 ], [ 0, %26 ]
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %4) #7
+  store i8 -86, i8* %4, align 1
+  %37 = getelementptr inbounds [2 x [19 x i8]], [2 x [19 x i8]]* @_ZN5mediaL14kMVUpdateProbsE, i64 0, i64 1, i64 %36
+  %38 = load i8, i8* %37, align 1
+  %39 = call zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPbh(%"class.media::Vp8BoolDecoder"* %6, i8* nonnull %4, i8 zeroext %38) #7
+  br i1 %39, label %40, label %29
+
+40:                                               ; preds = %35
+  %41 = load i8, i8* %4, align 1, !range !2
+  %42 = icmp eq i8 %41, 0
+  br i1 %42, label %53, label %43
+
+43:                                               ; preds = %40
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %7) #7
+  store i32 -1431655766, i32* %5, align 4
+  %44 = call zeroext i1 @_ZN5media14Vp8BoolDecoder11ReadLiteralEmPi(%"class.media::Vp8BoolDecoder"* %6, i64 7, i32* nonnull %5) #7
+  %45 = load i32, i32* %5, align 4
+  %46 = trunc i32 %45 to i8
+  %47 = select i1 %44, i8 %46, i8 -86
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %7) #7
+  br i1 %44, label %48, label %29
+
+48:                                               ; preds = %43
+  %49 = icmp eq i8 %47, 0
+  %50 = shl i8 %47, 1
+  %51 = select i1 %49, i8 1, i8 %50
+  %52 = getelementptr inbounds %"struct.media::Vp8EntropyHeader", %"struct.media::Vp8EntropyHeader"* %1, i64 0, i32 3, i64 1, i64 %36
+  store i8 %51, i8* %52, align 1
+  br label %53
+
+53:                                               ; preds = %48, %40
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %4) #7
+  %54 = add nuw nsw i64 %36, 1
+  %55 = icmp eq i64 %54, 19
+  br i1 %55, label %56, label %35
+
+56:                                               ; preds = %53
+  br i1 %2, label %30, label %33
+}
+
+declare i64 @_ZN5media14Vp8BoolDecoder9BitOffsetEv(%"class.media::Vp8BoolDecoder"*) local_unnamed_addr #2
+
+declare zeroext i8 @_ZN5media14Vp8BoolDecoder8GetRangeEv(%"class.media::Vp8BoolDecoder"*) local_unnamed_addr #2
+
+declare zeroext i8 @_ZN5media14Vp8BoolDecoder9GetBottomEv(%"class.media::Vp8BoolDecoder"*) local_unnamed_addr #2
+
+declare zeroext i1 @_ZN5media14Vp8BoolDecoder19ReadLiteralWithSignEmPi(%"class.media::Vp8BoolDecoder"*, i64, i32*) local_unnamed_addr #2
+
+declare zeroext i1 @_ZN5media14Vp8BoolDecoder8ReadBoolEPbh(%"class.media::Vp8BoolDecoder"*, i8*, i8 zeroext) local_unnamed_addr #2
+
+declare void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* sret, i8*, i32, %"class.logging::CheckOpResult"*) local_unnamed_addr #2
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"*) local_unnamed_addr #2
+
+; Function Attrs: nounwind
+declare void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"*) unnamed_addr #5
+
+declare i8* @_ZN7logging15CheckOpValueStrEm(i64) local_unnamed_addr #2
+
+declare i8* @_ZN7logging15CheckOpValueStrEj(i32) local_unnamed_addr #2
+
+declare void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"*, i8*, i8*, i8*) unnamed_addr #2
+
+; Function Attrs: nofree nounwind readonly
+declare i32 @bcmp(i8* nocapture, i8* nocapture, i64) local_unnamed_addr #6
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { argmemonly nounwind }
+attributes #2 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { norecurse nounwind readnone ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nofree nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nofree nounwind readonly }
+attributes #7 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{i8 0, i8 2}

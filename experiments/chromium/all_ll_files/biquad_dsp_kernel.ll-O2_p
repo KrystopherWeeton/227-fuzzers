@@ -1,0 +1,1370 @@
+; ModuleID = '../../third_party/blink/renderer/modules/webaudio/biquad_dsp_kernel.cc'
+source_filename = "../../third_party/blink/renderer/modules/webaudio/biquad_dsp_kernel.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.blink::BiquadDSPKernel" = type { %"class.blink::AudioDSPKernel", %"class.blink::Biquad", %"class.WTF::Mutex", double }
+%"class.blink::AudioDSPKernel" = type { i32 (...)**, %"class.blink::AudioDSPKernelProcessor"*, float, i32 }
+%"class.blink::AudioDSPKernelProcessor" = type <{ %"class.blink::AudioProcessor", %"class.WTF::Vector", %"class.WTF::Mutex", i8, [7 x i8] }>
+%"class.blink::AudioProcessor" = type { i32 (...)**, i8, i32, float, i32 }
+%"class.WTF::Vector" = type { %"class.WTF::VectorBuffer" }
+%"class.WTF::VectorBuffer" = type { %"class.WTF::VectorBufferBase" }
+%"class.WTF::VectorBufferBase" = type { %"class.std::__1::unique_ptr"*, i32, i32 }
+%"class.std::__1::unique_ptr" = type opaque
+%"class.blink::Biquad" = type { i8, [7 x i8], %"class.blink::AudioArray", %"class.blink::AudioArray", %"class.blink::AudioArray", %"class.blink::AudioArray", %"class.blink::AudioArray", double, double, double, double }
+%"class.blink::AudioArray" = type <{ double*, double*, i32, [4 x i8] }>
+%"class.WTF::Mutex" = type { %"class.WTF::MutexBase" }
+%"class.WTF::MutexBase" = type { %"struct.WTF::PlatformMutex" }
+%"struct.WTF::PlatformMutex" = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%"class.logging::CheckError" = type { %"class.logging::LogMessage"* }
+%"class.logging::LogMessage" = type { i32 (...)**, i32, %"class.std::__1::basic_ostringstream", i64, i8*, i32, %"class.base::ScopedClearLastErrorBase" }
+%"class.std::__1::basic_ostringstream" = type { %"class.std::__1::basic_ostream.base", %"class.std::__1::basic_stringbuf", %"class.std::__1::basic_ios.base" }
+%"class.std::__1::basic_ostream.base" = type { i32 (...)** }
+%"class.std::__1::basic_stringbuf" = type <{ %"class.std::__1::basic_streambuf", %"class.std::__1::basic_string", i8*, i32, [4 x i8] }>
+%"class.std::__1::basic_streambuf" = type { i32 (...)**, %"class.std::__1::locale", i8*, i8*, i8*, i8*, i8*, i8* }
+%"class.std::__1::locale" = type { %"class.std::__1::locale::__imp"* }
+%"class.std::__1::locale::__imp" = type opaque
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.508" }
+%"class.std::__1::__compressed_pair.508" = type { %"struct.std::__1::__compressed_pair_elem.509" }
+%"struct.std::__1::__compressed_pair_elem.509" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon.510 }
+%union.anon.510 = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.std::__1::basic_ios.base" = type <{ %"class.std::__1::ios_base", %"class.std::__1::basic_ostream"*, i32 }>
+%"class.std::__1::ios_base" = type { i32 (...)**, i32, i64, i64, i32, i32, i8*, i8*, void (i32, %"class.std::__1::ios_base"*, i32)**, i32*, i64, i64, i64*, i64, i64, i8**, i64, i64 }
+%"class.std::__1::basic_ostream" = type { i32 (...)**, %"class.std::__1::basic_ios.base" }
+%"class.base::ScopedClearLastErrorBase" = type { i32 }
+%"class.blink::BiquadProcessor" = type <{ %"class.blink::AudioDSPKernelProcessor.base", [3 x i8], i32, %class.scoped_refptr, %class.scoped_refptr, %class.scoped_refptr, %class.scoped_refptr, i8, i8, i8, [5 x i8] }>
+%"class.blink::AudioDSPKernelProcessor.base" = type <{ %"class.blink::AudioProcessor", %"class.WTF::Vector", %"class.WTF::Mutex", i8 }>
+%class.scoped_refptr = type { %"class.blink::AudioParamHandler"* }
+%"class.blink::AudioParamHandler" = type { %"class.blink::AudioSummingJunction.base", %"class.WTF::ThreadSafeRefCounted", i32, %"class.WTF::String", %"struct.std::__1::atomic.44", float, i32, i32, float, float, %"class.blink::AudioParamTimeline", %class.scoped_refptr.59, %class.scoped_refptr.305 }
+%"class.blink::AudioSummingJunction.base" = type <{ i32 (...)**, %class.scoped_refptr.1, %"class.WTF::HashSet.27", %"class.WTF::Vector.33", i8 }>
+%class.scoped_refptr.1 = type { %"class.blink::DeferredTaskHandler"* }
+%"class.blink::DeferredTaskHandler" = type <{ %"class.WTF::ThreadSafeRefCounted.2", [4 x i8], %"class.base::SupportsWeakPtr", %"class.WTF::HashSet", %"class.WTF::Vector.14", i8, [3 x i8], i32, %"class.WTF::HashSet.19", %"class.WTF::HashSet.19", %"class.WTF::HashSet.23", %"class.WTF::HashSet.27", %"class.WTF::Vector.14", %"class.WTF::Vector.14", %"class.WTF::Vector.14", %"class.WTF::Vector.14", i8, [7 x i8], %"class.WTF::HashSet", %"class.WTF::Vector.14", %class.scoped_refptr.31, %"class.WTF::RecursiveMutex", %"class.WTF::Mutex", %"struct.std::__1::atomic", [4 x i8] }>
+%"class.WTF::ThreadSafeRefCounted.2" = type { %"class.base::RefCountedThreadSafe.3" }
+%"class.base::RefCountedThreadSafe.3" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%"class.base::SupportsWeakPtr" = type { %"class.base::internal::WeakReferenceOwner" }
+%"class.base::internal::WeakReferenceOwner" = type { %class.scoped_refptr.4 }
+%class.scoped_refptr.4 = type { %"class.base::internal::WeakReference::Flag"* }
+%"class.base::internal::WeakReference::Flag" = type <{ %"class.base::RefCountedThreadSafe.5", %"class.base::AtomicFlag", [3 x i8] }>
+%"class.base::RefCountedThreadSafe.5" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::AtomicFlag" = type { %"struct.std::__1::atomic.6" }
+%"struct.std::__1::atomic.6" = type { %"struct.std::__1::__atomic_base.7" }
+%"struct.std::__1::__atomic_base.7" = type { %"struct.std::__1::__atomic_base.8" }
+%"struct.std::__1::__atomic_base.8" = type { %"struct.std::__1::__cxx_atomic_impl.9" }
+%"struct.std::__1::__cxx_atomic_impl.9" = type { %"struct.std::__1::__cxx_atomic_base_impl.10" }
+%"struct.std::__1::__cxx_atomic_base_impl.10" = type { i8 }
+%"class.WTF::HashSet.19" = type { %"class.WTF::HashTable.20" }
+%"class.WTF::HashTable.20" = type <{ %"class.blink::AudioHandler"**, i32, i32, i32, [4 x i8] }>
+%"class.blink::AudioHandler" = type <{ i32 (...)**, %"class.WTF::ThreadSafeRefCounted.60", [4 x i8], double, double, i8, [3 x i8], i32, %"class.blink::WeakPersistent", %"class.blink::UntracedMember", %class.scoped_refptr.1, %"class.WTF::Vector.293", %"class.WTF::Vector.299", i32, i8, i8, [2 x i8], i32, i32, i32, i32, i32, [4 x i8] }>
+%"class.WTF::ThreadSafeRefCounted.60" = type { %"class.base::RefCountedThreadSafe.61" }
+%"class.base::RefCountedThreadSafe.61" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.blink::WeakPersistent" = type { %"class.blink::PersistentBase" }
+%"class.blink::PersistentBase" = type { %"class.blink::AudioNode"*, %"class.blink::PersistentNodePtr" }
+%"class.blink::AudioNode" = type { %"class.blink::EventTargetWithInlineData", %"class.blink::InspectorHelperMixin", %"class.blink::ThreadState::PrefinalizerRegistration", %"class.blink::Member.92", %class.scoped_refptr.1, %class.scoped_refptr.13, %"class.blink::HeapVector.94", %"class.blink::HeapVector.102" }
+%"class.blink::EventTargetWithInlineData" = type { %"class.blink::EventTarget", %"class.blink::EventTargetData" }
+%"class.blink::EventTarget" = type { %"class.blink::ScriptWrappable" }
+%"class.blink::ScriptWrappable" = type { %"class.blink::NameClient", %"class.blink::TraceWrapperV8Reference" }
+%"class.blink::NameClient" = type { i32 (...)** }
+%"class.blink::TraceWrapperV8Reference" = type { %"class.v8::TracedReference" }
+%"class.v8::TracedReference" = type { %"class.v8::BasicTracedReference" }
+%"class.v8::BasicTracedReference" = type { %"class.v8::TracedReferenceBase" }
+%"class.v8::TracedReferenceBase" = type { i64* }
+%"class.blink::EventTargetData" = type { %"class.blink::EventListenerMap", %"class.std::__1::unique_ptr.72" }
+%"class.blink::EventListenerMap" = type { %"class.blink::HeapVector" }
+%"class.blink::HeapVector" = type { %"class.WTF::Vector.66" }
+%"class.WTF::Vector.66" = type { %"class.WTF::VectorBuffer.67" }
+%"class.WTF::VectorBuffer.67" = type { %"class.WTF::VectorBufferBase.68", [32 x i8] }
+%"class.WTF::VectorBufferBase.68" = type { %"struct.std::__1::pair"*, i32, i32 }
+%"struct.std::__1::pair" = type { %"class.WTF::AtomicString", %"class.blink::Member" }
+%"class.WTF::AtomicString" = type { %"class.WTF::String" }
+%"class.blink::Member" = type { %"class.blink::MemberBase" }
+%"class.blink::MemberBase" = type { %"class.blink::HeapVector.69"* }
+%"class.blink::HeapVector.69" = type opaque
+%"class.std::__1::unique_ptr.72" = type { %"class.std::__1::__compressed_pair.73" }
+%"class.std::__1::__compressed_pair.73" = type { %"struct.std::__1::__compressed_pair_elem.74" }
+%"struct.std::__1::__compressed_pair_elem.74" = type { %"class.WTF::Vector.75"* }
+%"class.WTF::Vector.75" = type opaque
+%"class.blink::InspectorHelperMixin" = type { %"class.blink::GarbageCollectedMixin", %"class.blink::Member.79", %"class.WTF::String", %"class.WTF::String" }
+%"class.blink::GarbageCollectedMixin" = type { i32 (...)** }
+%"class.blink::Member.79" = type { %"class.blink::MemberBase.80" }
+%"class.blink::MemberBase.80" = type { %"class.blink::AudioGraphTracer"* }
+%"class.blink::AudioGraphTracer" = type { %"class.blink::Supplement", %"class.blink::Member.85", %"class.blink::HeapHashSet" }
+%"class.blink::Supplement" = type { %"class.blink::GarbageCollectedMixin", %"class.blink::Member.83" }
+%"class.blink::Member.83" = type { %"class.blink::MemberBase.84" }
+%"class.blink::MemberBase.84" = type { %"class.blink::Page"* }
+%"class.blink::Page" = type { %"class.blink::Supplementable", %"class.blink::SettingsDelegate", %"class.blink::PageScheduler::Delegate", %"class.blink::Member.404", %"class.blink::scheduler::WebAgentGroupScheduler"*, %"class.blink::Member.406", %"class.blink::Member.410", %"class.blink::Member.412", %"class.blink::Member.414", %"class.blink::Member.416", %"class.blink::Member.418", %"class.blink::Member.420", %"class.blink::Member.422", %"class.blink::HeapObserverSet.424", %"class.blink::Member.432", %"class.blink::Member.434", %"class.blink::Member.436", %"class.blink::Member.438", %"class.blink::Member.440", %"class.blink::Member.442", %"class.blink::Member.444", %"class.blink::Member.446", %"class.blink::Member.448", %"class.blink::Member.450", %"class.blink::Member.452", %"class.blink::InspectorIssueStorage", %"class.blink::Deprecation", %"struct.blink::WebWindowFeatures", i8, i8, i8, float, %"class.mojo::StructPtr", i8, i8, i8, i8, i32, %"class.blink::HeapHashSet.483", %"class.blink::Member.83", %"class.blink::Member.83", %"class.blink::FrameOrWorkerScheduler::SchedulingAffectingFeatureHandle", %"class.std::__1::unique_ptr.491", %"class.std::__1::unique_ptr.497", i32, i32, i8, %"class.blink::mojom::blink::TextAutosizerPageInfo", %"class.blink::WebScopedVirtualTimePauser" }
+%"class.blink::Supplementable" = type { %"class.blink::GarbageCollectedMixin", %"class.blink::HeapHashMap.391" }
+%"class.blink::HeapHashMap.391" = type { %"class.WTF::HashMap.394" }
+%"class.WTF::HashMap.394" = type { %"class.WTF::HashTable.395" }
+%"class.WTF::HashTable.395" = type <{ %"struct.WTF::KeyValuePair.397"*, i32, i32, i32, [4 x i8] }>
+%"struct.WTF::KeyValuePair.397" = type opaque
+%"class.blink::SettingsDelegate" = type { i32 (...)**, %"class.std::__1::unique_ptr.398" }
+%"class.std::__1::unique_ptr.398" = type { %"class.std::__1::__compressed_pair.399" }
+%"class.std::__1::__compressed_pair.399" = type { %"struct.std::__1::__compressed_pair_elem.400" }
+%"struct.std::__1::__compressed_pair_elem.400" = type { %"class.blink::Settings"* }
+%"class.blink::Settings" = type opaque
+%"class.blink::PageScheduler::Delegate" = type { i32 (...)** }
+%"class.blink::Member.404" = type { %"class.blink::MemberBase.405" }
+%"class.blink::MemberBase.405" = type { %"class.blink::Frame"* }
+%"class.blink::Frame" = type opaque
+%"class.blink::scheduler::WebAgentGroupScheduler" = type { i32 (...)** }
+%"class.blink::Member.406" = type { %"class.blink::MemberBase.407" }
+%"class.blink::MemberBase.407" = type { %"class.blink::PageAnimator"* }
+%"class.blink::PageAnimator" = type <{ %"class.blink::Member.83", i8, i8, i8, [5 x i8], %"class.blink::AnimationClock", i8, i8, i8, i8, i8, [3 x i8] }>
+%"class.blink::AnimationClock" = type <{ %"class.base::TimeTicks", i8, [7 x i8], %"class.base::TickClock"*, i32, [4 x i8] }>
+%"class.base::TimeTicks" = type { %"class.base::time_internal::TimeBase" }
+%"class.base::time_internal::TimeBase" = type { i64 }
+%"class.base::TickClock" = type { i32 (...)** }
+%"class.blink::Member.410" = type { %"class.blink::MemberBase.411" }
+%"class.blink::MemberBase.411" = type { %"class.blink::AutoscrollController"* }
+%"class.blink::AutoscrollController" = type opaque
+%"class.blink::Member.412" = type { %"class.blink::MemberBase.413" }
+%"class.blink::MemberBase.413" = type { %"class.blink::ChromeClient"* }
+%"class.blink::ChromeClient" = type opaque
+%"class.blink::Member.414" = type { %"class.blink::MemberBase.415" }
+%"class.blink::MemberBase.415" = type { %"class.blink::DragCaret"* }
+%"class.blink::DragCaret" = type opaque
+%"class.blink::Member.416" = type { %"class.blink::MemberBase.417" }
+%"class.blink::MemberBase.417" = type { %"class.blink::DragController"* }
+%"class.blink::DragController" = type opaque
+%"class.blink::Member.418" = type { %"class.blink::MemberBase.419" }
+%"class.blink::MemberBase.419" = type { %"class.blink::FocusController"* }
+%"class.blink::FocusController" = type opaque
+%"class.blink::Member.420" = type { %"class.blink::MemberBase.421" }
+%"class.blink::MemberBase.421" = type { %"class.blink::ContextMenuController"* }
+%"class.blink::ContextMenuController" = type opaque
+%"class.blink::Member.422" = type { %"class.blink::MemberBase.423" }
+%"class.blink::MemberBase.423" = type { %"class.blink::PageScaleConstraintsSet"* }
+%"class.blink::PageScaleConstraintsSet" = type opaque
+%"class.blink::HeapObserverSet.424" = type { i32, [4 x i8], %"class.blink::HeapHashSet.425" }
+%"class.blink::HeapHashSet.425" = type { %"class.WTF::HashSet.428" }
+%"class.WTF::HashSet.428" = type { %"class.WTF::HashTable.429" }
+%"class.WTF::HashTable.429" = type <{ %"class.blink::WeakMember.431"*, i32, i32, i32, [4 x i8] }>
+%"class.blink::WeakMember.431" = type opaque
+%"class.blink::Member.432" = type { %"class.blink::MemberBase.433" }
+%"class.blink::MemberBase.433" = type { %"class.blink::PointerLockController"* }
+%"class.blink::PointerLockController" = type opaque
+%"class.blink::Member.434" = type { %"class.blink::MemberBase.435" }
+%"class.blink::MemberBase.435" = type { %"class.blink::ScrollingCoordinator"* }
+%"class.blink::ScrollingCoordinator" = type opaque
+%"class.blink::Member.436" = type { %"class.blink::MemberBase.437" }
+%"class.blink::MemberBase.437" = type { %"class.blink::BrowserControls"* }
+%"class.blink::BrowserControls" = type opaque
+%"class.blink::Member.438" = type { %"class.blink::MemberBase.439" }
+%"class.blink::MemberBase.439" = type { %"class.blink::ConsoleMessageStorage"* }
+%"class.blink::ConsoleMessageStorage" = type opaque
+%"class.blink::Member.440" = type { %"class.blink::MemberBase.441" }
+%"class.blink::MemberBase.441" = type { %"class.blink::TopDocumentRootScrollerController"* }
+%"class.blink::TopDocumentRootScrollerController" = type opaque
+%"class.blink::Member.442" = type { %"class.blink::MemberBase.443" }
+%"class.blink::MemberBase.443" = type { %"class.blink::VisualViewport"* }
+%"class.blink::VisualViewport" = type opaque
+%"class.blink::Member.444" = type { %"class.blink::MemberBase.445" }
+%"class.blink::MemberBase.445" = type { %"class.blink::OverscrollController"* }
+%"class.blink::OverscrollController" = type opaque
+%"class.blink::Member.446" = type { %"class.blink::MemberBase.447" }
+%"class.blink::MemberBase.447" = type { %"class.blink::LinkHighlight"* }
+%"class.blink::LinkHighlight" = type opaque
+%"class.blink::Member.448" = type { %"class.blink::MemberBase.449" }
+%"class.blink::MemberBase.449" = type { %"class.blink::SpatialNavigationController"* }
+%"class.blink::SpatialNavigationController" = type opaque
+%"class.blink::Member.450" = type { %"class.blink::MemberBase.451" }
+%"class.blink::MemberBase.451" = type { %"class.blink::PluginData"* }
+%"class.blink::PluginData" = type opaque
+%"class.blink::Member.452" = type { %"class.blink::MemberBase.453" }
+%"class.blink::MemberBase.453" = type { %"class.blink::ValidationMessageClient"* }
+%"class.blink::ValidationMessageClient" = type opaque
+%"class.blink::InspectorIssueStorage" = type { i32 (...)**, %"class.WTF::Deque.454" }
+%"class.WTF::Deque.454" = type { %"class.WTF::Deque<std::__1::unique_ptr<blink::protocol::Audits::InspectorIssue, std::__1::default_delete<blink::protocol::Audits::InspectorIssue> >, 0, WTF::PartitionAllocator>::BackingBuffer", i32, i32 }
+%"class.WTF::Deque<std::__1::unique_ptr<blink::protocol::Audits::InspectorIssue, std::__1::default_delete<blink::protocol::Audits::InspectorIssue> >, 0, WTF::PartitionAllocator>::BackingBuffer" = type { %"class.WTF::VectorBuffer.457" }
+%"class.WTF::VectorBuffer.457" = type { %"class.WTF::VectorBufferBase.458" }
+%"class.WTF::VectorBufferBase.458" = type { %"class.std::__1::unique_ptr.459"*, i32, i32 }
+%"class.std::__1::unique_ptr.459" = type { %"class.std::__1::__compressed_pair.460" }
+%"class.std::__1::__compressed_pair.460" = type { %"struct.std::__1::__compressed_pair_elem.461" }
+%"struct.std::__1::__compressed_pair_elem.461" = type { %"class.blink::protocol::Audits::InspectorIssue"* }
+%"class.blink::protocol::Audits::InspectorIssue" = type opaque
+%"class.blink::Deprecation" = type <{ %"class.std::__1::bitset", %"class.std::__1::bitset.465", i32, [4 x i8] }>
+%"class.std::__1::bitset" = type { %"class.std::__1::__bitset" }
+%"class.std::__1::__bitset" = type { [62 x i64] }
+%"class.std::__1::bitset.465" = type { %"class.std::__1::__bitset.466" }
+%"class.std::__1::__bitset.466" = type { [25 x i64] }
+%"struct.blink::WebWindowFeatures" = type { i32, i8, i32, i8, i32, i8, i32, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, %"class.absl::optional" }
+%"class.absl::optional" = type { %"class.absl::optional_internal::optional_data" }
+%"class.absl::optional_internal::optional_data" = type { %"class.absl::optional_internal::optional_data_base" }
+%"class.absl::optional_internal::optional_data_base" = type { %"class.absl::optional_internal::optional_data_dtor_base" }
+%"class.absl::optional_internal::optional_data_dtor_base" = type { i8, %union.anon }
+%union.anon = type { %"struct.blink::WebImpression" }
+%"struct.blink::WebImpression" = type { %"class.blink::WebSecurityOrigin", %"class.absl::optional.467", i64, %"class.absl::optional.472", i64 }
+%"class.blink::WebSecurityOrigin" = type { %"class.blink::WebPrivatePtr" }
+%"class.blink::WebPrivatePtr" = type { i8* }
+%"class.absl::optional.467" = type { %"class.absl::optional_internal::optional_data.468" }
+%"class.absl::optional_internal::optional_data.468" = type { %"class.absl::optional_internal::optional_data_base.469" }
+%"class.absl::optional_internal::optional_data_base.469" = type { %"class.absl::optional_internal::optional_data_dtor_base.470" }
+%"class.absl::optional_internal::optional_data_dtor_base.470" = type { i8, %union.anon.471 }
+%union.anon.471 = type { %"class.blink::WebSecurityOrigin" }
+%"class.absl::optional.472" = type { %"class.absl::optional_internal::optional_data.473" }
+%"class.absl::optional_internal::optional_data.473" = type { %"class.absl::optional_internal::optional_data_base.474" }
+%"class.absl::optional_internal::optional_data_base.474" = type { %"class.absl::optional_internal::optional_data_dtor_base.475" }
+%"class.absl::optional_internal::optional_data_dtor_base.475" = type { i8, %union.anon.476 }
+%union.anon.476 = type { %"class.base::TimeDelta" }
+%"class.base::TimeDelta" = type { i64 }
+%"class.mojo::StructPtr" = type { %"class.std::__1::unique_ptr.477" }
+%"class.std::__1::unique_ptr.477" = type { %"class.std::__1::__compressed_pair.478" }
+%"class.std::__1::__compressed_pair.478" = type { %"struct.std::__1::__compressed_pair_elem.479" }
+%"struct.std::__1::__compressed_pair_elem.479" = type { %"class.blink::mojom::blink::PageLifecycleState"* }
+%"class.blink::mojom::blink::PageLifecycleState" = type <{ i8, [3 x i8], i32, i8, [3 x i8], i32, i8, [3 x i8] }>
+%"class.blink::HeapHashSet.483" = type { %"class.WTF::HashSet.486" }
+%"class.WTF::HashSet.486" = type { %"class.WTF::HashTable.487" }
+%"class.WTF::HashTable.487" = type <{ %"class.blink::WeakMember.489"*, i32, i32, i32, [4 x i8] }>
+%"class.blink::WeakMember.489" = type opaque
+%"class.blink::FrameOrWorkerScheduler::SchedulingAffectingFeatureHandle" = type { i32, %"struct.blink::SchedulingPolicy", %"class.base::WeakPtr" }
+%"struct.blink::SchedulingPolicy" = type { i8, i8 }
+%"class.base::WeakPtr" = type { %"class.base::internal::WeakPtrBase" }
+%"class.base::internal::WeakPtrBase" = type { %"class.base::internal::WeakReference", i64 }
+%"class.base::internal::WeakReference" = type { %class.scoped_refptr.490 }
+%class.scoped_refptr.490 = type { %"class.base::internal::WeakReference::Flag"* }
+%"class.std::__1::unique_ptr.491" = type { %"class.std::__1::__compressed_pair.492" }
+%"class.std::__1::__compressed_pair.492" = type { %"struct.std::__1::__compressed_pair_elem.493" }
+%"struct.std::__1::__compressed_pair_elem.493" = type { %"class.blink::PageScheduler"* }
+%"class.blink::PageScheduler" = type { i32 (...)** }
+%"class.std::__1::unique_ptr.497" = type { %"class.std::__1::__compressed_pair.498" }
+%"class.std::__1::__compressed_pair.498" = type { %"struct.std::__1::__compressed_pair_elem.499" }
+%"struct.std::__1::__compressed_pair_elem.499" = type { %"class.blink::MediaFeatureOverrides"* }
+%"class.blink::MediaFeatureOverrides" = type opaque
+%"class.blink::mojom::blink::TextAutosizerPageInfo" = type { i32, i32, float }
+%"class.blink::WebScopedVirtualTimePauser" = type { %"class.base::TimeTicks", i8, i8, i32, %"class.blink::scheduler::MainThreadSchedulerImpl"*, %"class.blink::WebString", i64 }
+%"class.blink::scheduler::MainThreadSchedulerImpl" = type opaque
+%"class.blink::WebString" = type { %class.scoped_refptr.38 }
+%class.scoped_refptr.38 = type { %"class.WTF::StringImpl"* }
+%"class.WTF::StringImpl" = type { i32, i32, %"struct.std::__1::atomic.39" }
+%"struct.std::__1::atomic.39" = type { %"struct.std::__1::__atomic_base.40" }
+%"struct.std::__1::__atomic_base.40" = type { %"struct.std::__1::__atomic_base.41" }
+%"struct.std::__1::__atomic_base.41" = type { %"struct.std::__1::__cxx_atomic_impl.42" }
+%"struct.std::__1::__cxx_atomic_impl.42" = type { %"struct.std::__1::__cxx_atomic_base_impl.43" }
+%"struct.std::__1::__cxx_atomic_base_impl.43" = type { i32 }
+%"class.blink::Member.85" = type { %"class.blink::MemberBase.86" }
+%"class.blink::MemberBase.86" = type { %"class.blink::InspectorWebAudioAgent"* }
+%"class.blink::InspectorWebAudioAgent" = type opaque
+%"class.blink::HeapHashSet" = type { %"class.WTF::HashSet.89" }
+%"class.WTF::HashSet.89" = type { %"class.WTF::HashTable.90" }
+%"class.WTF::HashTable.90" = type <{ %"class.blink::WeakMember"*, i32, i32, i32, [4 x i8] }>
+%"class.blink::WeakMember" = type opaque
+%"class.blink::ThreadState::PrefinalizerRegistration" = type { i8 }
+%"class.blink::Member.92" = type { %"class.blink::MemberBase.93" }
+%"class.blink::MemberBase.93" = type { %"class.blink::BaseAudioContext"* }
+%"class.blink::BaseAudioContext" = type { %"class.blink::EventTargetWithInlineData", %"class.blink::ActiveScriptWrappable", %"class.blink::ExecutionContextLifecycleStateObserver.base", %"class.blink::InspectorHelperMixin", %"class.blink::ThreadState::PrefinalizerRegistration.335", %"class.blink::Member.336", %"class.blink::HeapVector.338", i8, %class.scoped_refptr.31, i8, %"class.blink::Member.377", i8, %class.scoped_refptr.1, i32, %"class.blink::AsyncAudioDecoder", [3 x i8], %"class.blink::HeapHashSet.379", %"class.blink::Member.385", %"class.blink::Member.385", %"class.blink::Member.385", %"class.blink::Member.385", %class.scoped_refptr.59, %"class.blink::Member.387", %"class.blink::WorkerThread"* }
+%"class.blink::ActiveScriptWrappable" = type { %"class.blink::ActiveScriptWrappableBase" }
+%"class.blink::ActiveScriptWrappableBase" = type { %"class.blink::GarbageCollectedMixin" }
+%"class.blink::ExecutionContextLifecycleStateObserver.base" = type { %"class.blink::ExecutionContextLifecycleObserver.base" }
+%"class.blink::ExecutionContextLifecycleObserver.base" = type <{ %"class.blink::ContextLifecycleObserver", i32 }>
+%"class.blink::ContextLifecycleObserver" = type { %"class.blink::GarbageCollectedMixin", %"class.blink::WeakMember.326" }
+%"class.blink::WeakMember.326" = type { %"class.blink::MemberBase.327" }
+%"class.blink::MemberBase.327" = type { %"class.blink::ContextLifecycleNotifier"* }
+%"class.blink::ContextLifecycleNotifier" = type { %"class.blink::GarbageCollectedMixin", %"class.blink::HeapObserverSet" }
+%"class.blink::HeapObserverSet" = type { i32, [4 x i8], %"class.blink::HeapHashSet.328" }
+%"class.blink::HeapHashSet.328" = type { %"class.WTF::HashSet.331" }
+%"class.WTF::HashSet.331" = type { %"class.WTF::HashTable.332" }
+%"class.WTF::HashTable.332" = type <{ %"class.blink::WeakMember.334"*, i32, i32, i32, [4 x i8] }>
+%"class.blink::WeakMember.334" = type opaque
+%"class.blink::ThreadState::PrefinalizerRegistration.335" = type { i8 }
+%"class.blink::Member.336" = type { %"class.blink::MemberBase.337" }
+%"class.blink::MemberBase.337" = type { %"class.blink::AudioDestinationNode"* }
+%"class.blink::AudioDestinationNode" = type { %"class.blink::AudioNode" }
+%"class.blink::HeapVector.338" = type { %"class.WTF::Vector.341" }
+%"class.WTF::Vector.341" = type { %"class.WTF::VectorBuffer.342" }
+%"class.WTF::VectorBuffer.342" = type { %"class.WTF::VectorBufferBase.343" }
+%"class.WTF::VectorBufferBase.343" = type { %"class.blink::Member.344"*, i32, i32 }
+%"class.blink::Member.344" = type { %"class.blink::MemberBase.345" }
+%"class.blink::MemberBase.345" = type { %"class.blink::ScriptPromiseResolver"* }
+%"class.blink::ScriptPromiseResolver" = type { %"class.blink::ExecutionContextLifecycleObserver.base", %"class.blink::ThreadState::PrefinalizerRegistration.348", i32, %"class.blink::Member.349", %"class.blink::TaskHandle", %"class.blink::ScriptPromise::InternalResolver", %"class.blink::TraceWrapperV8Reference.369", %"class.blink::SelfKeepAlive.373" }
+%"class.blink::ThreadState::PrefinalizerRegistration.348" = type { i8 }
+%"class.blink::Member.349" = type { %"class.blink::MemberBase.350" }
+%"class.blink::MemberBase.350" = type { %"class.blink::ScriptState"* }
+%"class.blink::ScriptState" = type { %"class.v8::Isolate"*, %"class.blink::ScopedPersistent", %class.scoped_refptr.353, %"class.blink::Member.364", %"class.blink::SelfKeepAlive", %"class.util::TokenType" }
+%"class.v8::Isolate" = type { i8 }
+%"class.blink::ScopedPersistent" = type { %"class.v8::Persistent" }
+%"class.v8::Persistent" = type { %"class.v8::PersistentBase" }
+%"class.v8::PersistentBase" = type { %"class.v8::Context"* }
+%"class.v8::Context" = type { i8 }
+%class.scoped_refptr.353 = type { %"class.blink::DOMWrapperWorld"* }
+%"class.blink::DOMWrapperWorld" = type { %"class.WTF::RefCounted", i32, i32, %"class.blink::Persistent" }
+%"class.WTF::RefCounted" = type { %"class.base::RefCounted" }
+%"class.base::RefCounted" = type { %"class.base::subtle::RefCountedBase" }
+%"class.base::subtle::RefCountedBase" = type { i32 }
+%"class.blink::Persistent" = type { %"class.blink::PersistentBase.354" }
+%"class.blink::PersistentBase.354" = type { %"class.blink::DOMDataStore"*, %"class.blink::PersistentNodePtr.363" }
+%"class.blink::DOMDataStore" = type { i32 (...)**, i8, [7 x i8], %"class.blink::HeapHashMap" }
+%"class.blink::HeapHashMap" = type { %"class.WTF::HashMap" }
+%"class.WTF::HashMap" = type { %"class.WTF::HashTable.359" }
+%"class.WTF::HashTable.359" = type <{ %"struct.WTF::KeyValuePair"*, i32, i32, i32, [4 x i8] }>
+%"struct.WTF::KeyValuePair" = type { %"class.blink::WeakMember.361", %"class.blink::TraceWrapperV8Reference" }
+%"class.blink::WeakMember.361" = type { %"class.blink::MemberBase.362" }
+%"class.blink::MemberBase.362" = type { %"class.blink::ScriptWrappable"* }
+%"class.blink::PersistentNodePtr.363" = type { %"class.blink::PersistentNode"* }
+%"class.blink::PersistentNode" = type { i8*, void (%"class.blink::Visitor"*, i8*)* }
+%"class.blink::Visitor" = type { i32 (...)**, %"class.blink::ThreadState"* }
+%"class.blink::ThreadState" = type <{ %"class.std::__1::unique_ptr.110", i32, [4 x i8], %"class.std::__1::unique_ptr.246", %"class.std::__1::unique_ptr.246", i8**, i8, i8, i8, i8, i8, i8, [2 x i8], i64, i64, i32, i32, i32, [4 x i8], %"class.WTF::Deque", %"class.v8::Isolate"*, void (%"class.v8::Isolate"*, %"class.v8::EmbedderGraph"*, i8*)*, %"class.std::__1::unique_ptr.257", %"class.std::__1::unique_ptr.263", %"struct.blink::ThreadState::GCData", %"class.std::__1::unique_ptr.275", %"class.std::__1::unique_ptr.281", %"class.base::JobHandle", %"class.base::JobHandle", %"struct.std::__1::atomic.288", [7 x i8], i64, i8, [7 x i8], i64, %"class.base::TimeTicks", i8, i8, [6 x i8] }>
+%"class.std::__1::unique_ptr.110" = type { %"class.std::__1::__compressed_pair.111" }
+%"class.std::__1::__compressed_pair.111" = type { %"struct.std::__1::__compressed_pair_elem.112" }
+%"struct.std::__1::__compressed_pair_elem.112" = type { %"class.blink::ThreadHeap"* }
+%"class.blink::ThreadHeap" = type { %"class.blink::ThreadState"*, %"class.std::__1::unique_ptr.113", %"class.std::__1::unique_ptr.119", %"class.std::__1::unique_ptr.125", %"class.std::__1::unique_ptr.131", %"class.std::__1::unique_ptr.137", %"class.std::__1::unique_ptr.143", %"class.std::__1::unique_ptr.154", %"class.std::__1::unique_ptr.161", %"class.std::__1::unique_ptr.161", %"class.std::__1::unique_ptr.168", %"class.std::__1::unique_ptr.175", %"class.std::__1::unique_ptr.182", %"class.std::__1::unique_ptr.182", %"class.std::__1::unique_ptr.189", %"class.std::__1::unique_ptr.196", %"class.std::__1::unique_ptr.203", %"class.std::__1::unique_ptr.226", %"struct.blink::ThreadHeap::LastAllocatedRegion", [9 x %"class.blink::BaseArena"*], i64, i64 }
+%"class.std::__1::unique_ptr.113" = type { %"class.std::__1::__compressed_pair.114" }
+%"class.std::__1::__compressed_pair.114" = type { %"struct.std::__1::__compressed_pair_elem.115" }
+%"struct.std::__1::__compressed_pair_elem.115" = type { %"class.blink::ThreadHeapStatsCollector"* }
+%"class.blink::ThreadHeapStatsCollector" = type opaque
+%"class.std::__1::unique_ptr.119" = type { %"class.std::__1::__compressed_pair.120" }
+%"class.std::__1::__compressed_pair.120" = type { %"struct.std::__1::__compressed_pair_elem.121" }
+%"struct.std::__1::__compressed_pair_elem.121" = type { %"class.blink::RegionTree"* }
+%"class.blink::RegionTree" = type opaque
+%"class.std::__1::unique_ptr.125" = type { %"class.std::__1::__compressed_pair.126" }
+%"class.std::__1::__compressed_pair.126" = type { %"struct.std::__1::__compressed_pair_elem.127" }
+%"struct.std::__1::__compressed_pair_elem.127" = type { %"class.blink::PageBloomFilter"* }
+%"class.blink::PageBloomFilter" = type opaque
+%"class.std::__1::unique_ptr.131" = type { %"class.std::__1::__compressed_pair.132" }
+%"class.std::__1::__compressed_pair.132" = type { %"struct.std::__1::__compressed_pair_elem.133" }
+%"struct.std::__1::__compressed_pair_elem.133" = type { %"class.blink::PagePool"* }
+%"class.blink::PagePool" = type opaque
+%"class.std::__1::unique_ptr.137" = type { %"class.std::__1::__compressed_pair.138" }
+%"class.std::__1::__compressed_pair.138" = type { %"struct.std::__1::__compressed_pair_elem.139" }
+%"struct.std::__1::__compressed_pair_elem.139" = type { %"class.blink::ProcessHeapReporter"* }
+%"class.blink::ProcessHeapReporter" = type opaque
+%"class.std::__1::unique_ptr.143" = type { %"class.std::__1::__compressed_pair.144" }
+%"class.std::__1::__compressed_pair.144" = type { %"struct.std::__1::__compressed_pair_elem.145" }
+%"struct.std::__1::__compressed_pair_elem.145" = type { %"class.blink::Worklist"* }
+%"class.blink::Worklist" = type { [4 x %"struct.blink::Worklist<blink::TraceDescriptor, 512, 4>::PrivateSegmentHolder"], %"class.blink::Worklist<blink::TraceDescriptor, 512, 4>::GlobalPool" }
+%"struct.blink::Worklist<blink::TraceDescriptor, 512, 4>::PrivateSegmentHolder" = type { %"class.blink::Worklist<blink::TraceDescriptor, 512, 4>::Segment"*, %"class.blink::Worklist<blink::TraceDescriptor, 512, 4>::Segment"*, [64 x i8] }
+%"class.blink::Worklist<blink::TraceDescriptor, 512, 4>::Segment" = type { %"class.blink::Worklist<blink::TraceDescriptor, 512, 4>::Segment"*, i64, [512 x %"struct.blink::TraceDescriptor"] }
+%"struct.blink::TraceDescriptor" = type { i8*, void (%"class.blink::Visitor"*, i8*)* }
+%"class.blink::Worklist<blink::TraceDescriptor, 512, 4>::GlobalPool" = type { %"class.base::Lock", %"class.blink::Worklist<blink::TraceDescriptor, 512, 4>::Segment"*, %"struct.std::__1::atomic.146" }
+%"class.base::Lock" = type { %"class.base::internal::LockImpl" }
+%"class.base::internal::LockImpl" = type { %union.pthread_mutex_t }
+%"struct.std::__1::atomic.146" = type { %"struct.std::__1::__atomic_base.147" }
+%"struct.std::__1::__atomic_base.147" = type { %"struct.std::__1::__atomic_base.148" }
+%"struct.std::__1::__atomic_base.148" = type { %"struct.std::__1::__cxx_atomic_impl.149" }
+%"struct.std::__1::__cxx_atomic_impl.149" = type { %"struct.std::__1::__cxx_atomic_base_impl.150" }
+%"struct.std::__1::__cxx_atomic_base_impl.150" = type { i64 }
+%"class.std::__1::unique_ptr.154" = type { %"class.std::__1::__compressed_pair.155" }
+%"class.std::__1::__compressed_pair.155" = type { %"struct.std::__1::__compressed_pair_elem.156" }
+%"struct.std::__1::__compressed_pair_elem.156" = type { %"class.blink::Worklist.157"* }
+%"class.blink::Worklist.157" = type { [4 x %"struct.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::PrivateSegmentHolder"], %"class.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::GlobalPool" }
+%"struct.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::PrivateSegmentHolder" = type { %"class.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::Segment"*, %"class.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::Segment"*, [64 x i8] }
+%"class.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::Segment" = type opaque
+%"class.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::GlobalPool" = type { %"class.base::Lock", %"class.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::Segment"*, %"struct.std::__1::atomic.146" }
+%"class.std::__1::unique_ptr.161" = type { %"class.std::__1::__compressed_pair.162" }
+%"class.std::__1::__compressed_pair.162" = type { %"struct.std::__1::__compressed_pair_elem.163" }
+%"struct.std::__1::__compressed_pair_elem.163" = type { %"class.blink::Worklist.164"* }
+%"class.blink::Worklist.164" = type { [4 x %"struct.blink::Worklist<const void *, 16, 4>::PrivateSegmentHolder"], %"class.blink::Worklist<const void *, 16, 4>::GlobalPool" }
+%"struct.blink::Worklist<const void *, 16, 4>::PrivateSegmentHolder" = type { %"class.blink::Worklist<const void *, 16, 4>::Segment"*, %"class.blink::Worklist<const void *, 16, 4>::Segment"*, [64 x i8] }
+%"class.blink::Worklist<const void *, 16, 4>::Segment" = type { %"class.blink::Worklist<const void *, 16, 4>::Segment"*, i64, [16 x i8*] }
+%"class.blink::Worklist<const void *, 16, 4>::GlobalPool" = type { %"class.base::Lock", %"class.blink::Worklist<const void *, 16, 4>::Segment"*, %"struct.std::__1::atomic.146" }
+%"class.std::__1::unique_ptr.168" = type { %"class.std::__1::__compressed_pair.169" }
+%"class.std::__1::__compressed_pair.169" = type { %"struct.std::__1::__compressed_pair_elem.170" }
+%"struct.std::__1::__compressed_pair_elem.170" = type { %"class.blink::Worklist.171"* }
+%"class.blink::Worklist.171" = type { [4 x %"struct.blink::Worklist<blink::CustomCallbackItem, 64, 4>::PrivateSegmentHolder"], %"class.blink::Worklist<blink::CustomCallbackItem, 64, 4>::GlobalPool" }
+%"struct.blink::Worklist<blink::CustomCallbackItem, 64, 4>::PrivateSegmentHolder" = type { %"class.blink::Worklist<blink::CustomCallbackItem, 64, 4>::Segment"*, %"class.blink::Worklist<blink::CustomCallbackItem, 64, 4>::Segment"*, [64 x i8] }
+%"class.blink::Worklist<blink::CustomCallbackItem, 64, 4>::Segment" = type opaque
+%"class.blink::Worklist<blink::CustomCallbackItem, 64, 4>::GlobalPool" = type { %"class.base::Lock", %"class.blink::Worklist<blink::CustomCallbackItem, 64, 4>::Segment"*, %"struct.std::__1::atomic.146" }
+%"class.std::__1::unique_ptr.175" = type { %"class.std::__1::__compressed_pair.176" }
+%"class.std::__1::__compressed_pair.176" = type { %"struct.std::__1::__compressed_pair_elem.177" }
+%"struct.std::__1::__compressed_pair_elem.177" = type { %"class.blink::Worklist.178"* }
+%"class.blink::Worklist.178" = type { [4 x %"struct.blink::Worklist<const void *const *, 256, 4>::PrivateSegmentHolder"], %"class.blink::Worklist<const void *const *, 256, 4>::GlobalPool" }
+%"struct.blink::Worklist<const void *const *, 256, 4>::PrivateSegmentHolder" = type { %"class.blink::Worklist<const void *const *, 256, 4>::Segment"*, %"class.blink::Worklist<const void *const *, 256, 4>::Segment"*, [64 x i8] }
+%"class.blink::Worklist<const void *const *, 256, 4>::Segment" = type opaque
+%"class.blink::Worklist<const void *const *, 256, 4>::GlobalPool" = type { %"class.base::Lock", %"class.blink::Worklist<const void *const *, 256, 4>::Segment"*, %"struct.std::__1::atomic.146" }
+%"class.std::__1::unique_ptr.182" = type { %"class.std::__1::__compressed_pair.183" }
+%"class.std::__1::__compressed_pair.183" = type { %"struct.std::__1::__compressed_pair_elem.184" }
+%"struct.std::__1::__compressed_pair_elem.184" = type { %"class.blink::Worklist.185"* }
+%"class.blink::Worklist.185" = type { [4 x %"struct.blink::Worklist<blink::EphemeronPairItem, 64, 4>::PrivateSegmentHolder"], %"class.blink::Worklist<blink::EphemeronPairItem, 64, 4>::GlobalPool" }
+%"struct.blink::Worklist<blink::EphemeronPairItem, 64, 4>::PrivateSegmentHolder" = type { %"class.blink::Worklist<blink::EphemeronPairItem, 64, 4>::Segment"*, %"class.blink::Worklist<blink::EphemeronPairItem, 64, 4>::Segment"*, [64 x i8] }
+%"class.blink::Worklist<blink::EphemeronPairItem, 64, 4>::Segment" = type opaque
+%"class.blink::Worklist<blink::EphemeronPairItem, 64, 4>::GlobalPool" = type { %"class.base::Lock", %"class.blink::Worklist<blink::EphemeronPairItem, 64, 4>::Segment"*, %"struct.std::__1::atomic.146" }
+%"class.std::__1::unique_ptr.189" = type { %"class.std::__1::__compressed_pair.190" }
+%"class.std::__1::__compressed_pair.190" = type { %"struct.std::__1::__compressed_pair_elem.191" }
+%"struct.std::__1::__compressed_pair_elem.191" = type { %"class.blink::Worklist.192"* }
+%"class.blink::Worklist.192" = type { [4 x %"struct.blink::Worklist<const blink::TraceWrapperV8Reference<v8::Value> *, 16, 4>::PrivateSegmentHolder"], %"class.blink::Worklist<const blink::TraceWrapperV8Reference<v8::Value> *, 16, 4>::GlobalPool" }
+%"struct.blink::Worklist<const blink::TraceWrapperV8Reference<v8::Value> *, 16, 4>::PrivateSegmentHolder" = type { %"class.blink::Worklist<const blink::TraceWrapperV8Reference<v8::Value> *, 16, 4>::Segment"*, %"class.blink::Worklist<const blink::TraceWrapperV8Reference<v8::Value> *, 16, 4>::Segment"*, [64 x i8] }
+%"class.blink::Worklist<const blink::TraceWrapperV8Reference<v8::Value> *, 16, 4>::Segment" = type opaque
+%"class.blink::Worklist<const blink::TraceWrapperV8Reference<v8::Value> *, 16, 4>::GlobalPool" = type { %"class.base::Lock", %"class.blink::Worklist<const blink::TraceWrapperV8Reference<v8::Value> *, 16, 4>::Segment"*, %"struct.std::__1::atomic.146" }
+%"class.std::__1::unique_ptr.196" = type { %"class.std::__1::__compressed_pair.197" }
+%"class.std::__1::__compressed_pair.197" = type { %"struct.std::__1::__compressed_pair_elem.198" }
+%"struct.std::__1::__compressed_pair_elem.198" = type { %"class.blink::Worklist.199"* }
+%"class.blink::Worklist.199" = type { [4 x %"struct.blink::Worklist<blink::NotSafeToConcurrentlyTraceItem, 64, 4>::PrivateSegmentHolder"], %"class.blink::Worklist<blink::NotSafeToConcurrentlyTraceItem, 64, 4>::GlobalPool" }
+%"struct.blink::Worklist<blink::NotSafeToConcurrentlyTraceItem, 64, 4>::PrivateSegmentHolder" = type { %"class.blink::Worklist<blink::NotSafeToConcurrentlyTraceItem, 64, 4>::Segment"*, %"class.blink::Worklist<blink::NotSafeToConcurrentlyTraceItem, 64, 4>::Segment"*, [64 x i8] }
+%"class.blink::Worklist<blink::NotSafeToConcurrentlyTraceItem, 64, 4>::Segment" = type { %"class.blink::Worklist<blink::NotSafeToConcurrentlyTraceItem, 64, 4>::Segment"*, i64, [64 x %"struct.blink::NotSafeToConcurrentlyTraceItem"] }
+%"struct.blink::NotSafeToConcurrentlyTraceItem" = type { %"struct.blink::TraceDescriptor", i64 }
+%"class.blink::Worklist<blink::NotSafeToConcurrentlyTraceItem, 64, 4>::GlobalPool" = type { %"class.base::Lock", %"class.blink::Worklist<blink::NotSafeToConcurrentlyTraceItem, 64, 4>::Segment"*, %"struct.std::__1::atomic.146" }
+%"class.std::__1::unique_ptr.203" = type { %"class.std::__1::__compressed_pair.204" }
+%"class.std::__1::__compressed_pair.204" = type { %"struct.std::__1::__compressed_pair_elem.205" }
+%"struct.std::__1::__compressed_pair_elem.205" = type { %"class.blink::WeakContainersWorklist"* }
+%"class.blink::WeakContainersWorklist" = type { %"class.WTF::Mutex", %"class.std::__1::unordered_set" }
+%"class.std::__1::unordered_set" = type { %"class.std::__1::__hash_table" }
+%"class.std::__1::__hash_table" = type <{ %"class.std::__1::unique_ptr.206", %"class.std::__1::__compressed_pair.213", %"class.std::__1::__compressed_pair.218", %"class.std::__1::__compressed_pair.220", [4 x i8] }>
+%"class.std::__1::unique_ptr.206" = type { %"class.std::__1::__compressed_pair.207" }
+%"class.std::__1::__compressed_pair.207" = type { %"struct.std::__1::__compressed_pair_elem.208", %"struct.std::__1::__compressed_pair_elem.209" }
+%"struct.std::__1::__compressed_pair_elem.208" = type { %"struct.std::__1::__hash_node_base"** }
+%"struct.std::__1::__hash_node_base" = type { %"struct.std::__1::__hash_node_base"* }
+%"struct.std::__1::__compressed_pair_elem.209" = type { %"class.std::__1::__bucket_list_deallocator" }
+%"class.std::__1::__bucket_list_deallocator" = type { %"class.std::__1::__compressed_pair.210" }
+%"class.std::__1::__compressed_pair.210" = type { %"struct.std::__1::__compressed_pair_elem.211" }
+%"struct.std::__1::__compressed_pair_elem.211" = type { i64 }
+%"class.std::__1::__compressed_pair.213" = type { %"struct.std::__1::__compressed_pair_elem.214" }
+%"struct.std::__1::__compressed_pair_elem.214" = type { %"struct.std::__1::__hash_node_base" }
+%"class.std::__1::__compressed_pair.218" = type { %"struct.std::__1::__compressed_pair_elem.211" }
+%"class.std::__1::__compressed_pair.220" = type { %"struct.std::__1::__compressed_pair_elem.221" }
+%"struct.std::__1::__compressed_pair_elem.221" = type { float }
+%"class.std::__1::unique_ptr.226" = type { %"class.std::__1::__compressed_pair.227" }
+%"class.std::__1::__compressed_pair.227" = type { %"struct.std::__1::__compressed_pair_elem.228" }
+%"struct.std::__1::__compressed_pair_elem.228" = type { %"class.blink::HeapCompact"* }
+%"class.blink::HeapCompact" = type <{ %"class.blink::ThreadHeap"*, %"class.std::__1::unique_ptr.229", i8, [7 x i8], i64, i64, i32, [4 x i8], i64, i8, [7 x i8] }>
+%"class.std::__1::unique_ptr.229" = type { %"class.std::__1::__compressed_pair.230" }
+%"class.std::__1::__compressed_pair.230" = type { %"struct.std::__1::__compressed_pair_elem.231" }
+%"struct.std::__1::__compressed_pair_elem.231" = type { %"class.blink::HeapCompact::MovableObjectFixups"* }
+%"class.blink::HeapCompact::MovableObjectFixups" = type opaque
+%"struct.blink::ThreadHeap::LastAllocatedRegion" = type { i8*, i64 }
+%"class.blink::BaseArena" = type <{ i32 (...)**, %"class.blink::PageStackThreadSafe", %"class.blink::PageStackThreadSafe", %"class.blink::PageStackThreadSafe", %"class.blink::PageStackThreadSafe", %"class.blink::ThreadState"*, i32, [4 x i8] }>
+%"class.blink::PageStackThreadSafe" = type { %"class.blink::PageStack", %"class.WTF::Mutex" }
+%"class.blink::PageStack" = type { %"class.WTF::Vector.238" }
+%"class.WTF::Vector.238" = type { %"class.WTF::VectorBuffer.239" }
+%"class.WTF::VectorBuffer.239" = type { %"class.WTF::VectorBufferBase.240" }
+%"class.WTF::VectorBufferBase.240" = type { %"class.blink::BasePage"**, i32, i32 }
+%"class.blink::BasePage" = type <{ i32 (...)**, %"class.blink::PageMemory"*, %"class.blink::BaseArena"*, %"class.blink::ThreadState"*, i64, i8, i8, i8, [5 x i8] }>
+%"class.blink::PageMemory" = type opaque
+%"class.std::__1::unique_ptr.246" = type { %"class.std::__1::__compressed_pair.247" }
+%"class.std::__1::__compressed_pair.247" = type { %"struct.std::__1::__compressed_pair_elem.248" }
+%"struct.std::__1::__compressed_pair_elem.248" = type { %"class.blink::PersistentRegion"* }
+%"class.blink::PersistentRegion" = type { %"class.blink::PersistentRegionBase" }
+%"class.blink::PersistentRegionBase" = type { %"class.blink::PersistentNode"*, %"struct.blink::PersistentNodeSlots"* }
+%"struct.blink::PersistentNodeSlots" = type { %"struct.blink::PersistentNodeSlots"*, [256 x %"class.blink::PersistentNode"] }
+%"class.WTF::Deque" = type { %"class.WTF::Deque<std::__1::pair<void *, bool (*)(const blink::LivenessBroker &, void *)>, 0, WTF::PartitionAllocator>::BackingBuffer", i32, i32 }
+%"class.WTF::Deque<std::__1::pair<void *, bool (*)(const blink::LivenessBroker &, void *)>, 0, WTF::PartitionAllocator>::BackingBuffer" = type { %"class.WTF::VectorBuffer.254" }
+%"class.WTF::VectorBuffer.254" = type { %"class.WTF::VectorBufferBase.255" }
+%"class.WTF::VectorBufferBase.255" = type { %"struct.std::__1::pair.256"*, i32, i32 }
+%"struct.std::__1::pair.256" = type { i8*, i1 (%"class.blink::LivenessBroker"*, i8*)* }
+%"class.blink::LivenessBroker" = type { i8 }
+%"class.v8::EmbedderGraph" = type opaque
+%"class.std::__1::unique_ptr.257" = type { %"class.std::__1::__compressed_pair.258" }
+%"class.std::__1::__compressed_pair.258" = type { %"struct.std::__1::__compressed_pair_elem.259" }
+%"struct.std::__1::__compressed_pair_elem.259" = type { %"class.blink::UnifiedHeapController"* }
+%"class.blink::UnifiedHeapController" = type opaque
+%"class.std::__1::unique_ptr.263" = type { %"class.std::__1::__compressed_pair.264" }
+%"class.std::__1::__compressed_pair.264" = type { %"struct.std::__1::__compressed_pair_elem.265" }
+%"struct.std::__1::__compressed_pair_elem.265" = type { %"class.v8::EmbedderRootsHandler"* }
+%"class.v8::EmbedderRootsHandler" = type { i32 (...)** }
+%"struct.blink::ThreadState::GCData" = type { i32, i32, i32, i32, %"class.std::__1::unique_ptr.269" }
+%"class.std::__1::unique_ptr.269" = type { %"class.std::__1::__compressed_pair.270" }
+%"class.std::__1::__compressed_pair.270" = type { %"struct.std::__1::__compressed_pair_elem.271" }
+%"struct.std::__1::__compressed_pair_elem.271" = type { %"class.blink::MarkingVisitor"* }
+%"class.blink::MarkingVisitor" = type { %"class.blink::MarkingVisitorBase", %"class.blink::MarkingVisitor::RecentlyRetracedWeakContainers" }
+%"class.blink::MarkingVisitorBase" = type { %"class.blink::Visitor", %"class.blink::Worklist<blink::TraceDescriptor, 512, 4>::View", %"class.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::View", %"class.blink::Worklist<const void *, 16, 4>::View", %"class.blink::Worklist<blink::CustomCallbackItem, 64, 4>::View", %"class.blink::Worklist<const void *const *, 256, 4>::View", %"class.blink::Worklist<blink::EphemeronPairItem, 64, 4>::View", %"class.blink::Worklist<blink::EphemeronPairItem, 64, 4>::View", %"class.blink::WeakContainersWorklist"*, i64, i32, i32 }
+%"class.blink::Worklist<blink::TraceDescriptor, 512, 4>::View" = type <{ %"class.blink::Worklist"*, i32, [4 x i8] }>
+%"class.blink::Worklist<blink::HeapObjectHeader *, 64, 4>::View" = type <{ %"class.blink::Worklist.157"*, i32, [4 x i8] }>
+%"class.blink::Worklist<const void *, 16, 4>::View" = type <{ %"class.blink::Worklist.164"*, i32, [4 x i8] }>
+%"class.blink::Worklist<blink::CustomCallbackItem, 64, 4>::View" = type <{ %"class.blink::Worklist.171"*, i32, [4 x i8] }>
+%"class.blink::Worklist<const void *const *, 256, 4>::View" = type <{ %"class.blink::Worklist.178"*, i32, [4 x i8] }>
+%"class.blink::Worklist<blink::EphemeronPairItem, 64, 4>::View" = type <{ %"class.blink::Worklist.185"*, i32, [4 x i8] }>
+%"class.blink::MarkingVisitor::RecentlyRetracedWeakContainers" = type { %"class.std::__1::vector", i64 }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"class.blink::HeapObjectHeader"**, %"class.blink::HeapObjectHeader"**, %"class.std::__1::__compressed_pair.321" }
+%"class.blink::HeapObjectHeader" = type { i32, i16, i16 }
+%"class.std::__1::__compressed_pair.321" = type { %"struct.std::__1::__compressed_pair_elem.322" }
+%"struct.std::__1::__compressed_pair_elem.322" = type { %"class.blink::HeapObjectHeader"** }
+%"class.std::__1::unique_ptr.275" = type { %"class.std::__1::__compressed_pair.276" }
+%"class.std::__1::__compressed_pair.276" = type { %"struct.std::__1::__compressed_pair_elem.277" }
+%"struct.std::__1::__compressed_pair_elem.277" = type { %"class.blink::ThreadState::IncrementalMarkingScheduler"* }
+%"class.blink::ThreadState::IncrementalMarkingScheduler" = type opaque
+%"class.std::__1::unique_ptr.281" = type { %"class.std::__1::__compressed_pair.282" }
+%"class.std::__1::__compressed_pair.282" = type { %"struct.std::__1::__compressed_pair_elem.283" }
+%"struct.std::__1::__compressed_pair_elem.283" = type { %"class.blink::MarkingSchedulingOracle"* }
+%"class.blink::MarkingSchedulingOracle" = type opaque
+%"class.base::JobHandle" = type { %class.scoped_refptr.287 }
+%class.scoped_refptr.287 = type { %"class.base::internal::JobTaskSource"* }
+%"class.base::internal::JobTaskSource" = type opaque
+%"struct.std::__1::atomic.288" = type { %"struct.std::__1::__atomic_base.289" }
+%"struct.std::__1::__atomic_base.289" = type { %"struct.std::__1::__cxx_atomic_impl.290" }
+%"struct.std::__1::__cxx_atomic_impl.290" = type { %"struct.std::__1::__cxx_atomic_base_impl.291" }
+%"struct.std::__1::__cxx_atomic_base_impl.291" = type { i8 }
+%"class.blink::Member.364" = type { %"class.blink::MemberBase.365" }
+%"class.blink::MemberBase.365" = type { %"class.blink::V8PerContextData"* }
+%"class.blink::V8PerContextData" = type opaque
+%"class.blink::SelfKeepAlive" = type { %"class.blink::Persistent.366" }
+%"class.blink::Persistent.366" = type { %"class.blink::PersistentBase.367" }
+%"class.blink::PersistentBase.367" = type { %"class.blink::ScriptState"*, %"class.blink::PersistentNodePtr.363" }
+%"class.util::TokenType" = type { %"class.base::StrongAlias" }
+%"class.base::StrongAlias" = type { %"class.base::UnguessableToken" }
+%"class.base::UnguessableToken" = type { %"class.base::Token" }
+%"class.base::Token" = type { i64, i64 }
+%"class.blink::TaskHandle" = type { %class.scoped_refptr.368 }
+%class.scoped_refptr.368 = type { %"class.blink::TaskHandle::Runner"* }
+%"class.blink::TaskHandle::Runner" = type opaque
+%"class.blink::ScriptPromise::InternalResolver" = type { %"class.blink::Member.349", %"class.blink::ScriptValue" }
+%"class.blink::ScriptValue" = type { %"class.v8::Isolate"*, %"class.blink::WorldSafeV8Reference" }
+%"class.blink::WorldSafeV8Reference" = type { %"class.blink::TraceWrapperV8Reference.369", %class.scoped_refptr.372 }
+%class.scoped_refptr.372 = type { %"class.blink::DOMWrapperWorld"* }
+%"class.blink::TraceWrapperV8Reference.369" = type { %"class.v8::TracedReference.370" }
+%"class.v8::TracedReference.370" = type { %"class.v8::BasicTracedReference.371" }
+%"class.v8::BasicTracedReference.371" = type { %"class.v8::TracedReferenceBase" }
+%"class.blink::SelfKeepAlive.373" = type { %"class.blink::Persistent.374" }
+%"class.blink::Persistent.374" = type { %"class.blink::PersistentBase.375" }
+%"class.blink::PersistentBase.375" = type { %"class.blink::ScriptPromiseResolver"*, %"class.blink::PersistentNodePtr.363" }
+%"class.blink::Member.377" = type { %"class.blink::MemberBase.378" }
+%"class.blink::MemberBase.378" = type { %"class.blink::AudioListener"* }
+%"class.blink::AudioListener" = type opaque
+%"class.blink::AsyncAudioDecoder" = type { i8 }
+%"class.blink::HeapHashSet.379" = type { %"class.WTF::HashSet.382" }
+%"class.WTF::HashSet.382" = type { %"class.WTF::HashTable.383" }
+%"class.WTF::HashTable.383" = type <{ %"class.blink::Member.344"*, i32, i32, i32, [4 x i8] }>
+%"class.blink::Member.385" = type { %"class.blink::MemberBase.386" }
+%"class.blink::MemberBase.386" = type { %"class.blink::PeriodicWave"* }
+%"class.blink::PeriodicWave" = type opaque
+%"class.blink::Member.387" = type { %"class.blink::MemberBase.388" }
+%"class.blink::MemberBase.388" = type { %"class.blink::AudioWorklet"* }
+%"class.blink::AudioWorklet" = type opaque
+%"class.blink::WorkerThread" = type opaque
+%class.scoped_refptr.13 = type { %"class.blink::AudioHandler"* }
+%"class.blink::HeapVector.94" = type { %"class.WTF::Vector.97" }
+%"class.WTF::Vector.97" = type { %"class.WTF::VectorBuffer.98" }
+%"class.WTF::VectorBuffer.98" = type { %"class.WTF::VectorBufferBase.99" }
+%"class.WTF::VectorBufferBase.99" = type { %"class.blink::Member.100"*, i32, i32 }
+%"class.blink::Member.100" = type opaque
+%"class.blink::HeapVector.102" = type { %"class.WTF::Vector.105" }
+%"class.WTF::Vector.105" = type { %"class.WTF::VectorBuffer.106" }
+%"class.WTF::VectorBuffer.106" = type { %"class.WTF::VectorBufferBase.107" }
+%"class.WTF::VectorBufferBase.107" = type { %"class.blink::Member.108"*, i32, i32 }
+%"class.blink::Member.108" = type opaque
+%"class.blink::PersistentNodePtr" = type { %"class.blink::PersistentNode"* }
+%"class.blink::UntracedMember" = type { %"class.blink::MemberBase.292" }
+%"class.blink::MemberBase.292" = type { %"class.blink::BaseAudioContext"* }
+%"class.WTF::Vector.293" = type { %"class.WTF::VectorBuffer.294" }
+%"class.WTF::VectorBuffer.294" = type { %"class.WTF::VectorBufferBase.295" }
+%"class.WTF::VectorBufferBase.295" = type { %"class.std::__1::unique_ptr.296"*, i32, i32 }
+%"class.std::__1::unique_ptr.296" = type opaque
+%"class.WTF::Vector.299" = type { %"class.WTF::VectorBuffer.300" }
+%"class.WTF::VectorBuffer.300" = type { %"class.WTF::VectorBufferBase.301" }
+%"class.WTF::VectorBufferBase.301" = type { %"class.std::__1::unique_ptr.302"*, i32, i32 }
+%"class.std::__1::unique_ptr.302" = type opaque
+%"class.WTF::HashSet.23" = type { %"class.WTF::HashTable.24" }
+%"class.WTF::HashTable.24" = type <{ %"class.blink::AudioSummingJunction"**, i32, i32, i32, [4 x i8] }>
+%"class.blink::AudioSummingJunction" = type <{ i32 (...)**, %class.scoped_refptr.1, %"class.WTF::HashSet.27", %"class.WTF::Vector.33", i8, [7 x i8] }>
+%"class.WTF::HashSet" = type { %"class.WTF::HashTable" }
+%"class.WTF::HashTable" = type <{ %class.scoped_refptr.13*, i32, i32, i32, [4 x i8] }>
+%"class.WTF::Vector.14" = type { %"class.WTF::VectorBuffer.15" }
+%"class.WTF::VectorBuffer.15" = type { %"class.WTF::VectorBufferBase.16" }
+%"class.WTF::VectorBufferBase.16" = type { %class.scoped_refptr.13*, i32, i32 }
+%class.scoped_refptr.31 = type { %"class.base::SingleThreadTaskRunner"* }
+%"class.base::SingleThreadTaskRunner" = type { %"class.base::SequencedTaskRunner.base", [4 x i8] }
+%"class.base::SequencedTaskRunner.base" = type { %"class.base::TaskRunner.base" }
+%"class.base::TaskRunner.base" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe.32" }>
+%"class.base::RefCountedThreadSafe.32" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.WTF::RecursiveMutex" = type { %"class.WTF::MutexBase" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.0" }
+%"struct.std::__1::__atomic_base.0" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"class.WTF::HashSet.27" = type { %"class.WTF::HashTable.28" }
+%"class.WTF::HashTable.28" = type <{ %"class.blink::AudioNodeOutput"**, i32, i32, i32, [4 x i8] }>
+%"class.blink::AudioNodeOutput" = type opaque
+%"class.WTF::Vector.33" = type { %"class.WTF::VectorBuffer.34" }
+%"class.WTF::VectorBuffer.34" = type { %"class.WTF::VectorBufferBase.35" }
+%"class.WTF::VectorBufferBase.35" = type { %"class.blink::AudioNodeOutput"**, i32, i32 }
+%"class.WTF::ThreadSafeRefCounted" = type { %"class.base::RefCountedThreadSafe" }
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.WTF::String" = type { %class.scoped_refptr.38 }
+%"struct.std::__1::atomic.44" = type { %"struct.std::__1::__atomic_base.45" }
+%"struct.std::__1::__atomic_base.45" = type { %"struct.std::__1::__cxx_atomic_impl.46" }
+%"struct.std::__1::__cxx_atomic_impl.46" = type { %"struct.std::__1::__cxx_atomic_base_impl.47" }
+%"struct.std::__1::__cxx_atomic_base_impl.47" = type { float }
+%"class.blink::AudioParamTimeline" = type <{ %"class.WTF::Vector.48", %"class.WTF::HashSet.55", %"class.WTF::Mutex", float, [4 x i8] }>
+%"class.WTF::Vector.48" = type { %"class.WTF::VectorBuffer.49" }
+%"class.WTF::VectorBuffer.49" = type { %"class.WTF::VectorBufferBase.50" }
+%"class.WTF::VectorBufferBase.50" = type { %"class.std::__1::unique_ptr.51"*, i32, i32 }
+%"class.std::__1::unique_ptr.51" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"class.blink::AudioParamTimeline::ParamEvent"* }
+%"class.blink::AudioParamTimeline::ParamEvent" = type <{ i32, float, double, float, [4 x i8], double, double, double, %"class.WTF::Vector.503", double, float, [4 x i8], %"class.std::__1::unique_ptr.51", i8, [7 x i8] }>
+%"class.WTF::Vector.503" = type { %"class.WTF::VectorBuffer.504" }
+%"class.WTF::VectorBuffer.504" = type { %"class.WTF::VectorBufferBase.505" }
+%"class.WTF::VectorBufferBase.505" = type { float*, i32, i32 }
+%"class.WTF::HashSet.55" = type { %"class.WTF::HashTable.56" }
+%"class.WTF::HashTable.56" = type <{ %"class.blink::AudioParamTimeline::ParamEvent"**, i32, i32, i32, [4 x i8] }>
+%class.scoped_refptr.59 = type { %"class.blink::AudioDestinationHandler"* }
+%"class.blink::AudioDestinationHandler" = type <{ %"class.blink::AudioHandler.base", [4 x i8], %"struct.std::__1::atomic.146", i8, [7 x i8] }>
+%"class.blink::AudioHandler.base" = type <{ i32 (...)**, %"class.WTF::ThreadSafeRefCounted.60", [4 x i8], double, double, i8, [3 x i8], i32, %"class.blink::WeakPersistent", %"class.blink::UntracedMember", %class.scoped_refptr.1, %"class.WTF::Vector.293", %"class.WTF::Vector.299", i32, i8, i8, [2 x i8], i32, i32, i32, i32, i32 }>
+%class.scoped_refptr.305 = type { %"class.blink::AudioBus"* }
+%"class.blink::AudioBus" = type { %"class.WTF::ThreadSafeRefCounted.306", i32, %"class.WTF::Vector.308", i32, float }
+%"class.WTF::ThreadSafeRefCounted.306" = type { %"class.base::RefCountedThreadSafe.307" }
+%"class.base::RefCountedThreadSafe.307" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.WTF::Vector.308" = type { %"class.WTF::VectorBuffer.309" }
+%"class.WTF::VectorBuffer.309" = type { %"class.WTF::VectorBufferBase.310", [64 x i8] }
+%"class.WTF::VectorBufferBase.310" = type { %"class.blink::AudioChannel"*, i32, i32 }
+%"class.blink::AudioChannel" = type <{ i64, float*, %"class.std::__1::unique_ptr.311", i8, [7 x i8] }>
+%"class.std::__1::unique_ptr.311" = type { %"class.std::__1::__compressed_pair.312" }
+%"class.std::__1::__compressed_pair.312" = type { %"struct.std::__1::__compressed_pair_elem.313" }
+%"struct.std::__1::__compressed_pair_elem.313" = type { %"class.blink::AudioArray.314"* }
+%"class.blink::AudioArray.314" = type <{ float*, float*, i32, [4 x i8] }>
+%"class.logging::CheckOpResult" = type { i8* }
+
+$_ZN5blink15BiquadDSPKernelD2Ev = comdat any
+
+$_ZN5blink15BiquadDSPKernelD0Ev = comdat any
+
+$_ZN5blink14AudioDSPKernel22ProcessOnlyAudioParamsEj = comdat any
+
+$_ZN5blink15BiquadDSPKernel5ResetEv = comdat any
+
+$_ZN3WTF18PartitionAllocator13QuantizedSizeIfEEmm = comdat any
+
+$_ZN3WTF6VectorIfLj0ENS_18PartitionAllocatorEE2atEj = comdat any
+
+@.str = private unnamed_addr constant [71 x i8] c"../../third_party/blink/renderer/modules/webaudio/biquad_dsp_kernel.cc\00", align 1
+@.str.1 = private unnamed_addr constant [66 x i8] c"static_cast<unsigned>(frames_to_process) <= RenderQuantumFrames()\00", align 1
+@_ZTVN5blink15BiquadDSPKernelE = hidden unnamed_addr constant { [10 x i8*] } { [10 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.blink::BiquadDSPKernel"*)* @_ZN5blink15BiquadDSPKernelD2Ev to i8*), i8* bitcast (void (%"class.blink::BiquadDSPKernel"*)* @_ZN5blink15BiquadDSPKernelD0Ev to i8*), i8* bitcast (void (%"class.blink::BiquadDSPKernel"*, float*, float*, i32)* @_ZN5blink15BiquadDSPKernel7ProcessEPKfPfj to i8*), i8* bitcast (void (%"class.blink::AudioDSPKernel"*, i32)* @_ZN5blink14AudioDSPKernel22ProcessOnlyAudioParamsEj to i8*), i8* bitcast (void (%"class.blink::BiquadDSPKernel"*)* @_ZN5blink15BiquadDSPKernel5ResetEv to i8*), i8* bitcast (double (%"class.blink::BiquadDSPKernel"*)* @_ZNK5blink15BiquadDSPKernel8TailTimeEv to i8*), i8* bitcast (double (%"class.blink::BiquadDSPKernel"*)* @_ZNK5blink15BiquadDSPKernel11LatencyTimeEv to i8*), i8* bitcast (i1 (%"class.blink::BiquadDSPKernel"*)* @_ZNK5blink15BiquadDSPKernel22RequiresTailProcessingEv to i8*)] }, align 8
+@.str.2 = private unnamed_addr constant [44 x i8] c"count <= MaxElementCountInBackingStore<T>()\00", align 1
+@.str.3 = private unnamed_addr constant [78 x i8] c"../../third_party/blink/renderer/platform/wtf/allocator/partition_allocator.h\00", align 1
+@__PRETTY_FUNCTION__._ZN3WTF21GetStringWithTypeNameIfEEPKcv = private unnamed_addr constant [53 x i8] c"const char *WTF::GetStringWithTypeName() [T = float]\00", align 1
+@.str.4 = private unnamed_addr constant [11 x i8] c"i < size()\00", align 1
+@.str.5 = private unnamed_addr constant [55 x i8] c"../../third_party/blink/renderer/platform/wtf/vector.h\00", align 1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink15BiquadDSPKernel29UpdateCoefficientsIfNecessaryEi(%"class.blink::BiquadDSPKernel"*, i32) local_unnamed_addr #0 align 2 {
+  %3 = alloca [0 x float], align 16
+  %4 = alloca %"class.logging::CheckError", align 8
+  %5 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 0, i32 1
+  %6 = bitcast %"class.blink::AudioDSPKernelProcessor"** %5 to %"class.blink::BiquadProcessor"**
+  %7 = load %"class.blink::BiquadProcessor"*, %"class.blink::BiquadProcessor"** %6, align 8
+  %8 = getelementptr inbounds %"class.blink::BiquadProcessor", %"class.blink::BiquadProcessor"* %7, i64 0, i32 7
+  %9 = load i8, i8* %8, align 8, !range !2
+  %10 = icmp eq i8 %9, 0
+  br i1 %10, label %125, label %11
+
+11:                                               ; preds = %2
+  %12 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 0, i32 3
+  %13 = load i32, i32* %12, align 4
+  %14 = zext i32 %13 to i64
+  %15 = tail call i8* @llvm.stacksave()
+  %16 = alloca float, i64 %14, align 16
+  %17 = icmp eq i32 %13, 0
+  br i1 %17, label %21, label %18
+
+18:                                               ; preds = %11
+  %19 = bitcast float* %16 to i8*
+  %20 = shl nuw nsw i64 %14, 2
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %19, i8 -1, i64 %20, i1 false)
+  br label %21
+
+21:                                               ; preds = %18, %11
+  %22 = load i32, i32* %12, align 4
+  %23 = zext i32 %22 to i64
+  %24 = alloca float, i64 %23, align 16
+  %25 = icmp eq i32 %22, 0
+  br i1 %25, label %26, label %29
+
+26:                                               ; preds = %21
+  %27 = getelementptr inbounds [0 x float], [0 x float]* %3, i64 0, i64 0
+  %28 = alloca float, i64 %23, align 16
+  br label %37
+
+29:                                               ; preds = %21
+  %30 = bitcast float* %24 to i8*
+  %31 = shl nuw nsw i64 %23, 2
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %30, i8 -1, i64 %31, i1 false)
+  %32 = alloca float, i64 %23, align 16
+  %33 = bitcast float* %32 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %33, i8 -1, i64 %31, i1 false)
+  %34 = alloca float, i64 %23, align 16
+  %35 = bitcast float* %34 to i8*
+  %36 = shl nuw nsw i64 %23, 2
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %35, i8 -1, i64 %36, i1 false)
+  br label %37
+
+37:                                               ; preds = %26, %29
+  %38 = phi float* [ %28, %26 ], [ %34, %29 ]
+  %39 = phi float* [ %27, %26 ], [ %32, %29 ]
+  %40 = icmp ult i32 %22, %1
+  br i1 %40, label %41, label %44
+
+41:                                               ; preds = %37
+  %42 = bitcast %"class.logging::CheckError"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %42) #1
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %4, i8* getelementptr inbounds ([71 x i8], [71 x i8]* @.str, i64 0, i64 0), i32 57, i8* getelementptr inbounds ([66 x i8], [66 x i8]* @.str.1, i64 0, i64 0)) #1
+  %43 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %4) #1
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %4) #1
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %42) #1
+  br label %44
+
+44:                                               ; preds = %37, %41
+  %45 = load %"class.blink::BiquadProcessor"*, %"class.blink::BiquadProcessor"** %6, align 8
+  %46 = getelementptr inbounds %"class.blink::BiquadProcessor", %"class.blink::BiquadProcessor"* %45, i64 0, i32 8
+  %47 = load i8, i8* %46, align 1, !range !2
+  %48 = icmp eq i8 %47, 0
+  br i1 %48, label %107, label %49
+
+49:                                               ; preds = %44
+  %50 = getelementptr inbounds %"class.blink::BiquadProcessor", %"class.blink::BiquadProcessor"* %45, i64 0, i32 9
+  %51 = load i8, i8* %50, align 2, !range !2
+  %52 = icmp eq i8 %51, 0
+  br i1 %52, label %107, label %53
+
+53:                                               ; preds = %49
+  %54 = getelementptr inbounds %"class.blink::BiquadProcessor", %"class.blink::BiquadProcessor"* %45, i64 0, i32 3, i32 0
+  %55 = load %"class.blink::AudioParamHandler"*, %"class.blink::AudioParamHandler"** %54, align 8
+  call void @_ZN5blink17AudioParamHandler29CalculateSampleAccurateValuesEPfj(%"class.blink::AudioParamHandler"* %55, float* nonnull %16, i32 %1) #1
+  %56 = load %"class.blink::BiquadProcessor"*, %"class.blink::BiquadProcessor"** %6, align 8
+  %57 = getelementptr inbounds %"class.blink::BiquadProcessor", %"class.blink::BiquadProcessor"* %56, i64 0, i32 4, i32 0
+  %58 = load %"class.blink::AudioParamHandler"*, %"class.blink::AudioParamHandler"** %57, align 8
+  call void @_ZN5blink17AudioParamHandler29CalculateSampleAccurateValuesEPfj(%"class.blink::AudioParamHandler"* %58, float* nonnull %24, i32 %1) #1
+  %59 = load %"class.blink::BiquadProcessor"*, %"class.blink::BiquadProcessor"** %6, align 8
+  %60 = getelementptr inbounds %"class.blink::BiquadProcessor", %"class.blink::BiquadProcessor"* %59, i64 0, i32 5, i32 0
+  %61 = load %"class.blink::AudioParamHandler"*, %"class.blink::AudioParamHandler"** %60, align 8
+  call void @_ZN5blink17AudioParamHandler29CalculateSampleAccurateValuesEPfj(%"class.blink::AudioParamHandler"* %61, float* nonnull %39, i32 %1) #1
+  %62 = load %"class.blink::BiquadProcessor"*, %"class.blink::BiquadProcessor"** %6, align 8
+  %63 = getelementptr inbounds %"class.blink::BiquadProcessor", %"class.blink::BiquadProcessor"* %62, i64 0, i32 6, i32 0
+  %64 = load %"class.blink::AudioParamHandler"*, %"class.blink::AudioParamHandler"** %63, align 8
+  call void @_ZN5blink17AudioParamHandler29CalculateSampleAccurateValuesEPfj(%"class.blink::AudioParamHandler"* %64, float* nonnull %38, i32 %1) #1
+  %65 = load float, float* %16, align 16
+  %66 = icmp sgt i32 %1, 1
+  br i1 %66, label %67, label %123
+
+67:                                               ; preds = %53
+  %68 = zext i32 %1 to i64
+  br label %71
+
+69:                                               ; preds = %71
+  %70 = icmp eq i64 %76, %68
+  br i1 %70, label %77, label %71
+
+71:                                               ; preds = %69, %67
+  %72 = phi i64 [ 1, %67 ], [ %76, %69 ]
+  %73 = getelementptr inbounds float, float* %16, i64 %72
+  %74 = load float, float* %73, align 4
+  %75 = fcmp une float %74, %65
+  %76 = add nuw nsw i64 %72, 1
+  br i1 %75, label %123, label %69
+
+77:                                               ; preds = %69
+  %78 = load float, float* %24, align 16
+  br label %81
+
+79:                                               ; preds = %81
+  %80 = icmp eq i64 %86, %68
+  br i1 %80, label %87, label %81
+
+81:                                               ; preds = %79, %77
+  %82 = phi i64 [ 1, %77 ], [ %86, %79 ]
+  %83 = getelementptr inbounds float, float* %24, i64 %82
+  %84 = load float, float* %83, align 4
+  %85 = fcmp une float %84, %78
+  %86 = add nuw nsw i64 %82, 1
+  br i1 %85, label %123, label %79
+
+87:                                               ; preds = %79
+  %88 = load float, float* %39, align 4
+  br label %91
+
+89:                                               ; preds = %91
+  %90 = icmp eq i64 %96, %68
+  br i1 %90, label %97, label %91
+
+91:                                               ; preds = %89, %87
+  %92 = phi i64 [ 1, %87 ], [ %96, %89 ]
+  %93 = getelementptr inbounds float, float* %39, i64 %92
+  %94 = load float, float* %93, align 4
+  %95 = fcmp une float %94, %88
+  %96 = add nuw nsw i64 %92, 1
+  br i1 %95, label %123, label %89
+
+97:                                               ; preds = %89
+  %98 = load float, float* %38, align 16
+  br label %101
+
+99:                                               ; preds = %101
+  %100 = icmp eq i64 %106, %68
+  br i1 %100, label %123, label %101
+
+101:                                              ; preds = %99, %97
+  %102 = phi i64 [ 1, %97 ], [ %106, %99 ]
+  %103 = getelementptr inbounds float, float* %38, i64 %102
+  %104 = load float, float* %103, align 4
+  %105 = fcmp une float %104, %98
+  %106 = add nuw nsw i64 %102, 1
+  br i1 %105, label %123, label %99
+
+107:                                              ; preds = %49, %44
+  %108 = getelementptr inbounds %"class.blink::BiquadProcessor", %"class.blink::BiquadProcessor"* %45, i64 0, i32 3, i32 0
+  %109 = load %"class.blink::AudioParamHandler"*, %"class.blink::AudioParamHandler"** %108, align 8
+  %110 = call float @_ZN5blink17AudioParamHandler10FinalValueEv(%"class.blink::AudioParamHandler"* %109) #1
+  store float %110, float* %16, align 16
+  %111 = load %"class.blink::BiquadProcessor"*, %"class.blink::BiquadProcessor"** %6, align 8
+  %112 = getelementptr inbounds %"class.blink::BiquadProcessor", %"class.blink::BiquadProcessor"* %111, i64 0, i32 4, i32 0
+  %113 = load %"class.blink::AudioParamHandler"*, %"class.blink::AudioParamHandler"** %112, align 8
+  %114 = call float @_ZN5blink17AudioParamHandler10FinalValueEv(%"class.blink::AudioParamHandler"* %113) #1
+  store float %114, float* %24, align 16
+  %115 = load %"class.blink::BiquadProcessor"*, %"class.blink::BiquadProcessor"** %6, align 8
+  %116 = getelementptr inbounds %"class.blink::BiquadProcessor", %"class.blink::BiquadProcessor"* %115, i64 0, i32 5, i32 0
+  %117 = load %"class.blink::AudioParamHandler"*, %"class.blink::AudioParamHandler"** %116, align 8
+  %118 = call float @_ZN5blink17AudioParamHandler10FinalValueEv(%"class.blink::AudioParamHandler"* %117) #1
+  store float %118, float* %39, align 16
+  %119 = load %"class.blink::BiquadProcessor"*, %"class.blink::BiquadProcessor"** %6, align 8
+  %120 = getelementptr inbounds %"class.blink::BiquadProcessor", %"class.blink::BiquadProcessor"* %119, i64 0, i32 6, i32 0
+  %121 = load %"class.blink::AudioParamHandler"*, %"class.blink::AudioParamHandler"** %120, align 8
+  %122 = call float @_ZN5blink17AudioParamHandler10FinalValueEv(%"class.blink::AudioParamHandler"* %121) #1
+  store float %122, float* %38, align 16
+  br label %123
+
+123:                                              ; preds = %71, %81, %91, %99, %101, %53, %107
+  %124 = phi i32 [ 1, %107 ], [ 1, %53 ], [ 1, %99 ], [ %1, %101 ], [ %1, %91 ], [ %1, %81 ], [ %1, %71 ]
+  call void @_ZN5blink15BiquadDSPKernel18UpdateCoefficientsEiPKfS2_S2_S2_(%"class.blink::BiquadDSPKernel"* %0, i32 %124, float* nonnull %16, float* nonnull %24, float* nonnull %39, float* nonnull %38)
+  call void @llvm.stackrestore(i8* %15)
+  br label %125
+
+125:                                              ; preds = %2, %123
+  ret void
+}
+
+; Function Attrs: nounwind
+declare i8* @llvm.stacksave() #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+declare void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* sret, i8*, i32, i8*) local_unnamed_addr #3
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"*) local_unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"*) unnamed_addr #4
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+declare void @_ZN5blink17AudioParamHandler29CalculateSampleAccurateValuesEPfj(%"class.blink::AudioParamHandler"*, float*, i32) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink15BiquadDSPKernel18UpdateCoefficientsEiPKfS2_S2_S2_(%"class.blink::BiquadDSPKernel"*, i32, float* nocapture readonly, float* nocapture readonly, float* nocapture readonly, float* nocapture readonly) local_unnamed_addr #0 align 2 {
+  %7 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 0, i32 2
+  %8 = load float, float* %7, align 8
+  %9 = fpext float %8 to double
+  %10 = fmul double %9, 5.000000e-01
+  %11 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 1
+  %12 = icmp sgt i32 %1, 1
+  %13 = zext i1 %12 to i8
+  %14 = getelementptr inbounds %"class.blink::Biquad", %"class.blink::Biquad"* %11, i64 0, i32 0
+  store i8 %13, i8* %14, align 8
+  %15 = icmp sgt i32 %1, 0
+  br i1 %15, label %16, label %23
+
+16:                                               ; preds = %6
+  %17 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 0, i32 1
+  %18 = bitcast %"class.blink::AudioDSPKernelProcessor"** %17 to %"class.blink::BiquadProcessor"**
+  %19 = zext i32 %1 to i64
+  br label %34
+
+20:                                               ; preds = %96
+  %21 = load float, float* %7, align 8
+  %22 = fpext float %21 to double
+  br label %23
+
+23:                                               ; preds = %20, %6
+  %24 = phi double [ %22, %20 ], [ %9, %6 ]
+  %25 = add nsw i32 %1, -1
+  %26 = fmul double %24, 3.000000e+01
+  %27 = tail call double @_ZN5blink6Biquad9TailFrameEid(%"class.blink::Biquad"* %11, i32 %25, double %26) #1
+  %28 = fdiv double %27, %24
+  %29 = fcmp ult double %28, 3.000000e+01
+  %30 = fcmp ole double %28, 0.000000e+00
+  %31 = select i1 %30, double 0.000000e+00, double %28
+  %32 = select i1 %29, double %31, double 3.000000e+01
+  %33 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 3
+  store double %32, double* %33, align 8
+  ret void
+
+34:                                               ; preds = %96, %16
+  %35 = phi i64 [ 0, %16 ], [ %97, %96 ]
+  %36 = getelementptr inbounds float, float* %2, i64 %35
+  %37 = load float, float* %36, align 4
+  %38 = fpext float %37 to double
+  %39 = fdiv double %38, %10
+  %40 = getelementptr inbounds float, float* %5, i64 %35
+  %41 = load float, float* %40, align 4
+  %42 = fcmp une float %41, 0.000000e+00
+  br i1 %42, label %43, label %48
+
+43:                                               ; preds = %34
+  %44 = fdiv float %41, 1.200000e+03
+  %45 = tail call float @exp2f(float %44) #1
+  %46 = fpext float %45 to double
+  %47 = fmul double %39, %46
+  br label %48
+
+48:                                               ; preds = %43, %34
+  %49 = phi double [ %47, %43 ], [ %39, %34 ]
+  %50 = load %"class.blink::BiquadProcessor"*, %"class.blink::BiquadProcessor"** %18, align 8
+  %51 = getelementptr inbounds %"class.blink::BiquadProcessor", %"class.blink::BiquadProcessor"* %50, i64 0, i32 2
+  %52 = load i32, i32* %51, align 4
+  switch i32 %52, label %96 [
+    i32 0, label %53
+    i32 1, label %58
+    i32 2, label %63
+    i32 3, label %68
+    i32 4, label %73
+    i32 5, label %78
+    i32 6, label %86
+    i32 7, label %91
+  ]
+
+53:                                               ; preds = %48
+  %54 = getelementptr inbounds float, float* %3, i64 %35
+  %55 = load float, float* %54, align 4
+  %56 = fpext float %55 to double
+  %57 = trunc i64 %35 to i32
+  tail call void @_ZN5blink6Biquad16SetLowpassParamsEidd(%"class.blink::Biquad"* %11, i32 %57, double %49, double %56) #1
+  br label %96
+
+58:                                               ; preds = %48
+  %59 = getelementptr inbounds float, float* %3, i64 %35
+  %60 = load float, float* %59, align 4
+  %61 = fpext float %60 to double
+  %62 = trunc i64 %35 to i32
+  tail call void @_ZN5blink6Biquad17SetHighpassParamsEidd(%"class.blink::Biquad"* %11, i32 %62, double %49, double %61) #1
+  br label %96
+
+63:                                               ; preds = %48
+  %64 = getelementptr inbounds float, float* %3, i64 %35
+  %65 = load float, float* %64, align 4
+  %66 = fpext float %65 to double
+  %67 = trunc i64 %35 to i32
+  tail call void @_ZN5blink6Biquad17SetBandpassParamsEidd(%"class.blink::Biquad"* %11, i32 %67, double %49, double %66) #1
+  br label %96
+
+68:                                               ; preds = %48
+  %69 = getelementptr inbounds float, float* %4, i64 %35
+  %70 = load float, float* %69, align 4
+  %71 = fpext float %70 to double
+  %72 = trunc i64 %35 to i32
+  tail call void @_ZN5blink6Biquad17SetLowShelfParamsEidd(%"class.blink::Biquad"* %11, i32 %72, double %49, double %71) #1
+  br label %96
+
+73:                                               ; preds = %48
+  %74 = getelementptr inbounds float, float* %4, i64 %35
+  %75 = load float, float* %74, align 4
+  %76 = fpext float %75 to double
+  %77 = trunc i64 %35 to i32
+  tail call void @_ZN5blink6Biquad18SetHighShelfParamsEidd(%"class.blink::Biquad"* %11, i32 %77, double %49, double %76) #1
+  br label %96
+
+78:                                               ; preds = %48
+  %79 = getelementptr inbounds float, float* %3, i64 %35
+  %80 = load float, float* %79, align 4
+  %81 = fpext float %80 to double
+  %82 = getelementptr inbounds float, float* %4, i64 %35
+  %83 = load float, float* %82, align 4
+  %84 = fpext float %83 to double
+  %85 = trunc i64 %35 to i32
+  tail call void @_ZN5blink6Biquad16SetPeakingParamsEiddd(%"class.blink::Biquad"* %11, i32 %85, double %49, double %81, double %84) #1
+  br label %96
+
+86:                                               ; preds = %48
+  %87 = getelementptr inbounds float, float* %3, i64 %35
+  %88 = load float, float* %87, align 4
+  %89 = fpext float %88 to double
+  %90 = trunc i64 %35 to i32
+  tail call void @_ZN5blink6Biquad14SetNotchParamsEidd(%"class.blink::Biquad"* %11, i32 %90, double %49, double %89) #1
+  br label %96
+
+91:                                               ; preds = %48
+  %92 = getelementptr inbounds float, float* %3, i64 %35
+  %93 = load float, float* %92, align 4
+  %94 = fpext float %93 to double
+  %95 = trunc i64 %35 to i32
+  tail call void @_ZN5blink6Biquad16SetAllpassParamsEidd(%"class.blink::Biquad"* %11, i32 %95, double %49, double %94) #1
+  br label %96
+
+96:                                               ; preds = %48, %91, %86, %78, %73, %68, %63, %58, %53
+  %97 = add nuw nsw i64 %35, 1
+  %98 = icmp eq i64 %97, %19
+  br i1 %98, label %20, label %34
+}
+
+declare float @_ZN5blink17AudioParamHandler10FinalValueEv(%"class.blink::AudioParamHandler"*) local_unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @llvm.stackrestore(i8*) #1
+
+declare void @_ZN5blink6Biquad16SetLowpassParamsEidd(%"class.blink::Biquad"*, i32, double, double) local_unnamed_addr #3
+
+declare void @_ZN5blink6Biquad17SetHighpassParamsEidd(%"class.blink::Biquad"*, i32, double, double) local_unnamed_addr #3
+
+declare void @_ZN5blink6Biquad17SetBandpassParamsEidd(%"class.blink::Biquad"*, i32, double, double) local_unnamed_addr #3
+
+declare void @_ZN5blink6Biquad17SetLowShelfParamsEidd(%"class.blink::Biquad"*, i32, double, double) local_unnamed_addr #3
+
+declare void @_ZN5blink6Biquad18SetHighShelfParamsEidd(%"class.blink::Biquad"*, i32, double, double) local_unnamed_addr #3
+
+declare void @_ZN5blink6Biquad16SetPeakingParamsEiddd(%"class.blink::Biquad"*, i32, double, double, double) local_unnamed_addr #3
+
+declare void @_ZN5blink6Biquad14SetNotchParamsEidd(%"class.blink::Biquad"*, i32, double, double) local_unnamed_addr #3
+
+declare void @_ZN5blink6Biquad16SetAllpassParamsEidd(%"class.blink::Biquad"*, i32, double, double) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink15BiquadDSPKernel14UpdateTailTimeEi(%"class.blink::BiquadDSPKernel"*, i32) local_unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 0, i32 2
+  %4 = load float, float* %3, align 8
+  %5 = fpext float %4 to double
+  %6 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 1
+  %7 = fmul double %5, 3.000000e+01
+  %8 = tail call double @_ZN5blink6Biquad9TailFrameEid(%"class.blink::Biquad"* %6, i32 %1, double %7) #1
+  %9 = fdiv double %8, %5
+  %10 = fcmp ult double %9, 3.000000e+01
+  %11 = fcmp ole double %9, 0.000000e+00
+  %12 = select i1 %11, double 0.000000e+00, double %9
+  %13 = select i1 %10, double %12, double 3.000000e+01
+  %14 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 3
+  store double %13, double* %14, align 8
+  ret void
+}
+
+declare double @_ZN5blink6Biquad9TailFrameEid(%"class.blink::Biquad"*, i32, double) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink15BiquadDSPKernel7ProcessEPKfPfj(%"class.blink::BiquadDSPKernel"*, float*, float*, i32) unnamed_addr #0 align 2 {
+  %5 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 2
+  %6 = tail call zeroext i1 @_ZN3WTF5Mutex7TryLockEv(%"class.WTF::Mutex"* %5) #1
+  br i1 %6, label %7, label %9
+
+7:                                                ; preds = %4
+  tail call void @_ZN5blink15BiquadDSPKernel29UpdateCoefficientsIfNecessaryEi(%"class.blink::BiquadDSPKernel"* %0, i32 %3)
+  %8 = getelementptr inbounds %"class.WTF::Mutex", %"class.WTF::Mutex"* %5, i64 0, i32 0
+  tail call void @_ZN3WTF9MutexBase6unlockEv(%"class.WTF::MutexBase"* %8) #1
+  br label %9
+
+9:                                                ; preds = %4, %7
+  %10 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 1
+  tail call void @_ZN5blink6Biquad7ProcessEPKfPfj(%"class.blink::Biquad"* %10, float* %1, float* %2, i32 %3) #1
+  ret void
+}
+
+declare void @_ZN5blink6Biquad7ProcessEPKfPfj(%"class.blink::Biquad"*, float*, float*, i32) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink15BiquadDSPKernel20GetFrequencyResponseERS0_iPKfPfS4_(%"class.blink::BiquadDSPKernel"* dereferenceable(232), i32, float* nocapture readonly, float*, float*) local_unnamed_addr #0 align 2 {
+  %6 = alloca %"class.WTF::Vector.503", align 8
+  %7 = bitcast %"class.WTF::Vector.503"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %7) #1
+  %8 = getelementptr inbounds %"class.WTF::Vector.503", %"class.WTF::Vector.503"* %6, i64 0, i32 0, i32 0, i32 0
+  %9 = getelementptr inbounds %"class.WTF::Vector.503", %"class.WTF::Vector.503"* %6, i64 0, i32 0, i32 0, i32 1
+  %10 = getelementptr inbounds %"class.WTF::Vector.503", %"class.WTF::Vector.503"* %6, i64 0, i32 0, i32 0, i32 2
+  %11 = bitcast %"class.WTF::Vector.503"* %6 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %11, i8 -86, i64 16, i1 false)
+  store float* null, float** %8, align 8
+  store i32 0, i32* %9, align 8
+  %12 = icmp eq i32 %1, 0
+  br i1 %12, label %23, label %13
+
+13:                                               ; preds = %5
+  %14 = zext i32 %1 to i64
+  %15 = tail call i64 @_ZN3WTF18PartitionAllocator13QuantizedSizeIfEEmm(i64 %14) #1
+  %16 = tail call i8* @_ZN3WTF18PartitionAllocator15AllocateBackingEmPKc(i64 %15, i8* getelementptr inbounds ([53 x i8], [53 x i8]* @__PRETTY_FUNCTION__._ZN3WTF21GetStringWithTypeNameIfEEPKcv, i64 0, i64 0)) #1
+  %17 = ptrtoint i8* %16 to i64
+  %18 = bitcast %"class.WTF::Vector.503"* %6 to i64*
+  store atomic i64 %17, i64* %18 monotonic, align 8
+  %19 = lshr i64 %15, 2
+  %20 = trunc i64 %19 to i32
+  store i32 %20, i32* %9, align 8
+  %21 = shl nuw nsw i64 %14, 2
+  %22 = bitcast i8* %16 to float*
+  br label %23
+
+23:                                               ; preds = %5, %13
+  %24 = phi float* [ %22, %13 ], [ null, %5 ]
+  %25 = phi i64 [ %21, %13 ], [ 0, %5 ]
+  %26 = phi i8* [ %16, %13 ], [ null, %5 ]
+  store i32 %1, i32* %10, align 4
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %26, i8 0, i64 %25, i1 false) #1
+  %27 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 0, i32 2
+  %28 = load float, float* %27, align 8
+  %29 = fpext float %28 to double
+  %30 = fmul double %29, 5.000000e-01
+  %31 = icmp sgt i32 %1, 0
+  br i1 %31, label %32, label %36
+
+32:                                               ; preds = %23
+  %33 = zext i32 %1 to i64
+  br label %48
+
+34:                                               ; preds = %48
+  %35 = load float*, float** %8, align 8
+  br label %36
+
+36:                                               ; preds = %34, %23
+  %37 = phi float* [ %35, %34 ], [ %24, %23 ]
+  %38 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 1
+  call void @_ZN5blink6Biquad20GetFrequencyResponseEiPKfPfS3_(%"class.blink::Biquad"* %38, i32 %1, float* %37, float* %3, float* %4) #1
+  %39 = load float*, float** %8, align 8
+  %40 = icmp eq float* %39, null
+  %41 = bitcast float* %39 to i8*
+  br i1 %40, label %47, label %42, !prof !3
+
+42:                                               ; preds = %36
+  %43 = load i32, i32* %10, align 4
+  %44 = icmp eq i32 %43, 0
+  br i1 %44, label %46, label %45, !prof !4
+
+45:                                               ; preds = %42
+  store i32 0, i32* %10, align 4
+  br label %46
+
+46:                                               ; preds = %45, %42
+  call void @_ZN3WTF18PartitionAllocator11FreeBackingEPv(i8* nonnull %41) #1
+  store float* null, float** %8, align 8
+  br label %47
+
+47:                                               ; preds = %36, %46
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %7) #1
+  ret void
+
+48:                                               ; preds = %48, %32
+  %49 = phi i64 [ 0, %32 ], [ %57, %48 ]
+  %50 = getelementptr inbounds float, float* %2, i64 %49
+  %51 = load float, float* %50, align 4
+  %52 = fpext float %51 to double
+  %53 = fdiv double %52, %30
+  %54 = fptrunc double %53 to float
+  %55 = trunc i64 %49 to i32
+  %56 = call dereferenceable(4) float* @_ZN3WTF6VectorIfLj0ENS_18PartitionAllocatorEE2atEj(%"class.WTF::Vector.503"* nonnull %6, i32 %55) #1
+  store float %54, float* %56, align 4
+  %57 = add nuw nsw i64 %49, 1
+  %58 = icmp eq i64 %57, %33
+  br i1 %58, label %34, label %48
+}
+
+declare void @_ZN5blink6Biquad20GetFrequencyResponseEiPKfPfS3_(%"class.blink::Biquad"*, i32, float*, float*, float*) local_unnamed_addr #3
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden zeroext i1 @_ZNK5blink15BiquadDSPKernel22RequiresTailProcessingEv(%"class.blink::BiquadDSPKernel"* nocapture readnone) unnamed_addr #5 align 2 {
+  ret i1 true
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden double @_ZNK5blink15BiquadDSPKernel8TailTimeEv(%"class.blink::BiquadDSPKernel"* nocapture readonly) unnamed_addr #6 align 2 {
+  %2 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 3
+  %3 = load double, double* %2, align 8
+  ret double %3
+}
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden double @_ZNK5blink15BiquadDSPKernel11LatencyTimeEv(%"class.blink::BiquadDSPKernel"* nocapture readnone) unnamed_addr #5 align 2 {
+  ret double 0.000000e+00
+}
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN5blink15BiquadDSPKernelD2Ev(%"class.blink::BiquadDSPKernel"*) unnamed_addr #7 comdat align 2 {
+  %2 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [10 x i8*] }, { [10 x i8*] }* @_ZTVN5blink15BiquadDSPKernelE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 2, i32 0
+  tail call void @_ZN3WTF9MutexBaseD2Ev(%"class.WTF::MutexBase"* %3) #1
+  %4 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 1
+  tail call void @_ZN5blink6BiquadD1Ev(%"class.blink::Biquad"* %4) #1
+  %5 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 0
+  tail call void @_ZN5blink14AudioDSPKernelD2Ev(%"class.blink::AudioDSPKernel"* %5) #1
+  ret void
+}
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN5blink15BiquadDSPKernelD0Ev(%"class.blink::BiquadDSPKernel"*) unnamed_addr #7 comdat align 2 {
+  %2 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [10 x i8*] }, { [10 x i8*] }* @_ZTVN5blink15BiquadDSPKernelE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 2, i32 0
+  tail call void @_ZN3WTF9MutexBaseD2Ev(%"class.WTF::MutexBase"* %3) #1
+  %4 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 1
+  tail call void @_ZN5blink6BiquadD1Ev(%"class.blink::Biquad"* %4) #1
+  %5 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 0
+  tail call void @_ZN5blink14AudioDSPKernelD2Ev(%"class.blink::AudioDSPKernel"* %5) #1
+  %6 = bitcast %"class.blink::BiquadDSPKernel"* %0 to i8*
+  tail call void @free(i8* %6) #1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN5blink14AudioDSPKernel22ProcessOnlyAudioParamsEj(%"class.blink::AudioDSPKernel"*, i32) unnamed_addr #0 comdat align 2 {
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN5blink15BiquadDSPKernel5ResetEv(%"class.blink::BiquadDSPKernel"*) unnamed_addr #0 comdat align 2 {
+  %2 = getelementptr inbounds %"class.blink::BiquadDSPKernel", %"class.blink::BiquadDSPKernel"* %0, i64 0, i32 1
+  tail call void @_ZN5blink6Biquad5ResetEv(%"class.blink::Biquad"* %2) #1
+  ret void
+}
+
+; Function Attrs: nofree nounwind
+declare float @exp2f(float) local_unnamed_addr #8
+
+declare zeroext i1 @_ZN3WTF5Mutex7TryLockEv(%"class.WTF::Mutex"*) local_unnamed_addr #3
+
+declare void @_ZN3WTF9MutexBase6unlockEv(%"class.WTF::MutexBase"*) local_unnamed_addr #3
+
+declare void @_ZN3WTF18PartitionAllocator11FreeBackingEPv(i8*) local_unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN3WTF9MutexBaseD2Ev(%"class.WTF::MutexBase"*) unnamed_addr #4
+
+; Function Attrs: nounwind
+declare void @_ZN5blink6BiquadD1Ev(%"class.blink::Biquad"*) unnamed_addr #4
+
+; Function Attrs: nounwind
+declare void @_ZN5blink14AudioDSPKernelD2Ev(%"class.blink::AudioDSPKernel"*) unnamed_addr #4
+
+; Function Attrs: nounwind
+declare void @free(i8* nocapture) local_unnamed_addr #4
+
+declare void @_ZN5blink6Biquad5ResetEv(%"class.blink::Biquad"*) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden i64 @_ZN3WTF18PartitionAllocator13QuantizedSizeIfEEmm(i64) local_unnamed_addr #0 comdat align 2 {
+  %2 = alloca %"class.logging::CheckOpResult", align 8
+  %3 = alloca %"class.logging::CheckOpResult", align 8
+  %4 = alloca %"class.logging::CheckError", align 8
+  %5 = bitcast %"class.logging::CheckOpResult"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %5) #1
+  %6 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %3, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %6, align 8
+  %7 = bitcast %"class.logging::CheckOpResult"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %7)
+  %8 = icmp ugt i64 %0, 536346624
+  br i1 %8, label %10, label %9
+
+9:                                                ; preds = %1
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %7)
+  store i8* null, i8** %6, align 8
+  br label %19
+
+10:                                               ; preds = %1
+  %11 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 %0) #1
+  %12 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 536346624) #1
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %2, i8* getelementptr inbounds ([44 x i8], [44 x i8]* @.str.2, i64 0, i64 0), i8* %11, i8* %12) #1
+  %13 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %2, i64 0, i32 0
+  %14 = load i8*, i8** %13, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %7)
+  store i8* %14, i8** %6, align 8
+  %15 = icmp eq i8* %14, null
+  br i1 %15, label %19, label %16
+
+16:                                               ; preds = %10
+  %17 = bitcast %"class.logging::CheckError"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %17) #1
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %4, i8* getelementptr inbounds ([78 x i8], [78 x i8]* @.str.3, i64 0, i64 0), i32 31, %"class.logging::CheckOpResult"* nonnull %3) #1
+  %18 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %4) #1
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %4) #1
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %17) #1
+  br label %19
+
+19:                                               ; preds = %9, %10, %16
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %5) #1
+  %20 = shl i64 %0, 2
+  %21 = call i64 @_ZN3WTF10Partitions23BufferPotentialCapacityEm(i64 %20) #1
+  ret i64 %21
+}
+
+declare void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* sret, i8*, i32, %"class.logging::CheckOpResult"*) local_unnamed_addr #3
+
+declare i64 @_ZN3WTF10Partitions23BufferPotentialCapacityEm(i64) local_unnamed_addr #3
+
+declare i8* @_ZN7logging15CheckOpValueStrEm(i64) local_unnamed_addr #3
+
+declare void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"*, i8*, i8*, i8*) unnamed_addr #3
+
+declare i8* @_ZN3WTF18PartitionAllocator15AllocateBackingEmPKc(i64, i8*) local_unnamed_addr #3
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden dereferenceable(4) float* @_ZN3WTF6VectorIfLj0ENS_18PartitionAllocatorEE2atEj(%"class.WTF::Vector.503"*, i32) local_unnamed_addr #0 comdat align 2 {
+  %3 = alloca %"class.logging::CheckOpResult", align 8
+  %4 = alloca %"class.logging::CheckOpResult", align 8
+  %5 = alloca %"class.logging::CheckError", align 8
+  %6 = bitcast %"class.logging::CheckOpResult"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %6) #1
+  %7 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %4, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %7, align 8
+  %8 = getelementptr inbounds %"class.WTF::Vector.503", %"class.WTF::Vector.503"* %0, i64 0, i32 0, i32 0, i32 2
+  %9 = load i32, i32* %8, align 4
+  %10 = bitcast %"class.logging::CheckOpResult"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %10)
+  %11 = icmp ugt i32 %9, %1
+  br i1 %11, label %12, label %13
+
+12:                                               ; preds = %2
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* null, i8** %7, align 8
+  br label %22
+
+13:                                               ; preds = %2
+  %14 = tail call i8* @_ZN7logging15CheckOpValueStrEj(i32 %1) #1
+  %15 = tail call i8* @_ZN7logging15CheckOpValueStrEj(i32 %9) #1
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %3, i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str.4, i64 0, i64 0), i8* %14, i8* %15) #1
+  %16 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %3, i64 0, i32 0
+  %17 = load i8*, i8** %16, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* %17, i8** %7, align 8
+  %18 = icmp eq i8* %17, null
+  br i1 %18, label %22, label %19
+
+19:                                               ; preds = %13
+  %20 = bitcast %"class.logging::CheckError"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %20) #1
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %5, i8* getelementptr inbounds ([55 x i8], [55 x i8]* @.str.5, i64 0, i64 0), i32 1172, %"class.logging::CheckOpResult"* nonnull %4) #1
+  %21 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %5) #1
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %5) #1
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %20) #1
+  br label %22
+
+22:                                               ; preds = %12, %13, %19
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %6) #1
+  %23 = getelementptr inbounds %"class.WTF::Vector.503", %"class.WTF::Vector.503"* %0, i64 0, i32 0, i32 0, i32 0
+  %24 = load float*, float** %23, align 8
+  %25 = zext i32 %1 to i64
+  %26 = getelementptr inbounds float, float* %24, i64 %25
+  ret float* %26
+}
+
+declare i8* @_ZN7logging15CheckOpValueStrEj(i32) local_unnamed_addr #3
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { nounwind }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { norecurse nounwind readnone ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { norecurse nounwind readonly ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { inlinehint nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { nofree nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{i8 0, i8 2}
+!3 = !{!"branch_weights", i32 2000, i32 1}
+!4 = !{!"branch_weights", i32 1, i32 2000}

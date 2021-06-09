@@ -1,0 +1,1240 @@
+; ModuleID = '../../third_party/blink/renderer/platform/audio/cpu/x86/vector_math_avx.cc'
+source_filename = "../../third_party/blink/renderer/platform/audio/cpu/x86/vector_math_avx.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.blink::AudioArray" = type <{ float*, float*, i32, [4 x i8] }>
+%"class.logging::CheckOpResult" = type { i8* }
+%"class.logging::CheckError" = type { %"class.logging::LogMessage"* }
+%"class.logging::LogMessage" = type { i32 (...)**, i32, %"class.std::__1::basic_ostringstream", i64, i8*, i32, %"class.base::ScopedClearLastErrorBase" }
+%"class.std::__1::basic_ostringstream" = type { %"class.std::__1::basic_ostream.base", %"class.std::__1::basic_stringbuf", %"class.std::__1::basic_ios.base" }
+%"class.std::__1::basic_ostream.base" = type { i32 (...)** }
+%"class.std::__1::basic_stringbuf" = type <{ %"class.std::__1::basic_streambuf", %"class.std::__1::basic_string", i8*, i32, [4 x i8] }>
+%"class.std::__1::basic_streambuf" = type { i32 (...)**, %"class.std::__1::locale", i8*, i8*, i8*, i8*, i8*, i8* }
+%"class.std::__1::locale" = type { %"class.std::__1::locale::__imp"* }
+%"class.std::__1::locale::__imp" = type opaque
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon }
+%union.anon = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.std::__1::basic_ios.base" = type <{ %"class.std::__1::ios_base", %"class.std::__1::basic_ostream"*, i32 }>
+%"class.std::__1::ios_base" = type { i32 (...)**, i32, i64, i64, i32, i32, i8*, i8*, void (i32, %"class.std::__1::ios_base"*, i32)**, i32*, i64, i64, i64*, i64, i64, i8**, i64, i64 }
+%"class.std::__1::basic_ostream" = type { i32 (...)**, %"class.std::__1::basic_ios.base" }
+%"class.base::ScopedClearLastErrorBase" = type { i32 }
+
+$_ZN5blink10AudioArrayIfE8AllocateEm = comdat any
+
+@.str = private unnamed_addr constant [54 x i8] c"n <= std::numeric_limits<unsigned>::max() / sizeof(T)\00", align 1
+@.str.1 = private unnamed_addr constant [62 x i8] c"../../third_party/blink/renderer/platform/audio/audio_array.h\00", align 1
+@.str.2 = private unnamed_addr constant [12 x i8] c"allocation_\00", align 1
+@__PRETTY_FUNCTION__._ZN3WTF21GetStringWithTypeNameIN5blink10AudioArrayIfEEEEPKcv = private unnamed_addr constant [72 x i8] c"const char *WTF::GetStringWithTypeName() [T = blink::AudioArray<float>]\00", align 1
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden zeroext i1 @_ZN5blink11vector_math3avx9IsAlignedEPKf(float*) local_unnamed_addr #0 {
+  %2 = ptrtoint float* %0 to i64
+  %3 = and i64 %2, 31
+  %4 = icmp eq i64 %3, 0
+  ret i1 %4
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink11vector_math3avx20PrepareFilterForConvEPKfimPNS_10AudioArrayIfEE(float* nocapture readonly, i32, i64, %"class.blink::AudioArray"*) local_unnamed_addr #2 {
+  %5 = shl i64 %2, 3
+  tail call void @_ZN5blink10AudioArrayIfE8AllocateEm(%"class.blink::AudioArray"* %3, i64 %5)
+  %6 = getelementptr inbounds %"class.blink::AudioArray", %"class.blink::AudioArray"* %3, i64 0, i32 1
+  %7 = bitcast float** %6 to <8 x float>**
+  %8 = load <8 x float>*, <8 x float>** %7, align 8
+  %9 = icmp eq i64 %2, 0
+  br i1 %9, label %25, label %10
+
+10:                                               ; preds = %4
+  %11 = and i64 %2, 1
+  %12 = icmp eq i64 %2, 1
+  br i1 %12, label %15, label %13
+
+13:                                               ; preds = %10
+  %14 = sub i64 %2, %11
+  br label %26
+
+15:                                               ; preds = %26, %10
+  %16 = phi i64 [ 0, %10 ], [ %42, %26 ]
+  %17 = icmp eq i64 %11, 0
+  br i1 %17, label %25, label %18
+
+18:                                               ; preds = %15
+  %19 = sub i64 0, %16
+  %20 = getelementptr inbounds float, float* %0, i64 %19
+  %21 = load float, float* %20, align 4
+  %22 = insertelement <8 x float> undef, float %21, i32 0
+  %23 = shufflevector <8 x float> %22, <8 x float> undef, <8 x i32> zeroinitializer
+  %24 = getelementptr inbounds <8 x float>, <8 x float>* %8, i64 %16
+  store <8 x float> %23, <8 x float>* %24, align 32
+  br label %25
+
+25:                                               ; preds = %18, %15, %4
+  ret void
+
+26:                                               ; preds = %26, %13
+  %27 = phi i64 [ 0, %13 ], [ %42, %26 ]
+  %28 = phi i64 [ %14, %13 ], [ %43, %26 ]
+  %29 = sub i64 0, %27
+  %30 = getelementptr inbounds float, float* %0, i64 %29
+  %31 = load float, float* %30, align 4
+  %32 = insertelement <8 x float> undef, float %31, i32 0
+  %33 = shufflevector <8 x float> %32, <8 x float> undef, <8 x i32> zeroinitializer
+  %34 = getelementptr inbounds <8 x float>, <8 x float>* %8, i64 %27
+  store <8 x float> %33, <8 x float>* %34, align 32
+  %35 = or i64 %27, 1
+  %36 = xor i64 %27, -1
+  %37 = getelementptr inbounds float, float* %0, i64 %36
+  %38 = load float, float* %37, align 4
+  %39 = insertelement <8 x float> undef, float %38, i32 0
+  %40 = shufflevector <8 x float> %39, <8 x float> undef, <8 x i32> zeroinitializer
+  %41 = getelementptr inbounds <8 x float>, <8 x float>* %8, i64 %35
+  store <8 x float> %40, <8 x float>* %41, align 32
+  %42 = add nuw i64 %27, 2
+  %43 = add i64 %28, -2
+  %44 = icmp eq i64 %43, 0
+  br i1 %44, label %15, label %26
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN5blink10AudioArrayIfE8AllocateEm(%"class.blink::AudioArray"*, i64) local_unnamed_addr #3 comdat align 2 {
+  %3 = alloca %"class.logging::CheckOpResult", align 8
+  %4 = alloca %"class.logging::CheckOpResult", align 8
+  %5 = alloca %"class.logging::CheckError", align 8
+  %6 = alloca %"class.logging::CheckError", align 8
+  %7 = bitcast %"class.logging::CheckOpResult"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %7) #11
+  %8 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %4, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %8, align 8
+  %9 = bitcast %"class.logging::CheckOpResult"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %9)
+  %10 = icmp ugt i64 %1, 1073741823
+  br i1 %10, label %12, label %11
+
+11:                                               ; preds = %2
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %9)
+  store i8* null, i8** %8, align 8
+  br label %21
+
+12:                                               ; preds = %2
+  %13 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 %1) #11
+  %14 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 1073741823) #11
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %3, i8* getelementptr inbounds ([54 x i8], [54 x i8]* @.str, i64 0, i64 0), i8* %13, i8* %14) #11
+  %15 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %3, i64 0, i32 0
+  %16 = load i8*, i8** %15, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %9)
+  store i8* %16, i8** %8, align 8
+  %17 = icmp eq i8* %16, null
+  br i1 %17, label %21, label %18
+
+18:                                               ; preds = %12
+  %19 = bitcast %"class.logging::CheckError"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %19) #11
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %5, i8* getelementptr inbounds ([62 x i8], [62 x i8]* @.str.1, i64 0, i64 0), i32 63, %"class.logging::CheckOpResult"* nonnull %4) #11
+  %20 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %5) #11
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %5) #11
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %19) #11
+  br label %21
+
+21:                                               ; preds = %11, %12, %18
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %7) #11
+  %22 = trunc i64 %1 to i32
+  %23 = shl i32 %22, 2
+  %24 = getelementptr inbounds %"class.blink::AudioArray", %"class.blink::AudioArray"* %0, i64 0, i32 0
+  %25 = load float*, float** %24, align 8
+  %26 = icmp eq float* %25, null
+  br i1 %26, label %29, label %27
+
+27:                                               ; preds = %21
+  %28 = bitcast float* %25 to i8*
+  call void @_ZN3WTF10Partitions8FastFreeEPv(i8* nonnull %28) #11
+  br label %29
+
+29:                                               ; preds = %21, %27
+  %30 = call { i32, i1 } @llvm.uadd.with.overflow.i32(i32 %23, i32 32) #11
+  %31 = extractvalue { i32, i1 } %30, 1
+  br i1 %31, label %32, label %33, !prof !2
+
+32:                                               ; preds = %29
+  call void @llvm.trap() #11
+  unreachable
+
+33:                                               ; preds = %29
+  %34 = extractvalue { i32, i1 } %30, 0
+  %35 = zext i32 %34 to i64
+  %36 = call i8* @_ZN3WTF10Partitions16FastZeroedMallocEmPKc(i64 %35, i8* getelementptr inbounds ([72 x i8], [72 x i8]* @__PRETTY_FUNCTION__._ZN3WTF21GetStringWithTypeNameIN5blink10AudioArrayIfEEEEPKcv, i64 0, i64 0)) #11
+  %37 = bitcast %"class.blink::AudioArray"* %0 to i8**
+  store i8* %36, i8** %37, align 8
+  %38 = icmp eq i8* %36, null
+  br i1 %38, label %41, label %39
+
+39:                                               ; preds = %33
+  %40 = ptrtoint i8* %36 to i64
+  br label %46
+
+41:                                               ; preds = %33
+  %42 = bitcast %"class.logging::CheckError"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %42) #11
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %6, i8* getelementptr inbounds ([62 x i8], [62 x i8]* @.str.1, i64 0, i64 0), i32 84, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @.str.2, i64 0, i64 0)) #11
+  %43 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %6) #11
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %6) #11
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %42) #11
+  %44 = bitcast %"class.blink::AudioArray"* %0 to i64*
+  %45 = load i64, i64* %44, align 8
+  br label %46
+
+46:                                               ; preds = %39, %41
+  %47 = phi i64 [ %40, %39 ], [ %45, %41 ]
+  %48 = add i64 %47, 31
+  %49 = and i64 %48, -32
+  %50 = inttoptr i64 %49 to float*
+  %51 = getelementptr inbounds %"class.blink::AudioArray", %"class.blink::AudioArray"* %0, i64 0, i32 1
+  store float* %50, float** %51, align 8
+  %52 = getelementptr inbounds %"class.blink::AudioArray", %"class.blink::AudioArray"* %0, i64 0, i32 2
+  store i32 %22, i32* %52, align 8
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN5blink11vector_math3avx4ConvEPKfS3_Pfjm(float* nocapture readonly, float* nocapture readonly, float*, i32, i64) local_unnamed_addr #4 {
+  %6 = zext i32 %3 to i64
+  %7 = getelementptr inbounds float, float* %2, i64 %6
+  %8 = bitcast float* %1 to <8 x float>*
+  %9 = icmp eq i32 %3, 0
+  br i1 %9, label %89, label %10
+
+10:                                               ; preds = %5
+  %11 = icmp eq i64 %4, 0
+  br label %12
+
+12:                                               ; preds = %10, %83
+  %13 = phi float* [ %0, %10 ], [ %86, %83 ]
+  %14 = phi float* [ %2, %10 ], [ %87, %83 ]
+  br i1 %11, label %83, label %15
+
+15:                                               ; preds = %12, %15
+  %16 = phi i64 [ %81, %15 ], [ 0, %12 ]
+  %17 = phi <8 x float> [ %80, %15 ], [ zeroinitializer, %12 ]
+  %18 = getelementptr inbounds float, float* %13, i64 %16
+  %19 = bitcast float* %18 to <8 x float>*
+  %20 = load <8 x float>, <8 x float>* %19, align 1
+  %21 = getelementptr inbounds <8 x float>, <8 x float>* %8, i64 %16
+  %22 = load <8 x float>, <8 x float>* %21, align 32
+  %23 = fmul <8 x float> %20, %22
+  %24 = fadd <8 x float> %17, %23
+  %25 = or i64 %16, 1
+  %26 = getelementptr inbounds float, float* %13, i64 %25
+  %27 = bitcast float* %26 to <8 x float>*
+  %28 = load <8 x float>, <8 x float>* %27, align 1
+  %29 = getelementptr inbounds <8 x float>, <8 x float>* %8, i64 %25
+  %30 = load <8 x float>, <8 x float>* %29, align 32
+  %31 = fmul <8 x float> %28, %30
+  %32 = fadd <8 x float> %24, %31
+  %33 = or i64 %16, 2
+  %34 = getelementptr inbounds float, float* %13, i64 %33
+  %35 = bitcast float* %34 to <8 x float>*
+  %36 = load <8 x float>, <8 x float>* %35, align 1
+  %37 = getelementptr inbounds <8 x float>, <8 x float>* %8, i64 %33
+  %38 = load <8 x float>, <8 x float>* %37, align 32
+  %39 = fmul <8 x float> %36, %38
+  %40 = fadd <8 x float> %32, %39
+  %41 = or i64 %16, 3
+  %42 = getelementptr inbounds float, float* %13, i64 %41
+  %43 = bitcast float* %42 to <8 x float>*
+  %44 = load <8 x float>, <8 x float>* %43, align 1
+  %45 = getelementptr inbounds <8 x float>, <8 x float>* %8, i64 %41
+  %46 = load <8 x float>, <8 x float>* %45, align 32
+  %47 = fmul <8 x float> %44, %46
+  %48 = fadd <8 x float> %40, %47
+  %49 = or i64 %16, 4
+  %50 = getelementptr inbounds float, float* %13, i64 %49
+  %51 = bitcast float* %50 to <8 x float>*
+  %52 = load <8 x float>, <8 x float>* %51, align 1
+  %53 = getelementptr inbounds <8 x float>, <8 x float>* %8, i64 %49
+  %54 = load <8 x float>, <8 x float>* %53, align 32
+  %55 = fmul <8 x float> %52, %54
+  %56 = fadd <8 x float> %48, %55
+  %57 = or i64 %16, 5
+  %58 = getelementptr inbounds float, float* %13, i64 %57
+  %59 = bitcast float* %58 to <8 x float>*
+  %60 = load <8 x float>, <8 x float>* %59, align 1
+  %61 = getelementptr inbounds <8 x float>, <8 x float>* %8, i64 %57
+  %62 = load <8 x float>, <8 x float>* %61, align 32
+  %63 = fmul <8 x float> %60, %62
+  %64 = fadd <8 x float> %56, %63
+  %65 = or i64 %16, 6
+  %66 = getelementptr inbounds float, float* %13, i64 %65
+  %67 = bitcast float* %66 to <8 x float>*
+  %68 = load <8 x float>, <8 x float>* %67, align 1
+  %69 = getelementptr inbounds <8 x float>, <8 x float>* %8, i64 %65
+  %70 = load <8 x float>, <8 x float>* %69, align 32
+  %71 = fmul <8 x float> %68, %70
+  %72 = fadd <8 x float> %64, %71
+  %73 = or i64 %16, 7
+  %74 = getelementptr inbounds float, float* %13, i64 %73
+  %75 = bitcast float* %74 to <8 x float>*
+  %76 = load <8 x float>, <8 x float>* %75, align 1
+  %77 = getelementptr inbounds <8 x float>, <8 x float>* %8, i64 %73
+  %78 = load <8 x float>, <8 x float>* %77, align 32
+  %79 = fmul <8 x float> %76, %78
+  %80 = fadd <8 x float> %72, %79
+  %81 = add i64 %16, 8
+  %82 = icmp ult i64 %81, %4
+  br i1 %82, label %15, label %83
+
+83:                                               ; preds = %15, %12
+  %84 = phi <8 x float> [ zeroinitializer, %12 ], [ %80, %15 ]
+  %85 = bitcast float* %14 to <8 x float>*
+  store <8 x float> %84, <8 x float>* %85, align 1
+  %86 = getelementptr inbounds float, float* %13, i64 8
+  %87 = getelementptr inbounds float, float* %14, i64 8
+  %88 = icmp ult float* %87, %7
+  br i1 %88, label %12, label %89
+
+89:                                               ; preds = %83, %5
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN5blink11vector_math3avx4VaddEPKfS3_Pfj(float* readonly, float*, float*, i32) local_unnamed_addr #4 {
+  %5 = zext i32 %3 to i64
+  %6 = getelementptr inbounds float, float* %0, i64 %5
+  %7 = ptrtoint float* %1 to i64
+  %8 = and i64 %7, 31
+  %9 = icmp eq i64 %8, 0
+  %10 = ptrtoint float* %2 to i64
+  %11 = and i64 %10, 31
+  %12 = icmp eq i64 %11, 0
+  %13 = icmp ne i32 %3, 0
+  br i1 %9, label %14, label %45
+
+14:                                               ; preds = %4
+  br i1 %12, label %16, label %15
+
+15:                                               ; preds = %14
+  br i1 %13, label %31, label %76
+
+16:                                               ; preds = %14
+  br i1 %13, label %17, label %76
+
+17:                                               ; preds = %16, %17
+  %18 = phi float* [ %27, %17 ], [ %0, %16 ]
+  %19 = phi float* [ %28, %17 ], [ %1, %16 ]
+  %20 = phi float* [ %29, %17 ], [ %2, %16 ]
+  %21 = bitcast float* %18 to <8 x float>*
+  %22 = load <8 x float>, <8 x float>* %21, align 32
+  %23 = bitcast float* %19 to <8 x float>*
+  %24 = load <8 x float>, <8 x float>* %23, align 32
+  %25 = fadd <8 x float> %22, %24
+  %26 = bitcast float* %20 to <8 x float>*
+  store <8 x float> %25, <8 x float>* %26, align 32
+  %27 = getelementptr inbounds float, float* %18, i64 8
+  %28 = getelementptr inbounds float, float* %19, i64 8
+  %29 = getelementptr inbounds float, float* %20, i64 8
+  %30 = icmp ult float* %27, %6
+  br i1 %30, label %17, label %76
+
+31:                                               ; preds = %15, %31
+  %32 = phi float* [ %41, %31 ], [ %0, %15 ]
+  %33 = phi float* [ %42, %31 ], [ %1, %15 ]
+  %34 = phi float* [ %43, %31 ], [ %2, %15 ]
+  %35 = bitcast float* %32 to <8 x float>*
+  %36 = load <8 x float>, <8 x float>* %35, align 32
+  %37 = bitcast float* %33 to <8 x float>*
+  %38 = load <8 x float>, <8 x float>* %37, align 32
+  %39 = fadd <8 x float> %36, %38
+  %40 = bitcast float* %34 to <8 x float>*
+  store <8 x float> %39, <8 x float>* %40, align 1
+  %41 = getelementptr inbounds float, float* %32, i64 8
+  %42 = getelementptr inbounds float, float* %33, i64 8
+  %43 = getelementptr inbounds float, float* %34, i64 8
+  %44 = icmp ult float* %41, %6
+  br i1 %44, label %31, label %76
+
+45:                                               ; preds = %4
+  br i1 %12, label %47, label %46
+
+46:                                               ; preds = %45
+  br i1 %13, label %62, label %76
+
+47:                                               ; preds = %45
+  br i1 %13, label %48, label %76
+
+48:                                               ; preds = %47, %48
+  %49 = phi float* [ %58, %48 ], [ %0, %47 ]
+  %50 = phi float* [ %59, %48 ], [ %1, %47 ]
+  %51 = phi float* [ %60, %48 ], [ %2, %47 ]
+  %52 = bitcast float* %49 to <8 x float>*
+  %53 = load <8 x float>, <8 x float>* %52, align 32
+  %54 = bitcast float* %50 to <8 x float>*
+  %55 = load <8 x float>, <8 x float>* %54, align 1
+  %56 = fadd <8 x float> %53, %55
+  %57 = bitcast float* %51 to <8 x float>*
+  store <8 x float> %56, <8 x float>* %57, align 32
+  %58 = getelementptr inbounds float, float* %49, i64 8
+  %59 = getelementptr inbounds float, float* %50, i64 8
+  %60 = getelementptr inbounds float, float* %51, i64 8
+  %61 = icmp ult float* %58, %6
+  br i1 %61, label %48, label %76
+
+62:                                               ; preds = %46, %62
+  %63 = phi float* [ %72, %62 ], [ %0, %46 ]
+  %64 = phi float* [ %73, %62 ], [ %1, %46 ]
+  %65 = phi float* [ %74, %62 ], [ %2, %46 ]
+  %66 = bitcast float* %63 to <8 x float>*
+  %67 = load <8 x float>, <8 x float>* %66, align 32
+  %68 = bitcast float* %64 to <8 x float>*
+  %69 = load <8 x float>, <8 x float>* %68, align 1
+  %70 = fadd <8 x float> %67, %69
+  %71 = bitcast float* %65 to <8 x float>*
+  store <8 x float> %70, <8 x float>* %71, align 1
+  %72 = getelementptr inbounds float, float* %63, i64 8
+  %73 = getelementptr inbounds float, float* %64, i64 8
+  %74 = getelementptr inbounds float, float* %65, i64 8
+  %75 = icmp ult float* %72, %6
+  br i1 %75, label %62, label %76
+
+76:                                               ; preds = %62, %48, %31, %17, %46, %47, %15, %16
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN5blink11vector_math3avx4VsubEPKfS3_Pfj(float* readonly, float*, float*, i32) local_unnamed_addr #4 {
+  %5 = zext i32 %3 to i64
+  %6 = getelementptr inbounds float, float* %0, i64 %5
+  %7 = ptrtoint float* %1 to i64
+  %8 = and i64 %7, 31
+  %9 = icmp eq i64 %8, 0
+  %10 = ptrtoint float* %2 to i64
+  %11 = and i64 %10, 31
+  %12 = icmp eq i64 %11, 0
+  %13 = icmp ne i32 %3, 0
+  br i1 %9, label %14, label %45
+
+14:                                               ; preds = %4
+  br i1 %12, label %16, label %15
+
+15:                                               ; preds = %14
+  br i1 %13, label %31, label %76
+
+16:                                               ; preds = %14
+  br i1 %13, label %17, label %76
+
+17:                                               ; preds = %16, %17
+  %18 = phi float* [ %27, %17 ], [ %0, %16 ]
+  %19 = phi float* [ %28, %17 ], [ %1, %16 ]
+  %20 = phi float* [ %29, %17 ], [ %2, %16 ]
+  %21 = bitcast float* %18 to <8 x float>*
+  %22 = load <8 x float>, <8 x float>* %21, align 32
+  %23 = bitcast float* %19 to <8 x float>*
+  %24 = load <8 x float>, <8 x float>* %23, align 32
+  %25 = fsub <8 x float> %22, %24
+  %26 = bitcast float* %20 to <8 x float>*
+  store <8 x float> %25, <8 x float>* %26, align 32
+  %27 = getelementptr inbounds float, float* %18, i64 8
+  %28 = getelementptr inbounds float, float* %19, i64 8
+  %29 = getelementptr inbounds float, float* %20, i64 8
+  %30 = icmp ult float* %27, %6
+  br i1 %30, label %17, label %76
+
+31:                                               ; preds = %15, %31
+  %32 = phi float* [ %41, %31 ], [ %0, %15 ]
+  %33 = phi float* [ %42, %31 ], [ %1, %15 ]
+  %34 = phi float* [ %43, %31 ], [ %2, %15 ]
+  %35 = bitcast float* %32 to <8 x float>*
+  %36 = load <8 x float>, <8 x float>* %35, align 32
+  %37 = bitcast float* %33 to <8 x float>*
+  %38 = load <8 x float>, <8 x float>* %37, align 32
+  %39 = fsub <8 x float> %36, %38
+  %40 = bitcast float* %34 to <8 x float>*
+  store <8 x float> %39, <8 x float>* %40, align 1
+  %41 = getelementptr inbounds float, float* %32, i64 8
+  %42 = getelementptr inbounds float, float* %33, i64 8
+  %43 = getelementptr inbounds float, float* %34, i64 8
+  %44 = icmp ult float* %41, %6
+  br i1 %44, label %31, label %76
+
+45:                                               ; preds = %4
+  br i1 %12, label %47, label %46
+
+46:                                               ; preds = %45
+  br i1 %13, label %62, label %76
+
+47:                                               ; preds = %45
+  br i1 %13, label %48, label %76
+
+48:                                               ; preds = %47, %48
+  %49 = phi float* [ %58, %48 ], [ %0, %47 ]
+  %50 = phi float* [ %59, %48 ], [ %1, %47 ]
+  %51 = phi float* [ %60, %48 ], [ %2, %47 ]
+  %52 = bitcast float* %49 to <8 x float>*
+  %53 = load <8 x float>, <8 x float>* %52, align 32
+  %54 = bitcast float* %50 to <8 x float>*
+  %55 = load <8 x float>, <8 x float>* %54, align 1
+  %56 = fsub <8 x float> %53, %55
+  %57 = bitcast float* %51 to <8 x float>*
+  store <8 x float> %56, <8 x float>* %57, align 32
+  %58 = getelementptr inbounds float, float* %49, i64 8
+  %59 = getelementptr inbounds float, float* %50, i64 8
+  %60 = getelementptr inbounds float, float* %51, i64 8
+  %61 = icmp ult float* %58, %6
+  br i1 %61, label %48, label %76
+
+62:                                               ; preds = %46, %62
+  %63 = phi float* [ %72, %62 ], [ %0, %46 ]
+  %64 = phi float* [ %73, %62 ], [ %1, %46 ]
+  %65 = phi float* [ %74, %62 ], [ %2, %46 ]
+  %66 = bitcast float* %63 to <8 x float>*
+  %67 = load <8 x float>, <8 x float>* %66, align 32
+  %68 = bitcast float* %64 to <8 x float>*
+  %69 = load <8 x float>, <8 x float>* %68, align 1
+  %70 = fsub <8 x float> %67, %69
+  %71 = bitcast float* %65 to <8 x float>*
+  store <8 x float> %70, <8 x float>* %71, align 1
+  %72 = getelementptr inbounds float, float* %63, i64 8
+  %73 = getelementptr inbounds float, float* %64, i64 8
+  %74 = getelementptr inbounds float, float* %65, i64 8
+  %75 = icmp ult float* %72, %6
+  br i1 %75, label %62, label %76
+
+76:                                               ; preds = %62, %48, %31, %17, %46, %47, %15, %16
+  ret void
+}
+
+; Function Attrs: nofree nounwind ssp uwtable
+define hidden void @_ZN5blink11vector_math3avx5VclipEPKfS3_S3_Pfj(float* readonly, float* nocapture readonly, float* nocapture readonly, float*, i32) local_unnamed_addr #5 {
+  %6 = zext i32 %4 to i64
+  %7 = getelementptr inbounds float, float* %0, i64 %6
+  %8 = load float, float* %1, align 4
+  %9 = insertelement <8 x float> undef, float %8, i32 0
+  %10 = shufflevector <8 x float> %9, <8 x float> undef, <8 x i32> zeroinitializer
+  %11 = load float, float* %2, align 4
+  %12 = insertelement <8 x float> undef, float %11, i32 0
+  %13 = shufflevector <8 x float> %12, <8 x float> undef, <8 x i32> zeroinitializer
+  %14 = ptrtoint float* %3 to i64
+  %15 = and i64 %14, 31
+  %16 = icmp eq i64 %15, 0
+  %17 = icmp ne i32 %4, 0
+  br i1 %16, label %19, label %18
+
+18:                                               ; preds = %5
+  br i1 %17, label %31, label %42
+
+19:                                               ; preds = %5
+  br i1 %17, label %20, label %42
+
+20:                                               ; preds = %19, %20
+  %21 = phi float* [ %28, %20 ], [ %0, %19 ]
+  %22 = phi float* [ %29, %20 ], [ %3, %19 ]
+  %23 = bitcast float* %21 to <8 x float>*
+  %24 = load <8 x float>, <8 x float>* %23, align 32
+  %25 = tail call <8 x float> @llvm.x86.avx.min.ps.256(<8 x float> %13, <8 x float> %24) #11
+  %26 = tail call <8 x float> @llvm.x86.avx.max.ps.256(<8 x float> %10, <8 x float> %25) #11
+  %27 = bitcast float* %22 to <8 x float>*
+  store <8 x float> %26, <8 x float>* %27, align 32
+  %28 = getelementptr inbounds float, float* %21, i64 8
+  %29 = getelementptr inbounds float, float* %22, i64 8
+  %30 = icmp ult float* %28, %7
+  br i1 %30, label %20, label %42
+
+31:                                               ; preds = %18, %31
+  %32 = phi float* [ %39, %31 ], [ %0, %18 ]
+  %33 = phi float* [ %40, %31 ], [ %3, %18 ]
+  %34 = bitcast float* %32 to <8 x float>*
+  %35 = load <8 x float>, <8 x float>* %34, align 32
+  %36 = tail call <8 x float> @llvm.x86.avx.min.ps.256(<8 x float> %13, <8 x float> %35) #11
+  %37 = tail call <8 x float> @llvm.x86.avx.max.ps.256(<8 x float> %10, <8 x float> %36) #11
+  %38 = bitcast float* %33 to <8 x float>*
+  store <8 x float> %37, <8 x float>* %38, align 1
+  %39 = getelementptr inbounds float, float* %32, i64 8
+  %40 = getelementptr inbounds float, float* %33, i64 8
+  %41 = icmp ult float* %39, %7
+  br i1 %41, label %31, label %42
+
+42:                                               ; preds = %31, %20, %18, %19
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink11vector_math3avx7VmaxmgvEPKfPfj(float* readonly, float* nocapture, i32) local_unnamed_addr #2 {
+  %4 = zext i32 %2 to i64
+  %5 = getelementptr inbounds float, float* %0, i64 %4
+  %6 = icmp eq i32 %2, 0
+  br i1 %6, label %16, label %42
+
+7:                                                ; preds = %42
+  %8 = extractelement <8 x float> %49, i32 0
+  %9 = extractelement <8 x float> %49, i32 1
+  %10 = extractelement <8 x float> %49, i32 2
+  %11 = extractelement <8 x float> %49, i32 3
+  %12 = extractelement <8 x float> %49, i32 4
+  %13 = extractelement <8 x float> %49, i32 5
+  %14 = extractelement <8 x float> %49, i32 6
+  %15 = extractelement <8 x float> %49, i32 7
+  br label %16
+
+16:                                               ; preds = %3, %7
+  %17 = phi float [ 0.000000e+00, %3 ], [ %15, %7 ]
+  %18 = phi float [ 0.000000e+00, %3 ], [ %14, %7 ]
+  %19 = phi float [ 0.000000e+00, %3 ], [ %13, %7 ]
+  %20 = phi float [ 0.000000e+00, %3 ], [ %12, %7 ]
+  %21 = phi float [ 0.000000e+00, %3 ], [ %11, %7 ]
+  %22 = phi float [ 0.000000e+00, %3 ], [ %10, %7 ]
+  %23 = phi float [ 0.000000e+00, %3 ], [ %9, %7 ]
+  %24 = phi float [ 0.000000e+00, %3 ], [ %8, %7 ]
+  %25 = load float, float* %1, align 4
+  %26 = fcmp olt float %25, %24
+  %27 = select i1 %26, float %24, float %25
+  %28 = fcmp olt float %27, %23
+  %29 = select i1 %28, float %23, float %27
+  %30 = fcmp olt float %29, %22
+  %31 = select i1 %30, float %22, float %29
+  %32 = fcmp olt float %31, %21
+  %33 = select i1 %32, float %21, float %31
+  %34 = fcmp olt float %33, %20
+  %35 = select i1 %34, float %20, float %33
+  %36 = fcmp olt float %35, %19
+  %37 = select i1 %36, float %19, float %35
+  %38 = fcmp olt float %37, %18
+  %39 = select i1 %38, float %18, float %37
+  %40 = fcmp olt float %39, %17
+  %41 = select i1 %40, float %17, float %39
+  store float %41, float* %1, align 4
+  ret void
+
+42:                                               ; preds = %3, %42
+  %43 = phi <8 x float> [ %49, %42 ], [ zeroinitializer, %3 ]
+  %44 = phi float* [ %50, %42 ], [ %0, %3 ]
+  %45 = bitcast float* %44 to <8 x i32>*
+  %46 = load <8 x i32>, <8 x i32>* %45, align 32
+  %47 = and <8 x i32> %46, <i32 2147483647, i32 2147483647, i32 2147483647, i32 2147483647, i32 2147483647, i32 2147483647, i32 2147483647, i32 2147483647>
+  %48 = bitcast <8 x i32> %47 to <8 x float>
+  %49 = tail call <8 x float> @llvm.x86.avx.max.ps.256(<8 x float> %48, <8 x float> %43) #11
+  %50 = getelementptr inbounds float, float* %44, i64 8
+  %51 = icmp ult float* %50, %5
+  br i1 %51, label %42, label %7
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN5blink11vector_math3avx4VmulEPKfS3_Pfj(float* readonly, float*, float*, i32) local_unnamed_addr #4 {
+  %5 = zext i32 %3 to i64
+  %6 = getelementptr inbounds float, float* %0, i64 %5
+  %7 = ptrtoint float* %1 to i64
+  %8 = and i64 %7, 31
+  %9 = icmp eq i64 %8, 0
+  %10 = ptrtoint float* %2 to i64
+  %11 = and i64 %10, 31
+  %12 = icmp eq i64 %11, 0
+  %13 = icmp ne i32 %3, 0
+  br i1 %9, label %14, label %45
+
+14:                                               ; preds = %4
+  br i1 %12, label %16, label %15
+
+15:                                               ; preds = %14
+  br i1 %13, label %31, label %76
+
+16:                                               ; preds = %14
+  br i1 %13, label %17, label %76
+
+17:                                               ; preds = %16, %17
+  %18 = phi float* [ %27, %17 ], [ %0, %16 ]
+  %19 = phi float* [ %28, %17 ], [ %1, %16 ]
+  %20 = phi float* [ %29, %17 ], [ %2, %16 ]
+  %21 = bitcast float* %18 to <8 x float>*
+  %22 = load <8 x float>, <8 x float>* %21, align 32
+  %23 = bitcast float* %19 to <8 x float>*
+  %24 = load <8 x float>, <8 x float>* %23, align 32
+  %25 = fmul <8 x float> %22, %24
+  %26 = bitcast float* %20 to <8 x float>*
+  store <8 x float> %25, <8 x float>* %26, align 32
+  %27 = getelementptr inbounds float, float* %18, i64 8
+  %28 = getelementptr inbounds float, float* %19, i64 8
+  %29 = getelementptr inbounds float, float* %20, i64 8
+  %30 = icmp ult float* %27, %6
+  br i1 %30, label %17, label %76
+
+31:                                               ; preds = %15, %31
+  %32 = phi float* [ %41, %31 ], [ %0, %15 ]
+  %33 = phi float* [ %42, %31 ], [ %1, %15 ]
+  %34 = phi float* [ %43, %31 ], [ %2, %15 ]
+  %35 = bitcast float* %32 to <8 x float>*
+  %36 = load <8 x float>, <8 x float>* %35, align 32
+  %37 = bitcast float* %33 to <8 x float>*
+  %38 = load <8 x float>, <8 x float>* %37, align 32
+  %39 = fmul <8 x float> %36, %38
+  %40 = bitcast float* %34 to <8 x float>*
+  store <8 x float> %39, <8 x float>* %40, align 1
+  %41 = getelementptr inbounds float, float* %32, i64 8
+  %42 = getelementptr inbounds float, float* %33, i64 8
+  %43 = getelementptr inbounds float, float* %34, i64 8
+  %44 = icmp ult float* %41, %6
+  br i1 %44, label %31, label %76
+
+45:                                               ; preds = %4
+  br i1 %12, label %47, label %46
+
+46:                                               ; preds = %45
+  br i1 %13, label %62, label %76
+
+47:                                               ; preds = %45
+  br i1 %13, label %48, label %76
+
+48:                                               ; preds = %47, %48
+  %49 = phi float* [ %58, %48 ], [ %0, %47 ]
+  %50 = phi float* [ %59, %48 ], [ %1, %47 ]
+  %51 = phi float* [ %60, %48 ], [ %2, %47 ]
+  %52 = bitcast float* %49 to <8 x float>*
+  %53 = load <8 x float>, <8 x float>* %52, align 32
+  %54 = bitcast float* %50 to <8 x float>*
+  %55 = load <8 x float>, <8 x float>* %54, align 1
+  %56 = fmul <8 x float> %53, %55
+  %57 = bitcast float* %51 to <8 x float>*
+  store <8 x float> %56, <8 x float>* %57, align 32
+  %58 = getelementptr inbounds float, float* %49, i64 8
+  %59 = getelementptr inbounds float, float* %50, i64 8
+  %60 = getelementptr inbounds float, float* %51, i64 8
+  %61 = icmp ult float* %58, %6
+  br i1 %61, label %48, label %76
+
+62:                                               ; preds = %46, %62
+  %63 = phi float* [ %72, %62 ], [ %0, %46 ]
+  %64 = phi float* [ %73, %62 ], [ %1, %46 ]
+  %65 = phi float* [ %74, %62 ], [ %2, %46 ]
+  %66 = bitcast float* %63 to <8 x float>*
+  %67 = load <8 x float>, <8 x float>* %66, align 32
+  %68 = bitcast float* %64 to <8 x float>*
+  %69 = load <8 x float>, <8 x float>* %68, align 1
+  %70 = fmul <8 x float> %67, %69
+  %71 = bitcast float* %65 to <8 x float>*
+  store <8 x float> %70, <8 x float>* %71, align 1
+  %72 = getelementptr inbounds float, float* %63, i64 8
+  %73 = getelementptr inbounds float, float* %64, i64 8
+  %74 = getelementptr inbounds float, float* %65, i64 8
+  %75 = icmp ult float* %72, %6
+  br i1 %75, label %62, label %76
+
+76:                                               ; preds = %62, %48, %31, %17, %46, %47, %15, %16
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN5blink11vector_math3avx4VsmaEPKfS3_Pfj(float* readonly, float* nocapture readonly, float*, i32) local_unnamed_addr #4 {
+  %5 = zext i32 %3 to i64
+  %6 = getelementptr inbounds float, float* %0, i64 %5
+  %7 = load float, float* %1, align 4
+  %8 = insertelement <8 x float> undef, float %7, i32 0
+  %9 = shufflevector <8 x float> %8, <8 x float> undef, <8 x i32> zeroinitializer
+  %10 = ptrtoint float* %2 to i64
+  %11 = and i64 %10, 31
+  %12 = icmp eq i64 %11, 0
+  %13 = icmp ne i32 %3, 0
+  br i1 %12, label %15, label %14
+
+14:                                               ; preds = %4
+  br i1 %13, label %28, label %40
+
+15:                                               ; preds = %4
+  br i1 %13, label %16, label %40
+
+16:                                               ; preds = %15, %16
+  %17 = phi float* [ %25, %16 ], [ %0, %15 ]
+  %18 = phi float* [ %26, %16 ], [ %2, %15 ]
+  %19 = bitcast float* %17 to <8 x float>*
+  %20 = load <8 x float>, <8 x float>* %19, align 32
+  %21 = bitcast float* %18 to <8 x float>*
+  %22 = load <8 x float>, <8 x float>* %21, align 32
+  %23 = fmul <8 x float> %9, %20
+  %24 = fadd <8 x float> %22, %23
+  store <8 x float> %24, <8 x float>* %21, align 32
+  %25 = getelementptr inbounds float, float* %17, i64 8
+  %26 = getelementptr inbounds float, float* %18, i64 8
+  %27 = icmp ult float* %25, %6
+  br i1 %27, label %16, label %40
+
+28:                                               ; preds = %14, %28
+  %29 = phi float* [ %37, %28 ], [ %0, %14 ]
+  %30 = phi float* [ %38, %28 ], [ %2, %14 ]
+  %31 = bitcast float* %29 to <8 x float>*
+  %32 = load <8 x float>, <8 x float>* %31, align 32
+  %33 = bitcast float* %30 to <8 x float>*
+  %34 = load <8 x float>, <8 x float>* %33, align 1
+  %35 = fmul <8 x float> %9, %32
+  %36 = fadd <8 x float> %34, %35
+  store <8 x float> %36, <8 x float>* %33, align 1
+  %37 = getelementptr inbounds float, float* %29, i64 8
+  %38 = getelementptr inbounds float, float* %30, i64 8
+  %39 = icmp ult float* %37, %6
+  br i1 %39, label %28, label %40
+
+40:                                               ; preds = %28, %16, %14, %15
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN5blink11vector_math3avx5VsmulEPKfS3_Pfj(float* readonly, float* nocapture readonly, float*, i32) local_unnamed_addr #4 {
+  %5 = zext i32 %3 to i64
+  %6 = getelementptr inbounds float, float* %0, i64 %5
+  %7 = load float, float* %1, align 4
+  %8 = insertelement <8 x float> undef, float %7, i32 0
+  %9 = shufflevector <8 x float> %8, <8 x float> undef, <8 x i32> zeroinitializer
+  %10 = ptrtoint float* %2 to i64
+  %11 = and i64 %10, 31
+  %12 = icmp eq i64 %11, 0
+  %13 = icmp ne i32 %3, 0
+  br i1 %12, label %15, label %14
+
+14:                                               ; preds = %4
+  br i1 %13, label %26, label %36
+
+15:                                               ; preds = %4
+  br i1 %13, label %16, label %36
+
+16:                                               ; preds = %15, %16
+  %17 = phi float* [ %23, %16 ], [ %0, %15 ]
+  %18 = phi float* [ %24, %16 ], [ %2, %15 ]
+  %19 = bitcast float* %17 to <8 x float>*
+  %20 = load <8 x float>, <8 x float>* %19, align 32
+  %21 = fmul <8 x float> %9, %20
+  %22 = bitcast float* %18 to <8 x float>*
+  store <8 x float> %21, <8 x float>* %22, align 32
+  %23 = getelementptr inbounds float, float* %17, i64 8
+  %24 = getelementptr inbounds float, float* %18, i64 8
+  %25 = icmp ult float* %23, %6
+  br i1 %25, label %16, label %36
+
+26:                                               ; preds = %14, %26
+  %27 = phi float* [ %33, %26 ], [ %0, %14 ]
+  %28 = phi float* [ %34, %26 ], [ %2, %14 ]
+  %29 = bitcast float* %27 to <8 x float>*
+  %30 = load <8 x float>, <8 x float>* %29, align 32
+  %31 = fmul <8 x float> %9, %30
+  %32 = bitcast float* %28 to <8 x float>*
+  store <8 x float> %31, <8 x float>* %32, align 1
+  %33 = getelementptr inbounds float, float* %27, i64 8
+  %34 = getelementptr inbounds float, float* %28, i64 8
+  %35 = icmp ult float* %33, %6
+  br i1 %35, label %26, label %36
+
+36:                                               ; preds = %26, %16, %14, %15
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN5blink11vector_math3avx5VsaddEPKfS3_Pfj(float* readonly, float* nocapture readonly, float*, i32) local_unnamed_addr #4 {
+  %5 = zext i32 %3 to i64
+  %6 = getelementptr inbounds float, float* %0, i64 %5
+  %7 = load float, float* %1, align 4
+  %8 = insertelement <8 x float> undef, float %7, i32 0
+  %9 = shufflevector <8 x float> %8, <8 x float> undef, <8 x i32> zeroinitializer
+  %10 = ptrtoint float* %2 to i64
+  %11 = and i64 %10, 31
+  %12 = icmp eq i64 %11, 0
+  %13 = icmp ne i32 %3, 0
+  br i1 %12, label %15, label %14
+
+14:                                               ; preds = %4
+  br i1 %13, label %26, label %36
+
+15:                                               ; preds = %4
+  br i1 %13, label %16, label %36
+
+16:                                               ; preds = %15, %16
+  %17 = phi float* [ %23, %16 ], [ %0, %15 ]
+  %18 = phi float* [ %24, %16 ], [ %2, %15 ]
+  %19 = bitcast float* %17 to <8 x float>*
+  %20 = load <8 x float>, <8 x float>* %19, align 32
+  %21 = fadd <8 x float> %9, %20
+  %22 = bitcast float* %18 to <8 x float>*
+  store <8 x float> %21, <8 x float>* %22, align 32
+  %23 = getelementptr inbounds float, float* %17, i64 8
+  %24 = getelementptr inbounds float, float* %18, i64 8
+  %25 = icmp ult float* %23, %6
+  br i1 %25, label %16, label %36
+
+26:                                               ; preds = %14, %26
+  %27 = phi float* [ %33, %26 ], [ %0, %14 ]
+  %28 = phi float* [ %34, %26 ], [ %2, %14 ]
+  %29 = bitcast float* %27 to <8 x float>*
+  %30 = load <8 x float>, <8 x float>* %29, align 32
+  %31 = fadd <8 x float> %9, %30
+  %32 = bitcast float* %28 to <8 x float>*
+  store <8 x float> %31, <8 x float>* %32, align 1
+  %33 = getelementptr inbounds float, float* %27, i64 8
+  %34 = getelementptr inbounds float, float* %28, i64 8
+  %35 = icmp ult float* %33, %6
+  br i1 %35, label %26, label %36
+
+36:                                               ; preds = %26, %16, %14, %15
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5blink11vector_math3avx6VsvesqEPKfPfj(float* readonly, float* nocapture, i32) local_unnamed_addr #2 {
+  %4 = zext i32 %2 to i64
+  %5 = getelementptr inbounds float, float* %0, i64 %4
+  %6 = icmp eq i32 %2, 0
+  br i1 %6, label %16, label %34
+
+7:                                                ; preds = %34
+  %8 = extractelement <8 x float> %40, i32 0
+  %9 = extractelement <8 x float> %40, i32 1
+  %10 = extractelement <8 x float> %40, i32 2
+  %11 = extractelement <8 x float> %40, i32 3
+  %12 = extractelement <8 x float> %40, i32 4
+  %13 = extractelement <8 x float> %40, i32 5
+  %14 = extractelement <8 x float> %40, i32 6
+  %15 = extractelement <8 x float> %40, i32 7
+  br label %16
+
+16:                                               ; preds = %3, %7
+  %17 = phi float [ 0.000000e+00, %3 ], [ %15, %7 ]
+  %18 = phi float [ 0.000000e+00, %3 ], [ %14, %7 ]
+  %19 = phi float [ 0.000000e+00, %3 ], [ %13, %7 ]
+  %20 = phi float [ 0.000000e+00, %3 ], [ %12, %7 ]
+  %21 = phi float [ 0.000000e+00, %3 ], [ %11, %7 ]
+  %22 = phi float [ 0.000000e+00, %3 ], [ %10, %7 ]
+  %23 = phi float [ 0.000000e+00, %3 ], [ %9, %7 ]
+  %24 = phi float [ 0.000000e+00, %3 ], [ %8, %7 ]
+  %25 = load float, float* %1, align 4
+  %26 = fadd float %24, %25
+  %27 = fadd float %23, %26
+  %28 = fadd float %22, %27
+  %29 = fadd float %21, %28
+  %30 = fadd float %20, %29
+  %31 = fadd float %19, %30
+  %32 = fadd float %18, %31
+  %33 = fadd float %17, %32
+  store float %33, float* %1, align 4
+  ret void
+
+34:                                               ; preds = %3, %34
+  %35 = phi <8 x float> [ %40, %34 ], [ zeroinitializer, %3 ]
+  %36 = phi float* [ %41, %34 ], [ %0, %3 ]
+  %37 = bitcast float* %36 to <8 x float>*
+  %38 = load <8 x float>, <8 x float>* %37, align 32
+  %39 = fmul <8 x float> %38, %38
+  %40 = fadd <8 x float> %35, %39
+  %41 = getelementptr inbounds float, float* %36, i64 8
+  %42 = icmp ult float* %41, %5
+  br i1 %42, label %34, label %7
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN5blink11vector_math3avx5ZvmulEPKfS3_S3_S3_PfS4_j(float* nocapture readonly, float*, float*, float*, float*, float*, i32) local_unnamed_addr #4 {
+  %8 = ptrtoint float* %1 to i64
+  %9 = and i64 %8, 31
+  %10 = icmp eq i64 %9, 0
+  br i1 %10, label %11, label %89
+
+11:                                               ; preds = %7
+  %12 = ptrtoint float* %2 to i64
+  %13 = and i64 %12, 31
+  %14 = icmp eq i64 %13, 0
+  br i1 %14, label %15, label %89
+
+15:                                               ; preds = %11
+  %16 = ptrtoint float* %3 to i64
+  %17 = and i64 %16, 31
+  %18 = icmp eq i64 %17, 0
+  br i1 %18, label %19, label %89
+
+19:                                               ; preds = %15
+  %20 = ptrtoint float* %4 to i64
+  %21 = and i64 %20, 31
+  %22 = icmp eq i64 %21, 0
+  br i1 %22, label %23, label %89
+
+23:                                               ; preds = %19
+  %24 = ptrtoint float* %5 to i64
+  %25 = and i64 %24, 31
+  %26 = icmp eq i64 %25, 0
+  br i1 %26, label %27, label %89
+
+27:                                               ; preds = %23
+  %28 = icmp eq i32 %6, 0
+  br i1 %28, label %203, label %29
+
+29:                                               ; preds = %27
+  %30 = zext i32 %6 to i64
+  %31 = add nsw i64 %30, -1
+  %32 = lshr i64 %31, 3
+  %33 = add nuw nsw i64 %32, 1
+  %34 = and i64 %33, 1
+  %35 = icmp eq i64 %32, 0
+  br i1 %35, label %151, label %36
+
+36:                                               ; preds = %29
+  %37 = sub nuw nsw i64 %33, %34
+  br label %38
+
+38:                                               ; preds = %38, %36
+  %39 = phi i64 [ 0, %36 ], [ %86, %38 ]
+  %40 = phi i64 [ %37, %36 ], [ %87, %38 ]
+  %41 = getelementptr inbounds float, float* %0, i64 %39
+  %42 = bitcast float* %41 to <8 x float>*
+  %43 = load <8 x float>, <8 x float>* %42, align 32
+  %44 = getelementptr inbounds float, float* %2, i64 %39
+  %45 = bitcast float* %44 to <8 x float>*
+  %46 = load <8 x float>, <8 x float>* %45, align 32
+  %47 = getelementptr inbounds float, float* %1, i64 %39
+  %48 = bitcast float* %47 to <8 x float>*
+  %49 = load <8 x float>, <8 x float>* %48, align 32
+  %50 = getelementptr inbounds float, float* %3, i64 %39
+  %51 = bitcast float* %50 to <8 x float>*
+  %52 = load <8 x float>, <8 x float>* %51, align 32
+  %53 = fmul <8 x float> %43, %46
+  %54 = fmul <8 x float> %49, %52
+  %55 = fsub <8 x float> %53, %54
+  %56 = fmul <8 x float> %43, %52
+  %57 = fmul <8 x float> %46, %49
+  %58 = fadd <8 x float> %57, %56
+  %59 = getelementptr inbounds float, float* %4, i64 %39
+  %60 = bitcast float* %59 to <8 x float>*
+  store <8 x float> %55, <8 x float>* %60, align 32
+  %61 = getelementptr inbounds float, float* %5, i64 %39
+  %62 = bitcast float* %61 to <8 x float>*
+  store <8 x float> %58, <8 x float>* %62, align 32
+  %63 = or i64 %39, 8
+  %64 = getelementptr inbounds float, float* %0, i64 %63
+  %65 = bitcast float* %64 to <8 x float>*
+  %66 = load <8 x float>, <8 x float>* %65, align 32
+  %67 = getelementptr inbounds float, float* %2, i64 %63
+  %68 = bitcast float* %67 to <8 x float>*
+  %69 = load <8 x float>, <8 x float>* %68, align 32
+  %70 = getelementptr inbounds float, float* %1, i64 %63
+  %71 = bitcast float* %70 to <8 x float>*
+  %72 = load <8 x float>, <8 x float>* %71, align 32
+  %73 = getelementptr inbounds float, float* %3, i64 %63
+  %74 = bitcast float* %73 to <8 x float>*
+  %75 = load <8 x float>, <8 x float>* %74, align 32
+  %76 = fmul <8 x float> %66, %69
+  %77 = fmul <8 x float> %72, %75
+  %78 = fsub <8 x float> %76, %77
+  %79 = fmul <8 x float> %66, %75
+  %80 = fmul <8 x float> %69, %72
+  %81 = fadd <8 x float> %80, %79
+  %82 = getelementptr inbounds float, float* %4, i64 %63
+  %83 = bitcast float* %82 to <8 x float>*
+  store <8 x float> %78, <8 x float>* %83, align 32
+  %84 = getelementptr inbounds float, float* %5, i64 %63
+  %85 = bitcast float* %84 to <8 x float>*
+  store <8 x float> %81, <8 x float>* %85, align 32
+  %86 = add nuw nsw i64 %39, 16
+  %87 = add i64 %40, -2
+  %88 = icmp eq i64 %87, 0
+  br i1 %88, label %151, label %38
+
+89:                                               ; preds = %23, %19, %15, %11, %7
+  %90 = icmp eq i32 %6, 0
+  br i1 %90, label %203, label %91
+
+91:                                               ; preds = %89
+  %92 = zext i32 %6 to i64
+  %93 = add nsw i64 %92, -1
+  %94 = lshr i64 %93, 3
+  %95 = add nuw nsw i64 %94, 1
+  %96 = and i64 %95, 1
+  %97 = icmp eq i64 %94, 0
+  br i1 %97, label %177, label %98
+
+98:                                               ; preds = %91
+  %99 = sub nuw nsw i64 %95, %96
+  br label %100
+
+100:                                              ; preds = %100, %98
+  %101 = phi i64 [ 0, %98 ], [ %148, %100 ]
+  %102 = phi i64 [ %99, %98 ], [ %149, %100 ]
+  %103 = getelementptr inbounds float, float* %0, i64 %101
+  %104 = bitcast float* %103 to <8 x float>*
+  %105 = load <8 x float>, <8 x float>* %104, align 32
+  %106 = getelementptr inbounds float, float* %2, i64 %101
+  %107 = bitcast float* %106 to <8 x float>*
+  %108 = load <8 x float>, <8 x float>* %107, align 1
+  %109 = getelementptr inbounds float, float* %1, i64 %101
+  %110 = bitcast float* %109 to <8 x float>*
+  %111 = load <8 x float>, <8 x float>* %110, align 1
+  %112 = getelementptr inbounds float, float* %3, i64 %101
+  %113 = bitcast float* %112 to <8 x float>*
+  %114 = load <8 x float>, <8 x float>* %113, align 1
+  %115 = fmul <8 x float> %105, %108
+  %116 = fmul <8 x float> %111, %114
+  %117 = fsub <8 x float> %115, %116
+  %118 = fmul <8 x float> %105, %114
+  %119 = fmul <8 x float> %108, %111
+  %120 = fadd <8 x float> %119, %118
+  %121 = getelementptr inbounds float, float* %4, i64 %101
+  %122 = bitcast float* %121 to <8 x float>*
+  store <8 x float> %117, <8 x float>* %122, align 1
+  %123 = getelementptr inbounds float, float* %5, i64 %101
+  %124 = bitcast float* %123 to <8 x float>*
+  store <8 x float> %120, <8 x float>* %124, align 1
+  %125 = or i64 %101, 8
+  %126 = getelementptr inbounds float, float* %0, i64 %125
+  %127 = bitcast float* %126 to <8 x float>*
+  %128 = load <8 x float>, <8 x float>* %127, align 32
+  %129 = getelementptr inbounds float, float* %2, i64 %125
+  %130 = bitcast float* %129 to <8 x float>*
+  %131 = load <8 x float>, <8 x float>* %130, align 1
+  %132 = getelementptr inbounds float, float* %1, i64 %125
+  %133 = bitcast float* %132 to <8 x float>*
+  %134 = load <8 x float>, <8 x float>* %133, align 1
+  %135 = getelementptr inbounds float, float* %3, i64 %125
+  %136 = bitcast float* %135 to <8 x float>*
+  %137 = load <8 x float>, <8 x float>* %136, align 1
+  %138 = fmul <8 x float> %128, %131
+  %139 = fmul <8 x float> %134, %137
+  %140 = fsub <8 x float> %138, %139
+  %141 = fmul <8 x float> %128, %137
+  %142 = fmul <8 x float> %131, %134
+  %143 = fadd <8 x float> %142, %141
+  %144 = getelementptr inbounds float, float* %4, i64 %125
+  %145 = bitcast float* %144 to <8 x float>*
+  store <8 x float> %140, <8 x float>* %145, align 1
+  %146 = getelementptr inbounds float, float* %5, i64 %125
+  %147 = bitcast float* %146 to <8 x float>*
+  store <8 x float> %143, <8 x float>* %147, align 1
+  %148 = add nuw nsw i64 %101, 16
+  %149 = add i64 %102, -2
+  %150 = icmp eq i64 %149, 0
+  br i1 %150, label %177, label %100
+
+151:                                              ; preds = %38, %29
+  %152 = phi i64 [ 0, %29 ], [ %86, %38 ]
+  %153 = icmp eq i64 %34, 0
+  br i1 %153, label %203, label %154
+
+154:                                              ; preds = %151
+  %155 = getelementptr inbounds float, float* %0, i64 %152
+  %156 = bitcast float* %155 to <8 x float>*
+  %157 = load <8 x float>, <8 x float>* %156, align 32
+  %158 = getelementptr inbounds float, float* %2, i64 %152
+  %159 = bitcast float* %158 to <8 x float>*
+  %160 = load <8 x float>, <8 x float>* %159, align 32
+  %161 = getelementptr inbounds float, float* %1, i64 %152
+  %162 = bitcast float* %161 to <8 x float>*
+  %163 = load <8 x float>, <8 x float>* %162, align 32
+  %164 = getelementptr inbounds float, float* %3, i64 %152
+  %165 = bitcast float* %164 to <8 x float>*
+  %166 = load <8 x float>, <8 x float>* %165, align 32
+  %167 = fmul <8 x float> %157, %160
+  %168 = fmul <8 x float> %163, %166
+  %169 = fsub <8 x float> %167, %168
+  %170 = fmul <8 x float> %157, %166
+  %171 = fmul <8 x float> %160, %163
+  %172 = fadd <8 x float> %171, %170
+  %173 = getelementptr inbounds float, float* %4, i64 %152
+  %174 = bitcast float* %173 to <8 x float>*
+  store <8 x float> %169, <8 x float>* %174, align 32
+  %175 = getelementptr inbounds float, float* %5, i64 %152
+  %176 = bitcast float* %175 to <8 x float>*
+  store <8 x float> %172, <8 x float>* %176, align 32
+  br label %203
+
+177:                                              ; preds = %100, %91
+  %178 = phi i64 [ 0, %91 ], [ %148, %100 ]
+  %179 = icmp eq i64 %96, 0
+  br i1 %179, label %203, label %180
+
+180:                                              ; preds = %177
+  %181 = getelementptr inbounds float, float* %0, i64 %178
+  %182 = bitcast float* %181 to <8 x float>*
+  %183 = load <8 x float>, <8 x float>* %182, align 32
+  %184 = getelementptr inbounds float, float* %2, i64 %178
+  %185 = bitcast float* %184 to <8 x float>*
+  %186 = load <8 x float>, <8 x float>* %185, align 1
+  %187 = getelementptr inbounds float, float* %1, i64 %178
+  %188 = bitcast float* %187 to <8 x float>*
+  %189 = load <8 x float>, <8 x float>* %188, align 1
+  %190 = getelementptr inbounds float, float* %3, i64 %178
+  %191 = bitcast float* %190 to <8 x float>*
+  %192 = load <8 x float>, <8 x float>* %191, align 1
+  %193 = fmul <8 x float> %183, %186
+  %194 = fmul <8 x float> %189, %192
+  %195 = fsub <8 x float> %193, %194
+  %196 = fmul <8 x float> %183, %192
+  %197 = fmul <8 x float> %186, %189
+  %198 = fadd <8 x float> %197, %196
+  %199 = getelementptr inbounds float, float* %4, i64 %178
+  %200 = bitcast float* %199 to <8 x float>*
+  store <8 x float> %195, <8 x float>* %200, align 1
+  %201 = getelementptr inbounds float, float* %5, i64 %178
+  %202 = bitcast float* %201 to <8 x float>*
+  store <8 x float> %198, <8 x float>* %202, align 1
+  br label %203
+
+203:                                              ; preds = %180, %177, %154, %151, %27, %89
+  ret void
+}
+
+; Function Attrs: nounwind readnone
+declare <8 x float> @llvm.x86.avx.max.ps.256(<8 x float>, <8 x float>) #6
+
+; Function Attrs: nounwind readnone
+declare <8 x float> @llvm.x86.avx.min.ps.256(<8 x float>, <8 x float>) #6
+
+declare void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* sret, i8*, i32, %"class.logging::CheckOpResult"*) local_unnamed_addr #7
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"*) local_unnamed_addr #7
+
+; Function Attrs: nounwind
+declare void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"*) unnamed_addr #8
+
+declare void @_ZN3WTF10Partitions8FastFreeEPv(i8*) local_unnamed_addr #7
+
+declare i8* @_ZN3WTF10Partitions16FastZeroedMallocEmPKc(i64, i8*) local_unnamed_addr #7
+
+declare void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* sret, i8*, i32, i8*) local_unnamed_addr #7
+
+declare i8* @_ZN7logging15CheckOpValueStrEm(i64) local_unnamed_addr #7
+
+declare void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"*, i8*, i8*, i8*) unnamed_addr #7
+
+; Function Attrs: nounwind readnone speculatable
+declare { i32, i1 } @llvm.uadd.with.overflow.i32(i32, i32) #9
+
+; Function Attrs: cold noreturn nounwind
+declare void @llvm.trap() #10
+
+attributes #0 = { norecurse nounwind readnone ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+avx,+cx8,+fxsr,+mmx,+popcnt,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { argmemonly nounwind }
+attributes #2 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="256" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+avx,+cx8,+fxsr,+mmx,+popcnt,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+avx,+cx8,+fxsr,+mmx,+popcnt,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nofree norecurse nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="256" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+avx,+cx8,+fxsr,+mmx,+popcnt,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nofree nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="256" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+avx,+cx8,+fxsr,+mmx,+popcnt,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nounwind readnone }
+attributes #7 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+avx,+cx8,+fxsr,+mmx,+popcnt,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+avx,+cx8,+fxsr,+mmx,+popcnt,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #9 = { nounwind readnone speculatable }
+attributes #10 = { cold noreturn nounwind }
+attributes #11 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{!"branch_weights", i32 1, i32 2000}

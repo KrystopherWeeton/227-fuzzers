@@ -1,0 +1,117 @@
+; ModuleID = '../../native_client/src/trusted/service_runtime/nacl_syscall_hook.c'
+source_filename = "../../native_client/src/trusted/service_runtime/nacl_syscall_hook.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.NaClThreadContext = type { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i32, i32, i32, i16, i16, i64, i32, i32 }
+%struct.NaClAppThread = type { %struct.NaClThreadContext, %struct.NaClMutex, %struct.NaClApp*, i32, i32, %struct.NaClThread, %struct.NaClMutex, i32, %struct.NaClAppThreadSuspendedRegisters*, i32, i64, i8*, i32, i32, i32, %struct.NaClListNode, i32, %struct.NaClCondVar }
+%struct.NaClApp = type { i8, i64, i32, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i32, i32, %struct.NaClMutex, %struct.NaClCondVar, [151 x %struct.NaClSyscallTableEntry], %struct.NaClResourceNaClApp, i32, i32, %struct.NaClVmmap, %struct.NaClIntervalMultiset*, %struct.NaClDescEffector*, i32, i32, %struct.NaClDesc*, %struct.NaClMutex, i8*, %struct.NaClDynamicRegion*, i32, i32, i32, i32, i64, i32, i32, i32, %struct.NaClCPUFeaturesAbstract*, %struct.NaClValidationCache*, i32, i32, i32, i32, i32, i64, %struct.NaClMutex, %struct.DynArray, i32, %struct.NaClFastMutex, %struct.DynArray, %struct.NaClDebugCallbacks*, %struct.NaClDesc*, %struct.NaClDesc*, %struct.NaClMutex, i32, i32, i32, i32, i32, i32, i32, %struct.NaClValidatorInterface* }
+%struct.NaClSyscallTableEntry = type { i32 (%struct.NaClAppThread*)* }
+%struct.NaClResourceNaClApp = type { %struct.NaClResource, %struct.NaClApp* }
+%struct.NaClResource = type { %struct.NaClResourceSchemes*, i64 }
+%struct.NaClResourceSchemes = type { i8*, i32, %struct.NaClDesc* (%struct.NaClResource*, i8*, i32, i32, i32)* }
+%struct.NaClVmmap = type { %struct.NaClVmmapEntry**, i64, i64, i32 }
+%struct.NaClVmmapEntry = type { i64, i64, i32, i32, i32, %struct.NaClDesc*, i64, i64 }
+%struct.NaClIntervalMultiset = type { %struct.NaClIntervalMultisetVtbl* }
+%struct.NaClIntervalMultisetVtbl = type { void (%struct.NaClIntervalMultiset*)*, void (%struct.NaClIntervalMultiset*, i32, i32)*, void (%struct.NaClIntervalMultiset*, i32, i32)*, i32 (%struct.NaClIntervalMultiset*, i32, i32)* }
+%struct.NaClDescEffector = type opaque
+%struct.NaClDynamicRegion = type opaque
+%struct.NaClCPUFeaturesAbstract = type opaque
+%struct.NaClValidationCache = type opaque
+%struct.NaClFastMutex = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%struct.DynArray = type { i64, i8**, i64, i32*, i64 }
+%struct.NaClDebugCallbacks = type { void (%struct.NaClAppThread*)*, void (%struct.NaClAppThread*)*, void ()* }
+%struct.NaClDesc = type opaque
+%struct.NaClValidatorInterface = type { i32, i32, i32, i32 (i64, i8*, i64, i32, i32, i32, %struct.NaClCPUFeaturesAbstract*, %struct.NaClValidationMetadata*, %struct.NaClValidationCache*)*, i32 (i64, i8*, i8*, i64, %struct.NaClCPUFeaturesAbstract*, i32 (i8*, i8*, i8)*)*, i32 (i64, i8*, i8*, i64, %struct.NaClCPUFeaturesAbstract*)*, i64, void (%struct.NaClCPUFeaturesAbstract*)*, void (%struct.NaClCPUFeaturesAbstract*)*, i32 (i64, i64, i8*, i64, %struct.NaClCPUFeaturesAbstract*)* }
+%struct.NaClValidationMetadata = type opaque
+%struct.NaClThread = type { i64 }
+%struct.NaClMutex = type { %union.pthread_mutex_t, i32 }
+%struct.NaClAppThreadSuspendedRegisters = type opaque
+%struct.NaClListNode = type { %struct.NaClListNode*, %struct.NaClListNode* }
+%struct.NaClCondVar = type { %union.pthread_cond_t }
+%union.pthread_cond_t = type { %struct.__pthread_cond_s }
+%struct.__pthread_cond_s = type { %union.anon, %union.anon.0, [2 x i32], [2 x i32], i32, i32, [2 x i32] }
+%union.anon = type { i64 }
+%union.anon.0 = type { i64 }
+
+@.str = private unnamed_addr constant [46 x i8] c"Entering syscall %lu: return address 0x%08lx\0A\00", align 1
+@.str.1 = private unnamed_addr constant [25 x i8] c"INVALID system call %lu\0A\00", align 1
+@.str.2 = private unnamed_addr constant [52 x i8] c"Returning from syscall %lu: return value %d (0x%x)\0A\00", align 1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden %struct.NaClThreadContext* @NaClSyscallCSegHook(%struct.NaClThreadContext* returned) local_unnamed_addr #0 {
+  %2 = bitcast %struct.NaClThreadContext* %0 to %struct.NaClAppThread*
+  %3 = getelementptr inbounds %struct.NaClThreadContext, %struct.NaClThreadContext* %0, i64 1, i32 6
+  %4 = bitcast i64* %3 to %struct.NaClApp**
+  %5 = load %struct.NaClApp*, %struct.NaClApp** %4, align 8
+  %6 = getelementptr inbounds %struct.NaClThreadContext, %struct.NaClThreadContext* %0, i64 0, i32 7
+  %7 = load i64, i64* %6, align 8
+  %8 = add i64 %7, -16
+  %9 = inttoptr i64 %8 to i32*
+  %10 = load volatile i32, i32* %9, align 4
+  %11 = add i64 %7, -8
+  %12 = inttoptr i64 %11 to i64*
+  %13 = load volatile i64, i64* %12, align 8
+  %14 = getelementptr inbounds %struct.NaClApp, %struct.NaClApp* %5, i64 0, i32 15
+  %15 = load i32, i32* %14, align 8
+  %16 = sext i32 %15 to i64
+  %17 = add i64 %13, 4294967295
+  %18 = add i64 %17, %16
+  %19 = sub nsw i64 0, %16
+  %20 = getelementptr inbounds %struct.NaClApp, %struct.NaClApp* %5, i64 0, i32 3
+  %21 = load i64, i64* %20, align 8
+  %22 = and i64 %19, 4294967295
+  %23 = and i64 %22, %18
+  %24 = add i64 %23, %21
+  %25 = getelementptr inbounds %struct.NaClThreadContext, %struct.NaClThreadContext* %0, i64 0, i32 17
+  store i64 %24, i64* %25, align 8
+  tail call void @NaClAppThreadSetSuspendState(%struct.NaClAppThread* %2, i32 1, i32 2) #2
+  %26 = load %struct.NaClApp*, %struct.NaClApp** %4, align 8
+  %27 = add i32 %10, -65536
+  %28 = lshr i32 %27, 5
+  %29 = zext i32 %28 to i64
+  %30 = load i64, i64* %25, align 8
+  tail call void (i32, i8*, ...) @NaClLog(i32 4, i8* getelementptr inbounds ([46 x i8], [46 x i8]* @.str, i64 0, i64 0), i64 %29, i64 %30) #2
+  %31 = add i64 %7, 4294967256
+  %32 = and i64 %31, 4294967295
+  %33 = getelementptr inbounds %struct.NaClThreadContext, %struct.NaClThreadContext* %0, i64 1, i32 18
+  store i64 %32, i64* %33, align 8
+  %34 = icmp ugt i32 %27, 4831
+  br i1 %34, label %35, label %36, !prof !2
+
+35:                                               ; preds = %1
+  tail call void (i32, i8*, ...) @NaClLog(i32 2, i8* getelementptr inbounds ([25 x i8], [25 x i8]* @.str.1, i64 0, i64 0), i64 %29) #2
+  br label %40
+
+36:                                               ; preds = %1
+  %37 = getelementptr inbounds %struct.NaClApp, %struct.NaClApp* %26, i64 0, i32 19, i64 %29, i32 0
+  %38 = load i32 (%struct.NaClAppThread*)*, i32 (%struct.NaClAppThread*)** %37, align 8
+  %39 = tail call i32 %38(%struct.NaClAppThread* %2) #2
+  br label %40
+
+40:                                               ; preds = %36, %35
+  %41 = phi i32 [ -22, %35 ], [ %39, %36 ]
+  tail call void (i32, i8*, ...) @NaClLog(i32 4, i8* getelementptr inbounds ([52 x i8], [52 x i8]* @.str.2, i64 0, i64 0), i64 %29, i32 %41, i32 %41) #2
+  %42 = zext i32 %41 to i64
+  %43 = getelementptr inbounds %struct.NaClThreadContext, %struct.NaClThreadContext* %0, i64 0, i32 18
+  store i64 %42, i64* %43, align 8
+  tail call void @NaClAppThreadSetSuspendState(%struct.NaClAppThread* %2, i32 2, i32 1) #2
+  ret %struct.NaClThreadContext* %0
+}
+
+declare void @NaClAppThreadSetSuspendState(%struct.NaClAppThread*, i32, i32) local_unnamed_addr #1
+
+declare void @NaClLog(i32, i8*, ...) local_unnamed_addr #1
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{!"branch_weights", i32 1, i32 2000}

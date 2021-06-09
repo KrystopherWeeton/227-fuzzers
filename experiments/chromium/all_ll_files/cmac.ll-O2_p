@@ -1,0 +1,992 @@
+; ModuleID = '../../third_party/boringssl/src/crypto/cmac/cmac.c'
+source_filename = "../../third_party/boringssl/src/crypto/cmac/cmac.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.cmac_ctx_st = type { %struct.evp_cipher_ctx_st, [16 x i8], [16 x i8], [16 x i8], i32 }
+%struct.evp_cipher_ctx_st = type { %struct.evp_cipher_st*, i8*, i8*, i32, i32, i32, [16 x i8], [16 x i8], [32 x i8], i32, i32, i32, [32 x i8] }
+%struct.evp_cipher_st = type { i32, i32, i32, i32, i32, i32, i8*, i32 (%struct.evp_cipher_ctx_st*, i8*, i8*, i32)*, i32 (%struct.evp_cipher_ctx_st*, i8*, i8*, i64)*, void (%struct.evp_cipher_ctx_st*)*, i32 (%struct.evp_cipher_ctx_st*, i32, i32, i8*)* }
+%struct.engine_st = type opaque
+
+@kZeroIV = internal constant [16 x i8] zeroinitializer, align 16
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @AES_CMAC(i8*, i8*, i64, i8*, i64) local_unnamed_addr #0 {
+  %6 = alloca %struct.cmac_ctx_st, align 8
+  switch i64 %2, label %146 [
+    i64 16, label %7
+    i64 32, label %9
+  ]
+
+7:                                                ; preds = %5
+  %8 = tail call %struct.evp_cipher_st* @EVP_aes_128_cbc() #3
+  br label %11
+
+9:                                                ; preds = %5
+  %10 = tail call %struct.evp_cipher_st* @EVP_aes_256_cbc() #3
+  br label %11
+
+11:                                               ; preds = %9, %7
+  %12 = phi %struct.evp_cipher_st* [ %10, %9 ], [ %8, %7 ]
+  %13 = bitcast %struct.cmac_ctx_st* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 200, i8* nonnull %13) #3
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %13, i8 -86, i64 200, i1 false)
+  %14 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %6, i64 0, i32 0
+  call void @EVP_CIPHER_CTX_init(%struct.evp_cipher_ctx_st* nonnull %14) #3
+  %15 = call i32 @CMAC_Init(%struct.cmac_ctx_st* nonnull %6, i8* %1, i64 %2, %struct.evp_cipher_st* %12, %struct.engine_st* undef)
+  %16 = icmp eq i32 %15, 0
+  br i1 %16, label %140, label %17
+
+17:                                               ; preds = %11
+  %18 = call i32 @CMAC_Update(%struct.cmac_ctx_st* nonnull %6, i8* %3, i64 %4)
+  %19 = icmp eq i32 %18, 0
+  br i1 %19, label %140, label %20
+
+20:                                               ; preds = %17
+  %21 = call i32 @EVP_CIPHER_CTX_block_size(%struct.evp_cipher_ctx_st* nonnull %14) #3
+  %22 = zext i32 %21 to i64
+  %23 = icmp eq i8* %0, null
+  br i1 %23, label %140, label %24
+
+24:                                               ; preds = %20
+  %25 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %6, i64 0, i32 1, i64 0
+  %26 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %6, i64 0, i32 4
+  %27 = load i32, i32* %26, align 8
+  %28 = icmp eq i32 %27, %21
+  br i1 %28, label %43, label %29
+
+29:                                               ; preds = %24
+  %30 = zext i32 %27 to i64
+  %31 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %6, i64 0, i32 3, i64 %30
+  store i8 -128, i8* %31, align 1
+  %32 = load i32, i32* %26, align 8
+  %33 = add i32 %32, 1
+  %34 = zext i32 %33 to i64
+  %35 = sub nsw i64 %22, %34
+  %36 = icmp eq i64 %35, 0
+  br i1 %36, label %41, label %37
+
+37:                                               ; preds = %29
+  %38 = zext i32 %32 to i64
+  %39 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %6, i64 0, i32 3, i64 %38
+  %40 = getelementptr inbounds i8, i8* %39, i64 1
+  call void @llvm.memset.p0i8.i64(i8* align 1 %40, i8 0, i64 %35, i1 false) #3
+  br label %41
+
+41:                                               ; preds = %37, %29
+  %42 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %6, i64 0, i32 2, i64 0
+  br label %43
+
+43:                                               ; preds = %41, %24
+  %44 = phi i8* [ %42, %41 ], [ %25, %24 ]
+  %45 = icmp eq i32 %21, 0
+  br i1 %45, label %126, label %46
+
+46:                                               ; preds = %43
+  %47 = icmp ult i32 %21, 32
+  br i1 %47, label %48, label %50
+
+48:                                               ; preds = %124, %46
+  %49 = phi i64 [ 0, %46 ], [ %51, %124 ]
+  br label %130
+
+50:                                               ; preds = %46
+  %51 = and i64 %22, 4294967264
+  %52 = add nsw i64 %51, -32
+  %53 = lshr exact i64 %52, 5
+  %54 = add nuw nsw i64 %53, 1
+  %55 = and i64 %54, 1
+  %56 = icmp eq i64 %52, 0
+  br i1 %56, label %102, label %57
+
+57:                                               ; preds = %50
+  %58 = sub nuw nsw i64 %54, %55
+  br label %59
+
+59:                                               ; preds = %59, %57
+  %60 = phi i64 [ 0, %57 ], [ %99, %59 ]
+  %61 = phi i64 [ %58, %57 ], [ %100, %59 ]
+  %62 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %6, i64 0, i32 3, i64 %60
+  %63 = bitcast i8* %62 to <16 x i8>*
+  %64 = load <16 x i8>, <16 x i8>* %63, align 8
+  %65 = getelementptr inbounds i8, i8* %62, i64 16
+  %66 = bitcast i8* %65 to <16 x i8>*
+  %67 = load <16 x i8>, <16 x i8>* %66, align 8
+  %68 = getelementptr inbounds i8, i8* %44, i64 %60
+  %69 = bitcast i8* %68 to <16 x i8>*
+  %70 = load <16 x i8>, <16 x i8>* %69, align 1
+  %71 = getelementptr inbounds i8, i8* %68, i64 16
+  %72 = bitcast i8* %71 to <16 x i8>*
+  %73 = load <16 x i8>, <16 x i8>* %72, align 1
+  %74 = xor <16 x i8> %70, %64
+  %75 = xor <16 x i8> %73, %67
+  %76 = getelementptr inbounds i8, i8* %0, i64 %60
+  %77 = bitcast i8* %76 to <16 x i8>*
+  store <16 x i8> %74, <16 x i8>* %77, align 1
+  %78 = getelementptr inbounds i8, i8* %76, i64 16
+  %79 = bitcast i8* %78 to <16 x i8>*
+  store <16 x i8> %75, <16 x i8>* %79, align 1
+  %80 = or i64 %60, 32
+  %81 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %6, i64 0, i32 3, i64 %80
+  %82 = bitcast i8* %81 to <16 x i8>*
+  %83 = load <16 x i8>, <16 x i8>* %82, align 8
+  %84 = getelementptr inbounds i8, i8* %81, i64 16
+  %85 = bitcast i8* %84 to <16 x i8>*
+  %86 = load <16 x i8>, <16 x i8>* %85, align 8
+  %87 = getelementptr inbounds i8, i8* %44, i64 %80
+  %88 = bitcast i8* %87 to <16 x i8>*
+  %89 = load <16 x i8>, <16 x i8>* %88, align 1
+  %90 = getelementptr inbounds i8, i8* %87, i64 16
+  %91 = bitcast i8* %90 to <16 x i8>*
+  %92 = load <16 x i8>, <16 x i8>* %91, align 1
+  %93 = xor <16 x i8> %89, %83
+  %94 = xor <16 x i8> %92, %86
+  %95 = getelementptr inbounds i8, i8* %0, i64 %80
+  %96 = bitcast i8* %95 to <16 x i8>*
+  store <16 x i8> %93, <16 x i8>* %96, align 1
+  %97 = getelementptr inbounds i8, i8* %95, i64 16
+  %98 = bitcast i8* %97 to <16 x i8>*
+  store <16 x i8> %94, <16 x i8>* %98, align 1
+  %99 = add i64 %60, 64
+  %100 = add i64 %61, -2
+  %101 = icmp eq i64 %100, 0
+  br i1 %101, label %102, label %59, !llvm.loop !2
+
+102:                                              ; preds = %59, %50
+  %103 = phi i64 [ 0, %50 ], [ %99, %59 ]
+  %104 = icmp eq i64 %55, 0
+  br i1 %104, label %124, label %105
+
+105:                                              ; preds = %102
+  %106 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %6, i64 0, i32 3, i64 %103
+  %107 = bitcast i8* %106 to <16 x i8>*
+  %108 = load <16 x i8>, <16 x i8>* %107, align 8
+  %109 = getelementptr inbounds i8, i8* %106, i64 16
+  %110 = bitcast i8* %109 to <16 x i8>*
+  %111 = load <16 x i8>, <16 x i8>* %110, align 8
+  %112 = getelementptr inbounds i8, i8* %44, i64 %103
+  %113 = bitcast i8* %112 to <16 x i8>*
+  %114 = load <16 x i8>, <16 x i8>* %113, align 1
+  %115 = getelementptr inbounds i8, i8* %112, i64 16
+  %116 = bitcast i8* %115 to <16 x i8>*
+  %117 = load <16 x i8>, <16 x i8>* %116, align 1
+  %118 = xor <16 x i8> %114, %108
+  %119 = xor <16 x i8> %117, %111
+  %120 = getelementptr inbounds i8, i8* %0, i64 %103
+  %121 = bitcast i8* %120 to <16 x i8>*
+  store <16 x i8> %118, <16 x i8>* %121, align 1
+  %122 = getelementptr inbounds i8, i8* %120, i64 16
+  %123 = bitcast i8* %122 to <16 x i8>*
+  store <16 x i8> %119, <16 x i8>* %123, align 1
+  br label %124
+
+124:                                              ; preds = %102, %105
+  %125 = icmp eq i64 %51, %22
+  br i1 %125, label %126, label %48
+
+126:                                              ; preds = %130, %124, %43
+  %127 = call i32 @EVP_Cipher(%struct.evp_cipher_ctx_st* nonnull %14, i8* nonnull %0, i8* nonnull %0, i64 %22) #3
+  %128 = icmp ne i32 %127, 0
+  %129 = zext i1 %128 to i32
+  br label %140
+
+130:                                              ; preds = %48, %130
+  %131 = phi i64 [ %138, %130 ], [ %49, %48 ]
+  %132 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %6, i64 0, i32 3, i64 %131
+  %133 = load i8, i8* %132, align 1
+  %134 = getelementptr inbounds i8, i8* %44, i64 %131
+  %135 = load i8, i8* %134, align 1
+  %136 = xor i8 %135, %133
+  %137 = getelementptr inbounds i8, i8* %0, i64 %131
+  store i8 %136, i8* %137, align 1
+  %138 = add nuw nsw i64 %131, 1
+  %139 = icmp eq i64 %138, %22
+  br i1 %139, label %126, label %130, !llvm.loop !4
+
+140:                                              ; preds = %126, %20, %17, %11
+  %141 = phi i32 [ 0, %17 ], [ 0, %11 ], [ %129, %126 ], [ 1, %20 ]
+  %142 = call i32 @EVP_CIPHER_CTX_cleanup(%struct.evp_cipher_ctx_st* nonnull %14) #3
+  %143 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %6, i64 0, i32 1, i64 0
+  call void @OPENSSL_cleanse(i8* %143, i64 16) #3
+  %144 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %6, i64 0, i32 2, i64 0
+  call void @OPENSSL_cleanse(i8* %144, i64 16) #3
+  %145 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %6, i64 0, i32 3, i64 0
+  call void @OPENSSL_cleanse(i8* %145, i64 16) #3
+  call void @llvm.lifetime.end.p0i8(i64 200, i8* nonnull %13) #3
+  br label %146
+
+146:                                              ; preds = %5, %140
+  %147 = phi i32 [ %141, %140 ], [ 0, %5 ]
+  ret i32 %147
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #1
+
+declare %struct.evp_cipher_st* @EVP_aes_128_cbc() local_unnamed_addr #2
+
+declare %struct.evp_cipher_st* @EVP_aes_256_cbc() local_unnamed_addr #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @CMAC_Init(%struct.cmac_ctx_st*, i8*, i64, %struct.evp_cipher_st*, %struct.engine_st* nocapture readnone) local_unnamed_addr #0 {
+  %6 = alloca [16 x i8], align 16
+  %7 = getelementptr inbounds [16 x i8], [16 x i8]* %6, i64 0, i64 0
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %7) #3
+  %8 = getelementptr inbounds [16 x i8], [16 x i8]* %6, i64 0, i64 1
+  %9 = getelementptr inbounds [16 x i8], [16 x i8]* %6, i64 0, i64 2
+  %10 = getelementptr inbounds [16 x i8], [16 x i8]* %6, i64 0, i64 3
+  %11 = getelementptr inbounds [16 x i8], [16 x i8]* %6, i64 0, i64 4
+  %12 = getelementptr inbounds [16 x i8], [16 x i8]* %6, i64 0, i64 5
+  %13 = getelementptr inbounds [16 x i8], [16 x i8]* %6, i64 0, i64 6
+  %14 = getelementptr inbounds [16 x i8], [16 x i8]* %6, i64 0, i64 7
+  %15 = getelementptr inbounds [16 x i8], [16 x i8]* %6, i64 0, i64 8
+  %16 = getelementptr inbounds [16 x i8], [16 x i8]* %6, i64 0, i64 9
+  %17 = getelementptr inbounds [16 x i8], [16 x i8]* %6, i64 0, i64 10
+  %18 = getelementptr inbounds [16 x i8], [16 x i8]* %6, i64 0, i64 11
+  %19 = getelementptr inbounds [16 x i8], [16 x i8]* %6, i64 0, i64 12
+  %20 = getelementptr inbounds [16 x i8], [16 x i8]* %6, i64 0, i64 13
+  %21 = getelementptr inbounds [16 x i8], [16 x i8]* %6, i64 0, i64 14
+  %22 = getelementptr inbounds [16 x i8], [16 x i8]* %6, i64 0, i64 15
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %7, i8 -86, i64 16, i1 false)
+  %23 = tail call i32 @EVP_CIPHER_block_size(%struct.evp_cipher_st* %3) #3
+  %24 = zext i32 %23 to i64
+  switch i32 %23, label %249 [
+    i32 16, label %25
+    i32 8, label %25
+  ]
+
+25:                                               ; preds = %5, %5
+  %26 = tail call i32 @EVP_CIPHER_key_length(%struct.evp_cipher_st* %3) #3
+  %27 = zext i32 %26 to i64
+  %28 = icmp eq i64 %27, %2
+  br i1 %28, label %29, label %249
+
+29:                                               ; preds = %25
+  %30 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 0
+  %31 = tail call i32 @EVP_EncryptInit_ex(%struct.evp_cipher_ctx_st* %30, %struct.evp_cipher_st* %3, %struct.engine_st* null, i8* %1, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @kZeroIV, i64 0, i64 0)) #3
+  %32 = icmp eq i32 %31, 0
+  br i1 %32, label %249, label %33
+
+33:                                               ; preds = %29
+  %34 = call i32 @EVP_Cipher(%struct.evp_cipher_ctx_st* %30, i8* nonnull %7, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @kZeroIV, i64 0, i64 0), i64 %24) #3
+  %35 = icmp eq i32 %34, 0
+  br i1 %35, label %249, label %36
+
+36:                                               ; preds = %33
+  %37 = call i32 @EVP_EncryptInit_ex(%struct.evp_cipher_ctx_st* %30, %struct.evp_cipher_st* null, %struct.engine_st* null, i8* null, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @kZeroIV, i64 0, i64 0)) #3
+  %38 = icmp eq i32 %37, 0
+  br i1 %38, label %249, label %39
+
+39:                                               ; preds = %36
+  %40 = icmp eq i32 %23, 16
+  %41 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 0
+  %42 = load i8, i8* %7, align 16
+  %43 = shl i8 %42, 1
+  %44 = load i8, i8* %8, align 1
+  %45 = lshr i8 %44, 7
+  %46 = or i8 %45, %43
+  store i8 %46, i8* %41, align 1
+  %47 = shl i8 %44, 1
+  %48 = load i8, i8* %9, align 2
+  %49 = lshr i8 %48, 7
+  %50 = or i8 %49, %47
+  %51 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 1
+  store i8 %50, i8* %51, align 1
+  %52 = shl i8 %48, 1
+  %53 = load i8, i8* %10, align 1
+  %54 = lshr i8 %53, 7
+  %55 = or i8 %54, %52
+  %56 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 2
+  store i8 %55, i8* %56, align 1
+  %57 = shl i8 %53, 1
+  %58 = load i8, i8* %11, align 4
+  %59 = lshr i8 %58, 7
+  %60 = or i8 %59, %57
+  %61 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 3
+  store i8 %60, i8* %61, align 1
+  %62 = shl i8 %58, 1
+  %63 = load i8, i8* %12, align 1
+  %64 = lshr i8 %63, 7
+  %65 = or i8 %64, %62
+  %66 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 4
+  store i8 %65, i8* %66, align 1
+  %67 = shl i8 %63, 1
+  %68 = load i8, i8* %13, align 2
+  %69 = lshr i8 %68, 7
+  %70 = or i8 %69, %67
+  %71 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 5
+  store i8 %70, i8* %71, align 1
+  %72 = shl i8 %68, 1
+  %73 = load i8, i8* %14, align 1
+  %74 = lshr i8 %73, 7
+  %75 = or i8 %74, %72
+  %76 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 6
+  store i8 %75, i8* %76, align 1
+  %77 = shl i8 %73, 1
+  br i1 %40, label %78, label %201
+
+78:                                               ; preds = %39
+  %79 = load i8, i8* %15, align 8
+  %80 = lshr i8 %79, 7
+  %81 = or i8 %80, %77
+  %82 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 7
+  store i8 %81, i8* %82, align 1
+  %83 = shl i8 %79, 1
+  %84 = load i8, i8* %16, align 1
+  %85 = lshr i8 %84, 7
+  %86 = or i8 %85, %83
+  %87 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 8
+  store i8 %86, i8* %87, align 1
+  %88 = shl i8 %84, 1
+  %89 = load i8, i8* %17, align 2
+  %90 = lshr i8 %89, 7
+  %91 = or i8 %90, %88
+  %92 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 9
+  store i8 %91, i8* %92, align 1
+  %93 = shl i8 %89, 1
+  %94 = load i8, i8* %18, align 1
+  %95 = lshr i8 %94, 7
+  %96 = or i8 %95, %93
+  %97 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 10
+  store i8 %96, i8* %97, align 1
+  %98 = shl i8 %94, 1
+  %99 = load i8, i8* %19, align 4
+  %100 = lshr i8 %99, 7
+  %101 = or i8 %100, %98
+  %102 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 11
+  store i8 %101, i8* %102, align 1
+  %103 = shl i8 %99, 1
+  %104 = load i8, i8* %20, align 1
+  %105 = lshr i8 %104, 7
+  %106 = or i8 %105, %103
+  %107 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 12
+  store i8 %106, i8* %107, align 1
+  %108 = shl i8 %104, 1
+  %109 = load i8, i8* %21, align 2
+  %110 = lshr i8 %109, 7
+  %111 = or i8 %110, %108
+  %112 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 13
+  store i8 %111, i8* %112, align 1
+  %113 = shl i8 %109, 1
+  %114 = load i8, i8* %22, align 1
+  %115 = lshr i8 %114, 7
+  %116 = or i8 %115, %113
+  %117 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 14
+  store i8 %116, i8* %117, align 1
+  %118 = shl i8 %114, 1
+  %119 = ashr i8 %42, 7
+  %120 = and i8 %119, -121
+  %121 = xor i8 %118, %120
+  %122 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 15
+  store i8 %121, i8* %122, align 1
+  %123 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 0
+  %124 = shl i8 %46, 1
+  %125 = lshr i8 %44, 6
+  %126 = and i8 %125, 1
+  %127 = or i8 %124, %126
+  store i8 %127, i8* %123, align 1
+  %128 = shl i8 %50, 1
+  %129 = lshr i8 %48, 6
+  %130 = and i8 %129, 1
+  %131 = or i8 %128, %130
+  %132 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 1
+  store i8 %131, i8* %132, align 1
+  %133 = shl i8 %55, 1
+  %134 = lshr i8 %53, 6
+  %135 = and i8 %134, 1
+  %136 = or i8 %133, %135
+  %137 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 2
+  store i8 %136, i8* %137, align 1
+  %138 = shl i8 %60, 1
+  %139 = lshr i8 %58, 6
+  %140 = and i8 %139, 1
+  %141 = or i8 %138, %140
+  %142 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 3
+  store i8 %141, i8* %142, align 1
+  %143 = shl i8 %65, 1
+  %144 = lshr i8 %63, 6
+  %145 = and i8 %144, 1
+  %146 = or i8 %143, %145
+  %147 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 4
+  store i8 %146, i8* %147, align 1
+  %148 = shl i8 %70, 1
+  %149 = lshr i8 %68, 6
+  %150 = and i8 %149, 1
+  %151 = or i8 %148, %150
+  %152 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 5
+  store i8 %151, i8* %152, align 1
+  %153 = shl i8 %75, 1
+  %154 = lshr i8 %73, 6
+  %155 = and i8 %154, 1
+  %156 = or i8 %153, %155
+  %157 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 6
+  store i8 %156, i8* %157, align 1
+  %158 = shl i8 %81, 1
+  %159 = lshr i8 %79, 6
+  %160 = and i8 %159, 1
+  %161 = or i8 %158, %160
+  %162 = shl i8 %86, 1
+  %163 = lshr i8 %84, 6
+  %164 = and i8 %163, 1
+  %165 = or i8 %162, %164
+  %166 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 8
+  store i8 %165, i8* %166, align 1
+  %167 = shl i8 %91, 1
+  %168 = lshr i8 %89, 6
+  %169 = and i8 %168, 1
+  %170 = or i8 %167, %169
+  %171 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 9
+  store i8 %170, i8* %171, align 1
+  %172 = shl i8 %96, 1
+  %173 = lshr i8 %94, 6
+  %174 = and i8 %173, 1
+  %175 = or i8 %172, %174
+  %176 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 10
+  store i8 %175, i8* %176, align 1
+  %177 = shl i8 %101, 1
+  %178 = lshr i8 %99, 6
+  %179 = and i8 %178, 1
+  %180 = or i8 %177, %179
+  %181 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 11
+  store i8 %180, i8* %181, align 1
+  %182 = shl i8 %106, 1
+  %183 = lshr i8 %104, 6
+  %184 = and i8 %183, 1
+  %185 = or i8 %182, %184
+  %186 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 12
+  store i8 %185, i8* %186, align 1
+  %187 = shl i8 %111, 1
+  %188 = lshr i8 %109, 6
+  %189 = and i8 %188, 1
+  %190 = or i8 %187, %189
+  %191 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 13
+  store i8 %190, i8* %191, align 1
+  %192 = shl i8 %116, 1
+  %193 = lshr i8 %121, 7
+  %194 = or i8 %193, %192
+  %195 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 14
+  store i8 %194, i8* %195, align 1
+  %196 = shl i8 %121, 1
+  %197 = ashr i8 %43, 7
+  %198 = and i8 %197, -121
+  %199 = xor i8 %196, %198
+  %200 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 15
+  store i8 %199, i8* %200, align 1
+  br label %245
+
+201:                                              ; preds = %39
+  %202 = ashr i8 %42, 7
+  %203 = and i8 %202, 27
+  %204 = xor i8 %77, %203
+  %205 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 7
+  store i8 %204, i8* %205, align 1
+  %206 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 0
+  %207 = shl i8 %46, 1
+  %208 = lshr i8 %44, 6
+  %209 = and i8 %208, 1
+  %210 = or i8 %207, %209
+  store i8 %210, i8* %206, align 1
+  %211 = shl i8 %50, 1
+  %212 = lshr i8 %48, 6
+  %213 = and i8 %212, 1
+  %214 = or i8 %211, %213
+  %215 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 1
+  store i8 %214, i8* %215, align 1
+  %216 = shl i8 %55, 1
+  %217 = lshr i8 %53, 6
+  %218 = and i8 %217, 1
+  %219 = or i8 %216, %218
+  %220 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 2
+  store i8 %219, i8* %220, align 1
+  %221 = shl i8 %60, 1
+  %222 = lshr i8 %58, 6
+  %223 = and i8 %222, 1
+  %224 = or i8 %221, %223
+  %225 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 3
+  store i8 %224, i8* %225, align 1
+  %226 = shl i8 %65, 1
+  %227 = lshr i8 %63, 6
+  %228 = and i8 %227, 1
+  %229 = or i8 %226, %228
+  %230 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 4
+  store i8 %229, i8* %230, align 1
+  %231 = shl i8 %70, 1
+  %232 = lshr i8 %68, 6
+  %233 = and i8 %232, 1
+  %234 = or i8 %231, %233
+  %235 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 5
+  store i8 %234, i8* %235, align 1
+  %236 = shl i8 %75, 1
+  %237 = lshr i8 %73, 6
+  %238 = and i8 %237, 1
+  %239 = or i8 %236, %238
+  %240 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 6
+  store i8 %239, i8* %240, align 1
+  %241 = shl i8 %204, 1
+  %242 = ashr i8 %43, 7
+  %243 = and i8 %242, 27
+  %244 = xor i8 %241, %243
+  br label %245
+
+245:                                              ; preds = %201, %78
+  %246 = phi i8 [ %244, %201 ], [ %161, %78 ]
+  %247 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 7
+  store i8 %246, i8* %247, align 1
+  %248 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 4
+  store i32 0, i32* %248, align 8
+  br label %249
+
+249:                                              ; preds = %25, %29, %33, %36, %5, %245
+  %250 = phi i32 [ 1, %245 ], [ 0, %5 ], [ 0, %36 ], [ 0, %33 ], [ 0, %29 ], [ 0, %25 ]
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %7) #3
+  ret i32 %250
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @CMAC_Update(%struct.cmac_ctx_st*, i8*, i64) local_unnamed_addr #0 {
+  %4 = alloca [16 x i8], align 16
+  %5 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 0
+  %6 = tail call i32 @EVP_CIPHER_CTX_block_size(%struct.evp_cipher_ctx_st* %5) #3
+  %7 = zext i32 %6 to i64
+  %8 = getelementptr inbounds [16 x i8], [16 x i8]* %4, i64 0, i64 0
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %8) #3
+  %9 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 4
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %8, i8 -86, i64 16, i1 false)
+  %10 = load i32, i32* %9, align 8
+  %11 = icmp eq i32 %10, 0
+  br i1 %11, label %32, label %12
+
+12:                                               ; preds = %3
+  %13 = zext i32 %10 to i64
+  %14 = sub nsw i64 %7, %13
+  %15 = icmp ugt i64 %14, %2
+  %16 = select i1 %15, i64 %2, i64 %14
+  %17 = icmp eq i64 %16, 0
+  br i1 %17, label %21, label %18
+
+18:                                               ; preds = %12
+  %19 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 3, i64 %13
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %19, i8* align 1 %1, i64 %16, i1 false) #3
+  %20 = load i32, i32* %9, align 8
+  br label %21
+
+21:                                               ; preds = %12, %18
+  %22 = phi i32 [ %10, %12 ], [ %20, %18 ]
+  %23 = sub i64 %2, %16
+  %24 = trunc i64 %16 to i32
+  %25 = add i32 %22, %24
+  store i32 %25, i32* %9, align 8
+  %26 = icmp eq i64 %23, 0
+  br i1 %26, label %53, label %27
+
+27:                                               ; preds = %21
+  %28 = getelementptr inbounds i8, i8* %1, i64 %16
+  %29 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 3, i64 0
+  %30 = call i32 @EVP_Cipher(%struct.evp_cipher_ctx_st* %5, i8* nonnull %8, i8* %29, i64 %7) #3
+  %31 = icmp eq i32 %30, 0
+  br i1 %31, label %53, label %32
+
+32:                                               ; preds = %27, %3
+  %33 = phi i8* [ %28, %27 ], [ %1, %3 ]
+  %34 = phi i64 [ %23, %27 ], [ %2, %3 ]
+  %35 = icmp ugt i64 %34, %7
+  br i1 %35, label %36, label %45
+
+36:                                               ; preds = %32, %41
+  %37 = phi i64 [ %43, %41 ], [ %34, %32 ]
+  %38 = phi i8* [ %42, %41 ], [ %33, %32 ]
+  %39 = call i32 @EVP_Cipher(%struct.evp_cipher_ctx_st* %5, i8* nonnull %8, i8* %38, i64 %7) #3
+  %40 = icmp eq i32 %39, 0
+  br i1 %40, label %53, label %41
+
+41:                                               ; preds = %36
+  %42 = getelementptr inbounds i8, i8* %38, i64 %7
+  %43 = sub i64 %37, %7
+  %44 = icmp ugt i64 %43, %7
+  br i1 %44, label %36, label %45
+
+45:                                               ; preds = %41, %32
+  %46 = phi i8* [ %33, %32 ], [ %42, %41 ]
+  %47 = phi i64 [ %34, %32 ], [ %43, %41 ]
+  %48 = icmp eq i64 %47, 0
+  br i1 %48, label %51, label %49
+
+49:                                               ; preds = %45
+  %50 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 3, i64 0
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %50, i8* align 1 %46, i64 %47, i1 false) #3
+  br label %51
+
+51:                                               ; preds = %45, %49
+  %52 = trunc i64 %47 to i32
+  store i32 %52, i32* %9, align 8
+  br label %53
+
+53:                                               ; preds = %36, %27, %21, %51
+  %54 = phi i32 [ 1, %51 ], [ 0, %27 ], [ 1, %21 ], [ 0, %36 ]
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %8) #3
+  ret i32 %54
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @CMAC_Final(%struct.cmac_ctx_st*, i8*, i64* nocapture) local_unnamed_addr #0 {
+  %4 = bitcast %struct.cmac_ctx_st* %0 to i8*
+  %5 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 0
+  %6 = tail call i32 @EVP_CIPHER_CTX_block_size(%struct.evp_cipher_ctx_st* %5) #3
+  %7 = zext i32 %6 to i64
+  store i64 %7, i64* %2, align 8
+  %8 = icmp eq i8* %1, null
+  br i1 %8, label %176, label %9
+
+9:                                                ; preds = %3
+  %10 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 0
+  %11 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 4
+  %12 = load i32, i32* %11, align 8
+  %13 = icmp eq i32 %12, %6
+  br i1 %13, label %28, label %14
+
+14:                                               ; preds = %9
+  %15 = zext i32 %12 to i64
+  %16 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 3, i64 %15
+  store i8 -128, i8* %16, align 1
+  %17 = load i32, i32* %11, align 8
+  %18 = add i32 %17, 1
+  %19 = zext i32 %18 to i64
+  %20 = sub nsw i64 %7, %19
+  %21 = icmp eq i64 %20, 0
+  br i1 %21, label %26, label %22
+
+22:                                               ; preds = %14
+  %23 = zext i32 %17 to i64
+  %24 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 3, i64 %23
+  %25 = getelementptr inbounds i8, i8* %24, i64 1
+  tail call void @llvm.memset.p0i8.i64(i8* align 1 %25, i8 0, i64 %20, i1 false) #3
+  br label %26
+
+26:                                               ; preds = %14, %22
+  %27 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 0
+  br label %28
+
+28:                                               ; preds = %9, %26
+  %29 = phi i8* [ %27, %26 ], [ %10, %9 ]
+  %30 = icmp eq i32 %6, 0
+  br i1 %30, label %143, label %31
+
+31:                                               ; preds = %28
+  %32 = icmp ult i32 %6, 32
+  br i1 %32, label %33, label %54
+
+33:                                               ; preds = %141, %54, %31
+  %34 = phi i64 [ 0, %54 ], [ 0, %31 ], [ %68, %141 ]
+  %35 = xor i64 %34, -1
+  %36 = add nsw i64 %35, %7
+  %37 = and i64 %7, 3
+  %38 = icmp eq i64 %37, 0
+  br i1 %38, label %51, label %39
+
+39:                                               ; preds = %33, %39
+  %40 = phi i64 [ %48, %39 ], [ %34, %33 ]
+  %41 = phi i64 [ %49, %39 ], [ %37, %33 ]
+  %42 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 3, i64 %40
+  %43 = load i8, i8* %42, align 1
+  %44 = getelementptr inbounds i8, i8* %29, i64 %40
+  %45 = load i8, i8* %44, align 1
+  %46 = xor i8 %45, %43
+  %47 = getelementptr inbounds i8, i8* %1, i64 %40
+  store i8 %46, i8* %47, align 1
+  %48 = add nuw nsw i64 %40, 1
+  %49 = add i64 %41, -1
+  %50 = icmp eq i64 %49, 0
+  br i1 %50, label %51, label %39, !llvm.loop !6
+
+51:                                               ; preds = %39, %33
+  %52 = phi i64 [ %34, %33 ], [ %48, %39 ]
+  %53 = icmp ult i64 %36, 3
+  br i1 %53, label %143, label %145
+
+54:                                               ; preds = %31
+  %55 = getelementptr i8, i8* %1, i64 %7
+  %56 = getelementptr i8, i8* %29, i64 %7
+  %57 = getelementptr %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 3, i64 0
+  %58 = add nuw nsw i64 %7, 176
+  %59 = getelementptr i8, i8* %4, i64 %58
+  %60 = icmp ugt i8* %56, %1
+  %61 = icmp ult i8* %29, %55
+  %62 = and i1 %60, %61
+  %63 = icmp ugt i8* %59, %1
+  %64 = icmp ult i8* %57, %55
+  %65 = and i1 %63, %64
+  %66 = or i1 %62, %65
+  br i1 %66, label %33, label %67
+
+67:                                               ; preds = %54
+  %68 = and i64 %7, 4294967264
+  %69 = add nsw i64 %68, -32
+  %70 = lshr exact i64 %69, 5
+  %71 = add nuw nsw i64 %70, 1
+  %72 = and i64 %71, 1
+  %73 = icmp eq i64 %69, 0
+  br i1 %73, label %119, label %74
+
+74:                                               ; preds = %67
+  %75 = sub nuw nsw i64 %71, %72
+  br label %76
+
+76:                                               ; preds = %76, %74
+  %77 = phi i64 [ 0, %74 ], [ %116, %76 ]
+  %78 = phi i64 [ %75, %74 ], [ %117, %76 ]
+  %79 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 3, i64 %77
+  %80 = bitcast i8* %79 to <16 x i8>*
+  %81 = load <16 x i8>, <16 x i8>* %80, align 1, !alias.scope !8
+  %82 = getelementptr inbounds i8, i8* %79, i64 16
+  %83 = bitcast i8* %82 to <16 x i8>*
+  %84 = load <16 x i8>, <16 x i8>* %83, align 1, !alias.scope !8
+  %85 = getelementptr inbounds i8, i8* %29, i64 %77
+  %86 = bitcast i8* %85 to <16 x i8>*
+  %87 = load <16 x i8>, <16 x i8>* %86, align 1, !alias.scope !11
+  %88 = getelementptr inbounds i8, i8* %85, i64 16
+  %89 = bitcast i8* %88 to <16 x i8>*
+  %90 = load <16 x i8>, <16 x i8>* %89, align 1, !alias.scope !11
+  %91 = xor <16 x i8> %87, %81
+  %92 = xor <16 x i8> %90, %84
+  %93 = getelementptr inbounds i8, i8* %1, i64 %77
+  %94 = bitcast i8* %93 to <16 x i8>*
+  store <16 x i8> %91, <16 x i8>* %94, align 1, !alias.scope !13, !noalias !15
+  %95 = getelementptr inbounds i8, i8* %93, i64 16
+  %96 = bitcast i8* %95 to <16 x i8>*
+  store <16 x i8> %92, <16 x i8>* %96, align 1, !alias.scope !13, !noalias !15
+  %97 = or i64 %77, 32
+  %98 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 3, i64 %97
+  %99 = bitcast i8* %98 to <16 x i8>*
+  %100 = load <16 x i8>, <16 x i8>* %99, align 1, !alias.scope !8
+  %101 = getelementptr inbounds i8, i8* %98, i64 16
+  %102 = bitcast i8* %101 to <16 x i8>*
+  %103 = load <16 x i8>, <16 x i8>* %102, align 1, !alias.scope !8
+  %104 = getelementptr inbounds i8, i8* %29, i64 %97
+  %105 = bitcast i8* %104 to <16 x i8>*
+  %106 = load <16 x i8>, <16 x i8>* %105, align 1, !alias.scope !11
+  %107 = getelementptr inbounds i8, i8* %104, i64 16
+  %108 = bitcast i8* %107 to <16 x i8>*
+  %109 = load <16 x i8>, <16 x i8>* %108, align 1, !alias.scope !11
+  %110 = xor <16 x i8> %106, %100
+  %111 = xor <16 x i8> %109, %103
+  %112 = getelementptr inbounds i8, i8* %1, i64 %97
+  %113 = bitcast i8* %112 to <16 x i8>*
+  store <16 x i8> %110, <16 x i8>* %113, align 1, !alias.scope !13, !noalias !15
+  %114 = getelementptr inbounds i8, i8* %112, i64 16
+  %115 = bitcast i8* %114 to <16 x i8>*
+  store <16 x i8> %111, <16 x i8>* %115, align 1, !alias.scope !13, !noalias !15
+  %116 = add i64 %77, 64
+  %117 = add i64 %78, -2
+  %118 = icmp eq i64 %117, 0
+  br i1 %118, label %119, label %76, !llvm.loop !16
+
+119:                                              ; preds = %76, %67
+  %120 = phi i64 [ 0, %67 ], [ %116, %76 ]
+  %121 = icmp eq i64 %72, 0
+  br i1 %121, label %141, label %122
+
+122:                                              ; preds = %119
+  %123 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 3, i64 %120
+  %124 = bitcast i8* %123 to <16 x i8>*
+  %125 = load <16 x i8>, <16 x i8>* %124, align 1, !alias.scope !8
+  %126 = getelementptr inbounds i8, i8* %123, i64 16
+  %127 = bitcast i8* %126 to <16 x i8>*
+  %128 = load <16 x i8>, <16 x i8>* %127, align 1, !alias.scope !8
+  %129 = getelementptr inbounds i8, i8* %29, i64 %120
+  %130 = bitcast i8* %129 to <16 x i8>*
+  %131 = load <16 x i8>, <16 x i8>* %130, align 1, !alias.scope !11
+  %132 = getelementptr inbounds i8, i8* %129, i64 16
+  %133 = bitcast i8* %132 to <16 x i8>*
+  %134 = load <16 x i8>, <16 x i8>* %133, align 1, !alias.scope !11
+  %135 = xor <16 x i8> %131, %125
+  %136 = xor <16 x i8> %134, %128
+  %137 = getelementptr inbounds i8, i8* %1, i64 %120
+  %138 = bitcast i8* %137 to <16 x i8>*
+  store <16 x i8> %135, <16 x i8>* %138, align 1, !alias.scope !13, !noalias !15
+  %139 = getelementptr inbounds i8, i8* %137, i64 16
+  %140 = bitcast i8* %139 to <16 x i8>*
+  store <16 x i8> %136, <16 x i8>* %140, align 1, !alias.scope !13, !noalias !15
+  br label %141
+
+141:                                              ; preds = %119, %122
+  %142 = icmp eq i64 %68, %7
+  br i1 %142, label %143, label %33
+
+143:                                              ; preds = %51, %145, %141, %28
+  %144 = tail call i32 @EVP_Cipher(%struct.evp_cipher_ctx_st* %5, i8* nonnull %1, i8* nonnull %1, i64 %7) #3
+  br label %176
+
+145:                                              ; preds = %51, %145
+  %146 = phi i64 [ %174, %145 ], [ %52, %51 ]
+  %147 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 3, i64 %146
+  %148 = load i8, i8* %147, align 1
+  %149 = getelementptr inbounds i8, i8* %29, i64 %146
+  %150 = load i8, i8* %149, align 1
+  %151 = xor i8 %150, %148
+  %152 = getelementptr inbounds i8, i8* %1, i64 %146
+  store i8 %151, i8* %152, align 1
+  %153 = add nuw nsw i64 %146, 1
+  %154 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 3, i64 %153
+  %155 = load i8, i8* %154, align 1
+  %156 = getelementptr inbounds i8, i8* %29, i64 %153
+  %157 = load i8, i8* %156, align 1
+  %158 = xor i8 %157, %155
+  %159 = getelementptr inbounds i8, i8* %1, i64 %153
+  store i8 %158, i8* %159, align 1
+  %160 = add nuw nsw i64 %146, 2
+  %161 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 3, i64 %160
+  %162 = load i8, i8* %161, align 1
+  %163 = getelementptr inbounds i8, i8* %29, i64 %160
+  %164 = load i8, i8* %163, align 1
+  %165 = xor i8 %164, %162
+  %166 = getelementptr inbounds i8, i8* %1, i64 %160
+  store i8 %165, i8* %166, align 1
+  %167 = add nuw nsw i64 %146, 3
+  %168 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 3, i64 %167
+  %169 = load i8, i8* %168, align 1
+  %170 = getelementptr inbounds i8, i8* %29, i64 %167
+  %171 = load i8, i8* %170, align 1
+  %172 = xor i8 %171, %169
+  %173 = getelementptr inbounds i8, i8* %1, i64 %167
+  store i8 %172, i8* %173, align 1
+  %174 = add nuw nsw i64 %146, 4
+  %175 = icmp eq i64 %174, %7
+  br i1 %175, label %143, label %145, !llvm.loop !17
+
+176:                                              ; preds = %3, %143
+  %177 = phi i32 [ %144, %143 ], [ 1, %3 ]
+  ret i32 %177
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden %struct.cmac_ctx_st* @CMAC_CTX_new() local_unnamed_addr #0 {
+  %1 = tail call i8* @OPENSSL_malloc(i64 200) #3
+  %2 = bitcast i8* %1 to %struct.cmac_ctx_st*
+  %3 = icmp eq i8* %1, null
+  br i1 %3, label %6, label %4
+
+4:                                                ; preds = %0
+  %5 = bitcast i8* %1 to %struct.evp_cipher_ctx_st*
+  tail call void @EVP_CIPHER_CTX_init(%struct.evp_cipher_ctx_st* nonnull %5) #3
+  br label %6
+
+6:                                                ; preds = %0, %4
+  ret %struct.cmac_ctx_st* %2
+}
+
+declare i8* @OPENSSL_malloc(i64) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @CMAC_CTX_free(%struct.cmac_ctx_st*) local_unnamed_addr #0 {
+  %2 = icmp eq %struct.cmac_ctx_st* %0, null
+  br i1 %2, label %10, label %3
+
+3:                                                ; preds = %1
+  %4 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 0
+  %5 = tail call i32 @EVP_CIPHER_CTX_cleanup(%struct.evp_cipher_ctx_st* %4) #3
+  %6 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 0
+  tail call void @OPENSSL_cleanse(i8* %6, i64 16) #3
+  %7 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 0
+  tail call void @OPENSSL_cleanse(i8* %7, i64 16) #3
+  %8 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 3, i64 0
+  tail call void @OPENSSL_cleanse(i8* %8, i64 16) #3
+  %9 = bitcast %struct.cmac_ctx_st* %0 to i8*
+  tail call void @OPENSSL_free(i8* nonnull %9) #3
+  br label %10
+
+10:                                               ; preds = %1, %3
+  ret void
+}
+
+declare void @OPENSSL_free(i8*) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @CMAC_CTX_copy(%struct.cmac_ctx_st*, %struct.cmac_ctx_st*) local_unnamed_addr #0 {
+  %3 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 0
+  %4 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %1, i64 0, i32 0
+  %5 = tail call i32 @EVP_CIPHER_CTX_copy(%struct.evp_cipher_ctx_st* %3, %struct.evp_cipher_ctx_st* %4) #3
+  %6 = icmp eq i32 %5, 0
+  br i1 %6, label %17, label %7
+
+7:                                                ; preds = %2
+  %8 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 1, i64 0
+  %9 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %1, i64 0, i32 1, i64 0
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %8, i8* align 1 %9, i64 16, i1 false) #3
+  %10 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 2, i64 0
+  %11 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %1, i64 0, i32 2, i64 0
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %10, i8* align 1 %11, i64 16, i1 false) #3
+  %12 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 3, i64 0
+  %13 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %1, i64 0, i32 3, i64 0
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %12, i8* align 1 %13, i64 16, i1 false) #3
+  %14 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %1, i64 0, i32 4
+  %15 = load i32, i32* %14, align 8
+  %16 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 4
+  store i32 %15, i32* %16, align 8
+  br label %17
+
+17:                                               ; preds = %2, %7
+  %18 = phi i32 [ 1, %7 ], [ 0, %2 ]
+  ret i32 %18
+}
+
+declare i32 @EVP_CIPHER_CTX_copy(%struct.evp_cipher_ctx_st*, %struct.evp_cipher_ctx_st*) local_unnamed_addr #2
+
+declare i32 @EVP_CIPHER_block_size(%struct.evp_cipher_st*) local_unnamed_addr #2
+
+declare i32 @EVP_CIPHER_key_length(%struct.evp_cipher_st*) local_unnamed_addr #2
+
+declare i32 @EVP_EncryptInit_ex(%struct.evp_cipher_ctx_st*, %struct.evp_cipher_st*, %struct.engine_st*, i8*, i8*) local_unnamed_addr #2
+
+declare i32 @EVP_Cipher(%struct.evp_cipher_ctx_st*, i8*, i8*, i64) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @CMAC_Reset(%struct.cmac_ctx_st*) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 4
+  store i32 0, i32* %2, align 8
+  %3 = getelementptr inbounds %struct.cmac_ctx_st, %struct.cmac_ctx_st* %0, i64 0, i32 0
+  %4 = tail call i32 @EVP_EncryptInit_ex(%struct.evp_cipher_ctx_st* %3, %struct.evp_cipher_st* null, %struct.engine_st* null, i8* null, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @kZeroIV, i64 0, i64 0)) #3
+  ret i32 %4
+}
+
+declare i32 @EVP_CIPHER_CTX_block_size(%struct.evp_cipher_ctx_st*) local_unnamed_addr #2
+
+declare void @EVP_CIPHER_CTX_init(%struct.evp_cipher_ctx_st*) local_unnamed_addr #2
+
+declare i32 @EVP_CIPHER_CTX_cleanup(%struct.evp_cipher_ctx_st*) local_unnamed_addr #2
+
+declare void @OPENSSL_cleanse(i8*, i64) local_unnamed_addr #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #1
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { argmemonly nounwind }
+attributes #2 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = distinct !{!2, !3}
+!3 = !{!"llvm.loop.isvectorized", i32 1}
+!4 = distinct !{!4, !5, !3}
+!5 = !{!"llvm.loop.unroll.runtime.disable"}
+!6 = distinct !{!6, !7}
+!7 = !{!"llvm.loop.unroll.disable"}
+!8 = !{!9}
+!9 = distinct !{!9, !10}
+!10 = distinct !{!10, !"LVerDomain"}
+!11 = !{!12}
+!12 = distinct !{!12, !10}
+!13 = !{!14}
+!14 = distinct !{!14, !10}
+!15 = !{!12, !9}
+!16 = distinct !{!16, !3}
+!17 = distinct !{!17, !3}

@@ -1,0 +1,144 @@
+; ModuleID = '../../native_client/src/shared/platform/nacl_interruptible_condvar.c'
+source_filename = "../../native_client/src/shared/platform/nacl_interruptible_condvar.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.NaClIntrCondVar = type { %struct.NaClCondVar }
+%struct.NaClCondVar = type { %union.pthread_cond_t }
+%union.pthread_cond_t = type { %struct.__pthread_cond_s }
+%struct.__pthread_cond_s = type { %union.anon, %union.anon.0, [2 x i32], [2 x i32], i32, i32, [2 x i32] }
+%union.anon = type { i64 }
+%union.anon.0 = type { i64 }
+%struct.NaClIntrMutex = type { i32, %struct.NaClMutex, %struct.NaClCondVar }
+%struct.NaClMutex = type { %union.pthread_mutex_t, i32 }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%struct.nacl_abi_timespec = type { i64, i32 }
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClIntrCondVarCtor(%struct.NaClIntrCondVar*) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClIntrCondVar, %struct.NaClIntrCondVar* %0, i64 0, i32 0
+  %3 = tail call i32 @NaClCondVarCtor(%struct.NaClCondVar* %2) #3
+  ret i32 %3
+}
+
+declare i32 @NaClCondVarCtor(%struct.NaClCondVar*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClIntrCondVarDtor(%struct.NaClIntrCondVar*) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClIntrCondVar, %struct.NaClIntrCondVar* %0, i64 0, i32 0
+  tail call void @NaClCondVarDtor(%struct.NaClCondVar* %2) #3
+  ret void
+}
+
+declare void @NaClCondVarDtor(%struct.NaClCondVar*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClIntrCondVarWait(%struct.NaClIntrCondVar*, %struct.NaClIntrMutex*, %struct.nacl_abi_timespec*) local_unnamed_addr #0 {
+  %4 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %1, i64 0, i32 1
+  tail call void @NaClXMutexLock(%struct.NaClMutex* %4) #3
+  %5 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %1, i64 0, i32 0
+  %6 = load i32, i32* %5, align 8
+  switch i32 %6, label %7 [
+    i32 1, label %8
+    i32 0, label %22
+  ]
+
+7:                                                ; preds = %3
+  br label %22
+
+8:                                                ; preds = %3
+  store i32 0, i32* %5, align 8
+  %9 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %1, i64 0, i32 2
+  tail call void @NaClXCondVarSignal(%struct.NaClCondVar* %9) #3
+  %10 = icmp eq %struct.nacl_abi_timespec* %2, null
+  %11 = getelementptr inbounds %struct.NaClIntrCondVar, %struct.NaClIntrCondVar* %0, i64 0, i32 0
+  br i1 %10, label %12, label %14
+
+12:                                               ; preds = %8
+  %13 = tail call i32 @NaClCondVarWait(%struct.NaClCondVar* %11, %struct.NaClMutex* %4) #3
+  br label %16
+
+14:                                               ; preds = %8
+  %15 = tail call i32 @NaClCondVarTimedWaitAbsolute(%struct.NaClCondVar* %11, %struct.NaClMutex* %4, %struct.nacl_abi_timespec* nonnull %2) #3
+  br label %16
+
+16:                                               ; preds = %14, %12
+  %17 = phi i32 [ %13, %12 ], [ %15, %14 ]
+  br label %18
+
+18:                                               ; preds = %20, %16
+  %19 = load i32, i32* %5, align 8
+  switch i32 %19, label %22 [
+    i32 1, label %20
+    i32 0, label %21
+  ]
+
+20:                                               ; preds = %18
+  tail call void @NaClXCondVarWait(%struct.NaClCondVar* %9, %struct.NaClMutex* %4) #3
+  br label %18
+
+21:                                               ; preds = %18
+  store i32 1, i32* %5, align 8
+  br label %22
+
+22:                                               ; preds = %18, %21, %7, %3
+  %23 = phi i32 [ 1, %7 ], [ 5, %3 ], [ %17, %21 ], [ %17, %18 ]
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* %4) #3
+  ret i32 %23
+}
+
+declare void @NaClXMutexLock(%struct.NaClMutex*) local_unnamed_addr #1
+
+declare void @NaClXMutexUnlock(%struct.NaClMutex*) local_unnamed_addr #1
+
+declare void @NaClXCondVarSignal(%struct.NaClCondVar*) local_unnamed_addr #1
+
+declare i32 @NaClCondVarWait(%struct.NaClCondVar*, %struct.NaClMutex*) local_unnamed_addr #1
+
+declare i32 @NaClCondVarTimedWaitAbsolute(%struct.NaClCondVar*, %struct.NaClMutex*, %struct.nacl_abi_timespec*) local_unnamed_addr #1
+
+declare void @NaClXCondVarWait(%struct.NaClCondVar*, %struct.NaClMutex*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClIntrCondVarSignal(%struct.NaClIntrCondVar*) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClIntrCondVar, %struct.NaClIntrCondVar* %0, i64 0, i32 0
+  %3 = tail call i32 @NaClCondVarSignal(%struct.NaClCondVar* %2) #3
+  ret i32 %3
+}
+
+declare i32 @NaClCondVarSignal(%struct.NaClCondVar*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClIntrCondVarBroadcast(%struct.NaClIntrCondVar*) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClIntrCondVar, %struct.NaClIntrCondVar* %0, i64 0, i32 0
+  %3 = tail call i32 @NaClCondVarBroadcast(%struct.NaClCondVar* %2) #3
+  ret i32 %3
+}
+
+declare i32 @NaClCondVarBroadcast(%struct.NaClCondVar*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClIntrCondVarIntr(%struct.NaClIntrCondVar*) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClIntrCondVar, %struct.NaClIntrCondVar* %0, i64 0, i32 0
+  tail call void @NaClXCondVarBroadcast(%struct.NaClCondVar* %2) #3
+  ret void
+}
+
+declare void @NaClXCondVarBroadcast(%struct.NaClCondVar*) local_unnamed_addr #1
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden void @NaClIntrCondVarReset(%struct.NaClIntrCondVar* nocapture) local_unnamed_addr #2 {
+  ret void
+}
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { norecurse nounwind readnone ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}

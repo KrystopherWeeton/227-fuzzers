@@ -1,0 +1,245 @@
+; ModuleID = '../../native_client/src/trusted/service_runtime/sys_futex.c'
+source_filename = "../../native_client/src/trusted/service_runtime/sys_futex.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.NaClAppThread = type { %struct.NaClThreadContext, %struct.NaClMutex, %struct.NaClApp*, i32, i32, %struct.NaClThread, %struct.NaClMutex, i32, %struct.NaClAppThreadSuspendedRegisters*, i32, i64, i8*, i32, i32, i32, %struct.NaClListNode, i32, %struct.NaClCondVar }
+%struct.NaClThreadContext = type { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i32, i32, i32, i16, i16, i64, i32, i32 }
+%struct.NaClApp = type { i8, i64, i32, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i32, i32, %struct.NaClMutex, %struct.NaClCondVar, [151 x %struct.NaClSyscallTableEntry], %struct.NaClResourceNaClApp, i32, i32, %struct.NaClVmmap, %struct.NaClIntervalMultiset*, %struct.NaClDescEffector*, i32, i32, %struct.NaClDesc*, %struct.NaClMutex, i8*, %struct.NaClDynamicRegion*, i32, i32, i32, i32, i64, i32, i32, i32, %struct.NaClCPUFeaturesAbstract*, %struct.NaClValidationCache*, i32, i32, i32, i32, i32, i64, %struct.NaClMutex, %struct.DynArray, i32, %struct.NaClFastMutex, %struct.DynArray, %struct.NaClDebugCallbacks*, %struct.NaClDesc*, %struct.NaClDesc*, %struct.NaClMutex, i32, i32, i32, i32, i32, i32, i32, %struct.NaClValidatorInterface* }
+%struct.NaClSyscallTableEntry = type { i32 (%struct.NaClAppThread*)* }
+%struct.NaClResourceNaClApp = type { %struct.NaClResource, %struct.NaClApp* }
+%struct.NaClResource = type { %struct.NaClResourceSchemes*, i64 }
+%struct.NaClResourceSchemes = type { i8*, i32, %struct.NaClDesc* (%struct.NaClResource*, i8*, i32, i32, i32)* }
+%struct.NaClVmmap = type { %struct.NaClVmmapEntry**, i64, i64, i32 }
+%struct.NaClVmmapEntry = type { i64, i64, i32, i32, i32, %struct.NaClDesc*, i64, i64 }
+%struct.NaClIntervalMultiset = type { %struct.NaClIntervalMultisetVtbl* }
+%struct.NaClIntervalMultisetVtbl = type { void (%struct.NaClIntervalMultiset*)*, void (%struct.NaClIntervalMultiset*, i32, i32)*, void (%struct.NaClIntervalMultiset*, i32, i32)*, i32 (%struct.NaClIntervalMultiset*, i32, i32)* }
+%struct.NaClDescEffector = type opaque
+%struct.NaClDynamicRegion = type opaque
+%struct.NaClCPUFeaturesAbstract = type opaque
+%struct.NaClValidationCache = type opaque
+%struct.NaClFastMutex = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%struct.DynArray = type { i64, i8**, i64, i32*, i64 }
+%struct.NaClDebugCallbacks = type { void (%struct.NaClAppThread*)*, void (%struct.NaClAppThread*)*, void ()* }
+%struct.NaClDesc = type opaque
+%struct.NaClValidatorInterface = type { i32, i32, i32, i32 (i64, i8*, i64, i32, i32, i32, %struct.NaClCPUFeaturesAbstract*, %struct.NaClValidationMetadata*, %struct.NaClValidationCache*)*, i32 (i64, i8*, i8*, i64, %struct.NaClCPUFeaturesAbstract*, i32 (i8*, i8*, i8)*)*, i32 (i64, i8*, i8*, i64, %struct.NaClCPUFeaturesAbstract*)*, i64, void (%struct.NaClCPUFeaturesAbstract*)*, void (%struct.NaClCPUFeaturesAbstract*)*, i32 (i64, i64, i8*, i64, %struct.NaClCPUFeaturesAbstract*)* }
+%struct.NaClValidationMetadata = type opaque
+%struct.NaClThread = type { i64 }
+%struct.NaClMutex = type { %union.pthread_mutex_t, i32 }
+%struct.NaClAppThreadSuspendedRegisters = type opaque
+%struct.NaClListNode = type { %struct.NaClListNode*, %struct.NaClListNode* }
+%struct.NaClCondVar = type { %union.pthread_cond_t }
+%union.pthread_cond_t = type { %struct.__pthread_cond_s }
+%struct.__pthread_cond_s = type { %union.anon, %union.anon.0, [2 x i32], [2 x i32], i32, i32, [2 x i32] }
+%union.anon = type { i64 }
+%union.anon.0 = type { i64 }
+%struct.nacl_abi_timespec = type { i64, i32 }
+%struct.timespec = type { i64, i64 }
+
+@.str = private unnamed_addr constant [43 x i8] c"NaClSysFutexWaitAbs: address out of range\0A\00", align 1
+@.str.1 = private unnamed_addr constant [78 x i8] c"NaClSysFutexWaitAbs: Futex syscall returned EFAULT; aborting for consistency\0A\00", align 1
+@.str.2 = private unnamed_addr constant [40 x i8] c"NaClSysFutexWake: address out of range\0A\00", align 1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClSysFutexWaitAbs(%struct.NaClAppThread* nocapture readonly, i32, i32, i32) local_unnamed_addr #0 {
+  %5 = alloca %struct.nacl_abi_timespec, align 8
+  %6 = alloca %struct.nacl_abi_timespec, align 8
+  %7 = alloca %struct.timespec, align 8
+  %8 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 2
+  %9 = load %struct.NaClApp*, %struct.NaClApp** %8, align 8
+  %10 = bitcast %struct.nacl_abi_timespec* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %10) #5
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %10, i8 -86, i64 16, i1 false)
+  %11 = bitcast %struct.nacl_abi_timespec* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %11) #5
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %11, i8 -86, i64 16, i1 false)
+  %12 = bitcast %struct.timespec* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %12) #5
+  %13 = getelementptr inbounds %struct.timespec, %struct.timespec* %7, i64 0, i32 0
+  %14 = getelementptr inbounds %struct.timespec, %struct.timespec* %7, i64 0, i32 1
+  %15 = zext i32 %1 to i64
+  %16 = icmp eq i32 %1, 0
+  %17 = bitcast %struct.timespec* %7 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %17, i8 -86, i64 16, i1 false)
+  br i1 %16, label %30, label %18
+
+18:                                               ; preds = %4
+  %19 = add nuw nsw i64 %15, 4
+  %20 = getelementptr inbounds %struct.NaClApp, %struct.NaClApp* %9, i64 0, i32 0
+  %21 = load i8, i8* %20, align 8
+  %22 = zext i8 %21 to i64
+  %23 = shl i64 1, %22
+  %24 = icmp ult i64 %23, %19
+  br i1 %24, label %30, label %25
+
+25:                                               ; preds = %18
+  %26 = getelementptr inbounds %struct.NaClApp, %struct.NaClApp* %9, i64 0, i32 3
+  %27 = load i64, i64* %26, align 8
+  %28 = add i64 %27, %15
+  %29 = icmp eq i64 %28, -1
+  br i1 %29, label %30, label %31
+
+30:                                               ; preds = %4, %18, %25
+  tail call void (i32, i8*, ...) @NaClLog(i32 1, i8* getelementptr inbounds ([43 x i8], [43 x i8]* @.str, i64 0, i64 0)) #5
+  br label %74
+
+31:                                               ; preds = %25
+  %32 = icmp ne i32 %3, 0
+  br i1 %32, label %33, label %59
+
+33:                                               ; preds = %31
+  %34 = zext i32 %3 to i64
+  %35 = call i32 @NaClCopyInFromUser(%struct.NaClApp* %9, i8* nonnull %10, i64 %34, i64 16) #5
+  %36 = icmp eq i32 %35, 0
+  br i1 %36, label %74, label %37
+
+37:                                               ; preds = %33
+  %38 = call i32 @NaClClockGetTime(i32 0, %struct.nacl_abi_timespec* nonnull %6) #5
+  %39 = icmp eq i32 %38, 0
+  br i1 %39, label %40, label %74
+
+40:                                               ; preds = %37
+  %41 = getelementptr inbounds %struct.nacl_abi_timespec, %struct.nacl_abi_timespec* %5, i64 0, i32 0
+  %42 = load i64, i64* %41, align 8
+  %43 = getelementptr inbounds %struct.nacl_abi_timespec, %struct.nacl_abi_timespec* %6, i64 0, i32 0
+  %44 = load i64, i64* %43, align 8
+  %45 = sub nsw i64 %42, %44
+  store i64 %45, i64* %13, align 8
+  %46 = getelementptr inbounds %struct.nacl_abi_timespec, %struct.nacl_abi_timespec* %5, i64 0, i32 1
+  %47 = load i32, i32* %46, align 8
+  %48 = getelementptr inbounds %struct.nacl_abi_timespec, %struct.nacl_abi_timespec* %6, i64 0, i32 1
+  %49 = load i32, i32* %48, align 8
+  %50 = sub nsw i32 %47, %49
+  %51 = sext i32 %50 to i64
+  store i64 %51, i64* %14, align 8
+  %52 = icmp slt i32 %50, 0
+  br i1 %52, label %53, label %56
+
+53:                                               ; preds = %40
+  %54 = add nsw i64 %45, -1
+  store i64 %54, i64* %13, align 8
+  %55 = add nsw i64 %51, 1000000000
+  store i64 %55, i64* %14, align 8
+  br label %56
+
+56:                                               ; preds = %40, %53
+  %57 = phi i64 [ %54, %53 ], [ %45, %40 ]
+  %58 = icmp slt i64 %57, 0
+  br i1 %58, label %74, label %59
+
+59:                                               ; preds = %56, %31
+  %60 = ptrtoint %struct.timespec* %7 to i64
+  %61 = select i1 %32, i64 %60, i64 0
+  %62 = call i64 (i64, ...) @syscall(i64 202, i64 %28, i32 128, i32 %2, i64 %61, i32 0, i32 0) #5
+  %63 = icmp eq i64 %62, 0
+  br i1 %63, label %74, label %64
+
+64:                                               ; preds = %59
+  %65 = tail call i32* @__errno_location() #6
+  %66 = load i32, i32* %65, align 4
+  %67 = icmp eq i32 %66, 14
+  br i1 %67, label %68, label %70
+
+68:                                               ; preds = %64
+  call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([78 x i8], [78 x i8]* @.str.1, i64 0, i64 0)) #5
+  %69 = load i32, i32* %65, align 4
+  br label %70
+
+70:                                               ; preds = %68, %64
+  %71 = phi i32 [ %69, %68 ], [ %66, %64 ]
+  %72 = call i32 @NaClXlateErrno(i32 %71) #5
+  %73 = sub nsw i32 0, %72
+  br label %74
+
+74:                                               ; preds = %59, %56, %37, %33, %70, %30
+  %75 = phi i32 [ -14, %30 ], [ %73, %70 ], [ -14, %33 ], [ %38, %37 ], [ -110, %56 ], [ 0, %59 ]
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %12) #5
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %11) #5
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %10) #5
+  ret i32 %75
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #1
+
+declare void @NaClLog(i32, i8*, ...) local_unnamed_addr #2
+
+declare i32 @NaClCopyInFromUser(%struct.NaClApp*, i8*, i64, i64) local_unnamed_addr #2
+
+declare i32 @NaClClockGetTime(i32, %struct.nacl_abi_timespec*) local_unnamed_addr #2
+
+; Function Attrs: nounwind
+declare i64 @syscall(i64, ...) local_unnamed_addr #3
+
+; Function Attrs: nounwind readnone
+declare i32* @__errno_location() local_unnamed_addr #4
+
+declare i32 @NaClXlateErrno(i32) local_unnamed_addr #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClSysFutexWake(%struct.NaClAppThread* nocapture readonly, i32, i32) local_unnamed_addr #0 {
+  %4 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 2
+  %5 = load %struct.NaClApp*, %struct.NaClApp** %4, align 8
+  %6 = zext i32 %1 to i64
+  %7 = icmp eq i32 %1, 0
+  br i1 %7, label %20, label %8
+
+8:                                                ; preds = %3
+  %9 = add nuw nsw i64 %6, 4
+  %10 = getelementptr inbounds %struct.NaClApp, %struct.NaClApp* %5, i64 0, i32 0
+  %11 = load i8, i8* %10, align 8
+  %12 = zext i8 %11 to i64
+  %13 = shl i64 1, %12
+  %14 = icmp ult i64 %13, %9
+  br i1 %14, label %20, label %15
+
+15:                                               ; preds = %8
+  %16 = getelementptr inbounds %struct.NaClApp, %struct.NaClApp* %5, i64 0, i32 3
+  %17 = load i64, i64* %16, align 8
+  %18 = add i64 %17, %6
+  %19 = icmp eq i64 %18, -1
+  br i1 %19, label %20, label %21
+
+20:                                               ; preds = %3, %8, %15
+  tail call void (i32, i8*, ...) @NaClLog(i32 1, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.2, i64 0, i64 0)) #5
+  br label %30
+
+21:                                               ; preds = %15
+  %22 = tail call i64 (i64, ...) @syscall(i64 202, i64 %18, i32 129, i32 %2, i32 0, i32 0, i32 0) #5
+  %23 = trunc i64 %22 to i32
+  %24 = icmp slt i32 %23, 0
+  br i1 %24, label %25, label %30
+
+25:                                               ; preds = %21
+  %26 = tail call i32* @__errno_location() #6
+  %27 = load i32, i32* %26, align 4
+  %28 = tail call i32 @NaClXlateErrno(i32 %27) #5
+  %29 = sub nsw i32 0, %28
+  br label %30
+
+30:                                               ; preds = %21, %25, %20
+  %31 = phi i32 [ 0, %20 ], [ %29, %25 ], [ %23, %21 ]
+  ret i32 %31
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { argmemonly nounwind }
+attributes #2 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind readnone "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nounwind }
+attributes #6 = { nounwind readnone }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}

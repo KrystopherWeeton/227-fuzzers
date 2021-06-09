@@ -1,0 +1,501 @@
+; ModuleID = '../../third_party/boringssl/src/crypto/x509v3/pcy_cache.c'
+source_filename = "../../third_party/boringssl/src/crypto/x509v3/pcy_cache.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.CRYPTO_STATIC_MUTEX = type { %union.pthread_rwlock_t }
+%union.pthread_rwlock_t = type { %struct.__pthread_rwlock_arch_t }
+%struct.__pthread_rwlock_arch_t = type { i32, i32, i32, i32, i32, i32, i32, i32, i8, [7 x i8], i64, i32 }
+%struct.X509_POLICY_CACHE_st = type { %struct.X509_POLICY_DATA_st*, %struct.stack_st_X509_POLICY_DATA*, i64, i64, i64 }
+%struct.X509_POLICY_DATA_st = type { i32, %struct.asn1_object_st*, %struct.stack_st_POLICYQUALINFO*, %struct.stack_st_ASN1_OBJECT* }
+%struct.asn1_object_st = type { i8*, i8*, i32, i32, i8*, i32 }
+%struct.stack_st_POLICYQUALINFO = type opaque
+%struct.stack_st_ASN1_OBJECT = type opaque
+%struct.stack_st_X509_POLICY_DATA = type opaque
+%struct.stack_st = type { i64, i8**, i32, i64, i32 (i8**, i8**)* }
+%struct.x509_st = type { %struct.x509_cinf_st*, %struct.X509_algor_st*, %struct.asn1_string_st*, i32, %struct.crypto_ex_data_st, i64, i64, i64, i64, i64, i64, %struct.asn1_string_st*, %struct.AUTHORITY_KEYID_st*, %struct.X509_POLICY_CACHE_st*, %struct.stack_st_DIST_POINT*, %struct.stack_st_GENERAL_NAME*, %struct.NAME_CONSTRAINTS_st*, [20 x i8], %struct.x509_cert_aux_st*, %struct.crypto_buffer_st*, %union.crypto_mutex_st }
+%struct.x509_cinf_st = type { %struct.asn1_string_st*, %struct.asn1_string_st*, %struct.X509_algor_st*, %struct.X509_name_st*, %struct.X509_val_st*, %struct.X509_name_st*, %struct.X509_pubkey_st*, %struct.asn1_string_st*, %struct.asn1_string_st*, %struct.stack_st_X509_EXTENSION*, %struct.ASN1_ENCODING_st }
+%struct.X509_val_st = type opaque
+%struct.X509_name_st = type { %struct.stack_st_X509_NAME_ENTRY*, i32, %struct.buf_mem_st*, i8*, i32 }
+%struct.stack_st_X509_NAME_ENTRY = type opaque
+%struct.buf_mem_st = type { i64, i8*, i64 }
+%struct.X509_pubkey_st = type opaque
+%struct.stack_st_X509_EXTENSION = type opaque
+%struct.ASN1_ENCODING_st = type { i8*, i64, i32, i8 }
+%struct.X509_algor_st = type { %struct.asn1_object_st*, %struct.asn1_type_st* }
+%struct.asn1_type_st = type { i32, %union.anon }
+%union.anon = type { i8* }
+%struct.crypto_ex_data_st = type { %struct.stack_st_void* }
+%struct.stack_st_void = type opaque
+%struct.asn1_string_st = type { i32, i32, i8*, i64 }
+%struct.AUTHORITY_KEYID_st = type { %struct.asn1_string_st*, %struct.stack_st_GENERAL_NAME*, %struct.asn1_string_st* }
+%struct.stack_st_DIST_POINT = type opaque
+%struct.stack_st_GENERAL_NAME = type opaque
+%struct.NAME_CONSTRAINTS_st = type { %struct.stack_st_GENERAL_SUBTREE*, %struct.stack_st_GENERAL_SUBTREE* }
+%struct.stack_st_GENERAL_SUBTREE = type opaque
+%struct.x509_cert_aux_st = type opaque
+%struct.crypto_buffer_st = type opaque
+%union.crypto_mutex_st = type { double, [48 x i8] }
+%struct.POLICY_CONSTRAINTS_st = type { %struct.asn1_string_st*, %struct.asn1_string_st* }
+%struct.stack_st_POLICYINFO = type opaque
+%struct.POLICYINFO_st = type { %struct.asn1_object_st*, %struct.stack_st_POLICYQUALINFO* }
+%struct.stack_st_POLICY_MAPPING = type opaque
+
+@g_x509_policy_cache_lock = internal global %struct.CRYPTO_STATIC_MUTEX zeroinitializer, align 8
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @policy_cache_free(%struct.X509_POLICY_CACHE_st*) local_unnamed_addr #0 {
+  %2 = icmp eq %struct.X509_POLICY_CACHE_st* %0, null
+  br i1 %2, label %16, label %3
+
+3:                                                ; preds = %1
+  %4 = getelementptr inbounds %struct.X509_POLICY_CACHE_st, %struct.X509_POLICY_CACHE_st* %0, i64 0, i32 0
+  %5 = load %struct.X509_POLICY_DATA_st*, %struct.X509_POLICY_DATA_st** %4, align 8
+  %6 = icmp eq %struct.X509_POLICY_DATA_st* %5, null
+  br i1 %6, label %8, label %7
+
+7:                                                ; preds = %3
+  tail call void @policy_data_free(%struct.X509_POLICY_DATA_st* nonnull %5) #4
+  br label %8
+
+8:                                                ; preds = %3, %7
+  %9 = getelementptr inbounds %struct.X509_POLICY_CACHE_st, %struct.X509_POLICY_CACHE_st* %0, i64 0, i32 1
+  %10 = load %struct.stack_st_X509_POLICY_DATA*, %struct.stack_st_X509_POLICY_DATA** %9, align 8
+  %11 = icmp eq %struct.stack_st_X509_POLICY_DATA* %10, null
+  br i1 %11, label %14, label %12
+
+12:                                               ; preds = %8
+  %13 = bitcast %struct.stack_st_X509_POLICY_DATA* %10 to %struct.stack_st*
+  tail call void @sk_pop_free_ex(%struct.stack_st* nonnull %13, void (void (i8*)*, i8*)* nonnull @sk_X509_POLICY_DATA_call_free_func, void (i8*)* bitcast (void (%struct.X509_POLICY_DATA_st*)* @policy_data_free to void (i8*)*)) #4
+  br label %14
+
+14:                                               ; preds = %8, %12
+  %15 = bitcast %struct.X509_POLICY_CACHE_st* %0 to i8*
+  tail call void @OPENSSL_free(i8* nonnull %15) #4
+  br label %16
+
+16:                                               ; preds = %1, %14
+  ret void
+}
+
+declare void @policy_data_free(%struct.X509_POLICY_DATA_st*) #1
+
+declare void @OPENSSL_free(i8*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden %struct.X509_POLICY_CACHE_st* @policy_cache_set(%struct.x509_st*) local_unnamed_addr #0 {
+  %2 = alloca i32, align 4
+  tail call void @CRYPTO_STATIC_MUTEX_lock_read(%struct.CRYPTO_STATIC_MUTEX* nonnull @g_x509_policy_cache_lock) #4
+  %3 = getelementptr inbounds %struct.x509_st, %struct.x509_st* %0, i64 0, i32 13
+  %4 = load %struct.X509_POLICY_CACHE_st*, %struct.X509_POLICY_CACHE_st** %3, align 8
+  tail call void @CRYPTO_STATIC_MUTEX_unlock_read(%struct.CRYPTO_STATIC_MUTEX* nonnull @g_x509_policy_cache_lock) #4
+  %5 = icmp eq %struct.X509_POLICY_CACHE_st* %4, null
+  br i1 %5, label %6, label %155
+
+6:                                                ; preds = %1
+  tail call void @CRYPTO_STATIC_MUTEX_lock_write(%struct.CRYPTO_STATIC_MUTEX* nonnull @g_x509_policy_cache_lock) #4
+  %7 = load %struct.X509_POLICY_CACHE_st*, %struct.X509_POLICY_CACHE_st** %3, align 8
+  %8 = icmp eq %struct.X509_POLICY_CACHE_st* %7, null
+  br i1 %8, label %9, label %153
+
+9:                                                ; preds = %6
+  %10 = bitcast i32* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %10) #4
+  store i32 -1431655766, i32* %2, align 4
+  %11 = tail call i8* @OPENSSL_malloc(i64 40) #4
+  %12 = icmp eq i8* %11, null
+  br i1 %12, label %151, label %13
+
+13:                                               ; preds = %9
+  %14 = getelementptr inbounds i8, i8* %11, i64 16
+  %15 = bitcast i8* %14 to i64*
+  tail call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %11, i8 0, i64 16, i1 false) #4
+  %16 = getelementptr inbounds i8, i8* %11, i64 24
+  %17 = bitcast i8* %16 to i64*
+  %18 = getelementptr inbounds i8, i8* %11, i64 32
+  %19 = bitcast i8* %18 to i64*
+  %20 = bitcast %struct.X509_POLICY_CACHE_st** %3 to i8**
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %14, i8 -1, i64 24, i1 false) #4
+  store i8* %11, i8** %20, align 8
+  %21 = call i8* @X509_get_ext_d2i(%struct.x509_st* %0, i32 401, i32* nonnull %2, i32* null) #4
+  %22 = bitcast i8* %21 to %struct.POLICY_CONSTRAINTS_st*
+  %23 = icmp ne i8* %21, null
+  br i1 %23, label %27, label %24
+
+24:                                               ; preds = %13
+  %25 = load i32, i32* %2, align 4
+  %26 = icmp eq i32 %25, -1
+  br i1 %26, label %53, label %140
+
+27:                                               ; preds = %13
+  %28 = bitcast i8* %21 to %struct.asn1_string_st**
+  %29 = load %struct.asn1_string_st*, %struct.asn1_string_st** %28, align 8
+  %30 = icmp eq %struct.asn1_string_st* %29, null
+  br i1 %30, label %31, label %36
+
+31:                                               ; preds = %27
+  %32 = getelementptr inbounds i8, i8* %21, i64 8
+  %33 = bitcast i8* %32 to %struct.asn1_string_st**
+  %34 = load %struct.asn1_string_st*, %struct.asn1_string_st** %33, align 8
+  %35 = icmp eq %struct.asn1_string_st* %34, null
+  br i1 %35, label %140, label %46
+
+36:                                               ; preds = %27
+  %37 = getelementptr inbounds %struct.asn1_string_st, %struct.asn1_string_st* %29, i64 0, i32 1
+  %38 = load i32, i32* %37, align 4
+  %39 = icmp eq i32 %38, 258
+  br i1 %39, label %140, label %40
+
+40:                                               ; preds = %36
+  %41 = call i64 @ASN1_INTEGER_get(%struct.asn1_string_st* nonnull %29) #4
+  store i64 %41, i64* %17, align 8
+  %42 = getelementptr inbounds i8, i8* %21, i64 8
+  %43 = bitcast i8* %42 to %struct.asn1_string_st**
+  %44 = load %struct.asn1_string_st*, %struct.asn1_string_st** %43, align 8
+  %45 = icmp eq %struct.asn1_string_st* %44, null
+  br i1 %45, label %53, label %46
+
+46:                                               ; preds = %40, %31
+  %47 = phi %struct.asn1_string_st* [ %44, %40 ], [ %34, %31 ]
+  %48 = getelementptr inbounds %struct.asn1_string_st, %struct.asn1_string_st* %47, i64 0, i32 1
+  %49 = load i32, i32* %48, align 4
+  %50 = icmp eq i32 %49, 258
+  br i1 %50, label %140, label %51
+
+51:                                               ; preds = %46
+  %52 = call i64 @ASN1_INTEGER_get(%struct.asn1_string_st* nonnull %47) #4
+  store i64 %52, i64* %19, align 8
+  br label %53
+
+53:                                               ; preds = %51, %40, %24
+  %54 = call i8* @X509_get_ext_d2i(%struct.x509_st* %0, i32 89, i32* nonnull %2, i32* null) #4
+  %55 = icmp eq i8* %54, null
+  br i1 %55, label %56, label %59
+
+56:                                               ; preds = %53
+  %57 = load i32, i32* %2, align 4
+  %58 = icmp eq i32 %57, -1
+  br i1 %58, label %151, label %140
+
+59:                                               ; preds = %53
+  %60 = bitcast i8* %54 to %struct.stack_st_POLICYINFO*
+  %61 = load i32, i32* %2, align 4
+  %62 = load %struct.X509_POLICY_CACHE_st*, %struct.X509_POLICY_CACHE_st** %3, align 8
+  %63 = bitcast %struct.stack_st_POLICYINFO* %60 to %struct.stack_st*
+  %64 = call i64 @sk_num(%struct.stack_st* nonnull %63) #4
+  %65 = icmp eq i64 %64, 0
+  br i1 %65, label %111, label %66
+
+66:                                               ; preds = %59
+  %67 = call %struct.stack_st* @sk_new(i32 (i8**, i8**)* bitcast (i32 (%struct.X509_POLICY_DATA_st**, %struct.X509_POLICY_DATA_st**)* @policy_data_cmp to i32 (i8**, i8**)*)) #4
+  %68 = getelementptr inbounds %struct.X509_POLICY_CACHE_st, %struct.X509_POLICY_CACHE_st* %62, i64 0, i32 1
+  %69 = bitcast %struct.stack_st_X509_POLICY_DATA** %68 to %struct.stack_st**
+  store %struct.stack_st* %67, %struct.stack_st** %69, align 8
+  %70 = icmp eq %struct.stack_st* %67, null
+  br i1 %70, label %111, label %71
+
+71:                                               ; preds = %66
+  %72 = call i64 @sk_num(%struct.stack_st* nonnull %63) #4
+  %73 = icmp eq i64 %72, 0
+  br i1 %73, label %116, label %74
+
+74:                                               ; preds = %71
+  %75 = getelementptr inbounds %struct.X509_POLICY_CACHE_st, %struct.X509_POLICY_CACHE_st* %62, i64 0, i32 0
+  br label %76
+
+76:                                               ; preds = %101, %74
+  %77 = phi i64 [ 0, %74 ], [ %102, %101 ]
+  %78 = call i8* @sk_value(%struct.stack_st* nonnull %63, i64 %77) #4
+  %79 = bitcast i8* %78 to %struct.POLICYINFO_st*
+  %80 = call %struct.X509_POLICY_DATA_st* @policy_data_new(%struct.POLICYINFO_st* %79, %struct.asn1_object_st* null, i32 %61) #4
+  %81 = icmp eq %struct.X509_POLICY_DATA_st* %80, null
+  br i1 %81, label %111, label %82
+
+82:                                               ; preds = %76
+  %83 = load %struct.stack_st*, %struct.stack_st** %69, align 8
+  call void @sk_sort(%struct.stack_st* %83) #4
+  %84 = getelementptr inbounds %struct.X509_POLICY_DATA_st, %struct.X509_POLICY_DATA_st* %80, i64 0, i32 1
+  %85 = load %struct.asn1_object_st*, %struct.asn1_object_st** %84, align 8
+  %86 = call i32 @OBJ_obj2nid(%struct.asn1_object_st* %85) #4
+  %87 = icmp eq i32 %86, 746
+  br i1 %87, label %88, label %92
+
+88:                                               ; preds = %82
+  %89 = load %struct.X509_POLICY_DATA_st*, %struct.X509_POLICY_DATA_st** %75, align 8
+  %90 = icmp eq %struct.X509_POLICY_DATA_st* %89, null
+  br i1 %90, label %91, label %105
+
+91:                                               ; preds = %88
+  store %struct.X509_POLICY_DATA_st* %80, %struct.X509_POLICY_DATA_st** %75, align 8
+  br label %101
+
+92:                                               ; preds = %82
+  %93 = load %struct.stack_st*, %struct.stack_st** %69, align 8
+  %94 = bitcast %struct.X509_POLICY_DATA_st* %80 to i8*
+  %95 = call i32 @sk_find(%struct.stack_st* %93, i64* null, i8* nonnull %94, i32 (i32 (i8**, i8**)*, i8**, i8**)* nonnull @sk_X509_POLICY_DATA_call_cmp_func) #4
+  %96 = icmp eq i32 %95, 0
+  br i1 %96, label %97, label %105
+
+97:                                               ; preds = %92
+  %98 = load %struct.stack_st*, %struct.stack_st** %69, align 8
+  %99 = call i64 @sk_push(%struct.stack_st* %98, i8* nonnull %94) #4
+  %100 = icmp eq i64 %99, 0
+  br i1 %100, label %109, label %101
+
+101:                                              ; preds = %97, %91
+  %102 = add nuw i64 %77, 1
+  %103 = call i64 @sk_num(%struct.stack_st* nonnull %63) #4
+  %104 = icmp ult i64 %102, %103
+  br i1 %104, label %76, label %116
+
+105:                                              ; preds = %92, %88
+  %106 = getelementptr inbounds %struct.x509_st, %struct.x509_st* %0, i64 0, i32 7
+  %107 = load i64, i64* %106, align 8
+  %108 = or i64 %107, 2048
+  store i64 %108, i64* %106, align 8
+  br label %109
+
+109:                                              ; preds = %97, %105
+  %110 = phi i32 [ -1, %105 ], [ 0, %97 ]
+  call void @policy_data_free(%struct.X509_POLICY_DATA_st* nonnull %80) #4
+  br label %111
+
+111:                                              ; preds = %76, %59, %66, %109
+  %112 = phi i32 [ %110, %109 ], [ 0, %66 ], [ 0, %59 ], [ 0, %76 ]
+  call void @sk_pop_free_ex(%struct.stack_st* nonnull %63, void (void (i8*)*, i8*)* nonnull @sk_POLICYINFO_call_free_func, void (i8*)* bitcast (void (%struct.POLICYINFO_st*)* @POLICYINFO_free to void (i8*)*)) #4
+  %113 = getelementptr inbounds %struct.X509_POLICY_CACHE_st, %struct.X509_POLICY_CACHE_st* %62, i64 0, i32 1
+  %114 = bitcast %struct.stack_st_X509_POLICY_DATA** %113 to %struct.stack_st**
+  %115 = load %struct.stack_st*, %struct.stack_st** %114, align 8
+  call void @sk_pop_free_ex(%struct.stack_st* %115, void (void (i8*)*, i8*)* nonnull @sk_X509_POLICY_DATA_call_free_func, void (i8*)* bitcast (void (%struct.X509_POLICY_DATA_st*)* @policy_data_free to void (i8*)*)) #4
+  store %struct.stack_st_X509_POLICY_DATA* null, %struct.stack_st_X509_POLICY_DATA** %113, align 8
+  store i32 %112, i32* %2, align 4
+  br label %151
+
+116:                                              ; preds = %101, %71
+  call void @sk_pop_free_ex(%struct.stack_st* nonnull %63, void (void (i8*)*, i8*)* nonnull @sk_POLICYINFO_call_free_func, void (i8*)* bitcast (void (%struct.POLICYINFO_st*)* @POLICYINFO_free to void (i8*)*)) #4
+  store i32 1, i32* %2, align 4
+  %117 = call i8* @X509_get_ext_d2i(%struct.x509_st* %0, i32 747, i32* nonnull %2, i32* null) #4
+  %118 = icmp eq i8* %117, null
+  br i1 %118, label %119, label %122
+
+119:                                              ; preds = %116
+  %120 = load i32, i32* %2, align 4
+  %121 = icmp eq i32 %120, -1
+  br i1 %121, label %126, label %140
+
+122:                                              ; preds = %116
+  %123 = bitcast i8* %117 to %struct.stack_st_POLICY_MAPPING*
+  %124 = call i32 @policy_cache_set_mapping(%struct.x509_st* %0, %struct.stack_st_POLICY_MAPPING* nonnull %123) #4
+  store i32 %124, i32* %2, align 4
+  %125 = icmp slt i32 %124, 1
+  br i1 %125, label %140, label %126
+
+126:                                              ; preds = %122, %119
+  %127 = call i8* @X509_get_ext_d2i(%struct.x509_st* %0, i32 748, i32* nonnull %2, i32* null) #4
+  %128 = bitcast i8* %127 to %struct.asn1_string_st*
+  %129 = icmp eq i8* %127, null
+  br i1 %129, label %130, label %133
+
+130:                                              ; preds = %126
+  %131 = load i32, i32* %2, align 4
+  %132 = icmp eq i32 %131, -1
+  br i1 %132, label %145, label %140
+
+133:                                              ; preds = %126
+  %134 = getelementptr inbounds i8, i8* %127, i64 4
+  %135 = bitcast i8* %134 to i32*
+  %136 = load i32, i32* %135, align 4
+  %137 = icmp eq i32 %136, 258
+  br i1 %137, label %140, label %138
+
+138:                                              ; preds = %133
+  %139 = call i64 @ASN1_INTEGER_get(%struct.asn1_string_st* nonnull %128) #4
+  store i64 %139, i64* %15, align 8
+  br label %145
+
+140:                                              ; preds = %133, %130, %122, %119, %56, %46, %36, %31, %24
+  %141 = phi %struct.asn1_string_st* [ null, %122 ], [ null, %130 ], [ null, %119 ], [ null, %56 ], [ null, %31 ], [ null, %24 ], [ null, %36 ], [ null, %46 ], [ %128, %133 ]
+  %142 = getelementptr inbounds %struct.x509_st, %struct.x509_st* %0, i64 0, i32 7
+  %143 = load i64, i64* %142, align 8
+  %144 = or i64 %143, 2048
+  store i64 %144, i64* %142, align 8
+  br label %145
+
+145:                                              ; preds = %140, %138, %130
+  %146 = phi %struct.asn1_string_st* [ %141, %140 ], [ %128, %138 ], [ null, %130 ]
+  br i1 %23, label %147, label %148
+
+147:                                              ; preds = %145
+  call void @POLICY_CONSTRAINTS_free(%struct.POLICY_CONSTRAINTS_st* nonnull %22) #4
+  br label %148
+
+148:                                              ; preds = %147, %145
+  %149 = icmp eq %struct.asn1_string_st* %146, null
+  br i1 %149, label %151, label %150
+
+150:                                              ; preds = %148
+  call void @ASN1_INTEGER_free(%struct.asn1_string_st* nonnull %146) #4
+  br label %151
+
+151:                                              ; preds = %9, %56, %111, %148, %150
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %10) #4
+  %152 = load %struct.X509_POLICY_CACHE_st*, %struct.X509_POLICY_CACHE_st** %3, align 8
+  br label %153
+
+153:                                              ; preds = %151, %6
+  %154 = phi %struct.X509_POLICY_CACHE_st* [ %152, %151 ], [ %7, %6 ]
+  call void @CRYPTO_STATIC_MUTEX_unlock_write(%struct.CRYPTO_STATIC_MUTEX* nonnull @g_x509_policy_cache_lock) #4
+  br label %155
+
+155:                                              ; preds = %1, %153
+  %156 = phi %struct.X509_POLICY_CACHE_st* [ %154, %153 ], [ %4, %1 ]
+  ret %struct.X509_POLICY_CACHE_st* %156
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+declare void @CRYPTO_STATIC_MUTEX_lock_read(%struct.CRYPTO_STATIC_MUTEX*) local_unnamed_addr #1
+
+declare void @CRYPTO_STATIC_MUTEX_unlock_read(%struct.CRYPTO_STATIC_MUTEX*) local_unnamed_addr #1
+
+declare void @CRYPTO_STATIC_MUTEX_lock_write(%struct.CRYPTO_STATIC_MUTEX*) local_unnamed_addr #1
+
+declare void @CRYPTO_STATIC_MUTEX_unlock_write(%struct.CRYPTO_STATIC_MUTEX*) local_unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden %struct.X509_POLICY_DATA_st* @policy_cache_find_data(%struct.X509_POLICY_CACHE_st* nocapture readonly, %struct.asn1_object_st*) local_unnamed_addr #0 {
+  %3 = alloca i64, align 8
+  %4 = alloca %struct.X509_POLICY_DATA_st, align 8
+  %5 = bitcast i64* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %5) #4
+  store i64 -6148914691236517206, i64* %3, align 8
+  %6 = bitcast %struct.X509_POLICY_DATA_st* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %6) #4
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %6, i8 -86, i64 32, i1 false)
+  %7 = getelementptr inbounds %struct.X509_POLICY_DATA_st, %struct.X509_POLICY_DATA_st* %4, i64 0, i32 1
+  store %struct.asn1_object_st* %1, %struct.asn1_object_st** %7, align 8
+  %8 = getelementptr inbounds %struct.X509_POLICY_CACHE_st, %struct.X509_POLICY_CACHE_st* %0, i64 0, i32 1
+  %9 = bitcast %struct.stack_st_X509_POLICY_DATA** %8 to %struct.stack_st**
+  %10 = load %struct.stack_st*, %struct.stack_st** %9, align 8
+  tail call void @sk_sort(%struct.stack_st* %10) #4
+  %11 = load %struct.stack_st*, %struct.stack_st** %9, align 8
+  %12 = call i32 @sk_find(%struct.stack_st* %11, i64* nonnull %3, i8* nonnull %6, i32 (i32 (i8**, i8**)*, i8**, i8**)* nonnull @sk_X509_POLICY_DATA_call_cmp_func) #4
+  %13 = icmp eq i32 %12, 0
+  br i1 %13, label %19, label %14
+
+14:                                               ; preds = %2
+  %15 = load %struct.stack_st*, %struct.stack_st** %9, align 8
+  %16 = load i64, i64* %3, align 8
+  %17 = call i8* @sk_value(%struct.stack_st* %15, i64 %16) #4
+  %18 = bitcast i8* %17 to %struct.X509_POLICY_DATA_st*
+  br label %19
+
+19:                                               ; preds = %2, %14
+  %20 = phi %struct.X509_POLICY_DATA_st* [ %18, %14 ], [ null, %2 ]
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %6) #4
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %5) #4
+  ret %struct.X509_POLICY_DATA_st* %20
+}
+
+declare void @sk_pop_free_ex(%struct.stack_st*, void (void (i8*)*, i8*)*, void (i8*)*) local_unnamed_addr #1
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define internal void @sk_X509_POLICY_DATA_call_free_func(void (i8*)* nocapture, i8*) #3 {
+  %3 = bitcast void (i8*)* %0 to void (%struct.X509_POLICY_DATA_st*)*
+  %4 = bitcast i8* %1 to %struct.X509_POLICY_DATA_st*
+  tail call void %3(%struct.X509_POLICY_DATA_st* %4) #4
+  ret void
+}
+
+declare i8* @OPENSSL_malloc(i64) local_unnamed_addr #1
+
+declare i8* @X509_get_ext_d2i(%struct.x509_st*, i32, i32*, i32*) local_unnamed_addr #1
+
+declare i32 @policy_cache_set_mapping(%struct.x509_st*, %struct.stack_st_POLICY_MAPPING*) local_unnamed_addr #1
+
+declare void @POLICY_CONSTRAINTS_free(%struct.POLICY_CONSTRAINTS_st*) local_unnamed_addr #1
+
+declare void @ASN1_INTEGER_free(%struct.asn1_string_st*) local_unnamed_addr #1
+
+declare i64 @ASN1_INTEGER_get(%struct.asn1_string_st*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define internal i32 @policy_data_cmp(%struct.X509_POLICY_DATA_st** nocapture readonly, %struct.X509_POLICY_DATA_st** nocapture readonly) #0 {
+  %3 = load %struct.X509_POLICY_DATA_st*, %struct.X509_POLICY_DATA_st** %0, align 8
+  %4 = getelementptr inbounds %struct.X509_POLICY_DATA_st, %struct.X509_POLICY_DATA_st* %3, i64 0, i32 1
+  %5 = load %struct.asn1_object_st*, %struct.asn1_object_st** %4, align 8
+  %6 = load %struct.X509_POLICY_DATA_st*, %struct.X509_POLICY_DATA_st** %1, align 8
+  %7 = getelementptr inbounds %struct.X509_POLICY_DATA_st, %struct.X509_POLICY_DATA_st* %6, i64 0, i32 1
+  %8 = load %struct.asn1_object_st*, %struct.asn1_object_st** %7, align 8
+  %9 = tail call i32 @OBJ_cmp(%struct.asn1_object_st* %5, %struct.asn1_object_st* %8) #4
+  ret i32 %9
+}
+
+declare %struct.X509_POLICY_DATA_st* @policy_data_new(%struct.POLICYINFO_st*, %struct.asn1_object_st*, i32) local_unnamed_addr #1
+
+declare i32 @OBJ_obj2nid(%struct.asn1_object_st*) local_unnamed_addr #1
+
+declare void @POLICYINFO_free(%struct.POLICYINFO_st*) #1
+
+declare i64 @sk_num(%struct.stack_st*) local_unnamed_addr #1
+
+declare %struct.stack_st* @sk_new(i32 (i8**, i8**)*) local_unnamed_addr #1
+
+declare i32 @OBJ_cmp(%struct.asn1_object_st*, %struct.asn1_object_st*) local_unnamed_addr #1
+
+declare i8* @sk_value(%struct.stack_st*, i64) local_unnamed_addr #1
+
+declare i64 @sk_push(%struct.stack_st*, i8*) local_unnamed_addr #1
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define internal void @sk_POLICYINFO_call_free_func(void (i8*)* nocapture, i8*) #3 {
+  %3 = bitcast void (i8*)* %0 to void (%struct.POLICYINFO_st*)*
+  %4 = bitcast i8* %1 to %struct.POLICYINFO_st*
+  tail call void %3(%struct.POLICYINFO_st* %4) #4
+  ret void
+}
+
+declare void @sk_sort(%struct.stack_st*) local_unnamed_addr #1
+
+declare i32 @sk_find(%struct.stack_st*, i64*, i8*, i32 (i32 (i8**, i8**)*, i8**, i8**)*) local_unnamed_addr #1
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define internal i32 @sk_X509_POLICY_DATA_call_cmp_func(i32 (i8**, i8**)* nocapture, i8** nocapture readonly, i8** nocapture readonly) #3 {
+  %4 = alloca %struct.X509_POLICY_DATA_st*, align 8
+  %5 = alloca %struct.X509_POLICY_DATA_st*, align 8
+  %6 = bitcast %struct.X509_POLICY_DATA_st** %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %6) #4
+  %7 = bitcast i8** %1 to i64*
+  %8 = load i64, i64* %7, align 8
+  %9 = bitcast %struct.X509_POLICY_DATA_st** %4 to i64*
+  store i64 %8, i64* %9, align 8
+  %10 = bitcast %struct.X509_POLICY_DATA_st** %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %10) #4
+  %11 = bitcast i8** %2 to i64*
+  %12 = load i64, i64* %11, align 8
+  %13 = bitcast %struct.X509_POLICY_DATA_st** %5 to i64*
+  store i64 %12, i64* %13, align 8
+  %14 = bitcast i32 (i8**, i8**)* %0 to i32 (%struct.X509_POLICY_DATA_st**, %struct.X509_POLICY_DATA_st**)*
+  %15 = call i32 %14(%struct.X509_POLICY_DATA_st** nonnull %4, %struct.X509_POLICY_DATA_st** nonnull %5) #4
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10) #4
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %6) #4
+  ret i32 %15
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { inlinehint nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}

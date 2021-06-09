@@ -1,0 +1,1628 @@
+; ModuleID = '../../third_party/nasm/output/outrdf2.c'
+source_filename = "../../third_party/nasm/output/outrdf2.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.dfmt = type { i8*, i8*, void ()*, void (i8*, i32, i32)*, void (i8*, i32, i64, i32, i8*)*, void (i8*, i8*)*, void (i32)*, void (i32, i8*)*, void ()*, %struct.pragma_facility* }
+%struct.pragma_facility = type { i8*, i32 (%struct.pragma*)* }
+%struct.pragma = type { %struct.pragma_facility*, i8*, i8*, i8*, i32 }
+%struct.ofmt = type { i8*, i8*, i8*, i32, i32, %struct.dfmt**, %struct.dfmt*, i8*, void ()*, void ()*, void (%struct.out_data*)*, void (i32, i8*, i32, i64, i32, i32)*, void (i8*, i32, i64, i32, i8*)*, i32 (i8*, i32*)*, i32 (i8*, i32, i32, i32*, i8*)*, void (i32, i32)*, i32 (i32)*, i32 (i32, i8*)*, void ()*, %struct.pragma_facility* }
+%struct.out_data = type { i64, i32, i32, i32, i32, i32, i32, i64, %struct.itemplate*, i8*, i64, i32, i32, i64, %struct.src_location }
+%struct.itemplate = type opaque
+%struct.src_location = type { i8*, i32 }
+%struct.seginfo = type { i8*, i32, i16, i16, i32 }
+%struct.SAA = type { i64, i64, i64, i64, i64, i64, i8**, i64, i64, i8**, i64, i64, i8** }
+%struct._IO_FILE = type { i32, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, %struct._IO_marker*, %struct._IO_FILE*, i32, i32, i64, i16, i8, [1 x i8], i8*, i64, %struct._IO_codecvt*, %struct._IO_wide_data*, %struct._IO_FILE*, i8*, i64, i32, [20 x i8] }
+%struct._IO_marker = type opaque
+%struct._IO_codecvt = type opaque
+%struct._IO_wide_data = type opaque
+%struct.RelocRec = type { i8, i8, i8, i32, i8, i16 }
+%struct.ExportRec = type { i8, i8, i8, i8, i32, [256 x i8] }
+%struct.ImportRec = type { i8, i8, i8, i16, [256 x i8] }
+%struct.CommonRec = type { i8, i8, i16, i32, i16, [256 x i8] }
+%struct.DLLRec = type { i8, i8, [128 x i8] }
+%struct.ModRec = type { i8, i8, [128 x i8] }
+%struct.BSSRec = type { i8, i8, i32 }
+
+@.str = private unnamed_addr constant [44 x i8] c"Relocatable Dynamic Object File Format v2.0\00", align 1
+@.str.1 = private unnamed_addr constant [4 x i8] c"rdf\00", align 1
+@.str.2 = private unnamed_addr constant [5 x i8] c".rdf\00", align 1
+@null_debug_arr = external constant [2 x %struct.dfmt*], align 16
+@null_debug_form = external constant %struct.dfmt, align 8
+@rdf2_stdmac = external constant [0 x i8], align 1
+@of_rdf2 = hidden local_unnamed_addr constant %struct.ofmt { i8* getelementptr inbounds ([44 x i8], [44 x i8]* @.str, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.1, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.2, i32 0, i32 0), i32 0, i32 64, %struct.dfmt** getelementptr inbounds ([2 x %struct.dfmt*], [2 x %struct.dfmt*]* @null_debug_arr, i32 0, i32 0), %struct.dfmt* @null_debug_form, i8* getelementptr inbounds ([0 x i8], [0 x i8]* @rdf2_stdmac, i32 0, i32 0), void ()* @rdf2_init, void ()* @null_reset, void (%struct.out_data*)* @nasm_do_legacy_output, void (i32, i8*, i32, i64, i32, i32)* @rdf2_out, void (i8*, i32, i64, i32, i8*)* @rdf2_deflabel, i32 (i8*, i32*)* @rdf2_section_names, i32 (i8*, i32, i32, i32*, i8*)* null, void (i32, i32)* @null_sectalign, i32 (i32)* @null_segbase, i32 (i32, i8*)* @rdf2_directive, void ()* @rdf2_cleanup, %struct.pragma_facility* null }, align 8
+@.str.3 = private unnamed_addr constant [6 x i8] c".text\00", align 1
+@segments = internal unnamed_addr global [64 x %struct.seginfo] zeroinitializer, align 16
+@.str.4 = private unnamed_addr constant [6 x i8] c".data\00", align 1
+@.str.5 = private unnamed_addr constant [5 x i8] c".bss\00", align 1
+@nsegments = internal unnamed_addr global i1 false, align 4
+@seg = internal unnamed_addr global [64 x %struct.SAA*] zeroinitializer, align 16
+@header = internal unnamed_addr global %struct.SAA* null, align 8
+@.str.6 = private unnamed_addr constant [57 x i8] c"rdf segment numbers not allocated as expected (%d,%d,%d)\00", align 1
+@bsslength = internal unnamed_addr global i32 0, align 4
+@headerlength = internal unnamed_addr global i32 0, align 4
+@.str.7 = private unnamed_addr constant [53 x i8] c"specified segment not supported by rdf output format\00", align 1
+@.str.8 = private unnamed_addr constant [39 x i8] c"WRT not supported by rdf output format\00", align 1
+@.str.9 = private unnamed_addr constant [36 x i8] c"BSS segments may not be initialized\00", align 1
+@.str.10 = private unnamed_addr constant [26 x i8] c"intra-segment OUT_REL2ADR\00", align 1
+@globalbits = external local_unnamed_addr global i32, align 4
+@.str.11 = private unnamed_addr constant [26 x i8] c"intra-segment OUT_REL4ADR\00", align 1
+@.str.12 = private unnamed_addr constant [32 x i8] c"erm... 4 byte segment base ref?\00", align 1
+@.str.13 = private unnamed_addr constant [22 x i8] c"can't find segment %d\00", align 1
+@rdf2_deflabel.farsym = internal unnamed_addr global i1 false, align 4
+@.str.14 = private unnamed_addr constant [28 x i8] c"label size exceeds %d bytes\00", align 1
+@.str.15 = private unnamed_addr constant [18 x i8] c"zero-length label\00", align 1
+@.str.16 = private unnamed_addr constant [48 x i8] c"alignment constraint `%s' is not a valid number\00", align 1
+@.str.17 = private unnamed_addr constant [48 x i8] c"alignment constraint `%s' is not a power of two\00", align 1
+@.str.18 = private unnamed_addr constant [7 x i8] c"export\00", align 1
+@.str.19 = private unnamed_addr constant [7 x i8] c"import\00", align 1
+@.str.20 = private unnamed_addr constant [4 x i8] c"far\00", align 1
+@.str.21 = private unnamed_addr constant [5 x i8] c"near\00", align 1
+@.str.22 = private unnamed_addr constant [5 x i8] c"proc\00", align 1
+@.str.23 = private unnamed_addr constant [9 x i8] c"function\00", align 1
+@.str.24 = private unnamed_addr constant [5 x i8] c"data\00", align 1
+@.str.25 = private unnamed_addr constant [7 x i8] c"object\00", align 1
+@.str.26 = private unnamed_addr constant [30 x i8] c"unrecognised symbol type `%s'\00", align 1
+@.str.27 = private unnamed_addr constant [33 x i8] c"unrecognised special symbol `%s'\00", align 1
+@.str.28 = private unnamed_addr constant [47 x i8] c"symbol type conflict - EXTERN cannot be EXPORT\00", align 1
+@.str.29 = private unnamed_addr constant [47 x i8] c"symbol type conflict - GLOBAL cannot be IMPORT\00", align 1
+@nasm_ctype_tab = external local_unnamed_addr global [256 x i16], align 16
+@.str.30 = private unnamed_addr constant [38 x i8] c"value following comma must be numeric\00", align 1
+@segmenttypenumbers = internal unnamed_addr constant [9 x i32] [i32 0, i32 1, i32 1, i32 2, i32 3, i32 4, i32 5, i32 6, i32 7], align 16
+@.str.31 = private unnamed_addr constant [35 x i8] c"unrecognised RDF segment type (%s)\00", align 1
+@.str.32 = private unnamed_addr constant [57 x i8] c"segment attributes specified on redeclaration of segment\00", align 1
+@.str.33 = private unnamed_addr constant [39 x i8] c"new segment declared without type code\00", align 1
+@.str.35 = private unnamed_addr constant [32 x i8] c"seg_alloc() returned odd number\00", align 1
+@.str.36 = private unnamed_addr constant [5 x i8] c"null\00", align 1
+@.str.37 = private unnamed_addr constant [5 x i8] c"text\00", align 1
+@.str.38 = private unnamed_addr constant [5 x i8] c"code\00", align 1
+@.str.39 = private unnamed_addr constant [8 x i8] c"comment\00", align 1
+@.str.40 = private unnamed_addr constant [9 x i8] c"lcomment\00", align 1
+@.str.41 = private unnamed_addr constant [9 x i8] c"pcomment\00", align 1
+@.str.42 = private unnamed_addr constant [9 x i8] c"symdebug\00", align 1
+@.str.43 = private unnamed_addr constant [10 x i8] c"linedebug\00", align 1
+@.str.44 = private unnamed_addr constant [27 x i8] c"name size exceeds %d bytes\00", align 1
+@_pass_type = external local_unnamed_addr global i32, align 4
+@ofile = external local_unnamed_addr global %struct._IO_FILE*, align 8
+@.str.45 = private unnamed_addr constant [7 x i8] c"RDOFF2\00", align 1
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @rdf2_init() #0 {
+  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @.str.3, i64 0, i64 0), i8** getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 0, i32 0), align 16
+  store i32 0, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 0, i32 1), align 8
+  store i16 1, i16* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 0, i32 2), align 4
+  store i16 0, i16* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 0, i32 3), align 2
+  store i32 0, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 0, i32 4), align 16
+  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @.str.4, i64 0, i64 0), i8** getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 1, i32 0), align 8
+  store i32 1, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 1, i32 1), align 8
+  store i16 2, i16* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 1, i32 2), align 4
+  store i16 0, i16* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 1, i32 3), align 2
+  store i32 0, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 1, i32 4), align 8
+  store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.5, i64 0, i64 0), i8** getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 2, i32 0), align 16
+  store i32 2, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 2, i32 1), align 8
+  store i16 -1, i16* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 2, i32 2), align 4
+  store i16 0, i16* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 2, i32 3), align 2
+  store i32 0, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 2, i32 4), align 16
+  store i1 true, i1* @nsegments, align 4
+  %1 = tail call %struct.SAA* @saa_init(i64 1) #7
+  store %struct.SAA* %1, %struct.SAA** getelementptr inbounds ([64 x %struct.SAA*], [64 x %struct.SAA*]* @seg, i64 0, i64 0), align 16
+  %2 = tail call %struct.SAA* @saa_init(i64 1) #7
+  store %struct.SAA* %2, %struct.SAA** getelementptr inbounds ([64 x %struct.SAA*], [64 x %struct.SAA*]* @seg, i64 0, i64 1), align 8
+  store %struct.SAA* null, %struct.SAA** getelementptr inbounds ([64 x %struct.SAA*], [64 x %struct.SAA*]* @seg, i64 0, i64 2), align 16
+  %3 = tail call %struct.SAA* @saa_init(i64 1) #7
+  store %struct.SAA* %3, %struct.SAA** @header, align 8
+  %4 = tail call i32 @seg_alloc() #7
+  %5 = tail call i32 @seg_alloc() #7
+  %6 = tail call i32 @seg_alloc() #7
+  %7 = icmp ne i32 %4, 0
+  %8 = icmp ne i32 %5, 2
+  %9 = or i1 %7, %8
+  %10 = icmp ne i32 %6, 4
+  %11 = or i1 %9, %10
+  br i1 %11, label %12, label %13
+
+12:                                               ; preds = %0
+  tail call void (i8*, ...) @nasm_panic(i8* getelementptr inbounds ([57 x i8], [57 x i8]* @.str.6, i64 0, i64 0), i32 %4, i32 %5, i32 %6) #8
+  unreachable
+
+13:                                               ; preds = %0
+  store i32 0, i32* @bsslength, align 4
+  store i32 0, i32* @headerlength, align 4
+  ret void
+}
+
+declare void @null_reset() #1
+
+declare void @nasm_do_legacy_output(%struct.out_data*) #1
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @rdf2_out(i32, i8*, i32, i64, i32, i32) #0 {
+  %7 = alloca i32, align 4
+  %8 = alloca i32, align 4
+  %9 = alloca i32, align 4
+  %10 = alloca %struct.RelocRec, align 4
+  %11 = alloca i64, align 8
+  %12 = alloca i64, align 8
+  %13 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %10, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 12, i8* nonnull %13) #7
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 4 %13, i8 -86, i64 12, i1 false)
+  %14 = bitcast i64* %11 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %14) #7
+  %15 = ashr i32 %0, 1
+  store i64 -6148914691236517206, i64* %11, align 8
+  %16 = load i1, i1* @nsegments, align 4
+  br i1 %16, label %17, label %26
+
+17:                                               ; preds = %6
+  %18 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 0, i32 1), align 8
+  %19 = icmp eq i32 %18, %15
+  %20 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 1, i32 1), align 8
+  %21 = icmp eq i32 %20, %15
+  %22 = or i1 %19, %21
+  %23 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 2, i32 1), align 8
+  %24 = icmp eq i32 %23, %15
+  %25 = or i1 %22, %24
+  br i1 %25, label %27, label %26
+
+26:                                               ; preds = %17, %6
+  tail call void (i32, i8*, ...) @nasm_error(i32 4, i8* getelementptr inbounds ([53 x i8], [53 x i8]* @.str.7, i64 0, i64 0)) #7
+  br label %262
+
+27:                                               ; preds = %17
+  %28 = icmp eq i32 %5, -1
+  br i1 %28, label %30, label %29
+
+29:                                               ; preds = %27
+  tail call void (i32, i8*, ...) @nasm_error(i32 4, i8* getelementptr inbounds ([39 x i8], [39 x i8]* @.str.8, i64 0, i64 0)) #7
+  br label %30
+
+30:                                               ; preds = %27, %29
+  %31 = icmp eq i32 %15, 2
+  %32 = icmp ne i32 %2, 1
+  %33 = and i1 %31, %32
+  br i1 %33, label %34, label %37
+
+34:                                               ; preds = %30
+  tail call void (i32, i8*, ...) @nasm_error(i32 4, i8* getelementptr inbounds ([36 x i8], [36 x i8]* @.str.9, i64 0, i64 0)) #7
+  %35 = icmp eq i32 %2, 7
+  %36 = select i1 %35, i64 2, i64 4
+  br label %38
+
+37:                                               ; preds = %30
+  switch i32 %2, label %262 [
+    i32 1, label %38
+    i32 0, label %65
+    i32 3, label %99
+    i32 7, label %146
+    i32 8, label %207
+  ]
+
+38:                                               ; preds = %34, %37
+  %39 = phi i64 [ %36, %34 ], [ %3, %37 ]
+  br i1 %31, label %42, label %40
+
+40:                                               ; preds = %38
+  %41 = icmp eq i64 %39, 0
+  br i1 %41, label %262, label %46
+
+42:                                               ; preds = %38
+  %43 = load i32, i32* @bsslength, align 4
+  %44 = trunc i64 %39 to i32
+  %45 = add i32 %43, %44
+  store i32 %45, i32* @bsslength, align 4
+  br label %262
+
+46:                                               ; preds = %40, %57
+  %47 = phi i64 [ %48, %57 ], [ %39, %40 ]
+  %48 = add i64 %47, -1
+  %49 = load i1, i1* @nsegments, align 4
+  br i1 %49, label %50, label %56
+
+50:                                               ; preds = %46
+  %51 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 0, i32 1), align 8
+  %52 = icmp eq i32 %51, %15
+  br i1 %52, label %57, label %53
+
+53:                                               ; preds = %50
+  %54 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 1, i32 1), align 8
+  %55 = icmp eq i32 %54, %15
+  br i1 %55, label %57, label %263
+
+56:                                               ; preds = %263, %46
+  call void (i8*, ...) @nasm_panic(i8* getelementptr inbounds ([22 x i8], [22 x i8]* @.str.13, i64 0, i64 0), i32 %15) #8
+  unreachable
+
+57:                                               ; preds = %50, %53, %263
+  %58 = phi i64 [ 0, %50 ], [ 1, %53 ], [ 2, %263 ]
+  %59 = getelementptr inbounds [64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 %58, i32 4
+  %60 = load i32, i32* %59, align 8
+  %61 = add nsw i32 %60, 1
+  store i32 %61, i32* %59, align 8
+  %62 = getelementptr inbounds [64 x %struct.SAA*], [64 x %struct.SAA*]* @seg, i64 0, i64 %58
+  %63 = load %struct.SAA*, %struct.SAA** %62, align 8
+  call void @saa_wbytes(%struct.SAA* %63, i8* nonnull %14, i64 1) #7
+  %64 = icmp eq i64 %48, 0
+  br i1 %64, label %262, label %46
+
+65:                                               ; preds = %37
+  %66 = trunc i64 %3 to i32
+  %67 = bitcast i32* %9 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %67) #7
+  store i32 -1431655766, i32* %9, align 4
+  %68 = load i1, i1* @nsegments, align 4
+  br i1 %68, label %69, label %75
+
+69:                                               ; preds = %65
+  %70 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 0, i32 1), align 8
+  %71 = icmp eq i32 %70, %15
+  br i1 %71, label %76, label %72
+
+72:                                               ; preds = %69
+  %73 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 1, i32 1), align 8
+  %74 = icmp eq i32 %73, %15
+  br i1 %74, label %76, label %266
+
+75:                                               ; preds = %266, %65
+  tail call void (i8*, ...) @nasm_panic(i8* getelementptr inbounds ([22 x i8], [22 x i8]* @.str.13, i64 0, i64 0), i32 %15) #8
+  unreachable
+
+76:                                               ; preds = %69, %72, %266
+  %77 = phi i64 [ 0, %69 ], [ 1, %72 ], [ 2, %266 ]
+  %78 = icmp slt i32 %66, 0
+  br i1 %78, label %79, label %90
+
+79:                                               ; preds = %76
+  %80 = icmp eq i32 %66, -2
+  br i1 %80, label %81, label %85
+
+81:                                               ; preds = %79
+  %82 = bitcast i32* %9 to i16*
+  %83 = bitcast i8* %1 to i16*
+  %84 = load i16, i16* %83, align 2
+  store i16 %84, i16* %82, align 4
+  br label %88
+
+85:                                               ; preds = %79
+  %86 = bitcast i8* %1 to i32*
+  %87 = load i32, i32* %86, align 4
+  store i32 %87, i32* %9, align 4
+  br label %88
+
+88:                                               ; preds = %85, %81
+  %89 = sub nsw i32 0, %66
+  br label %90
+
+90:                                               ; preds = %76, %88
+  %91 = phi i32 [ %89, %88 ], [ %66, %76 ]
+  %92 = phi i8* [ %67, %88 ], [ %1, %76 ]
+  %93 = getelementptr inbounds [64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 %77, i32 4
+  %94 = load i32, i32* %93, align 8
+  %95 = add nsw i32 %94, %91
+  store i32 %95, i32* %93, align 8
+  %96 = getelementptr inbounds [64 x %struct.SAA*], [64 x %struct.SAA*]* @seg, i64 0, i64 %77
+  %97 = load %struct.SAA*, %struct.SAA** %96, align 8
+  %98 = sext i32 %91 to i64
+  call void @saa_wbytes(%struct.SAA* %97, i8* %92, i64 %98) #7
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %67) #7
+  br label %262
+
+99:                                               ; preds = %37
+  %100 = trunc i64 %3 to i32
+  %101 = icmp slt i32 %100, 0
+  %102 = sub nsw i32 0, %100
+  %103 = select i1 %101, i32 %102, i32 %100
+  %104 = icmp eq i32 %4, -1
+  br i1 %104, label %126, label %105
+
+105:                                              ; preds = %99
+  store i8 1, i8* %13, align 4
+  %106 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %10, i64 0, i32 1
+  store i8 8, i8* %106, align 1
+  %107 = trunc i32 %15 to i8
+  %108 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %10, i64 0, i32 2
+  store i8 %107, i8* %108, align 2
+  %109 = load i1, i1* @nsegments, align 4
+  br i1 %109, label %110, label %116
+
+110:                                              ; preds = %105
+  %111 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 0, i32 1), align 8
+  %112 = icmp eq i32 %111, %15
+  br i1 %112, label %117, label %113
+
+113:                                              ; preds = %110
+  %114 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 1, i32 1), align 8
+  %115 = icmp eq i32 %114, %15
+  br i1 %115, label %117, label %272
+
+116:                                              ; preds = %272, %105
+  tail call void (i8*, ...) @nasm_panic(i8* getelementptr inbounds ([22 x i8], [22 x i8]* @.str.13, i64 0, i64 0), i32 %15) #8
+  unreachable
+
+117:                                              ; preds = %110, %113, %272
+  %118 = phi i64 [ 0, %110 ], [ 1, %113 ], [ 2, %272 ]
+  %119 = getelementptr inbounds [64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 %118, i32 4
+  %120 = load i32, i32* %119, align 8
+  %121 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %10, i64 0, i32 3
+  store i32 %120, i32* %121, align 4
+  %122 = trunc i32 %103 to i8
+  %123 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %10, i64 0, i32 4
+  store i8 %122, i8* %123, align 4
+  %124 = trunc i32 %4 to i16
+  %125 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %10, i64 0, i32 5
+  store i16 %124, i16* %125, align 2
+  call fastcc void @write_reloc_rec(%struct.RelocRec* nonnull %10)
+  br label %126
+
+126:                                              ; preds = %99, %117
+  %127 = bitcast i64* %12 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %127)
+  %128 = bitcast i8* %1 to i64*
+  %129 = load i64, i64* %128, align 8
+  store i64 %129, i64* %12, align 8
+  %130 = zext i32 %103 to i64
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %14, i8* nonnull align 8 %127, i64 %130, i1 false)
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %127)
+  %131 = load i1, i1* @nsegments, align 4
+  br i1 %131, label %132, label %138
+
+132:                                              ; preds = %126
+  %133 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 0, i32 1), align 8
+  %134 = icmp eq i32 %133, %15
+  br i1 %134, label %139, label %135
+
+135:                                              ; preds = %132
+  %136 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 1, i32 1), align 8
+  %137 = icmp eq i32 %136, %15
+  br i1 %137, label %139, label %269
+
+138:                                              ; preds = %269, %126
+  call void (i8*, ...) @nasm_panic(i8* getelementptr inbounds ([22 x i8], [22 x i8]* @.str.13, i64 0, i64 0), i32 %15) #8
+  unreachable
+
+139:                                              ; preds = %132, %135, %269
+  %140 = phi i64 [ 0, %132 ], [ 1, %135 ], [ 2, %269 ]
+  %141 = getelementptr inbounds [64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 %140, i32 4
+  %142 = load i32, i32* %141, align 8
+  %143 = add nsw i32 %142, %103
+  store i32 %143, i32* %141, align 8
+  %144 = getelementptr inbounds [64 x %struct.SAA*], [64 x %struct.SAA*]* @seg, i64 0, i64 %140
+  %145 = load %struct.SAA*, %struct.SAA** %144, align 8
+  call void @saa_wbytes(%struct.SAA* %145, i8* nonnull %14, i64 %130) #7
+  br label %262
+
+146:                                              ; preds = %37
+  %147 = icmp eq i32 %15, %4
+  br i1 %147, label %148, label %149
+
+148:                                              ; preds = %146
+  tail call void (i8*, ...) @nasm_panic(i8* getelementptr inbounds ([26 x i8], [26 x i8]* @.str.10, i64 0, i64 0)) #8
+  unreachable
+
+149:                                              ; preds = %146
+  %150 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %10, i64 0, i32 1
+  store i8 8, i8* %150, align 1
+  %151 = load i1, i1* @nsegments, align 4
+  br i1 %151, label %152, label %158
+
+152:                                              ; preds = %149
+  %153 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 0, i32 1), align 8
+  %154 = icmp eq i32 %153, %15
+  br i1 %154, label %159, label %155
+
+155:                                              ; preds = %152
+  %156 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 1, i32 1), align 8
+  %157 = icmp eq i32 %156, %15
+  br i1 %157, label %159, label %278
+
+158:                                              ; preds = %278, %149
+  tail call void (i8*, ...) @nasm_panic(i8* getelementptr inbounds ([22 x i8], [22 x i8]* @.str.13, i64 0, i64 0), i32 %15) #8
+  unreachable
+
+159:                                              ; preds = %152, %155, %278
+  %160 = phi i64 [ 0, %152 ], [ 1, %155 ], [ 2, %278 ]
+  %161 = getelementptr inbounds [64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 %160, i32 4
+  %162 = load i32, i32* %161, align 8
+  %163 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %10, i64 0, i32 3
+  store i32 %162, i32* %163, align 4
+  %164 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %10, i64 0, i32 4
+  store i8 2, i8* %164, align 4
+  %165 = trunc i32 %4 to i16
+  %166 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %10, i64 0, i32 5
+  store i16 %165, i16* %166, align 2
+  %167 = icmp eq i32 %4, -1
+  %168 = and i32 %4, 1
+  %169 = icmp eq i32 %168, 0
+  %170 = or i1 %167, %169
+  br i1 %170, label %177, label %171
+
+171:                                              ; preds = %159
+  store i8 6, i8* %13, align 4
+  %172 = trunc i32 %15 to i8
+  %173 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %10, i64 0, i32 2
+  store i8 %172, i8* %173, align 2
+  call fastcc void @write_reloc_rec(%struct.RelocRec* nonnull %10)
+  %174 = bitcast i8* %1 to i64*
+  %175 = load i64, i64* %174, align 8
+  %176 = trunc i64 %175 to i32
+  br label %187
+
+177:                                              ; preds = %159
+  store i8 1, i8* %13, align 4
+  %178 = trunc i32 %15 to i8
+  %179 = add i8 %178, 64
+  %180 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %10, i64 0, i32 2
+  store i8 %179, i8* %180, align 2
+  call fastcc void @write_reloc_rec(%struct.RelocRec* nonnull %10)
+  %181 = bitcast i8* %1 to i32*
+  %182 = load i32, i32* %181, align 4
+  %183 = load i32, i32* %163, align 4
+  %184 = trunc i64 %3 to i32
+  %185 = sub i32 %182, %184
+  %186 = sub i32 %185, %183
+  br label %187
+
+187:                                              ; preds = %177, %171
+  %188 = phi i32 [ %186, %177 ], [ %176, %171 ]
+  store i32 %188, i32* %163, align 4
+  %189 = bitcast i32* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %189) #7
+  store i32 -1431655766, i32* %8, align 4
+  %190 = load i1, i1* @nsegments, align 4
+  %191 = trunc i32 %188 to i16
+  br i1 %190, label %192, label %198
+
+192:                                              ; preds = %187
+  %193 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 0, i32 1), align 8
+  %194 = icmp eq i32 %193, %15
+  br i1 %194, label %199, label %195
+
+195:                                              ; preds = %192
+  %196 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 1, i32 1), align 8
+  %197 = icmp eq i32 %196, %15
+  br i1 %197, label %199, label %275
+
+198:                                              ; preds = %275, %187
+  call void (i8*, ...) @nasm_panic(i8* getelementptr inbounds ([22 x i8], [22 x i8]* @.str.13, i64 0, i64 0), i32 %15) #8
+  unreachable
+
+199:                                              ; preds = %192, %195, %275
+  %200 = phi i64 [ 0, %192 ], [ 1, %195 ], [ 2, %275 ]
+  %201 = bitcast i32* %8 to i16*
+  store i16 %191, i16* %201, align 4
+  %202 = getelementptr inbounds [64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 %200, i32 4
+  %203 = load i32, i32* %202, align 8
+  %204 = add nsw i32 %203, 2
+  store i32 %204, i32* %202, align 8
+  %205 = getelementptr inbounds [64 x %struct.SAA*], [64 x %struct.SAA*]* @seg, i64 0, i64 %200
+  %206 = load %struct.SAA*, %struct.SAA** %205, align 8
+  call void @saa_wbytes(%struct.SAA* %206, i8* nonnull %189, i64 2) #7
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %189) #7
+  br label %262
+
+207:                                              ; preds = %37
+  %208 = icmp eq i32 %15, %4
+  %209 = load i32, i32* @globalbits, align 4
+  %210 = icmp ne i32 %209, 64
+  %211 = and i1 %208, %210
+  br i1 %211, label %212, label %213
+
+212:                                              ; preds = %207
+  tail call void (i8*, ...) @nasm_panic(i8* getelementptr inbounds ([26 x i8], [26 x i8]* @.str.11, i64 0, i64 0)) #8
+  unreachable
+
+213:                                              ; preds = %207
+  %214 = icmp eq i32 %4, -1
+  %215 = and i32 %4, 1
+  %216 = icmp eq i32 %215, 0
+  %217 = or i1 %214, %216
+  br i1 %217, label %219, label %218
+
+218:                                              ; preds = %213
+  tail call void (i8*, ...) @nasm_panic(i8* getelementptr inbounds ([32 x i8], [32 x i8]* @.str.12, i64 0, i64 0)) #8
+  unreachable
+
+219:                                              ; preds = %213
+  store i8 1, i8* %13, align 4
+  %220 = trunc i32 %15 to i8
+  %221 = add i8 %220, 64
+  %222 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %10, i64 0, i32 2
+  store i8 %221, i8* %222, align 2
+  %223 = load i1, i1* @nsegments, align 4
+  br i1 %223, label %224, label %230
+
+224:                                              ; preds = %219
+  %225 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 0, i32 1), align 8
+  %226 = icmp eq i32 %225, %15
+  br i1 %226, label %231, label %227
+
+227:                                              ; preds = %224
+  %228 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 1, i32 1), align 8
+  %229 = icmp eq i32 %228, %15
+  br i1 %229, label %231, label %284
+
+230:                                              ; preds = %284, %219
+  tail call void (i8*, ...) @nasm_panic(i8* getelementptr inbounds ([22 x i8], [22 x i8]* @.str.13, i64 0, i64 0), i32 %15) #8
+  unreachable
+
+231:                                              ; preds = %224, %227, %284
+  %232 = phi i64 [ 0, %224 ], [ 1, %227 ], [ 2, %284 ]
+  %233 = getelementptr inbounds [64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 %232, i32 4
+  %234 = load i32, i32* %233, align 8
+  %235 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %10, i64 0, i32 3
+  store i32 %234, i32* %235, align 4
+  %236 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %10, i64 0, i32 4
+  store i8 4, i8* %236, align 4
+  %237 = trunc i32 %4 to i16
+  %238 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %10, i64 0, i32 5
+  store i16 %237, i16* %238, align 2
+  %239 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %10, i64 0, i32 1
+  store i8 8, i8* %239, align 1
+  call fastcc void @write_reloc_rec(%struct.RelocRec* nonnull %10)
+  %240 = bitcast i8* %1 to i64*
+  %241 = load i64, i64* %240, align 8
+  %242 = load i32, i32* %235, align 4
+  %243 = sub i64 %241, %3
+  %244 = trunc i64 %243 to i32
+  %245 = sub i32 %244, %242
+  store i32 %245, i32* %235, align 4
+  %246 = bitcast i32* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %246) #7
+  store i32 -1431655766, i32* %7, align 4
+  %247 = load i1, i1* @nsegments, align 4
+  br i1 %247, label %248, label %254
+
+248:                                              ; preds = %231
+  %249 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 0, i32 1), align 8
+  %250 = icmp eq i32 %249, %15
+  br i1 %250, label %255, label %251
+
+251:                                              ; preds = %248
+  %252 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 1, i32 1), align 8
+  %253 = icmp eq i32 %252, %15
+  br i1 %253, label %255, label %281
+
+254:                                              ; preds = %281, %231
+  call void (i8*, ...) @nasm_panic(i8* getelementptr inbounds ([22 x i8], [22 x i8]* @.str.13, i64 0, i64 0), i32 %15) #8
+  unreachable
+
+255:                                              ; preds = %248, %251, %281
+  %256 = phi i64 [ 0, %248 ], [ 1, %251 ], [ 2, %281 ]
+  store i32 %245, i32* %7, align 4
+  %257 = getelementptr inbounds [64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 %256, i32 4
+  %258 = load i32, i32* %257, align 8
+  %259 = add nsw i32 %258, 4
+  store i32 %259, i32* %257, align 8
+  %260 = getelementptr inbounds [64 x %struct.SAA*], [64 x %struct.SAA*]* @seg, i64 0, i64 %256
+  %261 = load %struct.SAA*, %struct.SAA** %260, align 8
+  call void @saa_wbytes(%struct.SAA* %261, i8* nonnull %246, i64 4) #7
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %246) #7
+  br label %262
+
+262:                                              ; preds = %57, %40, %42, %139, %255, %199, %90, %37, %26
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %14) #7
+  call void @llvm.lifetime.end.p0i8(i64 12, i8* nonnull %13) #7
+  ret void
+
+263:                                              ; preds = %53
+  %264 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 2, i32 1), align 8
+  %265 = icmp eq i32 %264, %15
+  br i1 %265, label %57, label %56
+
+266:                                              ; preds = %72
+  %267 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 2, i32 1), align 8
+  %268 = icmp eq i32 %267, %15
+  br i1 %268, label %76, label %75
+
+269:                                              ; preds = %135
+  %270 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 2, i32 1), align 8
+  %271 = icmp eq i32 %270, %15
+  br i1 %271, label %139, label %138
+
+272:                                              ; preds = %113
+  %273 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 2, i32 1), align 8
+  %274 = icmp eq i32 %273, %15
+  br i1 %274, label %117, label %116
+
+275:                                              ; preds = %195
+  %276 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 2, i32 1), align 8
+  %277 = icmp eq i32 %276, %15
+  br i1 %277, label %199, label %198
+
+278:                                              ; preds = %155
+  %279 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 2, i32 1), align 8
+  %280 = icmp eq i32 %279, %15
+  br i1 %280, label %159, label %158
+
+281:                                              ; preds = %251
+  %282 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 2, i32 1), align 8
+  %283 = icmp eq i32 %282, %15
+  br i1 %283, label %255, label %254
+
+284:                                              ; preds = %227
+  %285 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 2, i32 1), align 8
+  %286 = icmp eq i32 %285, %15
+  br i1 %286, label %231, label %230
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @rdf2_deflabel(i8*, i32, i64, i32, i8*) #0 {
+  %6 = alloca i32, align 4
+  %7 = alloca i32, align 4
+  %8 = alloca i32, align 4
+  %9 = alloca %struct.ExportRec, align 4
+  %10 = alloca %struct.ImportRec, align 2
+  %11 = alloca %struct.CommonRec, align 4
+  %12 = alloca i8, align 1
+  %13 = getelementptr inbounds %struct.ExportRec, %struct.ExportRec* %9, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 264, i8* nonnull %13) #7
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 4 %13, i8 -86, i64 264, i1 false)
+  %14 = getelementptr inbounds %struct.ImportRec, %struct.ImportRec* %10, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 262, i8* nonnull %14) #7
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 2 %14, i8 -86, i64 262, i1 false)
+  %15 = getelementptr inbounds %struct.CommonRec, %struct.CommonRec* %11, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 268, i8* nonnull %15) #7
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 4 %15, i8 -86, i64 268, i1 false)
+  %16 = tail call i64 @strlen(i8* %0) #9
+  %17 = trunc i64 %16 to i32
+  %18 = icmp sgt i32 %17, 255
+  br i1 %18, label %19, label %20
+
+19:                                               ; preds = %5
+  tail call void (i32, i8*, ...) @nasm_error(i32 4, i8* getelementptr inbounds ([28 x i8], [28 x i8]* @.str.14, i64 0, i64 0), i32 256) #7
+  br label %227
+
+20:                                               ; preds = %5
+  %21 = icmp eq i32 %17, 0
+  br i1 %21, label %22, label %23
+
+22:                                               ; preds = %20
+  tail call void (i32, i8*, ...) @nasm_error(i32 4, i8* getelementptr inbounds ([18 x i8], [18 x i8]* @.str.15, i64 0, i64 0)) #7
+  br label %227
+
+23:                                               ; preds = %20
+  switch i32 %3, label %227 [
+    i32 2, label %24
+    i32 1, label %73
+  ]
+
+24:                                               ; preds = %23
+  store i8 10, i8* %15, align 4
+  %25 = trunc i64 %2 to i32
+  %26 = getelementptr inbounds %struct.CommonRec, %struct.CommonRec* %11, i64 0, i32 3
+  store i32 %25, i32* %26, align 4
+  %27 = trunc i32 %1 to i16
+  %28 = getelementptr inbounds %struct.CommonRec, %struct.CommonRec* %11, i64 0, i32 2
+  store i16 %27, i16* %28, align 2
+  %29 = getelementptr inbounds %struct.CommonRec, %struct.CommonRec* %11, i64 0, i32 5, i64 0
+  %30 = call i8* @strcpy(i8* %29, i8* %0) #7
+  %31 = trunc i64 %16 to i8
+  %32 = add i8 %31, 9
+  %33 = getelementptr inbounds %struct.CommonRec, %struct.CommonRec* %11, i64 0, i32 1
+  store i8 %32, i8* %33, align 1
+  %34 = getelementptr inbounds %struct.CommonRec, %struct.CommonRec* %11, i64 0, i32 4
+  store i16 0, i16* %34, align 4
+  %35 = icmp eq i8* %4, null
+  br i1 %35, label %52, label %36
+
+36:                                               ; preds = %24
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %12) #7
+  store i8 -86, i8* %12, align 1
+  %37 = call i64 @readnum(i8* nonnull %4, i8* nonnull %12) #7
+  %38 = trunc i64 %37 to i16
+  store i16 %38, i16* %34, align 4
+  %39 = load i8, i8* %12, align 1, !range !2
+  %40 = icmp eq i8 %39, 0
+  br i1 %40, label %41, label %49
+
+41:                                               ; preds = %36
+  %42 = trunc i64 %37 to i32
+  %43 = and i32 %42, 65535
+  %44 = add nsw i32 %43, -1
+  %45 = or i32 %44, %43
+  %46 = shl nuw nsw i32 %43, 1
+  %47 = add nsw i32 %46, -1
+  %48 = icmp eq i32 %45, %47
+  br i1 %48, label %51, label %49
+
+49:                                               ; preds = %41, %36
+  %50 = phi i8* [ getelementptr inbounds ([48 x i8], [48 x i8]* @.str.16, i64 0, i64 0), %36 ], [ getelementptr inbounds ([48 x i8], [48 x i8]* @.str.17, i64 0, i64 0), %41 ]
+  call void (i32, i8*, ...) @nasm_error(i32 4, i8* %50, i8* nonnull %4) #7
+  br label %51
+
+51:                                               ; preds = %49, %41
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %12) #7
+  br label %52
+
+52:                                               ; preds = %24, %51
+  %53 = bitcast i32* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %53) #7
+  store i32 -1431655766, i32* %8, align 4
+  %54 = load i16, i16* %28, align 2
+  %55 = lshr i16 %54, 1
+  store i16 %55, i16* %28, align 2
+  %56 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %56, i8* nonnull %15, i64 1) #7
+  %57 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %57, i8* %33, i64 1) #7
+  %58 = bitcast i32* %8 to i16*
+  %59 = load i16, i16* %28, align 2
+  store i16 %59, i16* %58, align 4
+  %60 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %60, i8* nonnull %53, i64 2) #7
+  %61 = load i32, i32* %26, align 4
+  store i32 %61, i32* %8, align 4
+  %62 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %62, i8* nonnull %53, i64 4) #7
+  %63 = load i16, i16* %34, align 4
+  store i16 %63, i16* %58, align 4
+  %64 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %64, i8* nonnull %53, i64 2) #7
+  %65 = load %struct.SAA*, %struct.SAA** @header, align 8
+  %66 = call i64 @strlen(i8* %29) #9
+  %67 = add i64 %66, 1
+  call void @saa_wbytes(%struct.SAA* %65, i8* %29, i64 %67) #7
+  %68 = load i8, i8* %33, align 1
+  %69 = zext i8 %68 to i32
+  %70 = add nuw nsw i32 %69, 2
+  %71 = load i32, i32* @headerlength, align 4
+  %72 = add nsw i32 %70, %71
+  store i32 %72, i32* @headerlength, align 4
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %53) #7
+  br label %227
+
+73:                                               ; preds = %23
+  %74 = icmp eq i8* %4, null
+  br i1 %74, label %137, label %75
+
+75:                                               ; preds = %73, %78
+  %76 = phi i8* [ %79, %78 ], [ %4, %73 ]
+  %77 = load i8, i8* %76, align 1
+  switch i8 %77, label %80 [
+    i8 32, label %78
+    i8 9, label %78
+  ]
+
+78:                                               ; preds = %75, %75
+  %79 = getelementptr inbounds i8, i8* %76, i64 1
+  br label %75
+
+80:                                               ; preds = %75
+  %81 = tail call i32 @strncasecmp(i8* %76, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @.str.18, i64 0, i64 0), i64 6) #9
+  %82 = icmp eq i32 %81, 0
+  br i1 %82, label %83, label %85
+
+83:                                               ; preds = %80
+  %84 = getelementptr inbounds i8, i8* %76, i64 6
+  br label %91
+
+85:                                               ; preds = %80
+  %86 = tail call i32 @strncasecmp(i8* %76, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @.str.19, i64 0, i64 0), i64 6) #9
+  %87 = icmp eq i32 %86, 0
+  %88 = getelementptr inbounds i8, i8* %76, i64 6
+  %89 = select i1 %87, i8* %88, i8* %76
+  %90 = select i1 %87, i8 8, i8 0
+  br label %91
+
+91:                                               ; preds = %85, %83
+  %92 = phi i8* [ %84, %83 ], [ %89, %85 ]
+  %93 = phi i8 [ 4, %83 ], [ %90, %85 ]
+  %94 = load i8, i8* %92, align 1
+  %95 = icmp eq i8 %94, 0
+  br i1 %95, label %137, label %96
+
+96:                                               ; preds = %91
+  %97 = zext i8 %94 to i64
+  %98 = getelementptr inbounds [256 x i16], [256 x i16]* @nasm_ctype_tab, i64 0, i64 %97
+  %99 = load i16, i16* %98, align 2
+  %100 = and i16 %99, 2
+  %101 = icmp eq i16 %100, 0
+  br i1 %101, label %111, label %102
+
+102:                                              ; preds = %96, %102
+  %103 = phi i8* [ %104, %102 ], [ %92, %96 ]
+  %104 = getelementptr inbounds i8, i8* %103, i64 1
+  %105 = load i8, i8* %104, align 1
+  %106 = zext i8 %105 to i64
+  %107 = getelementptr inbounds [256 x i16], [256 x i16]* @nasm_ctype_tab, i64 0, i64 %106
+  %108 = load i16, i16* %107, align 2
+  %109 = and i16 %108, 2
+  %110 = icmp eq i16 %109, 0
+  br i1 %110, label %111, label %102
+
+111:                                              ; preds = %102, %96
+  %112 = phi i8* [ %92, %96 ], [ %104, %102 ]
+  %113 = tail call i32 @strcasecmp(i8* %112, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.20, i64 0, i64 0)) #9
+  %114 = icmp eq i32 %113, 0
+  br i1 %114, label %115, label %116
+
+115:                                              ; preds = %111
+  store i1 true, i1* @rdf2_deflabel.farsym, align 4
+  br label %137
+
+116:                                              ; preds = %111
+  %117 = tail call i32 @strcasecmp(i8* %112, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.21, i64 0, i64 0)) #9
+  %118 = icmp eq i32 %117, 0
+  br i1 %118, label %119, label %120
+
+119:                                              ; preds = %116
+  store i1 false, i1* @rdf2_deflabel.farsym, align 4
+  br label %137
+
+120:                                              ; preds = %116
+  %121 = tail call i32 @strcasecmp(i8* %112, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.22, i64 0, i64 0)) #9
+  %122 = icmp eq i32 %121, 0
+  br i1 %122, label %126, label %123
+
+123:                                              ; preds = %120
+  %124 = tail call i32 @strcasecmp(i8* %112, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.23, i64 0, i64 0)) #9
+  %125 = icmp eq i32 %124, 0
+  br i1 %125, label %126, label %128
+
+126:                                              ; preds = %123, %120
+  %127 = or i8 %93, 2
+  br label %137
+
+128:                                              ; preds = %123
+  %129 = tail call i32 @strcasecmp(i8* %112, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.24, i64 0, i64 0)) #9
+  %130 = icmp eq i32 %129, 0
+  br i1 %130, label %134, label %131
+
+131:                                              ; preds = %128
+  %132 = tail call i32 @strcasecmp(i8* %112, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @.str.25, i64 0, i64 0)) #9
+  %133 = icmp eq i32 %132, 0
+  br i1 %133, label %134, label %136
+
+134:                                              ; preds = %131, %128
+  %135 = or i8 %93, 1
+  br label %137
+
+136:                                              ; preds = %131
+  tail call void (i32, i8*, ...) @nasm_error(i32 4, i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.26, i64 0, i64 0), i8* %112) #7
+  br label %137
+
+137:                                              ; preds = %91, %73, %119, %134, %136, %126, %115
+  %138 = phi i8 [ %93, %136 ], [ %135, %134 ], [ %127, %126 ], [ %93, %119 ], [ %93, %115 ], [ %93, %91 ], [ 0, %73 ]
+  %139 = load i8, i8* %0, align 1
+  %140 = icmp eq i8 %139, 46
+  br i1 %140, label %141, label %150
+
+141:                                              ; preds = %137
+  %142 = getelementptr inbounds i8, i8* %0, i64 1
+  %143 = load i8, i8* %142, align 1
+  %144 = icmp eq i8 %143, 46
+  br i1 %144, label %145, label %150
+
+145:                                              ; preds = %141
+  %146 = getelementptr inbounds i8, i8* %0, i64 2
+  %147 = load i8, i8* %146, align 1
+  %148 = icmp eq i8 %147, 64
+  br i1 %148, label %150, label %149
+
+149:                                              ; preds = %145
+  tail call void (i32, i8*, ...) @nasm_error(i32 4, i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.27, i64 0, i64 0), i8* %0) #7
+  br label %227
+
+150:                                              ; preds = %145, %141, %137
+  %151 = load i1, i1* @nsegments, align 4
+  br i1 %151, label %152, label %159
+
+152:                                              ; preds = %150
+  %153 = ashr i32 %1, 1
+  %154 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 0, i32 1), align 8
+  %155 = icmp eq i32 %154, %153
+  br i1 %155, label %159, label %156
+
+156:                                              ; preds = %152
+  %157 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 1, i32 1), align 8
+  %158 = icmp eq i32 %157, %153
+  br i1 %158, label %159, label %228
+
+159:                                              ; preds = %228, %152, %156, %150
+  %160 = phi i32 [ 0, %150 ], [ 0, %152 ], [ 1, %156 ], [ %231, %228 ]
+  %161 = phi i32 [ 0, %150 ], [ 3, %156 ], [ 3, %152 ], [ 3, %228 ]
+  %162 = icmp ult i32 %160, %161
+  br i1 %162, label %195, label %163
+
+163:                                              ; preds = %159
+  %164 = load i1, i1* @rdf2_deflabel.farsym, align 4
+  %165 = select i1 %164, i8 7, i8 2
+  store i8 %165, i8* %14, align 2
+  %166 = and i8 %138, 4
+  %167 = icmp eq i8 %166, 0
+  br i1 %167, label %169, label %168
+
+168:                                              ; preds = %163
+  tail call void (i32, i8*, ...) @nasm_error(i32 4, i8* getelementptr inbounds ([47 x i8], [47 x i8]* @.str.28, i64 0, i64 0)) #7
+  br label %169
+
+169:                                              ; preds = %163, %168
+  %170 = getelementptr inbounds %struct.ImportRec, %struct.ImportRec* %10, i64 0, i32 2
+  store i8 %138, i8* %170, align 2
+  %171 = trunc i32 %1 to i16
+  %172 = getelementptr inbounds %struct.ImportRec, %struct.ImportRec* %10, i64 0, i32 3
+  store i16 %171, i16* %172, align 2
+  %173 = getelementptr inbounds %struct.ImportRec, %struct.ImportRec* %10, i64 0, i32 4, i64 0
+  %174 = call i8* @strcpy(i8* %173, i8* %0) #7
+  %175 = trunc i64 %16 to i8
+  %176 = add i8 %175, 4
+  %177 = getelementptr inbounds %struct.ImportRec, %struct.ImportRec* %10, i64 0, i32 1
+  store i8 %176, i8* %177, align 1
+  %178 = bitcast i32* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %178) #7
+  store i32 -1431655766, i32* %7, align 4
+  %179 = load i16, i16* %172, align 2
+  %180 = lshr i16 %179, 1
+  store i16 %180, i16* %172, align 2
+  %181 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %181, i8* nonnull %14, i64 1) #7
+  %182 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %182, i8* %177, i64 1) #7
+  %183 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %183, i8* %170, i64 1) #7
+  %184 = bitcast i32* %7 to i16*
+  %185 = load i16, i16* %172, align 2
+  store i16 %185, i16* %184, align 4
+  %186 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %186, i8* nonnull %178, i64 2) #7
+  %187 = load %struct.SAA*, %struct.SAA** @header, align 8
+  %188 = call i64 @strlen(i8* %173) #9
+  %189 = add i64 %188, 1
+  call void @saa_wbytes(%struct.SAA* %187, i8* %173, i64 %189) #7
+  %190 = load i8, i8* %177, align 1
+  %191 = zext i8 %190 to i32
+  %192 = add nuw nsw i32 %191, 2
+  %193 = load i32, i32* @headerlength, align 4
+  %194 = add nsw i32 %192, %193
+  store i32 %194, i32* @headerlength, align 4
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %178) #7
+  br label %227
+
+195:                                              ; preds = %159
+  store i8 3, i8* %13, align 4
+  %196 = and i8 %138, 8
+  %197 = icmp eq i8 %196, 0
+  br i1 %197, label %199, label %198
+
+198:                                              ; preds = %195
+  tail call void (i32, i8*, ...) @nasm_error(i32 4, i8* getelementptr inbounds ([47 x i8], [47 x i8]* @.str.29, i64 0, i64 0)) #7
+  br label %199
+
+199:                                              ; preds = %195, %198
+  %200 = getelementptr inbounds %struct.ExportRec, %struct.ExportRec* %9, i64 0, i32 2
+  store i8 %138, i8* %200, align 2
+  %201 = trunc i32 %1 to i8
+  %202 = getelementptr inbounds %struct.ExportRec, %struct.ExportRec* %9, i64 0, i32 3
+  store i8 %201, i8* %202, align 1
+  %203 = trunc i64 %2 to i32
+  %204 = getelementptr inbounds %struct.ExportRec, %struct.ExportRec* %9, i64 0, i32 4
+  store i32 %203, i32* %204, align 4
+  %205 = getelementptr inbounds %struct.ExportRec, %struct.ExportRec* %9, i64 0, i32 5, i64 0
+  %206 = call i8* @strcpy(i8* %205, i8* %0) #7
+  %207 = trunc i64 %16 to i8
+  %208 = add i8 %207, 7
+  %209 = getelementptr inbounds %struct.ExportRec, %struct.ExportRec* %9, i64 0, i32 1
+  store i8 %208, i8* %209, align 1
+  %210 = bitcast i32* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %210) #7
+  %211 = load i8, i8* %202, align 1
+  %212 = lshr i8 %211, 1
+  store i8 %212, i8* %202, align 1
+  %213 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %213, i8* nonnull %13, i64 1) #7
+  %214 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %214, i8* %209, i64 1) #7
+  %215 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %215, i8* %200, i64 1) #7
+  %216 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %216, i8* %202, i64 1) #7
+  %217 = load i32, i32* %204, align 4
+  store i32 %217, i32* %6, align 4
+  %218 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %218, i8* nonnull %210, i64 4) #7
+  %219 = load %struct.SAA*, %struct.SAA** @header, align 8
+  %220 = call i64 @strlen(i8* %205) #9
+  %221 = add i64 %220, 1
+  call void @saa_wbytes(%struct.SAA* %219, i8* %205, i64 %221) #7
+  %222 = load i8, i8* %209, align 1
+  %223 = zext i8 %222 to i32
+  %224 = add nuw nsw i32 %223, 2
+  %225 = load i32, i32* @headerlength, align 4
+  %226 = add nsw i32 %224, %225
+  store i32 %226, i32* @headerlength, align 4
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %210) #7
+  br label %227
+
+227:                                              ; preds = %52, %169, %199, %23, %149, %22, %19
+  call void @llvm.lifetime.end.p0i8(i64 268, i8* nonnull %15) #7
+  call void @llvm.lifetime.end.p0i8(i64 262, i8* nonnull %14) #7
+  call void @llvm.lifetime.end.p0i8(i64 264, i8* nonnull %13) #7
+  ret void
+
+228:                                              ; preds = %156
+  %229 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 2, i32 1), align 8
+  %230 = icmp eq i32 %229, %153
+  %231 = select i1 %230, i32 2, i32 3
+  br label %159
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal i32 @rdf2_section_names(i8*, i32* nocapture) #0 {
+  %3 = alloca i8, align 1
+  call void @llvm.lifetime.start.p0i8(i64 1, i8* nonnull %3) #7
+  store i8 -86, i8* %3, align 1
+  %4 = icmp eq i8* %0, null
+  br i1 %4, label %8, label %5
+
+5:                                                ; preds = %2
+  %6 = load i8, i8* %0, align 1
+  %7 = icmp eq i8 %6, 0
+  br i1 %7, label %56, label %9
+
+8:                                                ; preds = %2
+  store i32 32, i32* %1, align 4
+  br label %105
+
+9:                                                ; preds = %5, %17
+  %10 = phi i8 [ %19, %17 ], [ %6, %5 ]
+  %11 = phi i8* [ %18, %17 ], [ %0, %5 ]
+  %12 = zext i8 %10 to i64
+  %13 = getelementptr inbounds [256 x i16], [256 x i16]* @nasm_ctype_tab, i64 0, i64 %12
+  %14 = load i16, i16* %13, align 2
+  %15 = and i16 %14, 2
+  %16 = icmp eq i16 %15, 0
+  br i1 %16, label %17, label %21
+
+17:                                               ; preds = %9
+  %18 = getelementptr inbounds i8, i8* %11, i64 1
+  %19 = load i8, i8* %18, align 1
+  %20 = icmp eq i8 %19, 0
+  br i1 %20, label %56, label %9
+
+21:                                               ; preds = %9
+  store i8 0, i8* %11, align 1
+  %22 = getelementptr inbounds i8, i8* %11, i64 1
+  %23 = load i8, i8* %22, align 1
+  %24 = icmp eq i8 %23, 0
+  br i1 %24, label %56, label %25
+
+25:                                               ; preds = %21, %30
+  %26 = phi i8* [ %31, %30 ], [ %22, %21 ]
+  %27 = load i16, i16* getelementptr inbounds ([256 x i16], [256 x i16]* @nasm_ctype_tab, i64 0, i64 80), align 16
+  %28 = and i16 %27, 2
+  %29 = icmp eq i16 %28, 0
+  br i1 %29, label %34, label %30
+
+30:                                               ; preds = %25
+  store i8 0, i8* %26, align 1
+  %31 = getelementptr inbounds i8, i8* %26, i64 1
+  %32 = load i8, i8* %31, align 1
+  %33 = icmp eq i8 %32, 0
+  br i1 %33, label %56, label %25
+
+34:                                               ; preds = %25
+  %35 = tail call i8* @strchr(i8* %26, i32 44) #9
+  %36 = icmp eq i8* %35, null
+  br i1 %36, label %44, label %37
+
+37:                                               ; preds = %34
+  %38 = getelementptr inbounds i8, i8* %35, i64 1
+  store i8 0, i8* %35, align 1
+  %39 = call i64 @readnum(i8* %38, i8* nonnull %3) #7
+  %40 = trunc i64 %39 to i32
+  %41 = load i8, i8* %3, align 1, !range !2
+  %42 = icmp eq i8 %41, 0
+  br i1 %42, label %44, label %43
+
+43:                                               ; preds = %37
+  call void (i32, i8*, ...) @nasm_error(i32 4, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.30, i64 0, i64 0)) #7
+  br label %44
+
+44:                                               ; preds = %37, %34, %43
+  %45 = phi i32 [ 0, %43 ], [ %40, %37 ], [ 0, %34 ]
+  %46 = call i32 @strcasecmp(i8* %26, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.36, i64 0, i64 0)) #9
+  %47 = icmp eq i32 %46, 0
+  br i1 %47, label %51, label %48
+
+48:                                               ; preds = %44
+  %49 = call i32 @strcasecmp(i8* %26, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.37, i64 0, i64 0)) #9
+  %50 = icmp eq i32 %49, 0
+  br i1 %50, label %51, label %107
+
+51:                                               ; preds = %125, %122, %119, %116, %113, %110, %107, %48, %44
+  %52 = phi i64 [ 0, %44 ], [ 1, %48 ], [ 2, %107 ], [ 3, %110 ], [ 4, %113 ], [ 5, %116 ], [ 6, %119 ], [ 7, %122 ], [ 8, %125 ]
+  %53 = getelementptr inbounds [9 x i32], [9 x i32]* @segmenttypenumbers, i64 0, i64 %52
+  %54 = load i32, i32* %53, align 4
+  br label %56
+
+55:                                               ; preds = %128
+  call void (i32, i8*, ...) @nasm_error(i32 4, i8* getelementptr inbounds ([35 x i8], [35 x i8]* @.str.31, i64 0, i64 0), i8* %26) #7
+  br label %56
+
+56:                                               ; preds = %17, %30, %5, %21, %51, %128, %55
+  %57 = phi i32 [ 3, %55 ], [ %130, %128 ], [ %54, %51 ], [ -1, %21 ], [ -1, %5 ], [ -1, %30 ], [ -1, %17 ]
+  %58 = phi i32 [ %45, %55 ], [ %45, %128 ], [ %45, %51 ], [ 0, %21 ], [ 0, %5 ], [ 0, %30 ], [ 0, %17 ]
+  %59 = load i1, i1* @nsegments, align 4
+  br i1 %59, label %64, label %78
+
+60:                                               ; preds = %64
+  %61 = load i8*, i8** getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 1, i32 0), align 8
+  %62 = call i32 @strcmp(i8* nonnull %0, i8* %61) #9
+  %63 = icmp eq i32 %62, 0
+  br i1 %63, label %68, label %133
+
+64:                                               ; preds = %56
+  %65 = load i8*, i8** getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 0, i32 0), align 16
+  %66 = call i32 @strcmp(i8* nonnull %0, i8* %65) #9
+  %67 = icmp eq i32 %66, 0
+  br i1 %67, label %68, label %60
+
+68:                                               ; preds = %133, %60, %64
+  %69 = phi i64 [ 0, %64 ], [ 1, %60 ], [ 2, %133 ]
+  %70 = icmp ne i32 %57, -1
+  %71 = icmp ne i32 %58, 0
+  %72 = or i1 %70, %71
+  br i1 %72, label %73, label %74
+
+73:                                               ; preds = %68
+  call void (i32, i8*, ...) @nasm_error(i32 4, i8* getelementptr inbounds ([57 x i8], [57 x i8]* @.str.32, i64 0, i64 0)) #7
+  br label %74
+
+74:                                               ; preds = %68, %73
+  %75 = getelementptr inbounds [64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 %69, i32 1
+  %76 = load i32, i32* %75, align 8
+  %77 = shl nsw i32 %76, 1
+  br label %105
+
+78:                                               ; preds = %133, %56
+  %79 = icmp eq i32 %57, -1
+  br i1 %79, label %80, label %81
+
+80:                                               ; preds = %78
+  call void (i32, i8*, ...) @nasm_error(i32 4, i8* getelementptr inbounds ([39 x i8], [39 x i8]* @.str.33, i64 0, i64 0)) #7
+  br label %81
+
+81:                                               ; preds = %78, %80
+  %82 = phi i32 [ 3, %80 ], [ %57, %78 ]
+  %83 = call noalias i8* @nasm_strdup(i8* nonnull %0) #7
+  %84 = load i1, i1* @nsegments, align 4
+  %85 = select i1 %84, i64 3, i64 0
+  %86 = getelementptr inbounds [64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 %85, i32 0
+  store i8* %83, i8** %86, align 8
+  %87 = call i32 @seg_alloc() #7
+  %88 = and i32 %87, 1
+  %89 = icmp eq i32 %88, 0
+  br i1 %89, label %91, label %90
+
+90:                                               ; preds = %81
+  call void (i8*, ...) @nasm_panic(i8* getelementptr inbounds ([32 x i8], [32 x i8]* @.str.35, i64 0, i64 0)) #8
+  unreachable
+
+91:                                               ; preds = %81
+  %92 = ashr i32 %87, 1
+  %93 = load i1, i1* @nsegments, align 4
+  %94 = select i1 %93, i64 3, i64 0
+  %95 = getelementptr inbounds [64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 %94, i32 1
+  store i32 %92, i32* %95, align 8
+  %96 = trunc i32 %82 to i16
+  %97 = getelementptr inbounds [64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 %94, i32 2
+  store i16 %96, i16* %97, align 4
+  %98 = trunc i32 %58 to i16
+  %99 = getelementptr inbounds [64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 %94, i32 3
+  store i16 %98, i16* %99, align 2
+  %100 = getelementptr inbounds [64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 %94, i32 4
+  store i32 0, i32* %100, align 8
+  %101 = call %struct.SAA* @saa_init(i64 1) #7
+  %102 = load i1, i1* @nsegments, align 4
+  %103 = select i1 %102, i64 3, i64 0
+  %104 = getelementptr inbounds [64 x %struct.SAA*], [64 x %struct.SAA*]* @seg, i64 0, i64 %103
+  store %struct.SAA* %101, %struct.SAA** %104, align 8
+  br label %105
+
+105:                                              ; preds = %91, %74, %8
+  %106 = phi i32 [ %77, %74 ], [ %87, %91 ], [ 0, %8 ]
+  call void @llvm.lifetime.end.p0i8(i64 1, i8* nonnull %3) #7
+  ret i32 %106
+
+107:                                              ; preds = %48
+  %108 = call i32 @strcasecmp(i8* %26, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.38, i64 0, i64 0)) #9
+  %109 = icmp eq i32 %108, 0
+  br i1 %109, label %51, label %110
+
+110:                                              ; preds = %107
+  %111 = call i32 @strcasecmp(i8* %26, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.24, i64 0, i64 0)) #9
+  %112 = icmp eq i32 %111, 0
+  br i1 %112, label %51, label %113
+
+113:                                              ; preds = %110
+  %114 = call i32 @strcasecmp(i8* %26, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str.39, i64 0, i64 0)) #9
+  %115 = icmp eq i32 %114, 0
+  br i1 %115, label %51, label %116
+
+116:                                              ; preds = %113
+  %117 = call i32 @strcasecmp(i8* %26, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.40, i64 0, i64 0)) #9
+  %118 = icmp eq i32 %117, 0
+  br i1 %118, label %51, label %119
+
+119:                                              ; preds = %116
+  %120 = call i32 @strcasecmp(i8* %26, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.41, i64 0, i64 0)) #9
+  %121 = icmp eq i32 %120, 0
+  br i1 %121, label %51, label %122
+
+122:                                              ; preds = %119
+  %123 = call i32 @strcasecmp(i8* %26, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.42, i64 0, i64 0)) #9
+  %124 = icmp eq i32 %123, 0
+  br i1 %124, label %51, label %125
+
+125:                                              ; preds = %122
+  %126 = call i32 @strcasecmp(i8* %26, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @.str.43, i64 0, i64 0)) #9
+  %127 = icmp eq i32 %126, 0
+  br i1 %127, label %51, label %128
+
+128:                                              ; preds = %125
+  %129 = call i64 @readnum(i8* %26, i8* nonnull %3) #7
+  %130 = trunc i64 %129 to i32
+  %131 = load i8, i8* %3, align 1, !range !2
+  %132 = icmp eq i8 %131, 0
+  br i1 %132, label %56, label %55
+
+133:                                              ; preds = %60
+  %134 = load i8*, i8** getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 2, i32 0), align 16
+  %135 = call i32 @strcmp(i8* nonnull %0, i8* %134) #9
+  %136 = icmp eq i32 %135, 0
+  br i1 %136, label %68, label %78
+}
+
+declare void @null_sectalign(i32, i32) #1
+
+declare i32 @null_segbase(i32) #1
+
+; Function Attrs: nounwind ssp uwtable
+define internal i32 @rdf2_directive(i32, i8* nocapture readonly) #0 {
+  %3 = alloca %struct.DLLRec, align 1
+  %4 = alloca %struct.ModRec, align 1
+  switch i32 %0, label %55 [
+    i32 23, label %5
+    i32 25, label %30
+  ]
+
+5:                                                ; preds = %2
+  %6 = tail call i64 @strlen(i8* %1) #9
+  %7 = icmp ugt i64 %6, 127
+  br i1 %7, label %8, label %9
+
+8:                                                ; preds = %5
+  tail call void (i32, i8*, ...) @nasm_error(i32 4, i8* getelementptr inbounds ([27 x i8], [27 x i8]* @.str.44, i64 0, i64 0), i32 128) #7
+  br label %55
+
+9:                                                ; preds = %5
+  %10 = load i32, i32* @_pass_type, align 4
+  %11 = icmp ult i32 %10, 3
+  br i1 %11, label %12, label %55
+
+12:                                               ; preds = %9
+  %13 = getelementptr inbounds %struct.DLLRec, %struct.DLLRec* %3, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 130, i8* nonnull %13) #7
+  %14 = getelementptr inbounds i8, i8* %13, i64 2
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 1 %14, i8 -86, i64 128, i1 false)
+  store i8 4, i8* %13, align 1
+  %15 = trunc i64 %6 to i8
+  %16 = add nuw i8 %15, 1
+  %17 = getelementptr inbounds %struct.DLLRec, %struct.DLLRec* %3, i64 0, i32 1
+  store i8 %16, i8* %17, align 1
+  %18 = getelementptr inbounds %struct.DLLRec, %struct.DLLRec* %3, i64 0, i32 2, i64 0
+  %19 = call i8* @strcpy(i8* %18, i8* %1) #7
+  %20 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %20, i8* nonnull %13, i64 1) #7
+  %21 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %21, i8* %17, i64 1) #7
+  %22 = load %struct.SAA*, %struct.SAA** @header, align 8
+  %23 = call i64 @strlen(i8* %18) #9
+  %24 = add i64 %23, 1
+  call void @saa_wbytes(%struct.SAA* %22, i8* %18, i64 %24) #7
+  %25 = load i8, i8* %17, align 1
+  %26 = zext i8 %25 to i32
+  %27 = add nuw nsw i32 %26, 2
+  %28 = load i32, i32* @headerlength, align 4
+  %29 = add nsw i32 %27, %28
+  store i32 %29, i32* @headerlength, align 4
+  call void @llvm.lifetime.end.p0i8(i64 130, i8* nonnull %13) #7
+  br label %55
+
+30:                                               ; preds = %2
+  %31 = tail call i64 @strlen(i8* %1) #9
+  %32 = icmp ugt i64 %31, 127
+  br i1 %32, label %33, label %34
+
+33:                                               ; preds = %30
+  tail call void (i32, i8*, ...) @nasm_error(i32 4, i8* getelementptr inbounds ([27 x i8], [27 x i8]* @.str.44, i64 0, i64 0), i32 128) #7
+  br label %55
+
+34:                                               ; preds = %30
+  %35 = load i32, i32* @_pass_type, align 4
+  %36 = icmp ult i32 %35, 3
+  br i1 %36, label %37, label %55
+
+37:                                               ; preds = %34
+  %38 = getelementptr inbounds %struct.ModRec, %struct.ModRec* %4, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 130, i8* nonnull %38) #7
+  %39 = getelementptr inbounds i8, i8* %38, i64 2
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 1 %39, i8 -86, i64 128, i1 false)
+  store i8 8, i8* %38, align 1
+  %40 = trunc i64 %31 to i8
+  %41 = add nuw i8 %40, 1
+  %42 = getelementptr inbounds %struct.ModRec, %struct.ModRec* %4, i64 0, i32 1
+  store i8 %41, i8* %42, align 1
+  %43 = getelementptr inbounds %struct.ModRec, %struct.ModRec* %4, i64 0, i32 2, i64 0
+  %44 = call i8* @strcpy(i8* %43, i8* %1) #7
+  %45 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %45, i8* nonnull %38, i64 1) #7
+  %46 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %46, i8* %42, i64 1) #7
+  %47 = load %struct.SAA*, %struct.SAA** @header, align 8
+  %48 = call i64 @strlen(i8* %43) #9
+  %49 = add i64 %48, 1
+  call void @saa_wbytes(%struct.SAA* %47, i8* %43, i64 %49) #7
+  %50 = load i8, i8* %42, align 1
+  %51 = zext i8 %50 to i32
+  %52 = add nuw nsw i32 %51, 2
+  %53 = load i32, i32* @headerlength, align 4
+  %54 = add nsw i32 %52, %53
+  store i32 %54, i32* @headerlength, align 4
+  call void @llvm.lifetime.end.p0i8(i64 130, i8* nonnull %38) #7
+  br label %55
+
+55:                                               ; preds = %2, %34, %37, %9, %12, %33, %8
+  %56 = phi i32 [ 2, %33 ], [ 2, %8 ], [ 1, %12 ], [ 1, %9 ], [ 1, %37 ], [ 1, %34 ], [ 0, %2 ]
+  ret i32 %56
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @rdf2_cleanup() #0 {
+  %1 = alloca i32, align 4
+  %2 = alloca i64, align 8
+  %3 = bitcast i64* %2 to %struct.BSSRec*
+  %4 = bitcast i64* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %4) #7
+  store i64 -6148914691236517206, i64* %2, align 8
+  %5 = load %struct._IO_FILE*, %struct._IO_FILE** @ofile, align 8
+  tail call void @nasm_write(i8* getelementptr inbounds ([7 x i8], [7 x i8]* @.str.45, i64 0, i64 0), i64 6, %struct._IO_FILE* %5) #7
+  %6 = load i32, i32* @bsslength, align 4
+  %7 = icmp eq i32 %6, 0
+  br i1 %7, label %8, label %10
+
+8:                                                ; preds = %0
+  %9 = load i32, i32* @headerlength, align 4
+  br label %23
+
+10:                                               ; preds = %0
+  store i8 5, i8* %4, align 8
+  %11 = getelementptr inbounds %struct.BSSRec, %struct.BSSRec* %3, i64 0, i32 2
+  store i32 %6, i32* %11, align 4
+  %12 = getelementptr inbounds %struct.BSSRec, %struct.BSSRec* %3, i64 0, i32 1
+  store i8 4, i8* %12, align 1
+  %13 = bitcast i32* %1 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %13) #7
+  %14 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %14, i8* nonnull %4, i64 1) #7
+  %15 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %15, i8* %12, i64 1) #7
+  %16 = load i32, i32* %11, align 4
+  store i32 %16, i32* %1, align 4
+  %17 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %17, i8* nonnull %13, i64 4) #7
+  %18 = load i8, i8* %12, align 1
+  %19 = zext i8 %18 to i32
+  %20 = add nuw nsw i32 %19, 2
+  %21 = load i32, i32* @headerlength, align 4
+  %22 = add nsw i32 %20, %21
+  store i32 %22, i32* @headerlength, align 4
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %13) #7
+  br label %23
+
+23:                                               ; preds = %8, %10
+  %24 = phi i32 [ %9, %8 ], [ %22, %10 ]
+  %25 = add nsw i32 %24, 4
+  %26 = load i1, i1* @nsegments, align 4
+  br i1 %26, label %27, label %34
+
+27:                                               ; preds = %23
+  %28 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 0, i32 4), align 16
+  %29 = add i32 %24, 14
+  %30 = add i32 %29, %28
+  %31 = load i32, i32* getelementptr inbounds ([64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 1, i32 4), align 8
+  %32 = add i32 %30, 10
+  %33 = add i32 %32, %31
+  br label %34
+
+34:                                               ; preds = %27, %23
+  %35 = phi i32 [ %25, %23 ], [ %33, %27 ]
+  %36 = add nsw i32 %35, 10
+  %37 = load %struct._IO_FILE*, %struct._IO_FILE** @ofile, align 8
+  call void @fwriteint32_t(i32 %36, %struct._IO_FILE* %37) #7
+  %38 = load i32, i32* @headerlength, align 4
+  %39 = load %struct._IO_FILE*, %struct._IO_FILE** @ofile, align 8
+  call void @fwriteint32_t(i32 %38, %struct._IO_FILE* %39) #7
+  %40 = load %struct.SAA*, %struct.SAA** @header, align 8
+  %41 = load %struct._IO_FILE*, %struct._IO_FILE** @ofile, align 8
+  call void @saa_fpwrite(%struct.SAA* %40, %struct._IO_FILE* %41) #7
+  %42 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_free(%struct.SAA* %42) #7
+  %43 = load i1, i1* @nsegments, align 4
+  br i1 %43, label %44, label %72
+
+44:                                               ; preds = %34, %67
+  %45 = phi i1 [ %68, %67 ], [ true, %34 ]
+  %46 = phi i64 [ %69, %67 ], [ 0, %34 ]
+  %47 = icmp eq i64 %46, 2
+  br i1 %47, label %67, label %48
+
+48:                                               ; preds = %44
+  %49 = getelementptr inbounds [64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 %46, i32 2
+  %50 = load i16, i16* %49, align 4
+  %51 = load %struct._IO_FILE*, %struct._IO_FILE** @ofile, align 8
+  call void @fwriteint16_t(i16 zeroext %50, %struct._IO_FILE* %51) #7
+  %52 = getelementptr inbounds [64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 %46, i32 1
+  %53 = load i32, i32* %52, align 8
+  %54 = trunc i32 %53 to i16
+  %55 = load %struct._IO_FILE*, %struct._IO_FILE** @ofile, align 8
+  call void @fwriteint16_t(i16 zeroext %54, %struct._IO_FILE* %55) #7
+  %56 = getelementptr inbounds [64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 %46, i32 3
+  %57 = load i16, i16* %56, align 2
+  %58 = load %struct._IO_FILE*, %struct._IO_FILE** @ofile, align 8
+  call void @fwriteint16_t(i16 zeroext %57, %struct._IO_FILE* %58) #7
+  %59 = getelementptr inbounds [64 x %struct.seginfo], [64 x %struct.seginfo]* @segments, i64 0, i64 %46, i32 4
+  %60 = load i32, i32* %59, align 8
+  %61 = load %struct._IO_FILE*, %struct._IO_FILE** @ofile, align 8
+  call void @fwriteint32_t(i32 %60, %struct._IO_FILE* %61) #7
+  %62 = getelementptr inbounds [64 x %struct.SAA*], [64 x %struct.SAA*]* @seg, i64 0, i64 %46
+  %63 = load %struct.SAA*, %struct.SAA** %62, align 8
+  %64 = load %struct._IO_FILE*, %struct._IO_FILE** @ofile, align 8
+  call void @saa_fpwrite(%struct.SAA* %63, %struct._IO_FILE* %64) #7
+  %65 = load %struct.SAA*, %struct.SAA** %62, align 8
+  call void @saa_free(%struct.SAA* %65) #7
+  %66 = load i1, i1* @nsegments, align 4
+  br label %67
+
+67:                                               ; preds = %44, %48
+  %68 = phi i1 [ %45, %44 ], [ %66, %48 ]
+  %69 = add nuw nsw i64 %46, 1
+  %70 = select i1 %68, i64 3, i64 0
+  %71 = icmp ult i64 %69, %70
+  br i1 %71, label %44, label %72
+
+72:                                               ; preds = %67, %34
+  %73 = load %struct._IO_FILE*, %struct._IO_FILE** @ofile, align 8
+  call void @fwriteint32_t(i32 0, %struct._IO_FILE* %73) #7
+  %74 = load %struct._IO_FILE*, %struct._IO_FILE** @ofile, align 8
+  call void @fwriteint32_t(i32 0, %struct._IO_FILE* %74) #7
+  %75 = load %struct._IO_FILE*, %struct._IO_FILE** @ofile, align 8
+  call void @fwriteint16_t(i16 zeroext 0, %struct._IO_FILE* %75) #7
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %4) #7
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+declare %struct.SAA* @saa_init(i64) local_unnamed_addr #1
+
+declare i32 @seg_alloc() local_unnamed_addr #1
+
+; Function Attrs: cold noreturn
+declare void @nasm_panic(i8*, ...) local_unnamed_addr #3
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #2
+
+declare void @nasm_error(i32, i8*, ...) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define internal fastcc void @write_reloc_rec(%struct.RelocRec*) unnamed_addr #0 {
+  %2 = alloca i32, align 4
+  %3 = bitcast i32* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %3) #7
+  %4 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %0, i64 0, i32 5
+  store i32 -1431655766, i32* %2, align 4
+  %5 = load i16, i16* %4, align 2
+  %6 = icmp eq i16 %5, -1
+  %7 = and i16 %5, 1
+  %8 = icmp eq i16 %7, 0
+  %9 = or i1 %6, %8
+  br i1 %9, label %12, label %10
+
+10:                                               ; preds = %1
+  %11 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %0, i64 0, i32 0
+  store i8 6, i8* %11, align 4
+  br label %12
+
+12:                                               ; preds = %1, %10
+  %13 = lshr i16 %5, 1
+  store i16 %13, i16* %4, align 2
+  %14 = load %struct.SAA*, %struct.SAA** @header, align 8
+  %15 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %0, i64 0, i32 0
+  tail call void @saa_wbytes(%struct.SAA* %14, i8* %15, i64 1) #7
+  %16 = load %struct.SAA*, %struct.SAA** @header, align 8
+  %17 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %0, i64 0, i32 1
+  tail call void @saa_wbytes(%struct.SAA* %16, i8* %17, i64 1) #7
+  %18 = load %struct.SAA*, %struct.SAA** @header, align 8
+  %19 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %0, i64 0, i32 2
+  tail call void @saa_wbytes(%struct.SAA* %18, i8* %19, i64 1) #7
+  %20 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %0, i64 0, i32 3
+  %21 = load i32, i32* %20, align 4
+  store i32 %21, i32* %2, align 4
+  %22 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %22, i8* nonnull %3, i64 4) #7
+  %23 = load %struct.SAA*, %struct.SAA** @header, align 8
+  %24 = getelementptr inbounds %struct.RelocRec, %struct.RelocRec* %0, i64 0, i32 4
+  call void @saa_wbytes(%struct.SAA* %23, i8* %24, i64 1) #7
+  %25 = bitcast i32* %2 to i16*
+  %26 = load i16, i16* %4, align 2
+  store i16 %26, i16* %25, align 4
+  %27 = load %struct.SAA*, %struct.SAA** @header, align 8
+  call void @saa_wbytes(%struct.SAA* %27, i8* nonnull %3, i64 2) #7
+  %28 = load i8, i8* %17, align 1
+  %29 = zext i8 %28 to i32
+  %30 = add nuw nsw i32 %29, 2
+  %31 = load i32, i32* @headerlength, align 4
+  %32 = add nsw i32 %30, %31
+  store i32 %32, i32* @headerlength, align 4
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %3) #7
+  ret void
+}
+
+declare void @saa_wbytes(%struct.SAA*, i8*, i64) local_unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+; Function Attrs: argmemonly nofree nounwind readonly
+declare i64 @strlen(i8* nocapture) local_unnamed_addr #4
+
+; Function Attrs: nofree nounwind
+declare i8* @strcpy(i8* returned, i8* nocapture readonly) local_unnamed_addr #5
+
+declare i64 @readnum(i8*, i8*) local_unnamed_addr #1
+
+; Function Attrs: nofree nounwind readonly
+declare i32 @strncasecmp(i8* nocapture, i8* nocapture, i64) local_unnamed_addr #6
+
+; Function Attrs: nofree nounwind readonly
+declare i32 @strcasecmp(i8* nocapture, i8* nocapture) local_unnamed_addr #6
+
+; Function Attrs: nofree nounwind readonly
+declare i8* @strchr(i8*, i32) local_unnamed_addr #6
+
+; Function Attrs: nofree nounwind readonly
+declare i32 @strcmp(i8* nocapture, i8* nocapture) local_unnamed_addr #6
+
+declare noalias i8* @nasm_strdup(i8*) local_unnamed_addr #1
+
+declare void @nasm_write(i8*, i64, %struct._IO_FILE*) local_unnamed_addr #1
+
+declare void @fwriteint32_t(i32, %struct._IO_FILE*) local_unnamed_addr #1
+
+declare void @saa_fpwrite(%struct.SAA*, %struct._IO_FILE*) local_unnamed_addr #1
+
+declare void @saa_free(%struct.SAA*) local_unnamed_addr #1
+
+declare void @fwriteint16_t(i16 zeroext, %struct._IO_FILE*) local_unnamed_addr #1
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { cold noreturn "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { argmemonly nofree nounwind readonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nofree nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nofree nounwind readonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { nounwind }
+attributes #8 = { cold noreturn nounwind }
+attributes #9 = { nounwind readonly }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{i8 0, i8 2}

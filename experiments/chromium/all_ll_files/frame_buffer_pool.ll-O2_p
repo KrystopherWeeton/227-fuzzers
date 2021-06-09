@@ -1,0 +1,2651 @@
+; ModuleID = '../../media/filters/frame_buffer_pool.cc'
+source_filename = "../../media/filters/frame_buffer_pool.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.media::FrameBufferPool" = type { %"class.base::trace_event::MemoryDumpProvider", %"class.base::RefCountedThreadSafe", %"class.std::__1::vector", i8, i8, i8, %"class.base::TickClock"* }
+%"class.base::trace_event::MemoryDumpProvider" = type { i32 (...)** }
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.0" }
+%"struct.std::__1::__atomic_base.0" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"*, %"class.std::__1::__compressed_pair.6" }
+%"class.std::__1::unique_ptr" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"struct.media::FrameBufferPool::FrameBuffer"* }
+%"struct.media::FrameBufferPool::FrameBuffer" = type { %"class.std::__1::unique_ptr.1", i64, %"class.std::__1::unique_ptr.1", i64, i8, i32, %"class.base::TimeTicks" }
+%"class.std::__1::unique_ptr.1" = type { %"class.std::__1::__compressed_pair.2" }
+%"class.std::__1::__compressed_pair.2" = type { %"struct.std::__1::__compressed_pair_elem.3" }
+%"struct.std::__1::__compressed_pair_elem.3" = type { i8* }
+%"class.base::TimeTicks" = type { %"class.base::time_internal::TimeBase" }
+%"class.base::time_internal::TimeBase" = type { i64 }
+%"class.std::__1::__compressed_pair.6" = type { %"struct.std::__1::__compressed_pair_elem.7" }
+%"struct.std::__1::__compressed_pair_elem.7" = type { %"class.std::__1::unique_ptr"* }
+%"class.base::TickClock" = type { i32 (...)** }
+%"class.base::DefaultTickClock" = type { %"class.base::TickClock" }
+%"class.base::trace_event::MemoryDumpManager" = type <{ i32 (...)**, %"class.std::__1::set", %"class.base::RepeatingCallback", i8, [7 x i8], %"class.base::Lock", %"class.std::__1::unique_ptr.18", i64, i8, [7 x i8] }>
+%"class.std::__1::set" = type { %"class.std::__1::__tree" }
+%"class.std::__1::__tree" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.9", %"class.std::__1::__compressed_pair.14" }
+%"class.std::__1::__tree_end_node" = type { %"class.std::__1::__tree_node_base"* }
+%"class.std::__1::__tree_node_base" = type opaque
+%"class.std::__1::__compressed_pair.9" = type { %"struct.std::__1::__compressed_pair_elem.10" }
+%"struct.std::__1::__compressed_pair_elem.10" = type { %"class.std::__1::__tree_end_node" }
+%"class.std::__1::__compressed_pair.14" = type { %"struct.std::__1::__compressed_pair_elem.15" }
+%"struct.std::__1::__compressed_pair_elem.15" = type { i64 }
+%"class.base::RepeatingCallback" = type { %"class.base::internal::CallbackBaseCopyable" }
+%"class.base::internal::CallbackBaseCopyable" = type { %"class.base::internal::CallbackBase" }
+%"class.base::internal::CallbackBase" = type { %class.scoped_refptr }
+%class.scoped_refptr = type { %"class.base::internal::BindStateBase"* }
+%"class.base::internal::BindStateBase" = type { %"class.base::RefCountedThreadSafe.17", void ()*, void (%"class.base::internal::BindStateBase"*)*, i1 (%"class.base::internal::BindStateBase"*, i32)* }
+%"class.base::RefCountedThreadSafe.17" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::Lock" = type { %"class.base::internal::LockImpl" }
+%"class.base::internal::LockImpl" = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%"class.std::__1::unique_ptr.18" = type { %"class.std::__1::__compressed_pair.19" }
+%"class.std::__1::__compressed_pair.19" = type { %"struct.std::__1::__compressed_pair_elem.20" }
+%"struct.std::__1::__compressed_pair_elem.20" = type { %"class.base::Thread"* }
+%"class.base::Thread" = type opaque
+%class.scoped_refptr.24 = type { %"class.base::SequencedTaskRunner"* }
+%"class.base::SequencedTaskRunner" = type { %"class.base::TaskRunner.base", [4 x i8] }
+%"class.base::TaskRunner.base" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe.25" }>
+%"class.base::RefCountedThreadSafe.25" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"struct.std::__1::__split_buffer" = type { %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"*, %"class.std::__1::__compressed_pair.67" }
+%"class.std::__1::__compressed_pair.67" = type { %"struct.std::__1::__compressed_pair_elem.7", %"struct.std::__1::__compressed_pair_elem.68" }
+%"struct.std::__1::__compressed_pair_elem.68" = type { %"class.std::__1::allocator"* }
+%"class.std::__1::allocator" = type { i8 }
+%"class.std::__1::__vector_base_common" = type { i8 }
+%"class.base::OnceCallback" = type { %"class.base::internal::CallbackBase" }
+%"class.base::Location" = type { i8*, i8*, i32, i8* }
+%"class.base::TaskRunner" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe.25", [4 x i8] }>
+%"struct.base::trace_event::MemoryDumpArgs" = type { i32, i32, i64 }
+%"class.base::trace_event::ProcessMemoryDump" = type { %"class.base::UnguessableToken", %"class.std::__1::map", %"class.std::__1::map.34", %"struct.base::trace_event::MemoryDumpArgs", %"class.std::__1::unique_ptr.45" }
+%"class.base::UnguessableToken" = type { %"class.base::Token" }
+%"class.base::Token" = type { i64, i64 }
+%"class.std::__1::map" = type { %"class.std::__1::__tree.27" }
+%"class.std::__1::__tree.27" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.28", %"class.std::__1::__compressed_pair.32" }
+%"class.std::__1::__compressed_pair.28" = type { %"struct.std::__1::__compressed_pair_elem.10" }
+%"class.std::__1::__compressed_pair.32" = type { %"struct.std::__1::__compressed_pair_elem.15" }
+%"class.std::__1::map.34" = type { %"class.std::__1::__tree.35" }
+%"class.std::__1::__tree.35" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.36", %"class.std::__1::__compressed_pair.40" }
+%"class.std::__1::__compressed_pair.36" = type { %"struct.std::__1::__compressed_pair_elem.10" }
+%"class.std::__1::__compressed_pair.40" = type { %"struct.std::__1::__compressed_pair_elem.15" }
+%"class.std::__1::unique_ptr.45" = type { %"class.std::__1::__compressed_pair.46" }
+%"class.std::__1::__compressed_pair.46" = type { %"struct.std::__1::__compressed_pair_elem.47" }
+%"struct.std::__1::__compressed_pair_elem.47" = type { %"class.base::trace_event::MemoryAllocatorDump"* }
+%"class.base::trace_event::MemoryAllocatorDump" = type { %"class.std::__1::basic_string", %"class.base::trace_event::MemoryAllocatorDumpGuid", i32, i32, %"class.absl::optional", %"class.std::__1::vector.54" }
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.48" }
+%"class.std::__1::__compressed_pair.48" = type { %"struct.std::__1::__compressed_pair_elem.49" }
+%"struct.std::__1::__compressed_pair_elem.49" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon }
+%union.anon = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.base::trace_event::MemoryAllocatorDumpGuid" = type { i64 }
+%"class.absl::optional" = type { %"class.absl::optional_internal::optional_data" }
+%"class.absl::optional_internal::optional_data" = type { %"class.absl::optional_internal::optional_data_base" }
+%"class.absl::optional_internal::optional_data_base" = type { %"class.absl::optional_internal::optional_data_dtor_base" }
+%"class.absl::optional_internal::optional_data_dtor_base" = type { i8, %union.anon.53 }
+%union.anon.53 = type { i64 }
+%"class.std::__1::vector.54" = type { %"class.std::__1::__vector_base.55" }
+%"class.std::__1::__vector_base.55" = type { %"struct.base::trace_event::MemoryAllocatorDump::Entry"*, %"struct.base::trace_event::MemoryAllocatorDump::Entry"*, %"class.std::__1::__compressed_pair.56" }
+%"struct.base::trace_event::MemoryAllocatorDump::Entry" = type { %"class.std::__1::basic_string", %"class.std::__1::basic_string", i32, i64, %"class.std::__1::basic_string" }
+%"class.std::__1::__compressed_pair.56" = type { %"struct.std::__1::__compressed_pair_elem.57" }
+%"struct.std::__1::__compressed_pair_elem.57" = type { %"struct.base::trace_event::MemoryAllocatorDump::Entry"* }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short" = type { [23 x i8], %struct.anon }
+%struct.anon = type { i8 }
+%"class.std::__1::__basic_string_common" = type { i8 }
+
+$_ZNSt3__16vectorINS_10unique_ptrIN5media15FrameBufferPool11FrameBufferENS_14default_deleteIS4_EEEENS_9allocatorIS7_EEE6insertENS_11__wrap_iterIPKS7_EEOS7_ = comdat any
+
+$_ZNSt3__16vectorINS_10unique_ptrIN5media15FrameBufferPool11FrameBufferENS_14default_deleteIS4_EEEENS_9allocatorIS7_EEE5eraseENS_11__wrap_iterIPKS7_EE = comdat any
+
+$_ZNSt3__114__split_bufferINS_10unique_ptrIN5media15FrameBufferPool11FrameBufferENS_14default_deleteIS4_EEEERNS_9allocatorIS7_EEE9push_backEOS7_ = comdat any
+
+$_ZN4base8internal7InvokerINS0_9BindStateIMN5media15FrameBufferPoolEFv13scoped_refptrINS_19SequencedTaskRunnerEEPNS4_11FrameBufferEEJS5_IS4_ES7_S9_EEEFvvEE7RunOnceEPNS0_13BindStateBaseE = comdat any
+
+$_ZN4base8internal9BindStateIMN5media15FrameBufferPoolEFv13scoped_refptrINS_19SequencedTaskRunnerEEPNS3_11FrameBufferEEJS4_IS3_ES6_S8_EE7DestroyEPKNS0_13BindStateBaseE = comdat any
+
+$_ZNSt3__16vectorINS_10unique_ptrIN5media15FrameBufferPool11FrameBufferENS_14default_deleteIS4_EEEENS_9allocatorIS7_EEE5eraseENS_11__wrap_iterIPKS7_EESE_ = comdat any
+
+@_ZTVN5media15FrameBufferPoolE = hidden unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.media::FrameBufferPool"*)* @_ZN5media15FrameBufferPoolD2Ev to i8*), i8* bitcast (void (%"class.media::FrameBufferPool"*)* @_ZN5media15FrameBufferPoolD0Ev to i8*), i8* bitcast (i1 (%"class.media::FrameBufferPool"*, %"struct.base::trace_event::MemoryDumpArgs"*, %"class.base::trace_event::ProcessMemoryDump"*)* @_ZN5media15FrameBufferPool12OnMemoryDumpERKN4base11trace_event14MemoryDumpArgsEPNS2_17ProcessMemoryDumpE to i8*)] }, align 8
+@.str = private unnamed_addr constant [16 x i8] c"FrameBufferPool\00", align 1
+@.str.1 = private unnamed_addr constant [32 x i8] c"media/frame_buffers/memory_pool\00", align 1
+@.str.2 = private unnamed_addr constant [37 x i8] c"media/frame_buffers/memory_pool/used\00", align 1
+@_ZN4base11trace_event19MemoryAllocatorDump9kNameSizeE = external constant [0 x i8], align 1
+@_ZN4base11trace_event19MemoryAllocatorDump11kUnitsBytesE = external constant [0 x i8], align 1
+@.str.3 = private unnamed_addr constant [22 x i8] c"OnVideoFrameDestroyed\00", align 1
+@.str.4 = private unnamed_addr constant [41 x i8] c"../../media/filters/frame_buffer_pool.cc\00", align 1
+@_ZN4base11trace_event17MemoryDumpManager24kSystemAllocatorPoolNameE = external local_unnamed_addr constant i8*, align 8
+
+@_ZN5media15FrameBufferPoolC1Ev = hidden unnamed_addr alias void (%"class.media::FrameBufferPool"*), void (%"class.media::FrameBufferPool"*)* @_ZN5media15FrameBufferPoolC2Ev
+@_ZN5media15FrameBufferPoolD1Ev = hidden unnamed_addr alias void (%"class.media::FrameBufferPool"*), void (%"class.media::FrameBufferPool"*)* @_ZN5media15FrameBufferPoolD2Ev
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media15FrameBufferPoolC2Ev(%"class.media::FrameBufferPool"* nocapture) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 1, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  store i32 0, i32* %2, align 4
+  %3 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_ZTVN5media15FrameBufferPoolE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %3, align 8
+  %4 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 2
+  %5 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 6
+  %6 = bitcast %"class.std::__1::vector"* %4 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %6, i8 0, i64 27, i1 false)
+  %7 = tail call %"class.base::DefaultTickClock"* @_ZN4base16DefaultTickClock11GetInstanceEv() #11
+  %8 = getelementptr inbounds %"class.base::DefaultTickClock", %"class.base::DefaultTickClock"* %7, i64 0, i32 0
+  store %"class.base::TickClock"* %8, %"class.base::TickClock"** %5, align 8
+  ret void
+}
+
+declare %"class.base::DefaultTickClock"* @_ZN4base16DefaultTickClock11GetInstanceEv() local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media15FrameBufferPoolD2Ev(%"class.media::FrameBufferPool"* nocapture) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_ZTVN5media15FrameBufferPoolE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 2
+  %4 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %3, i64 0, i32 0, i32 0
+  %5 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %4, align 8
+  %6 = icmp eq %"class.std::__1::unique_ptr"* %5, null
+  br i1 %6, label %37, label %7
+
+7:                                                ; preds = %1
+  %8 = bitcast %"class.std::__1::unique_ptr"* %5 to i8*
+  %9 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 2, i32 0, i32 1
+  %10 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %9, align 8
+  %11 = icmp eq %"class.std::__1::unique_ptr"* %10, %5
+  br i1 %11, label %35, label %12
+
+12:                                               ; preds = %7, %30
+  %13 = phi %"class.std::__1::unique_ptr"* [ %14, %30 ], [ %10, %7 ]
+  %14 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %13, i64 -1
+  %15 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %14, i64 0, i32 0, i32 0, i32 0
+  %16 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %15, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %15, align 8
+  %17 = icmp eq %"struct.media::FrameBufferPool::FrameBuffer"* %16, null
+  br i1 %17, label %30, label %18
+
+18:                                               ; preds = %12
+  %19 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %16, i64 0, i32 2, i32 0, i32 0, i32 0
+  %20 = load i8*, i8** %19, align 8
+  store i8* null, i8** %19, align 8
+  %21 = icmp eq i8* %20, null
+  br i1 %21, label %23, label %22
+
+22:                                               ; preds = %18
+  tail call void @free(i8* nonnull %20) #11
+  br label %23
+
+23:                                               ; preds = %22, %18
+  %24 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %16, i64 0, i32 0, i32 0, i32 0, i32 0
+  %25 = load i8*, i8** %24, align 8
+  store i8* null, i8** %24, align 8
+  %26 = icmp eq i8* %25, null
+  br i1 %26, label %28, label %27
+
+27:                                               ; preds = %23
+  tail call void @free(i8* nonnull %25) #11
+  br label %28
+
+28:                                               ; preds = %27, %23
+  %29 = bitcast %"struct.media::FrameBufferPool::FrameBuffer"* %16 to i8*
+  tail call void @_ZdlPv(i8* %29) #12
+  br label %30
+
+30:                                               ; preds = %28, %12
+  %31 = icmp eq %"class.std::__1::unique_ptr"* %14, %5
+  br i1 %31, label %32, label %12
+
+32:                                               ; preds = %30
+  %33 = bitcast %"class.std::__1::vector"* %3 to i8**
+  %34 = load i8*, i8** %33, align 8
+  br label %35
+
+35:                                               ; preds = %32, %7
+  %36 = phi i8* [ %34, %32 ], [ %8, %7 ]
+  store %"class.std::__1::unique_ptr"* %5, %"class.std::__1::unique_ptr"** %9, align 8
+  tail call void @_ZdlPv(i8* %36) #12
+  br label %37
+
+37:                                               ; preds = %1, %35
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media15FrameBufferPoolD0Ev(%"class.media::FrameBufferPool"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_ZTVN5media15FrameBufferPoolE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 2
+  %4 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %3, i64 0, i32 0, i32 0
+  %5 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %4, align 8
+  %6 = icmp eq %"class.std::__1::unique_ptr"* %5, null
+  br i1 %6, label %37, label %7
+
+7:                                                ; preds = %1
+  %8 = bitcast %"class.std::__1::unique_ptr"* %5 to i8*
+  %9 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 2, i32 0, i32 1
+  %10 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %9, align 8
+  %11 = icmp eq %"class.std::__1::unique_ptr"* %10, %5
+  br i1 %11, label %35, label %12
+
+12:                                               ; preds = %7, %30
+  %13 = phi %"class.std::__1::unique_ptr"* [ %14, %30 ], [ %10, %7 ]
+  %14 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %13, i64 -1
+  %15 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %14, i64 0, i32 0, i32 0, i32 0
+  %16 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %15, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %15, align 8
+  %17 = icmp eq %"struct.media::FrameBufferPool::FrameBuffer"* %16, null
+  br i1 %17, label %30, label %18
+
+18:                                               ; preds = %12
+  %19 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %16, i64 0, i32 2, i32 0, i32 0, i32 0
+  %20 = load i8*, i8** %19, align 8
+  store i8* null, i8** %19, align 8
+  %21 = icmp eq i8* %20, null
+  br i1 %21, label %23, label %22
+
+22:                                               ; preds = %18
+  tail call void @free(i8* nonnull %20) #11
+  br label %23
+
+23:                                               ; preds = %22, %18
+  %24 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %16, i64 0, i32 0, i32 0, i32 0, i32 0
+  %25 = load i8*, i8** %24, align 8
+  store i8* null, i8** %24, align 8
+  %26 = icmp eq i8* %25, null
+  br i1 %26, label %28, label %27
+
+27:                                               ; preds = %23
+  tail call void @free(i8* nonnull %25) #11
+  br label %28
+
+28:                                               ; preds = %27, %23
+  %29 = bitcast %"struct.media::FrameBufferPool::FrameBuffer"* %16 to i8*
+  tail call void @_ZdlPv(i8* %29) #12
+  br label %30
+
+30:                                               ; preds = %28, %12
+  %31 = icmp eq %"class.std::__1::unique_ptr"* %14, %5
+  br i1 %31, label %32, label %12
+
+32:                                               ; preds = %30
+  %33 = bitcast %"class.std::__1::vector"* %3 to i8**
+  %34 = load i8*, i8** %33, align 8
+  br label %35
+
+35:                                               ; preds = %32, %7
+  %36 = phi i8* [ %34, %32 ], [ %8, %7 ]
+  store %"class.std::__1::unique_ptr"* %5, %"class.std::__1::unique_ptr"** %9, align 8
+  tail call void @_ZdlPv(i8* %36) #12
+  br label %37
+
+37:                                               ; preds = %1, %35
+  %38 = bitcast %"class.media::FrameBufferPool"* %0 to i8*
+  tail call void @_ZdlPv(i8* %38) #12
+  ret void
+}
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i8* @_ZN5media15FrameBufferPool14GetFrameBufferEmPPv(%"class.media::FrameBufferPool"*, i64, i8** nocapture) local_unnamed_addr #0 align 2 {
+  %4 = alloca %"class.std::__1::unique_ptr", align 8
+  %5 = alloca i8*, align 8
+  %6 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 4
+  %7 = load i8, i8* %6, align 1, !range !2
+  %8 = icmp eq i8 %7, 0
+  br i1 %8, label %9, label %20
+
+9:                                                ; preds = %3
+  %10 = tail call %"class.base::trace_event::MemoryDumpManager"* @_ZN4base11trace_event17MemoryDumpManager11GetInstanceEv() #11
+  %11 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 0
+  %12 = tail call dereferenceable(8) %class.scoped_refptr.24* @_ZN4base25SequencedTaskRunnerHandle3GetEv() #11
+  %13 = getelementptr inbounds %class.scoped_refptr.24, %class.scoped_refptr.24* %12, i64 0, i32 0
+  %14 = load %"class.base::SequencedTaskRunner"*, %"class.base::SequencedTaskRunner"** %13, align 8
+  %15 = icmp eq %"class.base::SequencedTaskRunner"* %14, null
+  br i1 %15, label %19, label %16
+
+16:                                               ; preds = %9
+  %17 = getelementptr inbounds %"class.base::SequencedTaskRunner", %"class.base::SequencedTaskRunner"* %14, i64 0, i32 0, i32 1, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %18 = atomicrmw add i32* %17, i32 1 monotonic
+  br label %19
+
+19:                                               ; preds = %9, %16
+  tail call void @_ZN4base11trace_event17MemoryDumpManager43RegisterDumpProviderWithSequencedTaskRunnerEPNS0_18MemoryDumpProviderEPKc13scoped_refptrINS_19SequencedTaskRunnerEENS2_7OptionsE(%"class.base::trace_event::MemoryDumpManager"* %10, %"class.base::trace_event::MemoryDumpProvider"* %11, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str, i64 0, i64 0), %"class.base::SequencedTaskRunner"* %14, i8 0) #11
+  store i8 1, i8* %6, align 1
+  br label %20
+
+20:                                               ; preds = %3, %19
+  %21 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 2
+  %22 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %21, i64 0, i32 0, i32 0
+  %23 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %22, align 8
+  %24 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 2, i32 0, i32 1
+  %25 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %24, align 8
+  %26 = icmp eq %"class.std::__1::unique_ptr"* %23, %25
+  br i1 %26, label %41, label %27
+
+27:                                               ; preds = %20, %38
+  %28 = phi %"class.std::__1::unique_ptr"* [ %39, %38 ], [ %23, %20 ]
+  %29 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %28, i64 0, i32 0, i32 0, i32 0
+  %30 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %29, align 8
+  %31 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %30, i64 0, i32 4
+  %32 = load i8, i8* %31, align 8, !range !2
+  %33 = icmp eq i8 %32, 0
+  br i1 %33, label %34, label %38
+
+34:                                               ; preds = %27
+  %35 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %30, i64 0, i32 5
+  %36 = load i32, i32* %35, align 4
+  %37 = icmp slt i32 %36, 1
+  br i1 %37, label %41, label %38
+
+38:                                               ; preds = %34, %27
+  %39 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %28, i64 1
+  %40 = icmp eq %"class.std::__1::unique_ptr"* %39, %25
+  br i1 %40, label %44, label %27
+
+41:                                               ; preds = %34, %20
+  %42 = phi %"class.std::__1::unique_ptr"* [ %23, %20 ], [ %28, %34 ]
+  %43 = icmp eq %"class.std::__1::unique_ptr"* %42, %25
+  br i1 %43, label %44, label %65
+
+44:                                               ; preds = %38, %41
+  %45 = bitcast %"class.std::__1::unique_ptr"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %45) #11
+  %46 = tail call i8* @_Znwm(i64 48) #12
+  tail call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %46, i8 0, i64 48, i1 false) #11
+  %47 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %4, i64 0, i32 0, i32 0, i32 0
+  %48 = bitcast %"class.std::__1::unique_ptr"* %4 to i8**
+  store i8* %46, i8** %48, align 8
+  %49 = call %"class.std::__1::unique_ptr"* @_ZNSt3__16vectorINS_10unique_ptrIN5media15FrameBufferPool11FrameBufferENS_14default_deleteIS4_EEEENS_9allocatorIS7_EEE6insertENS_11__wrap_iterIPKS7_EEOS7_(%"class.std::__1::vector"* %21, %"class.std::__1::unique_ptr"* %25, %"class.std::__1::unique_ptr"* nonnull dereferenceable(8) %4)
+  %50 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %47, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %47, align 8
+  %51 = icmp eq %"struct.media::FrameBufferPool::FrameBuffer"* %50, null
+  br i1 %51, label %64, label %52
+
+52:                                               ; preds = %44
+  %53 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %50, i64 0, i32 2, i32 0, i32 0, i32 0
+  %54 = load i8*, i8** %53, align 8
+  store i8* null, i8** %53, align 8
+  %55 = icmp eq i8* %54, null
+  br i1 %55, label %57, label %56
+
+56:                                               ; preds = %52
+  call void @free(i8* nonnull %54) #11
+  br label %57
+
+57:                                               ; preds = %56, %52
+  %58 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %50, i64 0, i32 0, i32 0, i32 0, i32 0
+  %59 = load i8*, i8** %58, align 8
+  store i8* null, i8** %58, align 8
+  %60 = icmp eq i8* %59, null
+  br i1 %60, label %62, label %61
+
+61:                                               ; preds = %57
+  call void @free(i8* nonnull %59) #11
+  br label %62
+
+62:                                               ; preds = %61, %57
+  %63 = bitcast %"struct.media::FrameBufferPool::FrameBuffer"* %50 to i8*
+  call void @_ZdlPv(i8* %63) #12
+  br label %64
+
+64:                                               ; preds = %44, %62
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %45) #11
+  br label %65
+
+65:                                               ; preds = %64, %41
+  %66 = phi %"class.std::__1::unique_ptr"* [ %49, %64 ], [ %42, %41 ]
+  %67 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %66, i64 0, i32 0, i32 0, i32 0
+  %68 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %67, align 8
+  %69 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %68, i64 0, i32 4
+  store i8 1, i8* %69, align 8
+  %70 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %67, align 8
+  %71 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %70, i64 0, i32 1
+  %72 = load i64, i64* %71, align 8
+  %73 = icmp ult i64 %72, %1
+  br i1 %73, label %76, label %74
+
+74:                                               ; preds = %65
+  %75 = ptrtoint %"struct.media::FrameBufferPool::FrameBuffer"* %70 to i64
+  br label %104
+
+76:                                               ; preds = %65
+  %77 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %70, i64 0, i32 0, i32 0, i32 0, i32 0
+  %78 = load i8*, i8** %77, align 8
+  store i8* null, i8** %77, align 8
+  %79 = icmp eq i8* %78, null
+  br i1 %79, label %81, label %80
+
+80:                                               ; preds = %76
+  call void @free(i8* nonnull %78) #11
+  br label %81
+
+81:                                               ; preds = %76, %80
+  %82 = bitcast i8** %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %82) #11
+  store i8* null, i8** %5, align 8
+  %83 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 5
+  %84 = load i8, i8* %83, align 2, !range !2
+  %85 = icmp eq i8 %84, 0
+  br i1 %85, label %86, label %91
+
+86:                                               ; preds = %81
+  %87 = call zeroext i1 @_ZN4base15UncheckedMallocEmPPv(i64 %1, i8** nonnull %5) #11
+  %88 = load i8*, i8** %5, align 8
+  %89 = icmp ne i8* %88, null
+  %90 = and i1 %87, %89
+  br i1 %90, label %93, label %91
+
+91:                                               ; preds = %81, %86
+  %92 = call %"class.std::__1::unique_ptr"* @_ZNSt3__16vectorINS_10unique_ptrIN5media15FrameBufferPool11FrameBufferENS_14default_deleteIS4_EEEENS_9allocatorIS7_EEE5eraseENS_11__wrap_iterIPKS7_EE(%"class.std::__1::vector"* %21, %"class.std::__1::unique_ptr"* %66)
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %82) #11
+  br label %110
+
+93:                                               ; preds = %86
+  %94 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %67, align 8
+  %95 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %94, i64 0, i32 0, i32 0, i32 0, i32 0
+  %96 = load i8*, i8** %95, align 8
+  store i8* %88, i8** %95, align 8
+  %97 = icmp eq i8* %96, null
+  br i1 %97, label %99, label %98
+
+98:                                               ; preds = %93
+  call void @free(i8* nonnull %96) #11
+  br label %99
+
+99:                                               ; preds = %93, %98
+  %100 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %67, align 8
+  %101 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %100, i64 0, i32 1
+  store i64 %1, i64* %101, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %82) #11
+  %102 = bitcast %"class.std::__1::unique_ptr"* %66 to i64*
+  %103 = load i64, i64* %102, align 8
+  br label %104
+
+104:                                              ; preds = %74, %99
+  %105 = phi i64 [ %103, %99 ], [ %75, %74 ]
+  %106 = bitcast i8** %2 to i64*
+  store i64 %105, i64* %106, align 8
+  %107 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %67, align 8
+  %108 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %107, i64 0, i32 0, i32 0, i32 0, i32 0
+  %109 = load i8*, i8** %108, align 8
+  br label %110
+
+110:                                              ; preds = %91, %104
+  %111 = phi i8* [ %109, %104 ], [ null, %91 ]
+  ret i8* %111
+}
+
+declare %"class.base::trace_event::MemoryDumpManager"* @_ZN4base11trace_event17MemoryDumpManager11GetInstanceEv() local_unnamed_addr #1
+
+declare void @_ZN4base11trace_event17MemoryDumpManager43RegisterDumpProviderWithSequencedTaskRunnerEPNS0_18MemoryDumpProviderEPKc13scoped_refptrINS_19SequencedTaskRunnerEENS2_7OptionsE(%"class.base::trace_event::MemoryDumpManager"*, %"class.base::trace_event::MemoryDumpProvider"*, i8*, %"class.base::SequencedTaskRunner"*, i8) local_unnamed_addr #1
+
+declare dereferenceable(8) %class.scoped_refptr.24* @_ZN4base25SequencedTaskRunnerHandle3GetEv() local_unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #3
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #3
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden %"class.std::__1::unique_ptr"* @_ZNSt3__16vectorINS_10unique_ptrIN5media15FrameBufferPool11FrameBufferENS_14default_deleteIS4_EEEENS_9allocatorIS7_EEE6insertENS_11__wrap_iterIPKS7_EEOS7_(%"class.std::__1::vector"*, %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"* dereferenceable(8)) local_unnamed_addr #0 comdat align 2 {
+  %4 = ptrtoint %"class.std::__1::unique_ptr"* %1 to i64
+  %5 = alloca %"struct.std::__1::__split_buffer", align 8
+  %6 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 0
+  %7 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 1
+  %8 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %7, align 8
+  %9 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 2, i32 0, i32 0
+  %10 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %9, align 8
+  %11 = icmp ult %"class.std::__1::unique_ptr"* %8, %10
+  %12 = ptrtoint %"class.std::__1::unique_ptr"* %8 to i64
+  %13 = ptrtoint %"class.std::__1::unique_ptr"* %10 to i64
+  br i1 %11, label %14, label %164
+
+14:                                               ; preds = %3
+  %15 = icmp eq %"class.std::__1::unique_ptr"* %8, %1
+  br i1 %15, label %16, label %24
+
+16:                                               ; preds = %14
+  %17 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %2, i64 0, i32 0, i32 0, i32 0
+  %18 = bitcast %"class.std::__1::unique_ptr"* %2 to i64*
+  %19 = load i64, i64* %18, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %17, align 8
+  %20 = bitcast %"class.std::__1::unique_ptr"* %1 to i64*
+  store i64 %19, i64* %20, align 8
+  %21 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %1, i64 1
+  %22 = ptrtoint %"class.std::__1::unique_ptr"* %21 to i64
+  %23 = bitcast %"class.std::__1::unique_ptr"** %7 to i64*
+  store i64 %22, i64* %23, align 8
+  br label %403
+
+24:                                               ; preds = %14
+  %25 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %1, i64 1
+  %26 = ptrtoint %"class.std::__1::unique_ptr"* %25 to i64
+  %27 = sub i64 %12, %26
+  %28 = ashr exact i64 %27, 3
+  %29 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %1, i64 %28
+  %30 = bitcast %"class.std::__1::unique_ptr"** %7 to i64*
+  %31 = icmp ult %"class.std::__1::unique_ptr"* %29, %8
+  br i1 %31, label %32, label %115
+
+32:                                               ; preds = %24
+  %33 = sub nsw i64 0, %28
+  %34 = getelementptr %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %8, i64 %33, i32 0, i32 0, i32 0
+  %35 = bitcast %"struct.media::FrameBufferPool::FrameBuffer"** %34 to i8*
+  %36 = xor i64 %4, -1
+  %37 = getelementptr i8, i8* %35, i64 %36
+  %38 = ptrtoint i8* %37 to i64
+  %39 = lshr i64 %38, 3
+  %40 = add nuw nsw i64 %39, 1
+  %41 = and i64 %40, 7
+  %42 = icmp eq i64 %41, 0
+  br i1 %42, label %55, label %43
+
+43:                                               ; preds = %32, %43
+  %44 = phi %"class.std::__1::unique_ptr"* [ %52, %43 ], [ %8, %32 ]
+  %45 = phi %"class.std::__1::unique_ptr"* [ %51, %43 ], [ %29, %32 ]
+  %46 = phi i64 [ %53, %43 ], [ %41, %32 ]
+  %47 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %45, i64 0, i32 0, i32 0, i32 0
+  %48 = bitcast %"class.std::__1::unique_ptr"* %45 to i64*
+  %49 = load i64, i64* %48, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %47, align 8
+  %50 = bitcast %"class.std::__1::unique_ptr"* %44 to i64*
+  store i64 %49, i64* %50, align 8
+  %51 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %45, i64 1
+  %52 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %44, i64 1
+  %53 = add i64 %46, -1
+  %54 = icmp eq i64 %53, 0
+  br i1 %54, label %55, label %43, !llvm.loop !3
+
+55:                                               ; preds = %43, %32
+  %56 = phi %"class.std::__1::unique_ptr"* [ %8, %32 ], [ %52, %43 ]
+  %57 = phi %"class.std::__1::unique_ptr"* [ %29, %32 ], [ %51, %43 ]
+  %58 = phi %"class.std::__1::unique_ptr"* [ undef, %32 ], [ %52, %43 ]
+  %59 = icmp ult i8* %37, inttoptr (i64 56 to i8*)
+  br i1 %59, label %60, label %63
+
+60:                                               ; preds = %63, %55
+  %61 = phi %"class.std::__1::unique_ptr"* [ %58, %55 ], [ %113, %63 ]
+  %62 = ptrtoint %"class.std::__1::unique_ptr"* %61 to i64
+  br label %115
+
+63:                                               ; preds = %55, %63
+  %64 = phi %"class.std::__1::unique_ptr"* [ %113, %63 ], [ %56, %55 ]
+  %65 = phi %"class.std::__1::unique_ptr"* [ %112, %63 ], [ %57, %55 ]
+  %66 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %65, i64 0, i32 0, i32 0, i32 0
+  %67 = bitcast %"class.std::__1::unique_ptr"* %65 to i64*
+  %68 = load i64, i64* %67, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %66, align 8
+  %69 = bitcast %"class.std::__1::unique_ptr"* %64 to i64*
+  store i64 %68, i64* %69, align 8
+  %70 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %65, i64 1
+  %71 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %64, i64 1
+  %72 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %70, i64 0, i32 0, i32 0, i32 0
+  %73 = bitcast %"class.std::__1::unique_ptr"* %70 to i64*
+  %74 = load i64, i64* %73, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %72, align 8
+  %75 = bitcast %"class.std::__1::unique_ptr"* %71 to i64*
+  store i64 %74, i64* %75, align 8
+  %76 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %65, i64 2
+  %77 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %64, i64 2
+  %78 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %76, i64 0, i32 0, i32 0, i32 0
+  %79 = bitcast %"class.std::__1::unique_ptr"* %76 to i64*
+  %80 = load i64, i64* %79, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %78, align 8
+  %81 = bitcast %"class.std::__1::unique_ptr"* %77 to i64*
+  store i64 %80, i64* %81, align 8
+  %82 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %65, i64 3
+  %83 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %64, i64 3
+  %84 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %82, i64 0, i32 0, i32 0, i32 0
+  %85 = bitcast %"class.std::__1::unique_ptr"* %82 to i64*
+  %86 = load i64, i64* %85, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %84, align 8
+  %87 = bitcast %"class.std::__1::unique_ptr"* %83 to i64*
+  store i64 %86, i64* %87, align 8
+  %88 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %65, i64 4
+  %89 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %64, i64 4
+  %90 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %88, i64 0, i32 0, i32 0, i32 0
+  %91 = bitcast %"class.std::__1::unique_ptr"* %88 to i64*
+  %92 = load i64, i64* %91, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %90, align 8
+  %93 = bitcast %"class.std::__1::unique_ptr"* %89 to i64*
+  store i64 %92, i64* %93, align 8
+  %94 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %65, i64 5
+  %95 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %64, i64 5
+  %96 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %94, i64 0, i32 0, i32 0, i32 0
+  %97 = bitcast %"class.std::__1::unique_ptr"* %94 to i64*
+  %98 = load i64, i64* %97, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %96, align 8
+  %99 = bitcast %"class.std::__1::unique_ptr"* %95 to i64*
+  store i64 %98, i64* %99, align 8
+  %100 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %65, i64 6
+  %101 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %64, i64 6
+  %102 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %100, i64 0, i32 0, i32 0, i32 0
+  %103 = bitcast %"class.std::__1::unique_ptr"* %100 to i64*
+  %104 = load i64, i64* %103, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %102, align 8
+  %105 = bitcast %"class.std::__1::unique_ptr"* %101 to i64*
+  store i64 %104, i64* %105, align 8
+  %106 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %65, i64 7
+  %107 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %64, i64 7
+  %108 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %106, i64 0, i32 0, i32 0, i32 0
+  %109 = bitcast %"class.std::__1::unique_ptr"* %106 to i64*
+  %110 = load i64, i64* %109, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %108, align 8
+  %111 = bitcast %"class.std::__1::unique_ptr"* %107 to i64*
+  store i64 %110, i64* %111, align 8
+  %112 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %65, i64 8
+  %113 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %64, i64 8
+  %114 = icmp ult %"class.std::__1::unique_ptr"* %112, %8
+  br i1 %114, label %63, label %60
+
+115:                                              ; preds = %24, %60
+  %116 = phi i64 [ %62, %60 ], [ %12, %24 ]
+  store i64 %116, i64* %30, align 8
+  %117 = icmp eq i64 %27, 0
+  br i1 %117, label %144, label %118
+
+118:                                              ; preds = %115, %142
+  %119 = phi %"class.std::__1::unique_ptr"* [ %122, %142 ], [ %8, %115 ]
+  %120 = phi %"class.std::__1::unique_ptr"* [ %121, %142 ], [ %29, %115 ]
+  %121 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %120, i64 -1
+  %122 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %119, i64 -1
+  %123 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %121, i64 0, i32 0, i32 0, i32 0
+  %124 = bitcast %"class.std::__1::unique_ptr"* %121 to i64*
+  %125 = load i64, i64* %124, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %123, align 8
+  %126 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %122, i64 0, i32 0, i32 0, i32 0
+  %127 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %126, align 8
+  %128 = bitcast %"class.std::__1::unique_ptr"* %122 to i64*
+  store i64 %125, i64* %128, align 8
+  %129 = icmp eq %"struct.media::FrameBufferPool::FrameBuffer"* %127, null
+  br i1 %129, label %142, label %130
+
+130:                                              ; preds = %118
+  %131 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %127, i64 0, i32 2, i32 0, i32 0, i32 0
+  %132 = load i8*, i8** %131, align 8
+  store i8* null, i8** %131, align 8
+  %133 = icmp eq i8* %132, null
+  br i1 %133, label %135, label %134
+
+134:                                              ; preds = %130
+  tail call void @free(i8* nonnull %132) #11
+  br label %135
+
+135:                                              ; preds = %134, %130
+  %136 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %127, i64 0, i32 0, i32 0, i32 0, i32 0
+  %137 = load i8*, i8** %136, align 8
+  store i8* null, i8** %136, align 8
+  %138 = icmp eq i8* %137, null
+  br i1 %138, label %140, label %139
+
+139:                                              ; preds = %135
+  tail call void @free(i8* nonnull %137) #11
+  br label %140
+
+140:                                              ; preds = %139, %135
+  %141 = bitcast %"struct.media::FrameBufferPool::FrameBuffer"* %127 to i8*
+  tail call void @_ZdlPv(i8* %141) #12
+  br label %142
+
+142:                                              ; preds = %140, %118
+  %143 = icmp eq %"class.std::__1::unique_ptr"* %121, %1
+  br i1 %143, label %144, label %118
+
+144:                                              ; preds = %142, %115
+  %145 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %2, i64 0, i32 0, i32 0, i32 0
+  %146 = bitcast %"class.std::__1::unique_ptr"* %2 to i64*
+  %147 = load i64, i64* %146, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %145, align 8
+  %148 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %1, i64 0, i32 0, i32 0, i32 0
+  %149 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %148, align 8
+  %150 = bitcast %"class.std::__1::unique_ptr"* %1 to i64*
+  store i64 %147, i64* %150, align 8
+  %151 = icmp eq %"struct.media::FrameBufferPool::FrameBuffer"* %149, null
+  br i1 %151, label %403, label %152
+
+152:                                              ; preds = %144
+  %153 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %149, i64 0, i32 2, i32 0, i32 0, i32 0
+  %154 = load i8*, i8** %153, align 8
+  store i8* null, i8** %153, align 8
+  %155 = icmp eq i8* %154, null
+  br i1 %155, label %157, label %156
+
+156:                                              ; preds = %152
+  tail call void @free(i8* nonnull %154) #11
+  br label %157
+
+157:                                              ; preds = %156, %152
+  %158 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %149, i64 0, i32 0, i32 0, i32 0, i32 0
+  %159 = load i8*, i8** %158, align 8
+  store i8* null, i8** %158, align 8
+  %160 = icmp eq i8* %159, null
+  br i1 %160, label %162, label %161
+
+161:                                              ; preds = %157
+  tail call void @free(i8* nonnull %159) #11
+  br label %162
+
+162:                                              ; preds = %161, %157
+  %163 = bitcast %"struct.media::FrameBufferPool::FrameBuffer"* %149 to i8*
+  tail call void @_ZdlPv(i8* %163) #12
+  br label %403
+
+164:                                              ; preds = %3
+  %165 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 2
+  %166 = bitcast %"struct.std::__1::__split_buffer"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 40, i8* nonnull %166) #11
+  %167 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %5, i64 0, i32 0
+  %168 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %5, i64 0, i32 1
+  %169 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %5, i64 0, i32 2
+  %170 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %5, i64 0, i32 3, i32 0, i32 0
+  %171 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %5, i64 0, i32 3, i32 1, i32 0
+  %172 = bitcast %"class.std::__1::unique_ptr"** %7 to i64*
+  %173 = bitcast %"class.std::__1::vector"* %0 to i64*
+  %174 = bitcast %"struct.std::__1::__split_buffer"* %5 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %174, i8 -86, i64 40, i1 false)
+  %175 = load i64, i64* %173, align 8
+  %176 = sub i64 %12, %175
+  %177 = ashr exact i64 %176, 3
+  %178 = add nsw i64 %177, 1
+  %179 = icmp ugt i64 %178, 2305843009213693951
+  br i1 %179, label %180, label %182
+
+180:                                              ; preds = %164
+  %181 = bitcast %"class.std::__1::vector"* %0 to %"class.std::__1::__vector_base_common"*
+  tail call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"* %181) #13
+  unreachable
+
+182:                                              ; preds = %164
+  %183 = bitcast %"class.std::__1::unique_ptr"** %9 to i64*
+  %184 = sub i64 %13, %175
+  %185 = ashr exact i64 %184, 3
+  %186 = icmp ult i64 %185, 1152921504606846975
+  br i1 %186, label %191, label %187
+
+187:                                              ; preds = %182
+  %188 = sub i64 %4, %175
+  %189 = ashr exact i64 %188, 3
+  store %"class.std::__1::unique_ptr"* null, %"class.std::__1::unique_ptr"** %170, align 8
+  %190 = bitcast %"class.std::__1::allocator"** %171 to %"class.std::__1::__compressed_pair.6"**
+  store %"class.std::__1::__compressed_pair.6"* %165, %"class.std::__1::__compressed_pair.6"** %190, align 8
+  br label %202
+
+191:                                              ; preds = %182
+  %192 = ashr exact i64 %184, 2
+  %193 = icmp ult i64 %192, %178
+  %194 = select i1 %193, i64 %178, i64 %192
+  %195 = sub i64 %4, %175
+  %196 = ashr exact i64 %195, 3
+  store %"class.std::__1::unique_ptr"* null, %"class.std::__1::unique_ptr"** %170, align 8
+  %197 = bitcast %"class.std::__1::allocator"** %171 to %"class.std::__1::__compressed_pair.6"**
+  store %"class.std::__1::__compressed_pair.6"* %165, %"class.std::__1::__compressed_pair.6"** %197, align 8
+  %198 = icmp eq i64 %194, 0
+  br i1 %198, label %208, label %199
+
+199:                                              ; preds = %191
+  %200 = icmp ugt i64 %194, 2305843009213693951
+  br i1 %200, label %201, label %202
+
+201:                                              ; preds = %199
+  tail call void @abort() #13
+  unreachable
+
+202:                                              ; preds = %187, %199
+  %203 = phi i64 [ 2305843009213693951, %187 ], [ %194, %199 ]
+  %204 = phi i64 [ %189, %187 ], [ %196, %199 ]
+  %205 = shl i64 %203, 3
+  %206 = tail call i8* @_Znwm(i64 %205) #12
+  %207 = bitcast i8* %206 to %"class.std::__1::unique_ptr"*
+  br label %208
+
+208:                                              ; preds = %191, %202
+  %209 = phi i64 [ %204, %202 ], [ %196, %191 ]
+  %210 = phi i64 [ %203, %202 ], [ 0, %191 ]
+  %211 = phi %"class.std::__1::unique_ptr"* [ %207, %202 ], [ null, %191 ]
+  store %"class.std::__1::unique_ptr"* %211, %"class.std::__1::unique_ptr"** %167, align 8
+  %212 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %211, i64 %209
+  store %"class.std::__1::unique_ptr"* %212, %"class.std::__1::unique_ptr"** %169, align 8
+  store %"class.std::__1::unique_ptr"* %212, %"class.std::__1::unique_ptr"** %168, align 8
+  %213 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %211, i64 %210
+  store %"class.std::__1::unique_ptr"* %213, %"class.std::__1::unique_ptr"** %170, align 8
+  call void @_ZNSt3__114__split_bufferINS_10unique_ptrIN5media15FrameBufferPool11FrameBufferENS_14default_deleteIS4_EEEERNS_9allocatorIS7_EEE9push_backEOS7_(%"struct.std::__1::__split_buffer"* nonnull %5, %"class.std::__1::unique_ptr"* dereferenceable(8) %2)
+  %214 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %168, align 8
+  %215 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %6, align 8
+  %216 = icmp eq %"class.std::__1::unique_ptr"* %215, %1
+  br i1 %216, label %281, label %217
+
+217:                                              ; preds = %208
+  %218 = ptrtoint %"class.std::__1::unique_ptr"* %215 to i64
+  %219 = getelementptr %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %1, i64 -1, i32 0, i32 0, i32 0
+  %220 = ptrtoint %"struct.media::FrameBufferPool::FrameBuffer"** %219 to i64
+  %221 = sub i64 %220, %218
+  %222 = lshr i64 %221, 3
+  %223 = add nuw nsw i64 %222, 1
+  %224 = and i64 %223, 3
+  %225 = icmp eq i64 %224, 0
+  br i1 %225, label %240, label %226
+
+226:                                              ; preds = %217, %226
+  %227 = phi %"class.std::__1::unique_ptr"* [ %237, %226 ], [ %214, %217 ]
+  %228 = phi %"class.std::__1::unique_ptr"* [ %231, %226 ], [ %1, %217 ]
+  %229 = phi i64 [ %238, %226 ], [ %224, %217 ]
+  %230 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %227, i64 -1
+  %231 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %228, i64 -1
+  %232 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %231, i64 0, i32 0, i32 0, i32 0
+  %233 = bitcast %"class.std::__1::unique_ptr"* %231 to i64*
+  %234 = load i64, i64* %233, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %232, align 8
+  %235 = bitcast %"class.std::__1::unique_ptr"* %230 to i64*
+  store i64 %234, i64* %235, align 8
+  %236 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %168, align 8
+  %237 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %236, i64 -1
+  store %"class.std::__1::unique_ptr"* %237, %"class.std::__1::unique_ptr"** %168, align 8
+  %238 = add i64 %229, -1
+  %239 = icmp eq i64 %238, 0
+  br i1 %239, label %240, label %226, !llvm.loop !5
+
+240:                                              ; preds = %226, %217
+  %241 = phi %"class.std::__1::unique_ptr"* [ undef, %217 ], [ %237, %226 ]
+  %242 = phi %"class.std::__1::unique_ptr"* [ %214, %217 ], [ %237, %226 ]
+  %243 = phi %"class.std::__1::unique_ptr"* [ %1, %217 ], [ %231, %226 ]
+  %244 = icmp ult i64 %221, 24
+  br i1 %244, label %281, label %245
+
+245:                                              ; preds = %240, %245
+  %246 = phi %"class.std::__1::unique_ptr"* [ %279, %245 ], [ %242, %240 ]
+  %247 = phi %"class.std::__1::unique_ptr"* [ %273, %245 ], [ %243, %240 ]
+  %248 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %246, i64 -1
+  %249 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %247, i64 -1
+  %250 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %249, i64 0, i32 0, i32 0, i32 0
+  %251 = bitcast %"class.std::__1::unique_ptr"* %249 to i64*
+  %252 = load i64, i64* %251, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %250, align 8
+  %253 = bitcast %"class.std::__1::unique_ptr"* %248 to i64*
+  store i64 %252, i64* %253, align 8
+  %254 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %168, align 8
+  %255 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %254, i64 -1
+  store %"class.std::__1::unique_ptr"* %255, %"class.std::__1::unique_ptr"** %168, align 8
+  %256 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %254, i64 -2
+  %257 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %247, i64 -2
+  %258 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %257, i64 0, i32 0, i32 0, i32 0
+  %259 = bitcast %"class.std::__1::unique_ptr"* %257 to i64*
+  %260 = load i64, i64* %259, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %258, align 8
+  %261 = bitcast %"class.std::__1::unique_ptr"* %256 to i64*
+  store i64 %260, i64* %261, align 8
+  %262 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %168, align 8
+  %263 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %262, i64 -1
+  store %"class.std::__1::unique_ptr"* %263, %"class.std::__1::unique_ptr"** %168, align 8
+  %264 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %262, i64 -2
+  %265 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %247, i64 -3
+  %266 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %265, i64 0, i32 0, i32 0, i32 0
+  %267 = bitcast %"class.std::__1::unique_ptr"* %265 to i64*
+  %268 = load i64, i64* %267, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %266, align 8
+  %269 = bitcast %"class.std::__1::unique_ptr"* %264 to i64*
+  store i64 %268, i64* %269, align 8
+  %270 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %168, align 8
+  %271 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %270, i64 -1
+  store %"class.std::__1::unique_ptr"* %271, %"class.std::__1::unique_ptr"** %168, align 8
+  %272 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %270, i64 -2
+  %273 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %247, i64 -4
+  %274 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %273, i64 0, i32 0, i32 0, i32 0
+  %275 = bitcast %"class.std::__1::unique_ptr"* %273 to i64*
+  %276 = load i64, i64* %275, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %274, align 8
+  %277 = bitcast %"class.std::__1::unique_ptr"* %272 to i64*
+  store i64 %276, i64* %277, align 8
+  %278 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %168, align 8
+  %279 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %278, i64 -1
+  store %"class.std::__1::unique_ptr"* %279, %"class.std::__1::unique_ptr"** %168, align 8
+  %280 = icmp eq %"class.std::__1::unique_ptr"* %273, %215
+  br i1 %280, label %281, label %245
+
+281:                                              ; preds = %240, %245, %208
+  %282 = phi %"class.std::__1::unique_ptr"* [ %214, %208 ], [ %241, %240 ], [ %279, %245 ]
+  %283 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %7, align 8
+  %284 = icmp eq %"class.std::__1::unique_ptr"* %283, %1
+  br i1 %284, label %285, label %291
+
+285:                                              ; preds = %281
+  %286 = ptrtoint %"class.std::__1::unique_ptr"* %283 to i64
+  %287 = ptrtoint %"class.std::__1::unique_ptr"* %282 to i64
+  %288 = bitcast %"class.std::__1::unique_ptr"** %168 to i64*
+  %289 = bitcast %"class.std::__1::unique_ptr"** %169 to i64*
+  %290 = load i64, i64* %289, align 8
+  br label %360
+
+291:                                              ; preds = %281
+  %292 = bitcast %"class.std::__1::unique_ptr"** %169 to i64**
+  %293 = load i64*, i64** %292, align 8
+  %294 = getelementptr %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %283, i64 -1, i32 0, i32 0, i32 0
+  %295 = ptrtoint %"struct.media::FrameBufferPool::FrameBuffer"** %294 to i64
+  %296 = sub i64 %295, %4
+  %297 = lshr i64 %296, 3
+  %298 = add nuw nsw i64 %297, 1
+  %299 = and i64 %298, 3
+  %300 = icmp eq i64 %299, 0
+  br i1 %300, label %316, label %301
+
+301:                                              ; preds = %291, %301
+  %302 = phi i64* [ %311, %301 ], [ %293, %291 ]
+  %303 = phi %"class.std::__1::unique_ptr"* [ %308, %301 ], [ %1, %291 ]
+  %304 = phi i64 [ %312, %301 ], [ %299, %291 ]
+  %305 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %303, i64 0, i32 0, i32 0, i32 0
+  %306 = bitcast %"class.std::__1::unique_ptr"* %303 to i64*
+  %307 = load i64, i64* %306, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %305, align 8
+  store i64 %307, i64* %302, align 8
+  %308 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %303, i64 1
+  %309 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %169, align 8
+  %310 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %309, i64 1
+  store %"class.std::__1::unique_ptr"* %310, %"class.std::__1::unique_ptr"** %169, align 8
+  %311 = bitcast %"class.std::__1::unique_ptr"* %310 to i64*
+  %312 = add i64 %304, -1
+  %313 = icmp eq i64 %312, 0
+  br i1 %313, label %314, label %301, !llvm.loop !6
+
+314:                                              ; preds = %301
+  %315 = bitcast %"class.std::__1::unique_ptr"* %310 to i64*
+  br label %316
+
+316:                                              ; preds = %291, %314
+  %317 = phi %"class.std::__1::unique_ptr"* [ undef, %291 ], [ %310, %314 ]
+  %318 = phi i64* [ %293, %291 ], [ %315, %314 ]
+  %319 = phi %"class.std::__1::unique_ptr"* [ %1, %291 ], [ %308, %314 ]
+  %320 = icmp ult i64 %296, 24
+  br i1 %320, label %353, label %321
+
+321:                                              ; preds = %316, %321
+  %322 = phi i64* [ %352, %321 ], [ %318, %316 ]
+  %323 = phi %"class.std::__1::unique_ptr"* [ %348, %321 ], [ %319, %316 ]
+  %324 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %323, i64 0, i32 0, i32 0, i32 0
+  %325 = bitcast %"class.std::__1::unique_ptr"* %323 to i64*
+  %326 = load i64, i64* %325, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %324, align 8
+  store i64 %326, i64* %322, align 8
+  %327 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %323, i64 1
+  %328 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %169, align 8
+  %329 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %328, i64 1
+  store %"class.std::__1::unique_ptr"* %329, %"class.std::__1::unique_ptr"** %169, align 8
+  %330 = bitcast %"class.std::__1::unique_ptr"* %329 to i64*
+  %331 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %327, i64 0, i32 0, i32 0, i32 0
+  %332 = bitcast %"class.std::__1::unique_ptr"* %327 to i64*
+  %333 = load i64, i64* %332, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %331, align 8
+  store i64 %333, i64* %330, align 8
+  %334 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %323, i64 2
+  %335 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %169, align 8
+  %336 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %335, i64 1
+  store %"class.std::__1::unique_ptr"* %336, %"class.std::__1::unique_ptr"** %169, align 8
+  %337 = bitcast %"class.std::__1::unique_ptr"* %336 to i64*
+  %338 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %334, i64 0, i32 0, i32 0, i32 0
+  %339 = bitcast %"class.std::__1::unique_ptr"* %334 to i64*
+  %340 = load i64, i64* %339, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %338, align 8
+  store i64 %340, i64* %337, align 8
+  %341 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %323, i64 3
+  %342 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %169, align 8
+  %343 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %342, i64 1
+  store %"class.std::__1::unique_ptr"* %343, %"class.std::__1::unique_ptr"** %169, align 8
+  %344 = bitcast %"class.std::__1::unique_ptr"* %343 to i64*
+  %345 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %341, i64 0, i32 0, i32 0, i32 0
+  %346 = bitcast %"class.std::__1::unique_ptr"* %341 to i64*
+  %347 = load i64, i64* %346, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %345, align 8
+  store i64 %347, i64* %344, align 8
+  %348 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %323, i64 4
+  %349 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %169, align 8
+  %350 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %349, i64 1
+  store %"class.std::__1::unique_ptr"* %350, %"class.std::__1::unique_ptr"** %169, align 8
+  %351 = icmp eq %"class.std::__1::unique_ptr"* %348, %283
+  %352 = bitcast %"class.std::__1::unique_ptr"* %350 to i64*
+  br i1 %351, label %353, label %321
+
+353:                                              ; preds = %321, %316
+  %354 = phi %"class.std::__1::unique_ptr"* [ %317, %316 ], [ %350, %321 ]
+  %355 = ptrtoint %"class.std::__1::unique_ptr"* %354 to i64
+  %356 = bitcast %"class.std::__1::unique_ptr"** %168 to i64*
+  %357 = load i64, i64* %356, align 8
+  %358 = load i64, i64* %172, align 8
+  %359 = bitcast %"class.std::__1::unique_ptr"** %169 to i64*
+  br label %360
+
+360:                                              ; preds = %285, %353
+  %361 = phi i64* [ %289, %285 ], [ %359, %353 ]
+  %362 = phi i64 [ %290, %285 ], [ %355, %353 ]
+  %363 = phi i64 [ %286, %285 ], [ %358, %353 ]
+  %364 = phi i64* [ %288, %285 ], [ %356, %353 ]
+  %365 = phi i64 [ %287, %285 ], [ %357, %353 ]
+  %366 = load i64, i64* %173, align 8
+  store i64 %365, i64* %173, align 8
+  store i64 %366, i64* %364, align 8
+  store i64 %362, i64* %172, align 8
+  store i64 %363, i64* %361, align 8
+  %367 = load i64, i64* %183, align 8
+  %368 = bitcast %"class.std::__1::unique_ptr"** %170 to i64*
+  %369 = load i64, i64* %368, align 8
+  store i64 %369, i64* %183, align 8
+  store i64 %367, i64* %368, align 8
+  %370 = bitcast %"struct.std::__1::__split_buffer"* %5 to i64*
+  store i64 %366, i64* %370, align 8
+  %371 = inttoptr i64 %366 to %"class.std::__1::unique_ptr"*
+  %372 = inttoptr i64 %363 to %"class.std::__1::unique_ptr"*
+  %373 = icmp eq %"class.std::__1::unique_ptr"* %372, %371
+  br i1 %373, label %397, label %374
+
+374:                                              ; preds = %360, %392
+  %375 = phi %"class.std::__1::unique_ptr"* [ %393, %392 ], [ %372, %360 ]
+  %376 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %375, i64 -1
+  store %"class.std::__1::unique_ptr"* %376, %"class.std::__1::unique_ptr"** %169, align 8
+  %377 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %376, i64 0, i32 0, i32 0, i32 0
+  %378 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %377, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %377, align 8
+  %379 = icmp eq %"struct.media::FrameBufferPool::FrameBuffer"* %378, null
+  br i1 %379, label %392, label %380
+
+380:                                              ; preds = %374
+  %381 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %378, i64 0, i32 2, i32 0, i32 0, i32 0
+  %382 = load i8*, i8** %381, align 8
+  store i8* null, i8** %381, align 8
+  %383 = icmp eq i8* %382, null
+  br i1 %383, label %385, label %384
+
+384:                                              ; preds = %380
+  call void @free(i8* nonnull %382) #11
+  br label %385
+
+385:                                              ; preds = %384, %380
+  %386 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %378, i64 0, i32 0, i32 0, i32 0, i32 0
+  %387 = load i8*, i8** %386, align 8
+  store i8* null, i8** %386, align 8
+  %388 = icmp eq i8* %387, null
+  br i1 %388, label %390, label %389
+
+389:                                              ; preds = %385
+  call void @free(i8* nonnull %387) #11
+  br label %390
+
+390:                                              ; preds = %389, %385
+  %391 = bitcast %"struct.media::FrameBufferPool::FrameBuffer"* %378 to i8*
+  call void @_ZdlPv(i8* %391) #12
+  br label %392
+
+392:                                              ; preds = %390, %374
+  %393 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %169, align 8
+  %394 = icmp eq %"class.std::__1::unique_ptr"* %393, %371
+  br i1 %394, label %395, label %374
+
+395:                                              ; preds = %392
+  %396 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %167, align 8
+  br label %397
+
+397:                                              ; preds = %395, %360
+  %398 = phi %"class.std::__1::unique_ptr"* [ %396, %395 ], [ %371, %360 ]
+  %399 = icmp eq %"class.std::__1::unique_ptr"* %398, null
+  br i1 %399, label %402, label %400
+
+400:                                              ; preds = %397
+  %401 = bitcast %"class.std::__1::unique_ptr"* %398 to i8*
+  call void @_ZdlPv(i8* %401) #12
+  br label %402
+
+402:                                              ; preds = %397, %400
+  call void @llvm.lifetime.end.p0i8(i64 40, i8* nonnull %166) #11
+  br label %403
+
+403:                                              ; preds = %162, %144, %16, %402
+  %404 = phi %"class.std::__1::unique_ptr"* [ %1, %16 ], [ %214, %402 ], [ %1, %144 ], [ %1, %162 ]
+  ret %"class.std::__1::unique_ptr"* %404
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #3
+
+declare zeroext i1 @_ZN4base15UncheckedMallocEmPPv(i64, i8**) local_unnamed_addr #1
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden %"class.std::__1::unique_ptr"* @_ZNSt3__16vectorINS_10unique_ptrIN5media15FrameBufferPool11FrameBufferENS_14default_deleteIS4_EEEENS_9allocatorIS7_EEE5eraseENS_11__wrap_iterIPKS7_EE(%"class.std::__1::vector"*, %"class.std::__1::unique_ptr"*) local_unnamed_addr #4 comdat align 2 {
+  %3 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %1, i64 1
+  %4 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 1
+  %5 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %4, align 8
+  %6 = icmp eq %"class.std::__1::unique_ptr"* %3, %5
+  br i1 %6, label %36, label %7
+
+7:                                                ; preds = %2, %29
+  %8 = phi %"class.std::__1::unique_ptr"* [ %31, %29 ], [ %1, %2 ]
+  %9 = phi %"class.std::__1::unique_ptr"* [ %30, %29 ], [ %3, %2 ]
+  %10 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %9, i64 0, i32 0, i32 0, i32 0
+  %11 = bitcast %"class.std::__1::unique_ptr"* %9 to i64*
+  %12 = load i64, i64* %11, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %10, align 8
+  %13 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %8, i64 0, i32 0, i32 0, i32 0
+  %14 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %13, align 8
+  %15 = bitcast %"class.std::__1::unique_ptr"* %8 to i64*
+  store i64 %12, i64* %15, align 8
+  %16 = icmp eq %"struct.media::FrameBufferPool::FrameBuffer"* %14, null
+  br i1 %16, label %29, label %17
+
+17:                                               ; preds = %7
+  %18 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %14, i64 0, i32 2, i32 0, i32 0, i32 0
+  %19 = load i8*, i8** %18, align 8
+  store i8* null, i8** %18, align 8
+  %20 = icmp eq i8* %19, null
+  br i1 %20, label %22, label %21
+
+21:                                               ; preds = %17
+  tail call void @free(i8* nonnull %19) #11
+  br label %22
+
+22:                                               ; preds = %21, %17
+  %23 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %14, i64 0, i32 0, i32 0, i32 0, i32 0
+  %24 = load i8*, i8** %23, align 8
+  store i8* null, i8** %23, align 8
+  %25 = icmp eq i8* %24, null
+  br i1 %25, label %27, label %26
+
+26:                                               ; preds = %22
+  tail call void @free(i8* nonnull %24) #11
+  br label %27
+
+27:                                               ; preds = %26, %22
+  %28 = bitcast %"struct.media::FrameBufferPool::FrameBuffer"* %14 to i8*
+  tail call void @_ZdlPv(i8* %28) #12
+  br label %29
+
+29:                                               ; preds = %27, %7
+  %30 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %9, i64 1
+  %31 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %8, i64 1
+  %32 = icmp eq %"class.std::__1::unique_ptr"* %30, %5
+  br i1 %32, label %33, label %7
+
+33:                                               ; preds = %29
+  %34 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %4, align 8
+  %35 = icmp eq %"class.std::__1::unique_ptr"* %34, %31
+  br i1 %35, label %59, label %36
+
+36:                                               ; preds = %2, %33
+  %37 = phi %"class.std::__1::unique_ptr"* [ %31, %33 ], [ %1, %2 ]
+  %38 = phi %"class.std::__1::unique_ptr"* [ %34, %33 ], [ %3, %2 ]
+  br label %39
+
+39:                                               ; preds = %36, %57
+  %40 = phi %"class.std::__1::unique_ptr"* [ %41, %57 ], [ %38, %36 ]
+  %41 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %40, i64 -1
+  %42 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %41, i64 0, i32 0, i32 0, i32 0
+  %43 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %42, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %42, align 8
+  %44 = icmp eq %"struct.media::FrameBufferPool::FrameBuffer"* %43, null
+  br i1 %44, label %57, label %45
+
+45:                                               ; preds = %39
+  %46 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %43, i64 0, i32 2, i32 0, i32 0, i32 0
+  %47 = load i8*, i8** %46, align 8
+  store i8* null, i8** %46, align 8
+  %48 = icmp eq i8* %47, null
+  br i1 %48, label %50, label %49
+
+49:                                               ; preds = %45
+  tail call void @free(i8* nonnull %47) #11
+  br label %50
+
+50:                                               ; preds = %49, %45
+  %51 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %43, i64 0, i32 0, i32 0, i32 0, i32 0
+  %52 = load i8*, i8** %51, align 8
+  store i8* null, i8** %51, align 8
+  %53 = icmp eq i8* %52, null
+  br i1 %53, label %55, label %54
+
+54:                                               ; preds = %50
+  tail call void @free(i8* nonnull %52) #11
+  br label %55
+
+55:                                               ; preds = %54, %50
+  %56 = bitcast %"struct.media::FrameBufferPool::FrameBuffer"* %43 to i8*
+  tail call void @_ZdlPv(i8* %56) #12
+  br label %57
+
+57:                                               ; preds = %55, %39
+  %58 = icmp eq %"class.std::__1::unique_ptr"* %41, %37
+  br i1 %58, label %59, label %39
+
+59:                                               ; preds = %57, %33
+  %60 = phi %"class.std::__1::unique_ptr"* [ %31, %33 ], [ %37, %57 ]
+  store %"class.std::__1::unique_ptr"* %60, %"class.std::__1::unique_ptr"** %4, align 8
+  ret %"class.std::__1::unique_ptr"* %1
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media15FrameBufferPool18ReleaseFrameBufferEPv(%"class.media::FrameBufferPool"* nocapture readonly, i8* nocapture) local_unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds i8, i8* %1, i64 32
+  store i8 0, i8* %3, align 8
+  %4 = getelementptr inbounds i8, i8* %1, i64 36
+  %5 = bitcast i8* %4 to i32*
+  %6 = load i32, i32* %5, align 4
+  %7 = icmp sgt i32 %6, 0
+  br i1 %7, label %18, label %8
+
+8:                                                ; preds = %2
+  %9 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 6
+  %10 = load %"class.base::TickClock"*, %"class.base::TickClock"** %9, align 8
+  %11 = bitcast %"class.base::TickClock"* %10 to i64 (%"class.base::TickClock"*)***
+  %12 = load i64 (%"class.base::TickClock"*)**, i64 (%"class.base::TickClock"*)*** %11, align 8
+  %13 = getelementptr inbounds i64 (%"class.base::TickClock"*)*, i64 (%"class.base::TickClock"*)** %12, i64 2
+  %14 = load i64 (%"class.base::TickClock"*)*, i64 (%"class.base::TickClock"*)** %13, align 8
+  %15 = tail call i64 %14(%"class.base::TickClock"* %10) #11
+  %16 = getelementptr inbounds i8, i8* %1, i64 40
+  %17 = bitcast i8* %16 to i64*
+  store i64 %15, i64* %17, align 8
+  br label %18
+
+18:                                               ; preds = %8, %2
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden zeroext i1 @_ZN5media15FrameBufferPool6IsUsedEPKNS0_11FrameBufferE(%"struct.media::FrameBufferPool::FrameBuffer"* nocapture readonly) local_unnamed_addr #5 align 2 {
+  %2 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %0, i64 0, i32 4
+  %3 = load i8, i8* %2, align 8, !range !2
+  %4 = icmp eq i8 %3, 0
+  br i1 %4, label %5, label %9
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %0, i64 0, i32 5
+  %7 = load i32, i32* %6, align 4
+  %8 = icmp sgt i32 %7, 0
+  br label %9
+
+9:                                                ; preds = %1, %5
+  %10 = phi i1 [ true, %1 ], [ %8, %5 ]
+  ret i1 %10
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i8* @_ZN5media15FrameBufferPool32AllocateAlphaPlaneForFrameBufferEmPv(%"class.media::FrameBufferPool"* nocapture readonly, i64, i8* nocapture) local_unnamed_addr #0 align 2 {
+  %4 = alloca i8*, align 8
+  %5 = getelementptr inbounds i8, i8* %2, i64 24
+  %6 = bitcast i8* %5 to i64*
+  %7 = load i64, i64* %6, align 8
+  %8 = icmp ult i64 %7, %1
+  br i1 %8, label %9, label %31
+
+9:                                                ; preds = %3
+  %10 = getelementptr inbounds i8, i8* %2, i64 16
+  %11 = bitcast i8* %10 to i8**
+  %12 = load i8*, i8** %11, align 8
+  store i8* null, i8** %11, align 8
+  %13 = icmp eq i8* %12, null
+  br i1 %13, label %15, label %14
+
+14:                                               ; preds = %9
+  tail call void @free(i8* nonnull %12) #11
+  br label %15
+
+15:                                               ; preds = %9, %14
+  %16 = bitcast i8** %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %16) #11
+  store i8* null, i8** %4, align 8
+  %17 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 5
+  %18 = load i8, i8* %17, align 2, !range !2
+  %19 = icmp eq i8 %18, 0
+  br i1 %19, label %20, label %30
+
+20:                                               ; preds = %15
+  %21 = call zeroext i1 @_ZN4base15UncheckedMallocEmPPv(i64 %1, i8** nonnull %4) #11
+  %22 = load i8*, i8** %4, align 8
+  %23 = icmp ne i8* %22, null
+  %24 = and i1 %21, %23
+  br i1 %24, label %25, label %30
+
+25:                                               ; preds = %20
+  %26 = load i8*, i8** %11, align 8
+  store i8* %22, i8** %11, align 8
+  %27 = icmp eq i8* %26, null
+  br i1 %27, label %29, label %28
+
+28:                                               ; preds = %25
+  call void @free(i8* nonnull %26) #11
+  br label %29
+
+29:                                               ; preds = %25, %28
+  store i64 %1, i64* %6, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %16) #11
+  br label %31
+
+30:                                               ; preds = %20, %15
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %16) #11
+  br label %35
+
+31:                                               ; preds = %3, %29
+  %32 = getelementptr inbounds i8, i8* %2, i64 16
+  %33 = bitcast i8* %32 to i8**
+  %34 = load i8*, i8** %33, align 8
+  br label %35
+
+35:                                               ; preds = %30, %31
+  %36 = phi i8* [ %34, %31 ], [ null, %30 ]
+  ret i8* %36
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media15FrameBufferPool19CreateFrameCallbackEPv(%"class.base::OnceCallback"* noalias nocapture sret, %"class.media::FrameBufferPool"*, i8*) local_unnamed_addr #0 align 2 {
+  %4 = ptrtoint i8* %2 to i64
+  %5 = getelementptr inbounds i8, i8* %2, i64 36
+  %6 = bitcast i8* %5 to i32*
+  %7 = load i32, i32* %6, align 4
+  %8 = add nsw i32 %7, 1
+  store i32 %8, i32* %6, align 4
+  %9 = tail call dereferenceable(8) %class.scoped_refptr.24* @_ZN4base25SequencedTaskRunnerHandle3GetEv() #11
+  %10 = tail call i8* @_Znwm(i64 72) #12, !noalias !7
+  %11 = bitcast i8* %10 to %"class.base::internal::BindStateBase"*
+  tail call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"* nonnull %11, void ()* bitcast (void (%"class.base::internal::BindStateBase"*)* @_ZN4base8internal7InvokerINS0_9BindStateIMN5media15FrameBufferPoolEFv13scoped_refptrINS_19SequencedTaskRunnerEEPNS4_11FrameBufferEEJS5_IS4_ES7_S9_EEEFvvEE7RunOnceEPNS0_13BindStateBaseE to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @_ZN4base8internal9BindStateIMN5media15FrameBufferPoolEFv13scoped_refptrINS_19SequencedTaskRunnerEEPNS3_11FrameBufferEEJS4_IS3_ES6_S8_EE7DestroyEPKNS0_13BindStateBaseE) #11, !noalias !7
+  %12 = getelementptr inbounds i8, i8* %10, i64 32
+  %13 = bitcast i8* %12 to <2 x i64>*
+  store <2 x i64> <i64 ptrtoint (void (%"class.media::FrameBufferPool"*, %"class.base::SequencedTaskRunner"*, %"struct.media::FrameBufferPool::FrameBuffer"*)* @_ZN5media15FrameBufferPool21OnVideoFrameDestroyedE13scoped_refptrIN4base19SequencedTaskRunnerEEPNS0_11FrameBufferE to i64), i64 0>, <2 x i64>* %13, align 8, !noalias !7
+  %14 = getelementptr inbounds i8, i8* %10, i64 48
+  %15 = bitcast i8* %14 to %"class.media::FrameBufferPool"**
+  store %"class.media::FrameBufferPool"* %1, %"class.media::FrameBufferPool"** %15, align 8, !noalias !7
+  %16 = icmp eq %"class.media::FrameBufferPool"* %1, null
+  br i1 %16, label %20, label %17
+
+17:                                               ; preds = %3
+  %18 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %1, i64 0, i32 1, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %19 = atomicrmw add i32* %18, i32 1 monotonic, !noalias !7
+  br label %20
+
+20:                                               ; preds = %17, %3
+  %21 = getelementptr inbounds %class.scoped_refptr.24, %class.scoped_refptr.24* %9, i64 0, i32 0
+  %22 = load %"class.base::SequencedTaskRunner"*, %"class.base::SequencedTaskRunner"** %21, align 8, !noalias !7
+  %23 = getelementptr inbounds i8, i8* %10, i64 56
+  %24 = bitcast i8* %23 to %"class.base::SequencedTaskRunner"**
+  store %"class.base::SequencedTaskRunner"* %22, %"class.base::SequencedTaskRunner"** %24, align 8, !noalias !7
+  %25 = icmp eq %"class.base::SequencedTaskRunner"* %22, null
+  br i1 %25, label %29, label %26
+
+26:                                               ; preds = %20
+  %27 = getelementptr inbounds %"class.base::SequencedTaskRunner", %"class.base::SequencedTaskRunner"* %22, i64 0, i32 0, i32 1, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %28 = atomicrmw add i32* %27, i32 1 monotonic, !noalias !7
+  br label %29
+
+29:                                               ; preds = %20, %26
+  %30 = getelementptr inbounds i8, i8* %10, i64 64
+  %31 = bitcast i8* %30 to i64*
+  store i64 %4, i64* %31, align 8, !noalias !7
+  %32 = bitcast %"class.base::OnceCallback"* %0 to i8**
+  store i8* %10, i8** %32, align 8, !alias.scope !7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media15FrameBufferPool21OnVideoFrameDestroyedE13scoped_refptrIN4base19SequencedTaskRunnerEEPNS0_11FrameBufferE(%"class.media::FrameBufferPool"*, %"class.base::SequencedTaskRunner"*, %"struct.media::FrameBufferPool::FrameBuffer"*) #0 align 2 {
+  %4 = alloca %"class.base::Location", align 8
+  %5 = alloca %"class.base::OnceCallback", align 8
+  %6 = ptrtoint %"struct.media::FrameBufferPool::FrameBuffer"* %2 to i64
+  %7 = bitcast %"class.base::SequencedTaskRunner"* %1 to i1 (%"class.base::SequencedTaskRunner"*)***
+  %8 = load i1 (%"class.base::SequencedTaskRunner"*)**, i1 (%"class.base::SequencedTaskRunner"*)*** %7, align 8
+  %9 = getelementptr inbounds i1 (%"class.base::SequencedTaskRunner"*)*, i1 (%"class.base::SequencedTaskRunner"*)** %8, i64 5
+  %10 = load i1 (%"class.base::SequencedTaskRunner"*)*, i1 (%"class.base::SequencedTaskRunner"*)** %9, align 8
+  %11 = tail call zeroext i1 %10(%"class.base::SequencedTaskRunner"* %1) #11
+  br i1 %11, label %38, label %12
+
+12:                                               ; preds = %3
+  %13 = bitcast %"class.base::SequencedTaskRunner"* %1 to %"class.base::TaskRunner"*
+  %14 = bitcast %"class.base::Location"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %14) #11
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %4, i8* getelementptr inbounds ([22 x i8], [22 x i8]* @.str.3, i64 0, i64 0), i8* getelementptr inbounds ([41 x i8], [41 x i8]* @.str.4, i64 0, i64 0), i32 204) #11
+  %15 = call i8* @_Znwm(i64 72) #12, !noalias !12
+  %16 = bitcast i8* %15 to %"class.base::internal::BindStateBase"*
+  call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"* nonnull %16, void ()* bitcast (void (%"class.base::internal::BindStateBase"*)* @_ZN4base8internal7InvokerINS0_9BindStateIMN5media15FrameBufferPoolEFv13scoped_refptrINS_19SequencedTaskRunnerEEPNS4_11FrameBufferEEJS5_IS4_ES7_S9_EEEFvvEE7RunOnceEPNS0_13BindStateBaseE to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @_ZN4base8internal9BindStateIMN5media15FrameBufferPoolEFv13scoped_refptrINS_19SequencedTaskRunnerEEPNS3_11FrameBufferEEJS4_IS3_ES6_S8_EE7DestroyEPKNS0_13BindStateBaseE) #11, !noalias !12
+  %17 = getelementptr inbounds i8, i8* %15, i64 32
+  %18 = bitcast i8* %17 to <2 x i64>*
+  store <2 x i64> <i64 ptrtoint (void (%"class.media::FrameBufferPool"*, %"class.base::SequencedTaskRunner"*, %"struct.media::FrameBufferPool::FrameBuffer"*)* @_ZN5media15FrameBufferPool21OnVideoFrameDestroyedE13scoped_refptrIN4base19SequencedTaskRunnerEEPNS0_11FrameBufferE to i64), i64 0>, <2 x i64>* %18, align 8, !noalias !12
+  %19 = getelementptr inbounds i8, i8* %15, i64 48
+  %20 = bitcast i8* %19 to %"class.media::FrameBufferPool"**
+  store %"class.media::FrameBufferPool"* %0, %"class.media::FrameBufferPool"** %20, align 8, !noalias !12
+  %21 = icmp eq %"class.media::FrameBufferPool"* %0, null
+  br i1 %21, label %25, label %22
+
+22:                                               ; preds = %12
+  %23 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 1, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %24 = atomicrmw add i32* %23, i32 1 monotonic, !noalias !12
+  br label %25
+
+25:                                               ; preds = %22, %12
+  %26 = getelementptr inbounds i8, i8* %15, i64 56
+  %27 = bitcast i8* %26 to %"class.base::SequencedTaskRunner"**
+  store %"class.base::SequencedTaskRunner"* %1, %"class.base::SequencedTaskRunner"** %27, align 8, !noalias !12
+  %28 = icmp eq %"class.base::SequencedTaskRunner"* %1, null
+  br i1 %28, label %32, label %29
+
+29:                                               ; preds = %25
+  %30 = getelementptr inbounds %"class.base::SequencedTaskRunner", %"class.base::SequencedTaskRunner"* %1, i64 0, i32 0, i32 1, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %31 = atomicrmw add i32* %30, i32 1 monotonic, !noalias !12
+  br label %32
+
+32:                                               ; preds = %25, %29
+  %33 = getelementptr inbounds i8, i8* %15, i64 64
+  %34 = bitcast i8* %33 to i64*
+  store i64 %6, i64* %34, align 8, !noalias !12
+  %35 = bitcast %"class.base::OnceCallback"* %5 to i8**
+  store i8* %15, i8** %35, align 8, !alias.scope !12
+  %36 = call zeroext i1 @_ZN4base10TaskRunner8PostTaskERKNS_8LocationENS_12OnceCallbackIFvvEEE(%"class.base::TaskRunner"* %13, %"class.base::Location"* nonnull dereferenceable(32) %4, %"class.base::OnceCallback"* nonnull %5) #11
+  %37 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %5, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %37) #11
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %14) #11
+  br label %147
+
+38:                                               ; preds = %3
+  %39 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %2, i64 0, i32 5
+  %40 = load i32, i32* %39, align 4
+  %41 = add nsw i32 %40, -1
+  store i32 %41, i32* %39, align 4
+  %42 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 3
+  %43 = load i8, i8* %42, align 8, !range !2
+  %44 = icmp eq i8 %43, 0
+  br i1 %44, label %46, label %45
+
+45:                                               ; preds = %38
+  tail call void @_ZN5media15FrameBufferPool20EraseUnusedResourcesEv(%"class.media::FrameBufferPool"* %0)
+  br label %147
+
+46:                                               ; preds = %38
+  %47 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 6
+  %48 = load %"class.base::TickClock"*, %"class.base::TickClock"** %47, align 8
+  %49 = bitcast %"class.base::TickClock"* %48 to i64 (%"class.base::TickClock"*)***
+  %50 = load i64 (%"class.base::TickClock"*)**, i64 (%"class.base::TickClock"*)*** %49, align 8
+  %51 = getelementptr inbounds i64 (%"class.base::TickClock"*)*, i64 (%"class.base::TickClock"*)** %50, i64 2
+  %52 = load i64 (%"class.base::TickClock"*)*, i64 (%"class.base::TickClock"*)** %51, align 8
+  %53 = tail call i64 %52(%"class.base::TickClock"* %48) #11
+  %54 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %2, i64 0, i32 4
+  %55 = load i8, i8* %54, align 8, !range !2
+  %56 = icmp eq i8 %55, 0
+  br i1 %56, label %57, label %62
+
+57:                                               ; preds = %46
+  %58 = load i32, i32* %39, align 4
+  %59 = icmp sgt i32 %58, 0
+  br i1 %59, label %62, label %60
+
+60:                                               ; preds = %57
+  %61 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %2, i64 0, i32 6, i32 0, i32 0
+  store i64 %53, i64* %61, align 8
+  br label %62
+
+62:                                               ; preds = %46, %60, %57
+  %63 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 2
+  %64 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %63, i64 0, i32 0, i32 0
+  %65 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %64, align 8
+  %66 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 2, i32 0, i32 1
+  %67 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %66, align 8
+  %68 = icmp eq %"class.std::__1::unique_ptr"* %65, %67
+  br i1 %68, label %90, label %69
+
+69:                                               ; preds = %62, %85
+  %70 = phi %"class.std::__1::unique_ptr"* [ %86, %85 ], [ %65, %62 ]
+  %71 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %70, i64 0, i32 0, i32 0, i32 0
+  %72 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %71, align 8
+  %73 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %72, i64 0, i32 4
+  %74 = load i8, i8* %73, align 8, !range !2
+  %75 = icmp eq i8 %74, 0
+  br i1 %75, label %76, label %85
+
+76:                                               ; preds = %69
+  %77 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %72, i64 0, i32 5
+  %78 = load i32, i32* %77, align 4
+  %79 = icmp sgt i32 %78, 0
+  br i1 %79, label %85, label %80
+
+80:                                               ; preds = %76
+  %81 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %72, i64 0, i32 6, i32 0, i32 0
+  %82 = load i64, i64* %81, align 8
+  %83 = sub nsw i64 %53, %82
+  %84 = icmp sgt i64 %83, 10000000
+  br i1 %84, label %90, label %85
+
+85:                                               ; preds = %80, %76, %69
+  %86 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %70, i64 1
+  %87 = icmp eq %"class.std::__1::unique_ptr"* %86, %67
+  br i1 %87, label %88, label %69
+
+88:                                               ; preds = %85
+  %89 = ptrtoint %"class.std::__1::unique_ptr"* %67 to i64
+  br label %142
+
+90:                                               ; preds = %80, %62
+  %91 = phi %"class.std::__1::unique_ptr"* [ %65, %62 ], [ %70, %80 ]
+  %92 = ptrtoint %"class.std::__1::unique_ptr"* %91 to i64
+  %93 = icmp eq %"class.std::__1::unique_ptr"* %91, %67
+  br i1 %93, label %142, label %94
+
+94:                                               ; preds = %90
+  %95 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %91, i64 1
+  %96 = icmp eq %"class.std::__1::unique_ptr"* %95, %67
+  br i1 %96, label %142, label %97
+
+97:                                               ; preds = %94, %136
+  %98 = phi %"class.std::__1::unique_ptr"* [ %138, %136 ], [ %95, %94 ]
+  %99 = phi i64 [ %137, %136 ], [ %92, %94 ]
+  %100 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %98, i64 0, i32 0, i32 0, i32 0
+  %101 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %100, align 8
+  %102 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %101, i64 0, i32 4
+  %103 = load i8, i8* %102, align 8, !range !2
+  %104 = icmp eq i8 %103, 0
+  %105 = ptrtoint %"struct.media::FrameBufferPool::FrameBuffer"* %101 to i64
+  br i1 %104, label %106, label %115
+
+106:                                              ; preds = %97
+  %107 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %101, i64 0, i32 5
+  %108 = load i32, i32* %107, align 4
+  %109 = icmp sgt i32 %108, 0
+  br i1 %109, label %115, label %110
+
+110:                                              ; preds = %106
+  %111 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %101, i64 0, i32 6, i32 0, i32 0
+  %112 = load i64, i64* %111, align 8
+  %113 = sub nsw i64 %53, %112
+  %114 = icmp sgt i64 %113, 10000000
+  br i1 %114, label %136, label %115
+
+115:                                              ; preds = %110, %106, %97
+  %116 = inttoptr i64 %99 to %"class.std::__1::unique_ptr"*
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %100, align 8
+  %117 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %116, i64 0, i32 0, i32 0, i32 0
+  %118 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %117, align 8
+  %119 = inttoptr i64 %99 to i64*
+  store i64 %105, i64* %119, align 8
+  %120 = icmp eq %"struct.media::FrameBufferPool::FrameBuffer"* %118, null
+  br i1 %120, label %133, label %121
+
+121:                                              ; preds = %115
+  %122 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %118, i64 0, i32 2, i32 0, i32 0, i32 0
+  %123 = load i8*, i8** %122, align 8
+  store i8* null, i8** %122, align 8
+  %124 = icmp eq i8* %123, null
+  br i1 %124, label %126, label %125
+
+125:                                              ; preds = %121
+  tail call void @free(i8* nonnull %123) #11
+  br label %126
+
+126:                                              ; preds = %125, %121
+  %127 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %118, i64 0, i32 0, i32 0, i32 0, i32 0
+  %128 = load i8*, i8** %127, align 8
+  store i8* null, i8** %127, align 8
+  %129 = icmp eq i8* %128, null
+  br i1 %129, label %131, label %130
+
+130:                                              ; preds = %126
+  tail call void @free(i8* nonnull %128) #11
+  br label %131
+
+131:                                              ; preds = %130, %126
+  %132 = bitcast %"struct.media::FrameBufferPool::FrameBuffer"* %118 to i8*
+  tail call void @_ZdlPv(i8* %132) #12
+  br label %133
+
+133:                                              ; preds = %131, %115
+  %134 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %116, i64 1
+  %135 = ptrtoint %"class.std::__1::unique_ptr"* %134 to i64
+  br label %136
+
+136:                                              ; preds = %133, %110
+  %137 = phi i64 [ %99, %110 ], [ %135, %133 ]
+  %138 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %98, i64 1
+  %139 = icmp eq %"class.std::__1::unique_ptr"* %138, %67
+  br i1 %139, label %140, label %97
+
+140:                                              ; preds = %136
+  %141 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %66, align 8
+  br label %142
+
+142:                                              ; preds = %88, %90, %94, %140
+  %143 = phi %"class.std::__1::unique_ptr"* [ %67, %90 ], [ %67, %88 ], [ %67, %94 ], [ %141, %140 ]
+  %144 = phi i64 [ %92, %90 ], [ %89, %88 ], [ %92, %94 ], [ %137, %140 ]
+  %145 = inttoptr i64 %144 to %"class.std::__1::unique_ptr"*
+  %146 = tail call %"class.std::__1::unique_ptr"* @_ZNSt3__16vectorINS_10unique_ptrIN5media15FrameBufferPool11FrameBufferENS_14default_deleteIS4_EEEENS_9allocatorIS7_EEE5eraseENS_11__wrap_iterIPKS7_EESE_(%"class.std::__1::vector"* %63, %"class.std::__1::unique_ptr"* %145, %"class.std::__1::unique_ptr"* %143) #11
+  br label %147
+
+147:                                              ; preds = %142, %45, %32
+  %148 = icmp eq %"class.base::SequencedTaskRunner"* %1, null
+  br i1 %148, label %157, label %149
+
+149:                                              ; preds = %147
+  %150 = getelementptr inbounds %"class.base::SequencedTaskRunner", %"class.base::SequencedTaskRunner"* %1, i64 0, i32 0, i32 1
+  %151 = getelementptr inbounds %"class.base::RefCountedThreadSafe.25", %"class.base::RefCountedThreadSafe.25"* %150, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %152 = atomicrmw sub i32* %151, i32 1 acq_rel
+  %153 = icmp eq i32 %152, 1
+  br i1 %153, label %154, label %157
+
+154:                                              ; preds = %149
+  %155 = getelementptr inbounds %"class.base::RefCountedThreadSafe.25", %"class.base::RefCountedThreadSafe.25"* %150, i64 -2
+  %156 = bitcast %"class.base::RefCountedThreadSafe.25"* %155 to %"class.base::TaskRunner"*
+  call void @_ZN4base16TaskRunnerTraits8DestructEPKNS_10TaskRunnerE(%"class.base::TaskRunner"* %156) #11
+  br label %157
+
+157:                                              ; preds = %147, %149, %154
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN5media15FrameBufferPool12OnMemoryDumpERKN4base11trace_event14MemoryDumpArgsEPNS2_17ProcessMemoryDumpE(%"class.media::FrameBufferPool"* nocapture readonly, %"struct.base::trace_event::MemoryDumpArgs"* nocapture readnone dereferenceable(16), %"class.base::trace_event::ProcessMemoryDump"*) unnamed_addr #0 align 2 {
+  %4 = alloca %"class.std::__1::basic_string", align 8
+  %5 = alloca %"class.std::__1::basic_string", align 8
+  %6 = alloca %"class.std::__1::basic_string", align 8
+  %7 = bitcast %"class.std::__1::basic_string"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %7) #11
+  %8 = tail call i8* @_Znwm(i64 32) #12
+  %9 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %4, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  store i8* %8, i8** %9, align 8
+  %10 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %4, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %11 = bitcast i64* %10 to <2 x i64>*
+  store <2 x i64> <i64 31, i64 -9223372036854775776>, <2 x i64>* %11, align 8
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 1 %8, i8* align 1 getelementptr inbounds ([32 x i8], [32 x i8]* @.str.1, i64 0, i64 0), i64 31, i1 false) #11
+  %12 = getelementptr inbounds i8, i8* %8, i64 31
+  store i8 0, i8* %12, align 1
+  %13 = call %"class.base::trace_event::MemoryAllocatorDump"* @_ZN4base11trace_event17ProcessMemoryDump19CreateAllocatorDumpERKNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE(%"class.base::trace_event::ProcessMemoryDump"* %2, %"class.std::__1::basic_string"* nonnull dereferenceable(24) %4) #11
+  %14 = bitcast %"class.std::__1::basic_string"* %4 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %15 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %14, i64 0, i32 1, i32 0
+  %16 = load i8, i8* %15, align 1
+  %17 = icmp slt i8 %16, 0
+  br i1 %17, label %18, label %20
+
+18:                                               ; preds = %3
+  %19 = load i8*, i8** %9, align 8
+  call void @_ZdlPv(i8* %19) #12
+  br label %20
+
+20:                                               ; preds = %3, %18
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %7) #11
+  %21 = bitcast %"class.std::__1::basic_string"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %21) #11
+  %22 = call i8* @_Znwm(i64 48) #12
+  %23 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %5, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  store i8* %22, i8** %23, align 8
+  %24 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %5, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %25 = bitcast i64* %24 to <2 x i64>*
+  store <2 x i64> <i64 36, i64 -9223372036854775760>, <2 x i64>* %25, align 8
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 1 %22, i8* align 1 getelementptr inbounds ([37 x i8], [37 x i8]* @.str.2, i64 0, i64 0), i64 36, i1 false) #11
+  %26 = getelementptr inbounds i8, i8* %22, i64 36
+  store i8 0, i8* %26, align 1
+  %27 = call %"class.base::trace_event::MemoryAllocatorDump"* @_ZN4base11trace_event17ProcessMemoryDump19CreateAllocatorDumpERKNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE(%"class.base::trace_event::ProcessMemoryDump"* %2, %"class.std::__1::basic_string"* nonnull dereferenceable(24) %5) #11
+  %28 = bitcast %"class.std::__1::basic_string"* %5 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %29 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %28, i64 0, i32 1, i32 0
+  %30 = load i8, i8* %29, align 1
+  %31 = icmp slt i8 %30, 0
+  br i1 %31, label %32, label %34
+
+32:                                               ; preds = %20
+  %33 = load i8*, i8** %23, align 8
+  call void @_ZdlPv(i8* %33) #12
+  br label %34
+
+34:                                               ; preds = %20, %32
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %21) #11
+  %35 = getelementptr inbounds %"class.base::trace_event::MemoryAllocatorDump", %"class.base::trace_event::MemoryAllocatorDump"* %13, i64 0, i32 1
+  %36 = bitcast %"class.std::__1::basic_string"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %36) #11
+  %37 = call %"class.base::trace_event::MemoryDumpManager"* @_ZN4base11trace_event17MemoryDumpManager11GetInstanceEv() #11
+  %38 = load i8*, i8** @_ZN4base11trace_event17MemoryDumpManager24kSystemAllocatorPoolNameE, align 8
+  %39 = call i64 @strlen(i8* %38) #11
+  %40 = icmp ugt i64 %39, -17
+  br i1 %40, label %41, label %43
+
+41:                                               ; preds = %34
+  %42 = bitcast %"class.std::__1::basic_string"* %6 to %"class.std::__1::__basic_string_common"*
+  call void @_ZNKSt3__121__basic_string_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__basic_string_common"* nonnull %42) #13
+  unreachable
+
+43:                                               ; preds = %34
+  %44 = icmp ult i64 %39, 23
+  br i1 %44, label %54, label %45
+
+45:                                               ; preds = %43
+  %46 = add nuw i64 %39, 16
+  %47 = and i64 %46, -16
+  %48 = call i8* @_Znwm(i64 %47) #12
+  %49 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %6, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  store i8* %48, i8** %49, align 8
+  %50 = or i64 %47, -9223372036854775808
+  %51 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %6, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 2
+  store i64 %50, i64* %51, align 8
+  %52 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %6, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  store i64 %39, i64* %52, align 8
+  %53 = bitcast %"class.std::__1::basic_string"* %6 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  br label %59
+
+54:                                               ; preds = %43
+  %55 = trunc i64 %39 to i8
+  %56 = bitcast %"class.std::__1::basic_string"* %6 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %57 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %56, i64 0, i32 1, i32 0
+  store i8 %55, i8* %57, align 1
+  %58 = icmp eq i64 %39, 0
+  br i1 %58, label %62, label %59
+
+59:                                               ; preds = %54, %45
+  %60 = phi %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* [ %56, %54 ], [ %53, %45 ]
+  %61 = phi i8* [ %36, %54 ], [ %48, %45 ]
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 1 %61, i8* align 1 %38, i64 %39, i1 false) #11
+  br label %62
+
+62:                                               ; preds = %54, %59
+  %63 = phi %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* [ %56, %54 ], [ %60, %59 ]
+  %64 = phi i8* [ %36, %54 ], [ %61, %59 ]
+  %65 = getelementptr inbounds i8, i8* %64, i64 %39
+  store i8 0, i8* %65, align 1
+  call void @_ZN4base11trace_event17ProcessMemoryDump16AddSuballocationERKNS0_23MemoryAllocatorDumpGuidERKNSt3__112basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEE(%"class.base::trace_event::ProcessMemoryDump"* %2, %"class.base::trace_event::MemoryAllocatorDumpGuid"* dereferenceable(8) %35, %"class.std::__1::basic_string"* nonnull dereferenceable(24) %6) #11
+  %66 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %63, i64 0, i32 1, i32 0
+  %67 = load i8, i8* %66, align 1
+  %68 = icmp slt i8 %67, 0
+  br i1 %68, label %69, label %72
+
+69:                                               ; preds = %62
+  %70 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %6, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %71 = load i8*, i8** %70, align 8
+  call void @_ZdlPv(i8* %71) #12
+  br label %72
+
+72:                                               ; preds = %62, %69
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %36) #11
+  %73 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 2, i32 0, i32 0
+  %74 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %73, align 8
+  %75 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 2, i32 0, i32 1
+  %76 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %75, align 8
+  %77 = icmp eq %"class.std::__1::unique_ptr"* %74, %76
+  br i1 %77, label %78, label %81
+
+78:                                               ; preds = %106, %72
+  %79 = phi i64 [ 0, %72 ], [ %109, %106 ]
+  %80 = phi i64 [ 0, %72 ], [ %111, %106 ]
+  call void @_ZN4base11trace_event19MemoryAllocatorDump9AddScalarEPKcS3_m(%"class.base::trace_event::MemoryAllocatorDump"* %13, i8* getelementptr inbounds ([0 x i8], [0 x i8]* @_ZN4base11trace_event19MemoryAllocatorDump9kNameSizeE, i64 0, i64 0), i8* getelementptr inbounds ([0 x i8], [0 x i8]* @_ZN4base11trace_event19MemoryAllocatorDump11kUnitsBytesE, i64 0, i64 0), i64 %80) #11
+  call void @_ZN4base11trace_event19MemoryAllocatorDump9AddScalarEPKcS3_m(%"class.base::trace_event::MemoryAllocatorDump"* %27, i8* getelementptr inbounds ([0 x i8], [0 x i8]* @_ZN4base11trace_event19MemoryAllocatorDump9kNameSizeE, i64 0, i64 0), i8* getelementptr inbounds ([0 x i8], [0 x i8]* @_ZN4base11trace_event19MemoryAllocatorDump11kUnitsBytesE, i64 0, i64 0), i64 %79) #11
+  ret i1 true
+
+81:                                               ; preds = %72, %106
+  %82 = phi i64 [ %111, %106 ], [ 0, %72 ]
+  %83 = phi i64 [ %109, %106 ], [ 0, %72 ]
+  %84 = phi %"class.std::__1::unique_ptr"* [ %112, %106 ], [ %74, %72 ]
+  %85 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %84, i64 0, i32 0, i32 0, i32 0
+  %86 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %85, align 8
+  %87 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %86, i64 0, i32 4
+  %88 = load i8, i8* %87, align 8, !range !2
+  %89 = icmp eq i8 %88, 0
+  br i1 %89, label %90, label %99
+
+90:                                               ; preds = %81
+  %91 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %86, i64 0, i32 5
+  %92 = load i32, i32* %91, align 4
+  %93 = icmp sgt i32 %92, 0
+  br i1 %93, label %99, label %94
+
+94:                                               ; preds = %90
+  %95 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %86, i64 0, i32 1
+  %96 = load i64, i64* %95, align 8
+  %97 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %86, i64 0, i32 3
+  %98 = load i64, i64* %97, align 8
+  br label %106
+
+99:                                               ; preds = %81, %90
+  %100 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %86, i64 0, i32 1
+  %101 = load i64, i64* %100, align 8
+  %102 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %86, i64 0, i32 3
+  %103 = load i64, i64* %102, align 8
+  %104 = add i64 %101, %83
+  %105 = add i64 %104, %103
+  br label %106
+
+106:                                              ; preds = %94, %99
+  %107 = phi i64 [ %103, %99 ], [ %98, %94 ]
+  %108 = phi i64 [ %101, %99 ], [ %96, %94 ]
+  %109 = phi i64 [ %105, %99 ], [ %83, %94 ]
+  %110 = add i64 %108, %82
+  %111 = add i64 %110, %107
+  %112 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %84, i64 1
+  %113 = icmp eq %"class.std::__1::unique_ptr"* %112, %76
+  br i1 %113, label %78, label %81
+}
+
+declare %"class.base::trace_event::MemoryAllocatorDump"* @_ZN4base11trace_event17ProcessMemoryDump19CreateAllocatorDumpERKNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE(%"class.base::trace_event::ProcessMemoryDump"*, %"class.std::__1::basic_string"* dereferenceable(24)) local_unnamed_addr #1
+
+declare void @_ZN4base11trace_event17ProcessMemoryDump16AddSuballocationERKNS0_23MemoryAllocatorDumpGuidERKNSt3__112basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEE(%"class.base::trace_event::ProcessMemoryDump"*, %"class.base::trace_event::MemoryAllocatorDumpGuid"* dereferenceable(8), %"class.std::__1::basic_string"* dereferenceable(24)) local_unnamed_addr #1
+
+declare void @_ZN4base11trace_event19MemoryAllocatorDump9AddScalarEPKcS3_m(%"class.base::trace_event::MemoryAllocatorDump"*, i8*, i8*, i64) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media15FrameBufferPool8ShutdownEv(%"class.media::FrameBufferPool"*) local_unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 3
+  store i8 1, i8* %2, align 8
+  %3 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 4
+  %4 = load i8, i8* %3, align 1, !range !2
+  %5 = icmp eq i8 %4, 0
+  br i1 %5, label %9, label %6
+
+6:                                                ; preds = %1
+  %7 = tail call %"class.base::trace_event::MemoryDumpManager"* @_ZN4base11trace_event17MemoryDumpManager11GetInstanceEv() #11
+  %8 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 0
+  tail call void @_ZN4base11trace_event17MemoryDumpManager22UnregisterDumpProviderEPNS0_18MemoryDumpProviderE(%"class.base::trace_event::MemoryDumpManager"* %7, %"class.base::trace_event::MemoryDumpProvider"* %8) #11
+  br label %9
+
+9:                                                ; preds = %1, %6
+  %10 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 2, i32 0, i32 0
+  %11 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %10, align 8
+  %12 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 2, i32 0, i32 1
+  %13 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %12, align 8
+  %14 = icmp eq %"class.std::__1::unique_ptr"* %11, %13
+  br i1 %14, label %36, label %15
+
+15:                                               ; preds = %9
+  %16 = ptrtoint %"class.std::__1::unique_ptr"* %11 to i64
+  %17 = getelementptr %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %13, i64 -1, i32 0, i32 0, i32 0
+  %18 = ptrtoint %"struct.media::FrameBufferPool::FrameBuffer"** %17 to i64
+  %19 = sub i64 %18, %16
+  %20 = lshr i64 %19, 3
+  %21 = add nuw nsw i64 %20, 1
+  %22 = and i64 %21, 7
+  %23 = icmp eq i64 %22, 0
+  br i1 %23, label %33, label %24
+
+24:                                               ; preds = %15, %24
+  %25 = phi %"class.std::__1::unique_ptr"* [ %30, %24 ], [ %11, %15 ]
+  %26 = phi i64 [ %31, %24 ], [ %22, %15 ]
+  %27 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %25, i64 0, i32 0, i32 0, i32 0
+  %28 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %27, align 8
+  %29 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %28, i64 0, i32 4
+  store i8 0, i8* %29, align 8
+  %30 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %25, i64 1
+  %31 = add i64 %26, -1
+  %32 = icmp eq i64 %31, 0
+  br i1 %32, label %33, label %24, !llvm.loop !17
+
+33:                                               ; preds = %24, %15
+  %34 = phi %"class.std::__1::unique_ptr"* [ %11, %15 ], [ %30, %24 ]
+  %35 = icmp ult i64 %19, 56
+  br i1 %35, label %36, label %37
+
+36:                                               ; preds = %33, %37, %9
+  tail call void @_ZN5media15FrameBufferPool20EraseUnusedResourcesEv(%"class.media::FrameBufferPool"* %0)
+  ret void
+
+37:                                               ; preds = %33, %37
+  %38 = phi %"class.std::__1::unique_ptr"* [ %63, %37 ], [ %34, %33 ]
+  %39 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %38, i64 0, i32 0, i32 0, i32 0
+  %40 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %39, align 8
+  %41 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %40, i64 0, i32 4
+  store i8 0, i8* %41, align 8
+  %42 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %38, i64 1, i32 0, i32 0, i32 0
+  %43 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %42, align 8
+  %44 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %43, i64 0, i32 4
+  store i8 0, i8* %44, align 8
+  %45 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %38, i64 2, i32 0, i32 0, i32 0
+  %46 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %45, align 8
+  %47 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %46, i64 0, i32 4
+  store i8 0, i8* %47, align 8
+  %48 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %38, i64 3, i32 0, i32 0, i32 0
+  %49 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %48, align 8
+  %50 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %49, i64 0, i32 4
+  store i8 0, i8* %50, align 8
+  %51 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %38, i64 4, i32 0, i32 0, i32 0
+  %52 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %51, align 8
+  %53 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %52, i64 0, i32 4
+  store i8 0, i8* %53, align 8
+  %54 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %38, i64 5, i32 0, i32 0, i32 0
+  %55 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %54, align 8
+  %56 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %55, i64 0, i32 4
+  store i8 0, i8* %56, align 8
+  %57 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %38, i64 6, i32 0, i32 0, i32 0
+  %58 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %57, align 8
+  %59 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %58, i64 0, i32 4
+  store i8 0, i8* %59, align 8
+  %60 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %38, i64 7, i32 0, i32 0, i32 0
+  %61 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %60, align 8
+  %62 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %61, i64 0, i32 4
+  store i8 0, i8* %62, align 8
+  %63 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %38, i64 8
+  %64 = icmp eq %"class.std::__1::unique_ptr"* %63, %13
+  br i1 %64, label %36, label %37
+}
+
+declare void @_ZN4base11trace_event17MemoryDumpManager22UnregisterDumpProviderEPNS0_18MemoryDumpProviderE(%"class.base::trace_event::MemoryDumpManager"*, %"class.base::trace_event::MemoryDumpProvider"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media15FrameBufferPool20EraseUnusedResourcesEv(%"class.media::FrameBufferPool"*) local_unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 2
+  %3 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %2, i64 0, i32 0, i32 0
+  %4 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %3, align 8
+  %5 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %0, i64 0, i32 2, i32 0, i32 1
+  %6 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %5, align 8
+  %7 = icmp eq %"class.std::__1::unique_ptr"* %4, %6
+  br i1 %7, label %24, label %8
+
+8:                                                ; preds = %1, %19
+  %9 = phi %"class.std::__1::unique_ptr"* [ %20, %19 ], [ %4, %1 ]
+  %10 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %9, i64 0, i32 0, i32 0, i32 0
+  %11 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %10, align 8
+  %12 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %11, i64 0, i32 4
+  %13 = load i8, i8* %12, align 8, !range !2
+  %14 = icmp eq i8 %13, 0
+  br i1 %14, label %15, label %19
+
+15:                                               ; preds = %8
+  %16 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %11, i64 0, i32 5
+  %17 = load i32, i32* %16, align 4
+  %18 = icmp slt i32 %17, 1
+  br i1 %18, label %24, label %19
+
+19:                                               ; preds = %15, %8
+  %20 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %9, i64 1
+  %21 = icmp eq %"class.std::__1::unique_ptr"* %20, %6
+  br i1 %21, label %22, label %8
+
+22:                                               ; preds = %19
+  %23 = ptrtoint %"class.std::__1::unique_ptr"* %6 to i64
+  br label %71
+
+24:                                               ; preds = %15, %1
+  %25 = phi %"class.std::__1::unique_ptr"* [ %4, %1 ], [ %9, %15 ]
+  %26 = ptrtoint %"class.std::__1::unique_ptr"* %25 to i64
+  %27 = icmp eq %"class.std::__1::unique_ptr"* %25, %6
+  br i1 %27, label %71, label %28
+
+28:                                               ; preds = %24
+  %29 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %25, i64 1
+  %30 = icmp eq %"class.std::__1::unique_ptr"* %29, %6
+  br i1 %30, label %71, label %31
+
+31:                                               ; preds = %28, %65
+  %32 = phi %"class.std::__1::unique_ptr"* [ %67, %65 ], [ %29, %28 ]
+  %33 = phi i64 [ %66, %65 ], [ %26, %28 ]
+  %34 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %32, i64 0, i32 0, i32 0, i32 0
+  %35 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %34, align 8
+  %36 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %35, i64 0, i32 4
+  %37 = load i8, i8* %36, align 8, !range !2
+  %38 = icmp eq i8 %37, 0
+  %39 = ptrtoint %"struct.media::FrameBufferPool::FrameBuffer"* %35 to i64
+  br i1 %38, label %40, label %44
+
+40:                                               ; preds = %31
+  %41 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %35, i64 0, i32 5
+  %42 = load i32, i32* %41, align 4
+  %43 = icmp slt i32 %42, 1
+  br i1 %43, label %65, label %44
+
+44:                                               ; preds = %40, %31
+  %45 = inttoptr i64 %33 to %"class.std::__1::unique_ptr"*
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %34, align 8
+  %46 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %45, i64 0, i32 0, i32 0, i32 0
+  %47 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %46, align 8
+  %48 = inttoptr i64 %33 to i64*
+  store i64 %39, i64* %48, align 8
+  %49 = icmp eq %"struct.media::FrameBufferPool::FrameBuffer"* %47, null
+  br i1 %49, label %62, label %50
+
+50:                                               ; preds = %44
+  %51 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %47, i64 0, i32 2, i32 0, i32 0, i32 0
+  %52 = load i8*, i8** %51, align 8
+  store i8* null, i8** %51, align 8
+  %53 = icmp eq i8* %52, null
+  br i1 %53, label %55, label %54
+
+54:                                               ; preds = %50
+  tail call void @free(i8* nonnull %52) #11
+  br label %55
+
+55:                                               ; preds = %54, %50
+  %56 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %47, i64 0, i32 0, i32 0, i32 0, i32 0
+  %57 = load i8*, i8** %56, align 8
+  store i8* null, i8** %56, align 8
+  %58 = icmp eq i8* %57, null
+  br i1 %58, label %60, label %59
+
+59:                                               ; preds = %55
+  tail call void @free(i8* nonnull %57) #11
+  br label %60
+
+60:                                               ; preds = %59, %55
+  %61 = bitcast %"struct.media::FrameBufferPool::FrameBuffer"* %47 to i8*
+  tail call void @_ZdlPv(i8* %61) #12
+  br label %62
+
+62:                                               ; preds = %60, %44
+  %63 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %45, i64 1
+  %64 = ptrtoint %"class.std::__1::unique_ptr"* %63 to i64
+  br label %65
+
+65:                                               ; preds = %62, %40
+  %66 = phi i64 [ %33, %40 ], [ %64, %62 ]
+  %67 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %32, i64 1
+  %68 = icmp eq %"class.std::__1::unique_ptr"* %67, %6
+  br i1 %68, label %69, label %31
+
+69:                                               ; preds = %65
+  %70 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %5, align 8
+  br label %71
+
+71:                                               ; preds = %22, %24, %28, %69
+  %72 = phi %"class.std::__1::unique_ptr"* [ %6, %24 ], [ %6, %22 ], [ %6, %28 ], [ %70, %69 ]
+  %73 = phi i64 [ %26, %24 ], [ %23, %22 ], [ %26, %28 ], [ %66, %69 ]
+  %74 = inttoptr i64 %73 to %"class.std::__1::unique_ptr"*
+  %75 = tail call %"class.std::__1::unique_ptr"* @_ZNSt3__16vectorINS_10unique_ptrIN5media15FrameBufferPool11FrameBufferENS_14default_deleteIS4_EEEENS_9allocatorIS7_EEE5eraseENS_11__wrap_iterIPKS7_EESE_(%"class.std::__1::vector"* %2, %"class.std::__1::unique_ptr"* %74, %"class.std::__1::unique_ptr"* %72) #11
+  ret void
+}
+
+declare zeroext i1 @_ZN4base10TaskRunner8PostTaskERKNS_8LocationENS_12OnceCallbackIFvvEEE(%"class.base::TaskRunner"*, %"class.base::Location"* dereferenceable(32), %"class.base::OnceCallback"*) local_unnamed_addr #1
+
+declare void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* sret, i8*, i8*, i32) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"*) unnamed_addr #6
+
+declare void @_ZN4base16TaskRunnerTraits8DestructEPKNS_10TaskRunnerE(%"class.base::TaskRunner"*) local_unnamed_addr #1
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #7
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #3
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZNSt3__114__split_bufferINS_10unique_ptrIN5media15FrameBufferPool11FrameBufferENS_14default_deleteIS4_EEEERNS_9allocatorIS7_EEE9push_backEOS7_(%"struct.std::__1::__split_buffer"*, %"class.std::__1::unique_ptr"* dereferenceable(8)) local_unnamed_addr #0 comdat align 2 {
+  %3 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %0, i64 0, i32 2
+  %4 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %3, align 8
+  %5 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %0, i64 0, i32 3, i32 0, i32 0
+  %6 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %5, align 8
+  %7 = icmp eq %"class.std::__1::unique_ptr"* %4, %6
+  %8 = ptrtoint %"class.std::__1::unique_ptr"* %6 to i64
+  br i1 %7, label %9, label %199
+
+9:                                                ; preds = %2
+  %10 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %0, i64 0, i32 1
+  %11 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %10, align 8
+  %12 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %0, i64 0, i32 0
+  %13 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %12, align 8
+  %14 = icmp ugt %"class.std::__1::unique_ptr"* %11, %13
+  %15 = ptrtoint %"class.std::__1::unique_ptr"* %13 to i64
+  br i1 %14, label %16, label %56
+
+16:                                               ; preds = %9
+  %17 = ptrtoint %"class.std::__1::unique_ptr"* %11 to i64
+  %18 = sub i64 %17, %15
+  %19 = ashr exact i64 %18, 3
+  %20 = add nsw i64 %19, 1
+  %21 = sdiv i64 %20, -2
+  %22 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %11, i64 %21
+  %23 = icmp eq %"class.std::__1::unique_ptr"* %11, %4
+  br i1 %23, label %52, label %24
+
+24:                                               ; preds = %16, %46
+  %25 = phi %"class.std::__1::unique_ptr"* [ %48, %46 ], [ %22, %16 ]
+  %26 = phi %"class.std::__1::unique_ptr"* [ %47, %46 ], [ %11, %16 ]
+  %27 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %26, i64 0, i32 0, i32 0, i32 0
+  %28 = bitcast %"class.std::__1::unique_ptr"* %26 to i64*
+  %29 = load i64, i64* %28, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %27, align 8
+  %30 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %25, i64 0, i32 0, i32 0, i32 0
+  %31 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %30, align 8
+  %32 = bitcast %"class.std::__1::unique_ptr"* %25 to i64*
+  store i64 %29, i64* %32, align 8
+  %33 = icmp eq %"struct.media::FrameBufferPool::FrameBuffer"* %31, null
+  br i1 %33, label %46, label %34
+
+34:                                               ; preds = %24
+  %35 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %31, i64 0, i32 2, i32 0, i32 0, i32 0
+  %36 = load i8*, i8** %35, align 8
+  store i8* null, i8** %35, align 8
+  %37 = icmp eq i8* %36, null
+  br i1 %37, label %39, label %38
+
+38:                                               ; preds = %34
+  tail call void @free(i8* nonnull %36) #11
+  br label %39
+
+39:                                               ; preds = %38, %34
+  %40 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %31, i64 0, i32 0, i32 0, i32 0, i32 0
+  %41 = load i8*, i8** %40, align 8
+  store i8* null, i8** %40, align 8
+  %42 = icmp eq i8* %41, null
+  br i1 %42, label %44, label %43
+
+43:                                               ; preds = %39
+  tail call void @free(i8* nonnull %41) #11
+  br label %44
+
+44:                                               ; preds = %43, %39
+  %45 = bitcast %"struct.media::FrameBufferPool::FrameBuffer"* %31 to i8*
+  tail call void @_ZdlPv(i8* %45) #12
+  br label %46
+
+46:                                               ; preds = %44, %24
+  %47 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %26, i64 1
+  %48 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %25, i64 1
+  %49 = icmp eq %"class.std::__1::unique_ptr"* %47, %4
+  br i1 %49, label %50, label %24
+
+50:                                               ; preds = %46
+  %51 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %10, align 8
+  br label %52
+
+52:                                               ; preds = %50, %16
+  %53 = phi %"class.std::__1::unique_ptr"* [ %4, %16 ], [ %51, %50 ]
+  %54 = phi %"class.std::__1::unique_ptr"* [ %22, %16 ], [ %48, %50 ]
+  store %"class.std::__1::unique_ptr"* %54, %"class.std::__1::unique_ptr"** %3, align 8
+  %55 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %53, i64 %21
+  store %"class.std::__1::unique_ptr"* %55, %"class.std::__1::unique_ptr"** %10, align 8
+  br label %199
+
+56:                                               ; preds = %9
+  %57 = bitcast %"class.std::__1::unique_ptr"** %5 to i64*
+  %58 = bitcast %"struct.std::__1::__split_buffer"* %0 to i64*
+  %59 = sub i64 %8, %15
+  %60 = ashr exact i64 %59, 2
+  %61 = icmp eq i64 %59, 0
+  %62 = select i1 %61, i64 1, i64 %60
+  %63 = icmp ugt i64 %62, 2305843009213693951
+  br i1 %63, label %64, label %65
+
+64:                                               ; preds = %56
+  tail call void @abort() #13
+  unreachable
+
+65:                                               ; preds = %56
+  %66 = lshr i64 %62, 2
+  %67 = shl i64 %62, 3
+  %68 = tail call i8* @_Znwm(i64 %67) #12
+  %69 = bitcast i8* %68 to %"class.std::__1::unique_ptr"*
+  %70 = ptrtoint i8* %68 to i64
+  %71 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %69, i64 %66
+  %72 = ptrtoint %"class.std::__1::unique_ptr"* %71 to i64
+  %73 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %69, i64 %62
+  %74 = ptrtoint %"class.std::__1::unique_ptr"* %73 to i64
+  %75 = ptrtoint %"class.std::__1::unique_ptr"* %11 to i64
+  %76 = ptrtoint %"class.std::__1::unique_ptr"* %4 to i64
+  %77 = sub i64 %76, %75
+  %78 = ashr exact i64 %77, 3
+  %79 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %71, i64 %78
+  %80 = icmp eq i64 %77, 0
+  br i1 %80, label %167, label %81
+
+81:                                               ; preds = %65
+  %82 = add i64 %77, -8
+  %83 = lshr i64 %82, 3
+  %84 = add nuw nsw i64 %83, 1
+  %85 = and i64 %84, 7
+  %86 = icmp eq i64 %85, 0
+  br i1 %86, label %103, label %87
+
+87:                                               ; preds = %81, %87
+  %88 = phi %"class.std::__1::unique_ptr"* [ %96, %87 ], [ %71, %81 ]
+  %89 = phi i64 [ %97, %87 ], [ %72, %81 ]
+  %90 = phi %"class.std::__1::unique_ptr"* [ %98, %87 ], [ %11, %81 ]
+  %91 = phi i64 [ %99, %87 ], [ %85, %81 ]
+  %92 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %90, i64 0, i32 0, i32 0, i32 0
+  %93 = bitcast %"class.std::__1::unique_ptr"* %90 to i64*
+  %94 = load i64, i64* %93, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %92, align 8
+  %95 = inttoptr i64 %89 to i64*
+  store i64 %94, i64* %95, align 8
+  %96 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %88, i64 1
+  %97 = ptrtoint %"class.std::__1::unique_ptr"* %96 to i64
+  %98 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %90, i64 1
+  %99 = add i64 %91, -1
+  %100 = icmp eq i64 %99, 0
+  br i1 %100, label %101, label %87, !llvm.loop !18
+
+101:                                              ; preds = %87
+  %102 = ptrtoint %"class.std::__1::unique_ptr"* %96 to i64
+  br label %103
+
+103:                                              ; preds = %81, %101
+  %104 = phi %"class.std::__1::unique_ptr"* [ %71, %81 ], [ %96, %101 ]
+  %105 = phi i64 [ %72, %81 ], [ %102, %101 ]
+  %106 = phi %"class.std::__1::unique_ptr"* [ %11, %81 ], [ %98, %101 ]
+  %107 = icmp ult i64 %82, 56
+  br i1 %107, label %162, label %108
+
+108:                                              ; preds = %103, %108
+  %109 = phi %"class.std::__1::unique_ptr"* [ %158, %108 ], [ %104, %103 ]
+  %110 = phi i64 [ %159, %108 ], [ %105, %103 ]
+  %111 = phi %"class.std::__1::unique_ptr"* [ %160, %108 ], [ %106, %103 ]
+  %112 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %111, i64 0, i32 0, i32 0, i32 0
+  %113 = bitcast %"class.std::__1::unique_ptr"* %111 to i64*
+  %114 = load i64, i64* %113, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %112, align 8
+  %115 = inttoptr i64 %110 to i64*
+  store i64 %114, i64* %115, align 8
+  %116 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %109, i64 1
+  %117 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %111, i64 1
+  %118 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %117, i64 0, i32 0, i32 0, i32 0
+  %119 = bitcast %"class.std::__1::unique_ptr"* %117 to i64*
+  %120 = load i64, i64* %119, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %118, align 8
+  %121 = bitcast %"class.std::__1::unique_ptr"* %116 to i64*
+  store i64 %120, i64* %121, align 8
+  %122 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %109, i64 2
+  %123 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %111, i64 2
+  %124 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %123, i64 0, i32 0, i32 0, i32 0
+  %125 = bitcast %"class.std::__1::unique_ptr"* %123 to i64*
+  %126 = load i64, i64* %125, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %124, align 8
+  %127 = bitcast %"class.std::__1::unique_ptr"* %122 to i64*
+  store i64 %126, i64* %127, align 8
+  %128 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %109, i64 3
+  %129 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %111, i64 3
+  %130 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %129, i64 0, i32 0, i32 0, i32 0
+  %131 = bitcast %"class.std::__1::unique_ptr"* %129 to i64*
+  %132 = load i64, i64* %131, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %130, align 8
+  %133 = bitcast %"class.std::__1::unique_ptr"* %128 to i64*
+  store i64 %132, i64* %133, align 8
+  %134 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %109, i64 4
+  %135 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %111, i64 4
+  %136 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %135, i64 0, i32 0, i32 0, i32 0
+  %137 = bitcast %"class.std::__1::unique_ptr"* %135 to i64*
+  %138 = load i64, i64* %137, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %136, align 8
+  %139 = bitcast %"class.std::__1::unique_ptr"* %134 to i64*
+  store i64 %138, i64* %139, align 8
+  %140 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %109, i64 5
+  %141 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %111, i64 5
+  %142 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %141, i64 0, i32 0, i32 0, i32 0
+  %143 = bitcast %"class.std::__1::unique_ptr"* %141 to i64*
+  %144 = load i64, i64* %143, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %142, align 8
+  %145 = bitcast %"class.std::__1::unique_ptr"* %140 to i64*
+  store i64 %144, i64* %145, align 8
+  %146 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %109, i64 6
+  %147 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %111, i64 6
+  %148 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %147, i64 0, i32 0, i32 0, i32 0
+  %149 = bitcast %"class.std::__1::unique_ptr"* %147 to i64*
+  %150 = load i64, i64* %149, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %148, align 8
+  %151 = bitcast %"class.std::__1::unique_ptr"* %146 to i64*
+  store i64 %150, i64* %151, align 8
+  %152 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %109, i64 7
+  %153 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %111, i64 7
+  %154 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %153, i64 0, i32 0, i32 0, i32 0
+  %155 = bitcast %"class.std::__1::unique_ptr"* %153 to i64*
+  %156 = load i64, i64* %155, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %154, align 8
+  %157 = bitcast %"class.std::__1::unique_ptr"* %152 to i64*
+  store i64 %156, i64* %157, align 8
+  %158 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %109, i64 8
+  %159 = ptrtoint %"class.std::__1::unique_ptr"* %158 to i64
+  %160 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %111, i64 8
+  %161 = icmp eq %"class.std::__1::unique_ptr"* %79, %158
+  br i1 %161, label %162, label %108
+
+162:                                              ; preds = %108, %103
+  %163 = ptrtoint %"class.std::__1::unique_ptr"* %79 to i64
+  %164 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %12, align 8
+  %165 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %10, align 8
+  %166 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %3, align 8
+  br label %167
+
+167:                                              ; preds = %65, %162
+  %168 = phi %"class.std::__1::unique_ptr"* [ %166, %162 ], [ %4, %65 ]
+  %169 = phi %"class.std::__1::unique_ptr"* [ %165, %162 ], [ %11, %65 ]
+  %170 = phi %"class.std::__1::unique_ptr"* [ %164, %162 ], [ %13, %65 ]
+  %171 = phi i64 [ %163, %162 ], [ %72, %65 ]
+  store i64 %70, i64* %58, align 8
+  %172 = bitcast %"class.std::__1::unique_ptr"** %10 to i64*
+  store i64 %72, i64* %172, align 8
+  %173 = bitcast %"class.std::__1::unique_ptr"** %3 to i64*
+  store i64 %171, i64* %173, align 8
+  store i64 %74, i64* %57, align 8
+  %174 = icmp eq %"class.std::__1::unique_ptr"* %168, %169
+  br i1 %174, label %195, label %175
+
+175:                                              ; preds = %167, %193
+  %176 = phi %"class.std::__1::unique_ptr"* [ %177, %193 ], [ %168, %167 ]
+  %177 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %176, i64 -1
+  %178 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %177, i64 0, i32 0, i32 0, i32 0
+  %179 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %178, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %178, align 8
+  %180 = icmp eq %"struct.media::FrameBufferPool::FrameBuffer"* %179, null
+  br i1 %180, label %193, label %181
+
+181:                                              ; preds = %175
+  %182 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %179, i64 0, i32 2, i32 0, i32 0, i32 0
+  %183 = load i8*, i8** %182, align 8
+  store i8* null, i8** %182, align 8
+  %184 = icmp eq i8* %183, null
+  br i1 %184, label %186, label %185
+
+185:                                              ; preds = %181
+  tail call void @free(i8* nonnull %183) #11
+  br label %186
+
+186:                                              ; preds = %185, %181
+  %187 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %179, i64 0, i32 0, i32 0, i32 0, i32 0
+  %188 = load i8*, i8** %187, align 8
+  store i8* null, i8** %187, align 8
+  %189 = icmp eq i8* %188, null
+  br i1 %189, label %191, label %190
+
+190:                                              ; preds = %186
+  tail call void @free(i8* nonnull %188) #11
+  br label %191
+
+191:                                              ; preds = %190, %186
+  %192 = bitcast %"struct.media::FrameBufferPool::FrameBuffer"* %179 to i8*
+  tail call void @_ZdlPv(i8* %192) #12
+  br label %193
+
+193:                                              ; preds = %191, %175
+  %194 = icmp eq %"class.std::__1::unique_ptr"* %177, %169
+  br i1 %194, label %195, label %175
+
+195:                                              ; preds = %193, %167
+  %196 = icmp eq %"class.std::__1::unique_ptr"* %170, null
+  br i1 %196, label %199, label %197
+
+197:                                              ; preds = %195
+  %198 = bitcast %"class.std::__1::unique_ptr"* %170 to i8*
+  tail call void @_ZdlPv(i8* %198) #12
+  br label %199
+
+199:                                              ; preds = %197, %195, %52, %2
+  %200 = bitcast %"class.std::__1::unique_ptr"** %3 to i64**
+  %201 = load i64*, i64** %200, align 8
+  %202 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %1, i64 0, i32 0, i32 0, i32 0
+  %203 = bitcast %"class.std::__1::unique_ptr"* %1 to i64*
+  %204 = load i64, i64* %203, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %202, align 8
+  store i64 %204, i64* %201, align 8
+  %205 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %3, align 8
+  %206 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %205, i64 1
+  store %"class.std::__1::unique_ptr"* %206, %"class.std::__1::unique_ptr"** %3, align 8
+  ret void
+}
+
+; Function Attrs: noreturn
+declare void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"*) local_unnamed_addr #8
+
+; Function Attrs: noreturn nounwind
+declare void @abort() local_unnamed_addr #9
+
+; Function Attrs: nounwind
+declare void @free(i8* nocapture) local_unnamed_addr #6
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal7InvokerINS0_9BindStateIMN5media15FrameBufferPoolEFv13scoped_refptrINS_19SequencedTaskRunnerEEPNS4_11FrameBufferEEJS5_IS4_ES7_S9_EEEFvvEE7RunOnceEPNS0_13BindStateBaseE(%"class.base::internal::BindStateBase"*) #0 comdat align 2 {
+  %2 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1
+  %3 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  %4 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %3, i64 2
+  %5 = bitcast void (%"class.base::internal::BindStateBase"*)** %4 to %"struct.media::FrameBufferPool::FrameBuffer"**
+  %6 = bitcast %"class.base::internal::BindStateBase"* %2 to i64*
+  %7 = load i64, i64* %6, align 8
+  %8 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 1
+  %9 = bitcast void ()** %8 to i64*
+  %10 = load i64, i64* %9, align 8
+  %11 = bitcast void (%"class.base::internal::BindStateBase"*)** %3 to i8**
+  %12 = load i8*, i8** %11, align 8
+  %13 = getelementptr inbounds i8, i8* %12, i64 %10
+  %14 = bitcast i8* %13 to %"class.media::FrameBufferPool"*
+  %15 = and i64 %7, 1
+  %16 = icmp eq i64 %15, 0
+  br i1 %16, label %24, label %17
+
+17:                                               ; preds = %1
+  %18 = bitcast i8* %13 to i8**
+  %19 = load i8*, i8** %18, align 8
+  %20 = add i64 %7, -1
+  %21 = getelementptr i8, i8* %19, i64 %20
+  %22 = bitcast i8* %21 to void (%"class.media::FrameBufferPool"*, %"class.base::SequencedTaskRunner"*, %"struct.media::FrameBufferPool::FrameBuffer"*)**
+  %23 = load void (%"class.media::FrameBufferPool"*, %"class.base::SequencedTaskRunner"*, %"struct.media::FrameBufferPool::FrameBuffer"*)*, void (%"class.media::FrameBufferPool"*, %"class.base::SequencedTaskRunner"*, %"struct.media::FrameBufferPool::FrameBuffer"*)** %22, align 8
+  br label %26
+
+24:                                               ; preds = %1
+  %25 = inttoptr i64 %7 to void (%"class.media::FrameBufferPool"*, %"class.base::SequencedTaskRunner"*, %"struct.media::FrameBufferPool::FrameBuffer"*)*
+  br label %26
+
+26:                                               ; preds = %17, %24
+  %27 = phi void (%"class.media::FrameBufferPool"*, %"class.base::SequencedTaskRunner"*, %"struct.media::FrameBufferPool::FrameBuffer"*)* [ %23, %17 ], [ %25, %24 ]
+  %28 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %3, i64 1
+  %29 = bitcast void (%"class.base::internal::BindStateBase"*)** %28 to %"class.base::SequencedTaskRunner"**
+  %30 = load %"class.base::SequencedTaskRunner"*, %"class.base::SequencedTaskRunner"** %29, align 8
+  store %"class.base::SequencedTaskRunner"* null, %"class.base::SequencedTaskRunner"** %29, align 8
+  %31 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %5, align 8
+  tail call void %27(%"class.media::FrameBufferPool"* %14, %"class.base::SequencedTaskRunner"* %30, %"struct.media::FrameBufferPool::FrameBuffer"* %31) #11
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal9BindStateIMN5media15FrameBufferPoolEFv13scoped_refptrINS_19SequencedTaskRunnerEEPNS3_11FrameBufferEEJS4_IS3_ES6_S8_EE7DestroyEPKNS0_13BindStateBaseE(%"class.base::internal::BindStateBase"*) #0 comdat align 2 {
+  %2 = icmp eq %"class.base::internal::BindStateBase"* %0, null
+  br i1 %2, label %35, label %3
+
+3:                                                ; preds = %1
+  %4 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 3
+  %5 = bitcast i1 (%"class.base::internal::BindStateBase"*, i32)** %4 to %"class.base::SequencedTaskRunner"**
+  %6 = load %"class.base::SequencedTaskRunner"*, %"class.base::SequencedTaskRunner"** %5, align 8
+  %7 = icmp eq %"class.base::SequencedTaskRunner"* %6, null
+  br i1 %7, label %16, label %8
+
+8:                                                ; preds = %3
+  %9 = getelementptr inbounds %"class.base::SequencedTaskRunner", %"class.base::SequencedTaskRunner"* %6, i64 0, i32 0, i32 1
+  %10 = getelementptr inbounds %"class.base::RefCountedThreadSafe.25", %"class.base::RefCountedThreadSafe.25"* %9, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %11 = atomicrmw sub i32* %10, i32 1 acq_rel
+  %12 = icmp eq i32 %11, 1
+  br i1 %12, label %13, label %16
+
+13:                                               ; preds = %8
+  %14 = getelementptr inbounds %"class.base::RefCountedThreadSafe.25", %"class.base::RefCountedThreadSafe.25"* %9, i64 -2
+  %15 = bitcast %"class.base::RefCountedThreadSafe.25"* %14 to %"class.base::TaskRunner"*
+  tail call void @_ZN4base16TaskRunnerTraits8DestructEPKNS_10TaskRunnerE(%"class.base::TaskRunner"* %15) #11
+  br label %16
+
+16:                                               ; preds = %13, %8, %3
+  %17 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  %18 = bitcast void (%"class.base::internal::BindStateBase"*)** %17 to %"class.media::FrameBufferPool"**
+  %19 = load %"class.media::FrameBufferPool"*, %"class.media::FrameBufferPool"** %18, align 8
+  %20 = icmp eq %"class.media::FrameBufferPool"* %19, null
+  br i1 %20, label %33, label %21
+
+21:                                               ; preds = %16
+  %22 = getelementptr inbounds %"class.media::FrameBufferPool", %"class.media::FrameBufferPool"* %19, i64 0, i32 1
+  %23 = getelementptr inbounds %"class.base::RefCountedThreadSafe", %"class.base::RefCountedThreadSafe"* %22, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %24 = atomicrmw sub i32* %23, i32 1 acq_rel
+  %25 = icmp eq i32 %24, 1
+  br i1 %25, label %26, label %33
+
+26:                                               ; preds = %21
+  %27 = getelementptr inbounds %"class.base::RefCountedThreadSafe", %"class.base::RefCountedThreadSafe"* %22, i64 -2
+  %28 = bitcast %"class.base::RefCountedThreadSafe"* %27 to %"class.media::FrameBufferPool"*
+  %29 = bitcast %"class.base::RefCountedThreadSafe"* %27 to void (%"class.media::FrameBufferPool"*)***
+  %30 = load void (%"class.media::FrameBufferPool"*)**, void (%"class.media::FrameBufferPool"*)*** %29, align 8
+  %31 = getelementptr inbounds void (%"class.media::FrameBufferPool"*)*, void (%"class.media::FrameBufferPool"*)** %30, i64 1
+  %32 = load void (%"class.media::FrameBufferPool"*)*, void (%"class.media::FrameBufferPool"*)** %31, align 8
+  tail call void %32(%"class.media::FrameBufferPool"* nonnull %28) #11
+  br label %33
+
+33:                                               ; preds = %16, %21, %26
+  %34 = bitcast %"class.base::internal::BindStateBase"* %0 to i8*
+  tail call void @_ZdlPv(i8* %34) #12
+  br label %35
+
+35:                                               ; preds = %33, %1
+  ret void
+}
+
+declare void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"*, void ()*, void (%"class.base::internal::BindStateBase"*)*) unnamed_addr #1
+
+; Function Attrs: noreturn
+declare void @_ZNKSt3__121__basic_string_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__basic_string_common"*) local_unnamed_addr #8
+
+; Function Attrs: argmemonly nofree nounwind readonly
+declare i64 @strlen(i8* nocapture) local_unnamed_addr #10
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden %"class.std::__1::unique_ptr"* @_ZNSt3__16vectorINS_10unique_ptrIN5media15FrameBufferPool11FrameBufferENS_14default_deleteIS4_EEEENS_9allocatorIS7_EEE5eraseENS_11__wrap_iterIPKS7_EESE_(%"class.std::__1::vector"*, %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"*) local_unnamed_addr #0 comdat align 2 {
+  %4 = icmp eq %"class.std::__1::unique_ptr"* %1, %2
+  br i1 %4, label %62, label %5
+
+5:                                                ; preds = %3
+  %6 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 1
+  %7 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %6, align 8
+  %8 = icmp eq %"class.std::__1::unique_ptr"* %7, %2
+  br i1 %8, label %37, label %9
+
+9:                                                ; preds = %5, %31
+  %10 = phi %"class.std::__1::unique_ptr"* [ %33, %31 ], [ %1, %5 ]
+  %11 = phi %"class.std::__1::unique_ptr"* [ %32, %31 ], [ %2, %5 ]
+  %12 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %11, i64 0, i32 0, i32 0, i32 0
+  %13 = bitcast %"class.std::__1::unique_ptr"* %11 to i64*
+  %14 = load i64, i64* %13, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %12, align 8
+  %15 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %10, i64 0, i32 0, i32 0, i32 0
+  %16 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %15, align 8
+  %17 = bitcast %"class.std::__1::unique_ptr"* %10 to i64*
+  store i64 %14, i64* %17, align 8
+  %18 = icmp eq %"struct.media::FrameBufferPool::FrameBuffer"* %16, null
+  br i1 %18, label %31, label %19
+
+19:                                               ; preds = %9
+  %20 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %16, i64 0, i32 2, i32 0, i32 0, i32 0
+  %21 = load i8*, i8** %20, align 8
+  store i8* null, i8** %20, align 8
+  %22 = icmp eq i8* %21, null
+  br i1 %22, label %24, label %23
+
+23:                                               ; preds = %19
+  tail call void @free(i8* nonnull %21) #11
+  br label %24
+
+24:                                               ; preds = %23, %19
+  %25 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %16, i64 0, i32 0, i32 0, i32 0, i32 0
+  %26 = load i8*, i8** %25, align 8
+  store i8* null, i8** %25, align 8
+  %27 = icmp eq i8* %26, null
+  br i1 %27, label %29, label %28
+
+28:                                               ; preds = %24
+  tail call void @free(i8* nonnull %26) #11
+  br label %29
+
+29:                                               ; preds = %28, %24
+  %30 = bitcast %"struct.media::FrameBufferPool::FrameBuffer"* %16 to i8*
+  tail call void @_ZdlPv(i8* %30) #12
+  br label %31
+
+31:                                               ; preds = %29, %9
+  %32 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %11, i64 1
+  %33 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %10, i64 1
+  %34 = icmp eq %"class.std::__1::unique_ptr"* %32, %7
+  br i1 %34, label %35, label %9
+
+35:                                               ; preds = %31
+  %36 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %6, align 8
+  br label %37
+
+37:                                               ; preds = %35, %5
+  %38 = phi %"class.std::__1::unique_ptr"* [ %2, %5 ], [ %36, %35 ]
+  %39 = phi %"class.std::__1::unique_ptr"* [ %1, %5 ], [ %33, %35 ]
+  %40 = icmp eq %"class.std::__1::unique_ptr"* %38, %39
+  br i1 %40, label %61, label %41
+
+41:                                               ; preds = %37, %59
+  %42 = phi %"class.std::__1::unique_ptr"* [ %43, %59 ], [ %38, %37 ]
+  %43 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %42, i64 -1
+  %44 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %43, i64 0, i32 0, i32 0, i32 0
+  %45 = load %"struct.media::FrameBufferPool::FrameBuffer"*, %"struct.media::FrameBufferPool::FrameBuffer"** %44, align 8
+  store %"struct.media::FrameBufferPool::FrameBuffer"* null, %"struct.media::FrameBufferPool::FrameBuffer"** %44, align 8
+  %46 = icmp eq %"struct.media::FrameBufferPool::FrameBuffer"* %45, null
+  br i1 %46, label %59, label %47
+
+47:                                               ; preds = %41
+  %48 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %45, i64 0, i32 2, i32 0, i32 0, i32 0
+  %49 = load i8*, i8** %48, align 8
+  store i8* null, i8** %48, align 8
+  %50 = icmp eq i8* %49, null
+  br i1 %50, label %52, label %51
+
+51:                                               ; preds = %47
+  tail call void @free(i8* nonnull %49) #11
+  br label %52
+
+52:                                               ; preds = %51, %47
+  %53 = getelementptr inbounds %"struct.media::FrameBufferPool::FrameBuffer", %"struct.media::FrameBufferPool::FrameBuffer"* %45, i64 0, i32 0, i32 0, i32 0, i32 0
+  %54 = load i8*, i8** %53, align 8
+  store i8* null, i8** %53, align 8
+  %55 = icmp eq i8* %54, null
+  br i1 %55, label %57, label %56
+
+56:                                               ; preds = %52
+  tail call void @free(i8* nonnull %54) #11
+  br label %57
+
+57:                                               ; preds = %56, %52
+  %58 = bitcast %"struct.media::FrameBufferPool::FrameBuffer"* %45 to i8*
+  tail call void @_ZdlPv(i8* %58) #12
+  br label %59
+
+59:                                               ; preds = %57, %41
+  %60 = icmp eq %"class.std::__1::unique_ptr"* %43, %39
+  br i1 %60, label %61, label %41
+
+61:                                               ; preds = %59, %37
+  store %"class.std::__1::unique_ptr"* %39, %"class.std::__1::unique_ptr"** %6, align 8
+  br label %62
+
+62:                                               ; preds = %3, %61
+  ret %"class.std::__1::unique_ptr"* %1
+}
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { argmemonly nounwind }
+attributes #4 = { inlinehint nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { norecurse nounwind readonly ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { noreturn "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #9 = { noreturn nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #10 = { argmemonly nofree nounwind readonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #11 = { nounwind }
+attributes #12 = { builtin nounwind }
+attributes #13 = { noreturn nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{i8 0, i8 2}
+!3 = distinct !{!3, !4}
+!4 = !{!"llvm.loop.unroll.disable"}
+!5 = distinct !{!5, !4}
+!6 = distinct !{!6, !4}
+!7 = !{!8, !10}
+!8 = distinct !{!8, !9, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN5media15FrameBufferPoolEFv13scoped_refptrINS_19SequencedTaskRunnerEEPNS4_11FrameBufferEEJPS4_RKS7_RS9_EEEDcOT0_DpOT1_: argument 0"}
+!9 = distinct !{!9, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN5media15FrameBufferPoolEFv13scoped_refptrINS_19SequencedTaskRunnerEEPNS4_11FrameBufferEEJPS4_RKS7_RS9_EEEDcOT0_DpOT1_"}
+!10 = distinct !{!10, !11, !"_ZN4base8BindOnceIMN5media15FrameBufferPoolEFv13scoped_refptrINS_19SequencedTaskRunnerEEPNS2_11FrameBufferEEJPS2_RKS5_RS7_EEENS_12OnceCallbackINS_8internal14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSH_DpOSI_: argument 0"}
+!11 = distinct !{!11, !"_ZN4base8BindOnceIMN5media15FrameBufferPoolEFv13scoped_refptrINS_19SequencedTaskRunnerEEPNS2_11FrameBufferEEJPS2_RKS5_RS7_EEENS_12OnceCallbackINS_8internal14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSH_DpOSI_"}
+!12 = !{!13, !15}
+!13 = distinct !{!13, !14, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN5media15FrameBufferPoolEFv13scoped_refptrINS_19SequencedTaskRunnerEEPNS4_11FrameBufferEEJPS4_RS7_RS9_EEEDcOT0_DpOT1_: argument 0"}
+!14 = distinct !{!14, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN5media15FrameBufferPoolEFv13scoped_refptrINS_19SequencedTaskRunnerEEPNS4_11FrameBufferEEJPS4_RS7_RS9_EEEDcOT0_DpOT1_"}
+!15 = distinct !{!15, !16, !"_ZN4base8BindOnceIMN5media15FrameBufferPoolEFv13scoped_refptrINS_19SequencedTaskRunnerEEPNS2_11FrameBufferEEJPS2_RS5_RS7_EEENS_12OnceCallbackINS_8internal14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSG_DpOSH_: argument 0"}
+!16 = distinct !{!16, !"_ZN4base8BindOnceIMN5media15FrameBufferPoolEFv13scoped_refptrINS_19SequencedTaskRunnerEEPNS2_11FrameBufferEEJPS2_RS5_RS7_EEENS_12OnceCallbackINS_8internal14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSG_DpOSH_"}
+!17 = distinct !{!17, !4}
+!18 = distinct !{!18, !4}

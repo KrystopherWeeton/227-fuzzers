@@ -1,0 +1,967 @@
+; ModuleID = '../../v8/src/heap/heap-write-barrier.cc'
+source_filename = "../../v8/src/heap/heap-write-barrier.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.v8::internal::MarkingBarrier" = type <{ %"class.v8::internal::Heap"*, %"class.v8::internal::MarkCompactCollector"*, %"class.v8::internal::IncrementalMarking"*, %"class.heap::base::Worklist<v8::internal::HeapObject, 64>::Local", %"class.v8::internal::MajorMarkingState", [7 x i8], %"class.std::__1::unordered_map.526", i8, i8, i8, [5 x i8] }>
+%"class.v8::internal::Heap" = type { %"class.std::__1::unordered_map", %"struct.std::__1::atomic", %"class.v8::internal::Heap::ExternalMemoryAccounting", %"class.v8::internal::Isolate"*, i64, i64, i64, i64, %"struct.std::__1::atomic", i64, i64, i64, i64, i64, i8, i64, i64, %"struct.std::__1::atomic", i64, i64, %"struct.std::__1::atomic", %"struct.std::__1::atomic.20", %"class.std::__1::vector", i32, %"class.v8::internal::NewSpace"*, %"class.v8::internal::OldSpace"*, %"class.v8::internal::CodeSpace"*, %"class.v8::internal::MapSpace"*, %"class.v8::internal::OldLargeObjectSpace"*, %"class.v8::internal::CodeLargeObjectSpace"*, %"class.v8::internal::NewLargeObjectSpace"*, %"class.v8::internal::ReadOnlySpace"*, %"class.v8::internal::OldSpace"*, %"class.v8::internal::MapSpace"*, %"class.std::__1::unique_ptr.29", %"class.std::__1::unique_ptr.29", [8 x %"class.v8::internal::Space"*], %"class.v8::internal::LocalHeap"*, %"class.v8::internal::ArrayBufferExtension"*, %"class.v8::internal::ArrayBufferExtension"*, i8, i64, %"struct.std::__1::atomic.100", i32, i32, i32, i32, %"class.v8::internal::AllocationObserver"*, %"class.v8::internal::StressScavengeObserver"*, double, i32, i32, i32, i64, i32, [128 x i64], %"struct.std::__1::atomic", i64, i8, %"struct.std::__1::atomic", %"class.v8::internal::Object", %"class.v8::internal::Object", %"class.v8::internal::Object", %"class.std::__1::vector.104", %"class.std::__1::vector.104", i64 ()*, [113 x i32], i64, double, double, i64, i64, double, i32, i32, i32, i32, double, double, double, %"class.std::__1::unique_ptr.111", %"class.std::__1::unique_ptr.117", %"class.v8::internal::MinorMarkCompactCollector"*, %"class.std::__1::unique_ptr.251", %"class.std::__1::unique_ptr.257", %"class.std::__1::unique_ptr.263", %"class.std::__1::unique_ptr.269", %"class.std::__1::unique_ptr.275", %"class.std::__1::unique_ptr.307", %"class.std::__1::unique_ptr.313", %"class.std::__1::unique_ptr.323", %"class.std::__1::unique_ptr.329", %"class.std::__1::unique_ptr.329", %"class.std::__1::unique_ptr.335", %"class.std::__1::unique_ptr.341", %"class.std::__1::unique_ptr.341", %"class.std::__1::unique_ptr.347", %"class.std::__1::unique_ptr.353", %"class.std::__1::shared_ptr.359", %"class.v8::CppHeap"*, %"class.v8::EmbedderRootsHandler"*, %"class.v8::internal::StrongRootsEntry"*, %"class.v8::base::Mutex", i8, i64, i64, i64, i64, %"class.std::__1::unordered_map.360", %"class.std::__1::unique_ptr.386", [512 x i8], i8, i8, i64, i8, i32, i32, %"class.std::__1::unique_ptr.392", i8, %"class.v8::internal::Heap::ExternalStringTable", %"class.v8::base::Mutex", %"class.std::__1::unique_ptr.405", i32, i8, i8, i8, i8, i8, %"class.v8::internal::HeapObject", %"class.v8::base::SharedMutex", %"class.v8::base::Mutex", %"class.std::__1::unordered_set.411", i8, [7 x i8], %"class.std::__1::unordered_map.435", %"class.std::__1::unordered_map.461", %"class.std::__1::unordered_map.435", %"class.std::__1::unordered_map.485", %"class.std::__1::vector.513", i8, %"class.std::__1::unique_ptr.520", i32, i32 }
+%"class.std::__1::unordered_map" = type { %"class.std::__1::__hash_table" }
+%"class.std::__1::__hash_table" = type <{ %"class.std::__1::unique_ptr", %"class.std::__1::__compressed_pair.4", %"class.std::__1::__compressed_pair.9", %"class.std::__1::__compressed_pair.11", [4 x i8] }>
+%"class.std::__1::unique_ptr" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem", %"struct.std::__1::__compressed_pair_elem.0" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"struct.std::__1::__hash_node_base"** }
+%"struct.std::__1::__hash_node_base" = type { %"struct.std::__1::__hash_node_base"* }
+%"struct.std::__1::__compressed_pair_elem.0" = type { %"class.std::__1::__bucket_list_deallocator" }
+%"class.std::__1::__bucket_list_deallocator" = type { %"class.std::__1::__compressed_pair.1" }
+%"class.std::__1::__compressed_pair.1" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"struct.std::__1::__compressed_pair_elem.2" = type { i64 }
+%"class.std::__1::__compressed_pair.4" = type { %"struct.std::__1::__compressed_pair_elem.5" }
+%"struct.std::__1::__compressed_pair_elem.5" = type { %"struct.std::__1::__hash_node_base" }
+%"class.std::__1::__compressed_pair.9" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.11" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"struct.std::__1::__compressed_pair_elem.12" = type { float }
+%"class.v8::internal::Heap::ExternalMemoryAccounting" = type { %"struct.std::__1::atomic.15", %"struct.std::__1::atomic.15", %"struct.std::__1::atomic.15" }
+%"struct.std::__1::atomic.15" = type { %"struct.std::__1::__atomic_base.16" }
+%"struct.std::__1::__atomic_base.16" = type { %"struct.std::__1::__atomic_base.17" }
+%"struct.std::__1::__atomic_base.17" = type { %"struct.std::__1::__cxx_atomic_impl.18" }
+%"struct.std::__1::__cxx_atomic_impl.18" = type { %"struct.std::__1::__cxx_atomic_base_impl.19" }
+%"struct.std::__1::__cxx_atomic_base_impl.19" = type { i64 }
+%"class.v8::internal::Isolate" = type { %"class.v8::internal::IsolateData", %"class.std::__1::unique_ptr.604", %"class.v8::internal::Heap", %"class.v8::internal::ReadOnlyHeap"*, %"class.std::__1::shared_ptr.610", %"class.std::__1::unique_ptr.611", i32, %"class.v8::internal::Isolate::EntryStackItem"*, i32, %"class.v8::internal::StringStream"*, [13 x i64], %"class.v8::internal::Bootstrapper"*, %"class.v8::internal::RuntimeProfiler"*, %"class.v8::internal::CompilationCache"*, %"class.std::__1::shared_ptr.617", %"class.v8::base::RecursiveMutex", %"class.v8::base::SharedMutex", %"class.v8::base::SharedMutex", %"class.v8::base::SharedMutex", %"class.v8::base::SharedMutex", %"class.v8::base::SharedMutex", %"class.v8::internal::Logger"*, %"class.v8::internal::StubCache"*, %"class.v8::internal::StubCache"*, %"class.v8::internal::Deoptimizer"*, i8, %"class.v8::internal::MaterializedObjectStore"*, i8, i32, i32, %"class.v8::internal::DescriptorLookupCache"*, %"struct.v8::internal::HandleScopeData", %"class.v8::internal::HandleScopeImplementer"*, %"class.v8::internal::UnicodeCache"*, %"class.v8::internal::AccountingAllocator"*, %"class.v8::internal::InnerPointerToCodeCache"*, %"class.v8::internal::GlobalHandles"*, %"class.v8::internal::EternalHandles"*, %"class.v8::internal::ThreadManager"*, %"class.v8::bigint::Processor"*, %"class.v8::internal::RuntimeState", %"class.v8::internal::Builtins", %"class.v8::internal::SetupIsolateDelegate"*, %"class.v8::internal::RegExpStack"*, %"class.std::__1::vector.676", %"class.v8::internal::DateCache"*, %"class.v8::base::RandomNumberGenerator"*, %"class.v8::base::RandomNumberGenerator"*, %"struct.std::__1::atomic.683", {}*, i8*, void (i32, %"class.v8::Promise"*, %"class.v8::Value"*)*, {}*, {}*, %"struct.std::__1::atomic.693", {}*, %"class.v8::base::Mutex", double, %"class.std::__1::basic_string", %"class.std::__1::unordered_map.703", %"struct.std::__1::atomic.91", i8, i8, i8, i8, i8, i8, double, %"class.v8::internal::Debug"*, %"class.v8::internal::HeapProfiler"*, %"class.std::__1::unique_ptr.729", %"class.v8::internal::AstStringConstants"*, %"class.v8::internal::interpreter::Interpreter"*, %"class.v8::internal::compiler::PerIsolateCompilerCache"*, %"class.v8::internal::Zone"*, %"class.v8::internal::CompilerDispatcher"*, %"class.std::__1::queue", void (i8*, i8*)*, void (i8*, i1)*, void (i8*, i32)*, i1 (%"class.v8::Context"*, %"class.v8::String"*)*, { i8, %"class.v8::String"* } (%"class.v8::Context"*, %"class.v8::Value"*)*, { i8, %"class.v8::String"* } (%"class.v8::Context"*, %"class.v8::Value"*, i1)*, i1 (%"class.v8::Context"*, %"class.v8::String"*)*, i1 (%"class.v8::FunctionCallbackInfo"*)*, i1 (%"class.v8::FunctionCallbackInfo"*)*, i1 (%"class.v8::Context"*)*, void (%"class.v8::FunctionCallbackInfo"*)*, %"class.v8::String"* (%"class.v8::Isolate"*, i8*)*, i1 (%"class.v8::Context"*)*, i1 (%"class.v8::Context"*)*, %"class.v8::internal::Relocatable"*, %"class.std::__1::vector.772"*, %"class.v8::internal::Object", i64*, %"class.v8::internal::AddressToIndexHashMap"*, %"class.v8::internal::HeapObjectToIndexHashMap"*, %"class.v8::internal::MicrotaskQueue"*, %"class.v8::internal::CompilationStatistics"*, %"class.v8::internal::CodeTracer"*, i32, void (%"class.v8::PromiseRejectMessage"*)*, %"class.v8::StartupData"*, i32, i32, i32, i64, i8, i8, i32, i8, i32, %"class.v8_inspector::V8Inspector"*, i8, i8, i8, i32, i32, %"class.v8::internal::compiler::NodeObserver"*, i8, [128 x i32], [256 x i32], [251 x i32], [251 x i32], %"class.v8::internal::OptimizingCompileDispatcher"*, %"class.std::__1::unique_ptr.773", i32, i8, i8, i32, i32, %"class.std::__1::vector.779", %"class.std::__1::vector.779", void (%"class.v8::Isolate"*, i32)*, %"class.std::__1::shared_ptr.786", i64, %"class.std::__1::unordered_map.787", i64, %"struct.v8::metrics::LongTaskStats", %"class.std::__1::vector.398", %"class.v8::internal::BuiltinsConstantsTableBuilder"*, i8*, i32, i8*, i32, %"class.v8::ArrayBuffer::Allocator"*, %"class.std::__1::shared_ptr.99", %"class.v8::internal::FutexWaitListNode", %"class.v8::internal::CancelableTaskManager"*, %"class.v8::debug::ConsoleDelegate"*, %"class.v8::debug::AsyncEventDelegate"*, i32, i32, %"class.std::__1::unique_ptr.842", i1 (%"class.v8::Isolate"*)*, i8, %"class.v8::base::Mutex", %"struct.v8::internal::ManagedPtrDestructor"*, i64, i64, %"class.v8::internal::wasm::WasmEngine"*, %"class.std::__1::unique_ptr.856", %"class.v8::internal::EmbeddedFileWriterInterface"*, %"class.v8::Context::BackupIncumbentScope"*, {}*, %"class.v8::base::Mutex", %"class.v8::internal::Isolate::ThreadDataTable", i8, %"class.v8::internal::Isolate"*, %"class.v8::base::Mutex", %"class.v8::internal::Isolate"*, %"class.v8::internal::Isolate"*, %"class.v8::internal::Isolate"*, %"struct.std::__1::atomic.890", %"class.std::__1::vector.894", %"class.std::__1::vector.894", void (i32, %"class.std::__1::basic_string"*)* }
+%"class.v8::internal::IsolateData" = type { [4 x i8*], i64, i64, i64, i64, i64, %"class.v8::internal::StackGuard", %"class.v8::internal::RootsTable", %"class.v8::internal::ExternalReferenceTable", %"class.v8::internal::ThreadLocalTop", [1711 x i64], [1711 x i64], i8, [15 x i8] }
+%"class.v8::internal::StackGuard" = type { %"class.v8::internal::Isolate"*, %"class.v8::internal::StackGuard::ThreadLocal" }
+%"class.v8::internal::StackGuard::ThreadLocal" = type { i64, i64, i64, i64, %"class.v8::internal::InterruptsScope"*, i64 }
+%"class.v8::internal::InterruptsScope" = type opaque
+%"class.v8::internal::RootsTable" = type { [669 x i64] }
+%"class.v8::internal::ExternalReferenceTable" = type { [1042 x i64], i32, i32 }
+%"class.v8::internal::ThreadLocalTop" = type { %"class.v8::TryCatch"*, %"class.v8::internal::Isolate"*, %"class.v8::internal::Context", %"struct.std::__1::atomic.599", %"class.v8::internal::Object", %"class.v8::internal::Context", i64, i64, i64, i64, i64, %"class.v8::internal::Object", i8, i8, %"class.v8::internal::Object", i64, i64, i64, %"class.v8::internal::PromiseOnStack"*, %"class.v8::internal::Simulator"*, i64, %"class.v8::internal::ExternalCallbackScope"*, i32, void (%"class.v8::Object"*, i32, %"class.v8::Value"*)*, i64 }
+%"class.v8::TryCatch" = type <{ %"class.v8::internal::Isolate"*, %"class.v8::TryCatch"*, i8*, i8*, i8*, i8, [7 x i8] }>
+%"struct.std::__1::atomic.599" = type { %"struct.std::__1::__atomic_base.600" }
+%"struct.std::__1::__atomic_base.600" = type { %"struct.std::__1::__cxx_atomic_impl.601" }
+%"struct.std::__1::__cxx_atomic_impl.601" = type { %"struct.std::__1::__cxx_atomic_base_impl.602" }
+%"struct.std::__1::__cxx_atomic_base_impl.602" = type { %"class.v8::internal::ThreadId" }
+%"class.v8::internal::ThreadId" = type { i32 }
+%"class.v8::internal::Context" = type { %"class.v8::internal::TorqueGeneratedContext" }
+%"class.v8::internal::TorqueGeneratedContext" = type { %"class.v8::internal::HeapObject" }
+%"class.v8::internal::PromiseOnStack" = type { %"class.v8::internal::Handle", %"class.v8::internal::PromiseOnStack"* }
+%"class.v8::internal::Handle" = type { %"class.v8::internal::HandleBase" }
+%"class.v8::internal::HandleBase" = type { i64* }
+%"class.v8::internal::Simulator" = type opaque
+%"class.v8::internal::ExternalCallbackScope" = type opaque
+%"class.v8::Object" = type { i8 }
+%"class.v8::Value" = type { i8 }
+%"class.std::__1::unique_ptr.604" = type { %"class.std::__1::__compressed_pair.605" }
+%"class.std::__1::__compressed_pair.605" = type { %"struct.std::__1::__compressed_pair_elem.606" }
+%"struct.std::__1::__compressed_pair_elem.606" = type { %"class.v8::internal::IsolateAllocator"* }
+%"class.v8::internal::IsolateAllocator" = type { i8*, %"class.v8::PageAllocator"* }
+%"class.v8::PageAllocator" = type { i32 (...)** }
+%"class.v8::internal::ReadOnlyHeap" = type { i32 (...)**, i8, %"class.v8::internal::ReadOnlySpace"*, %"class.std::__1::vector.398" }
+%"class.std::__1::shared_ptr.610" = type { %"class.v8::internal::ReadOnlyArtifacts"*, %"class.std::__1::__shared_weak_count"* }
+%"class.v8::internal::ReadOnlyArtifacts" = type opaque
+%"class.std::__1::__shared_weak_count" = type { %"class.std::__1::__shared_count", i64 }
+%"class.std::__1::__shared_count" = type { i32 (...)**, i64 }
+%"class.std::__1::unique_ptr.611" = type { %"class.std::__1::__compressed_pair.612" }
+%"class.std::__1::__compressed_pair.612" = type { %"struct.std::__1::__compressed_pair_elem.613" }
+%"struct.std::__1::__compressed_pair_elem.613" = type { %"class.v8::internal::StringTable"* }
+%"class.v8::internal::StringTable" = type opaque
+%"class.v8::internal::Isolate::EntryStackItem" = type { i32, %"class.v8::internal::Isolate::PerIsolateThreadData"*, %"class.v8::internal::Isolate"*, %"class.v8::internal::Isolate::EntryStackItem"* }
+%"class.v8::internal::Isolate::PerIsolateThreadData" = type { %"class.v8::internal::Isolate"*, %"class.v8::internal::ThreadId", i64, %"class.v8::internal::ThreadState"* }
+%"class.v8::internal::ThreadState" = type opaque
+%"class.v8::internal::StringStream" = type opaque
+%"class.v8::internal::Bootstrapper" = type opaque
+%"class.v8::internal::RuntimeProfiler" = type opaque
+%"class.v8::internal::CompilationCache" = type opaque
+%"class.std::__1::shared_ptr.617" = type { %"class.v8::internal::Counters"*, %"class.std::__1::__shared_weak_count"* }
+%"class.v8::internal::Counters" = type opaque
+%"class.v8::base::RecursiveMutex" = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%"class.v8::internal::Logger" = type { %"class.v8::internal::CodeEventListener", %"class.v8::internal::Isolate"*, %"class.std::__1::unique_ptr.618", %"class.std::__1::unique_ptr.624", %"struct.std::__1::atomic.91", %"class.std::__1::unique_ptr.630", %"class.std::__1::unique_ptr.636", %"class.std::__1::unique_ptr.642", %"class.std::__1::unique_ptr.648", %"class.std::__1::unique_ptr.654", %"class.std::__1::set.660", i32, i8, %"class.v8::internal::ExistingCodeLogger", %"class.v8::base::ElapsedTimer" }
+%"class.v8::internal::CodeEventListener" = type { i32 (...)** }
+%"class.std::__1::unique_ptr.618" = type { %"class.std::__1::__compressed_pair.619" }
+%"class.std::__1::__compressed_pair.619" = type { %"struct.std::__1::__compressed_pair_elem.620" }
+%"struct.std::__1::__compressed_pair_elem.620" = type { %"class.v8::internal::Ticker"* }
+%"class.v8::internal::Ticker" = type opaque
+%"class.std::__1::unique_ptr.624" = type { %"class.std::__1::__compressed_pair.625" }
+%"class.std::__1::__compressed_pair.625" = type { %"struct.std::__1::__compressed_pair_elem.626" }
+%"struct.std::__1::__compressed_pair_elem.626" = type { %"class.v8::internal::Profiler"* }
+%"class.v8::internal::Profiler" = type opaque
+%"class.std::__1::unique_ptr.630" = type { %"class.std::__1::__compressed_pair.631" }
+%"class.std::__1::__compressed_pair.631" = type { %"struct.std::__1::__compressed_pair_elem.632" }
+%"struct.std::__1::__compressed_pair_elem.632" = type { %"class.v8::internal::Log"* }
+%"class.v8::internal::Log" = type opaque
+%"class.std::__1::unique_ptr.636" = type { %"class.std::__1::__compressed_pair.637" }
+%"class.std::__1::__compressed_pair.637" = type { %"struct.std::__1::__compressed_pair_elem.638" }
+%"struct.std::__1::__compressed_pair_elem.638" = type { %"class.v8::internal::PerfBasicLogger"* }
+%"class.v8::internal::PerfBasicLogger" = type opaque
+%"class.std::__1::unique_ptr.642" = type { %"class.std::__1::__compressed_pair.643" }
+%"class.std::__1::__compressed_pair.643" = type { %"struct.std::__1::__compressed_pair_elem.644" }
+%"struct.std::__1::__compressed_pair_elem.644" = type { %"class.v8::internal::PerfJitLogger"* }
+%"class.v8::internal::PerfJitLogger" = type opaque
+%"class.std::__1::unique_ptr.648" = type { %"class.std::__1::__compressed_pair.649" }
+%"class.std::__1::__compressed_pair.649" = type { %"struct.std::__1::__compressed_pair_elem.650" }
+%"struct.std::__1::__compressed_pair_elem.650" = type { %"class.v8::internal::LowLevelLogger"* }
+%"class.v8::internal::LowLevelLogger" = type opaque
+%"class.std::__1::unique_ptr.654" = type { %"class.std::__1::__compressed_pair.655" }
+%"class.std::__1::__compressed_pair.655" = type { %"struct.std::__1::__compressed_pair_elem.656" }
+%"struct.std::__1::__compressed_pair_elem.656" = type { %"class.v8::internal::JitLogger"* }
+%"class.v8::internal::JitLogger" = type opaque
+%"class.std::__1::set.660" = type { %"class.std::__1::__tree.661" }
+%"class.std::__1::__tree.661" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.662", %"class.std::__1::__compressed_pair.666" }
+%"class.std::__1::__tree_end_node" = type { %"class.std::__1::__tree_node_base"* }
+%"class.std::__1::__tree_node_base" = type opaque
+%"class.std::__1::__compressed_pair.662" = type { %"struct.std::__1::__compressed_pair_elem.75" }
+%"struct.std::__1::__compressed_pair_elem.75" = type { %"class.std::__1::__tree_end_node" }
+%"class.std::__1::__compressed_pair.666" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.v8::internal::ExistingCodeLogger" = type { %"class.v8::internal::Isolate"*, %"class.v8::internal::CodeEventListener"* }
+%"class.v8::base::ElapsedTimer" = type { %"class.v8::base::TimeTicks" }
+%"class.v8::base::TimeTicks" = type { %"class.v8::base::time_internal::TimeBase" }
+%"class.v8::base::time_internal::TimeBase" = type { i64 }
+%"class.v8::internal::StubCache" = type opaque
+%"class.v8::internal::Deoptimizer" = type opaque
+%"class.v8::internal::MaterializedObjectStore" = type opaque
+%"class.v8::internal::DescriptorLookupCache" = type opaque
+%"struct.v8::internal::HandleScopeData" = type { i64*, i64*, i32, i32, %"class.v8::internal::CanonicalHandleScope"* }
+%"class.v8::internal::CanonicalHandleScope" = type { %"class.v8::internal::Isolate"*, %"class.v8::internal::OptimizedCompilationInfo"*, %"class.v8::internal::Zone"*, %"class.v8::internal::RootIndexMap"*, %"class.std::__1::unique_ptr.569", i32, %"class.v8::internal::CanonicalHandleScope"* }
+%"class.v8::internal::OptimizedCompilationInfo" = type opaque
+%"class.v8::internal::RootIndexMap" = type opaque
+%"class.std::__1::unique_ptr.569" = type { %"class.std::__1::__compressed_pair.570" }
+%"class.std::__1::__compressed_pair.570" = type { %"struct.std::__1::__compressed_pair_elem.571" }
+%"struct.std::__1::__compressed_pair_elem.571" = type { %"class.v8::internal::IdentityMap"* }
+%"class.v8::internal::IdentityMap" = type opaque
+%"class.v8::internal::HandleScopeImplementer" = type { %"class.v8::internal::Isolate"*, %"class.v8::internal::DetachableVector", %"class.v8::internal::DetachableVector.668", %"class.v8::internal::DetachableVector.669", %"class.v8::internal::DetachableVector.668", i64*, i64*, %"struct.v8::internal::HandleScopeData" }
+%"class.v8::internal::DetachableVector" = type { %"class.v8::internal::DetachableVectorBase" }
+%"class.v8::internal::DetachableVectorBase" = type { i8*, i64, i64 }
+%"class.v8::internal::DetachableVector.669" = type { %"class.v8::internal::DetachableVectorBase" }
+%"class.v8::internal::DetachableVector.668" = type { %"class.v8::internal::DetachableVectorBase" }
+%"class.v8::internal::UnicodeCache" = type opaque
+%"class.v8::internal::AccountingAllocator" = type { i32 (...)**, %"struct.std::__1::atomic", %"struct.std::__1::atomic", %"class.std::__1::unique_ptr.557", %"class.std::__1::unique_ptr.563" }
+%"class.std::__1::unique_ptr.557" = type { %"class.std::__1::__compressed_pair.558" }
+%"class.std::__1::__compressed_pair.558" = type { %"struct.std::__1::__compressed_pair_elem.559" }
+%"struct.std::__1::__compressed_pair_elem.559" = type { %"class.v8::internal::VirtualMemory"* }
+%"class.v8::internal::VirtualMemory" = type { %"class.v8::PageAllocator"*, %"class.v8::base::AddressRegion" }
+%"class.v8::base::AddressRegion" = type { i64, i64 }
+%"class.std::__1::unique_ptr.563" = type { %"class.std::__1::__compressed_pair.564" }
+%"class.std::__1::__compressed_pair.564" = type { %"struct.std::__1::__compressed_pair_elem.565" }
+%"struct.std::__1::__compressed_pair_elem.565" = type { %"class.v8::base::BoundedPageAllocator"* }
+%"class.v8::base::BoundedPageAllocator" = type opaque
+%"class.v8::internal::InnerPointerToCodeCache" = type opaque
+%"class.v8::internal::GlobalHandles" = type opaque
+%"class.v8::internal::EternalHandles" = type opaque
+%"class.v8::internal::ThreadManager" = type opaque
+%"class.v8::bigint::Processor" = type opaque
+%"class.v8::internal::RuntimeState" = type { %"class.std::__1::unique_ptr.670" }
+%"class.std::__1::unique_ptr.670" = type { %"class.std::__1::__compressed_pair.671" }
+%"class.std::__1::__compressed_pair.671" = type { %"struct.std::__1::__compressed_pair_elem.672" }
+%"struct.std::__1::__compressed_pair_elem.672" = type { %"struct.v8::internal::Runtime::Function"* }
+%"struct.v8::internal::Runtime::Function" = type { i32, i32, i8*, i64, i8, i8 }
+%"class.v8::internal::Builtins" = type { %"class.v8::internal::Isolate"*, i8, i32 }
+%"class.v8::internal::SetupIsolateDelegate" = type opaque
+%"class.v8::internal::RegExpStack" = type opaque
+%"class.std::__1::vector.676" = type { %"class.std::__1::__vector_base.677" }
+%"class.std::__1::__vector_base.677" = type { i32*, i32*, %"class.std::__1::__compressed_pair.678" }
+%"class.std::__1::__compressed_pair.678" = type { %"struct.std::__1::__compressed_pair_elem.679" }
+%"struct.std::__1::__compressed_pair_elem.679" = type { i32* }
+%"class.v8::internal::DateCache" = type opaque
+%"class.v8::base::RandomNumberGenerator" = type { i64, i64, i64 }
+%"struct.std::__1::atomic.683" = type { %"struct.std::__1::__atomic_base.684" }
+%"struct.std::__1::__atomic_base.684" = type { %"struct.std::__1::__cxx_atomic_impl.685" }
+%"struct.std::__1::__cxx_atomic_impl.685" = type { %"struct.std::__1::__cxx_atomic_base_impl.686" }
+%"struct.std::__1::__cxx_atomic_base_impl.686" = type { i32 }
+%"class.v8::Promise" = type { i8 }
+%"struct.std::__1::atomic.693" = type { %"struct.std::__1::__atomic_base.694" }
+%"struct.std::__1::__atomic_base.694" = type { %"struct.std::__1::__cxx_atomic_impl.695" }
+%"struct.std::__1::__cxx_atomic_impl.695" = type { %"struct.std::__1::__cxx_atomic_base_impl.696" }
+%"struct.std::__1::__cxx_atomic_base_impl.696" = type { i32 }
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.698" }
+%"class.std::__1::__compressed_pair.698" = type { %"struct.std::__1::__compressed_pair_elem.699" }
+%"struct.std::__1::__compressed_pair_elem.699" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon }
+%union.anon = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.std::__1::unordered_map.703" = type { %"class.std::__1::__hash_table.704" }
+%"class.std::__1::__hash_table.704" = type <{ %"class.std::__1::unique_ptr.705", %"class.std::__1::__compressed_pair.715", %"class.std::__1::__compressed_pair.720", %"class.std::__1::__compressed_pair.723", [4 x i8] }>
+%"class.std::__1::unique_ptr.705" = type { %"class.std::__1::__compressed_pair.706" }
+%"class.std::__1::__compressed_pair.706" = type { %"struct.std::__1::__compressed_pair_elem.707", %"struct.std::__1::__compressed_pair_elem.709" }
+%"struct.std::__1::__compressed_pair_elem.707" = type { %"struct.std::__1::__hash_node_base.708"** }
+%"struct.std::__1::__hash_node_base.708" = type { %"struct.std::__1::__hash_node_base.708"* }
+%"struct.std::__1::__compressed_pair_elem.709" = type { %"class.std::__1::__bucket_list_deallocator.710" }
+%"class.std::__1::__bucket_list_deallocator.710" = type { %"class.std::__1::__compressed_pair.711" }
+%"class.std::__1::__compressed_pair.711" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.715" = type { %"struct.std::__1::__compressed_pair_elem.716" }
+%"struct.std::__1::__compressed_pair_elem.716" = type { %"struct.std::__1::__hash_node_base.708" }
+%"class.std::__1::__compressed_pair.720" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.723" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"struct.std::__1::atomic.91" = type { %"struct.std::__1::__atomic_base.92" }
+%"struct.std::__1::__atomic_base.92" = type { %"struct.std::__1::__cxx_atomic_impl.93" }
+%"struct.std::__1::__cxx_atomic_impl.93" = type { %"struct.std::__1::__cxx_atomic_base_impl.94" }
+%"struct.std::__1::__cxx_atomic_base_impl.94" = type { i8 }
+%"class.v8::internal::Debug" = type opaque
+%"class.v8::internal::HeapProfiler" = type opaque
+%"class.std::__1::unique_ptr.729" = type { %"class.std::__1::__compressed_pair.730" }
+%"class.std::__1::__compressed_pair.730" = type { %"struct.std::__1::__compressed_pair_elem.731" }
+%"struct.std::__1::__compressed_pair_elem.731" = type { %"class.v8::internal::CodeEventDispatcher"* }
+%"class.v8::internal::CodeEventDispatcher" = type { %"class.v8::internal::CodeEventListener", %"class.std::__1::unordered_set.732", %"class.v8::base::Mutex" }
+%"class.std::__1::unordered_set.732" = type { %"class.std::__1::__hash_table.733" }
+%"class.std::__1::__hash_table.733" = type <{ %"class.std::__1::unique_ptr.734", %"class.std::__1::__compressed_pair.744", %"class.std::__1::__compressed_pair.749", %"class.std::__1::__compressed_pair.753", [4 x i8] }>
+%"class.std::__1::unique_ptr.734" = type { %"class.std::__1::__compressed_pair.735" }
+%"class.std::__1::__compressed_pair.735" = type { %"struct.std::__1::__compressed_pair_elem.736", %"struct.std::__1::__compressed_pair_elem.738" }
+%"struct.std::__1::__compressed_pair_elem.736" = type { %"struct.std::__1::__hash_node_base.737"** }
+%"struct.std::__1::__hash_node_base.737" = type { %"struct.std::__1::__hash_node_base.737"* }
+%"struct.std::__1::__compressed_pair_elem.738" = type { %"class.std::__1::__bucket_list_deallocator.739" }
+%"class.std::__1::__bucket_list_deallocator.739" = type { %"class.std::__1::__compressed_pair.740" }
+%"class.std::__1::__compressed_pair.740" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.744" = type { %"struct.std::__1::__compressed_pair_elem.745" }
+%"struct.std::__1::__compressed_pair_elem.745" = type { %"struct.std::__1::__hash_node_base.737" }
+%"class.std::__1::__compressed_pair.749" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.753" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"class.v8::internal::AstStringConstants" = type opaque
+%"class.v8::internal::interpreter::Interpreter" = type opaque
+%"class.v8::internal::compiler::PerIsolateCompilerCache" = type opaque
+%"class.v8::internal::Zone" = type <{ i64, i64, i64, i64, %"class.v8::internal::AccountingAllocator"*, %"class.v8::internal::Segment"*, i8*, i8, i8, [6 x i8] }>
+%"class.v8::internal::Segment" = type { %"class.v8::internal::Zone"*, %"class.v8::internal::Segment"*, i64 }
+%"class.v8::internal::CompilerDispatcher" = type opaque
+%"class.std::__1::queue" = type { %"class.std::__1::deque" }
+%"class.std::__1::deque" = type { %"class.std::__1::__deque_base" }
+%"class.std::__1::__deque_base" = type { %"struct.std::__1::__split_buffer", i64, %"class.std::__1::__compressed_pair.767" }
+%"struct.std::__1::__split_buffer" = type { %"struct.std::__1::pair.761"**, %"struct.std::__1::pair.761"**, %"struct.std::__1::pair.761"**, %"class.std::__1::__compressed_pair.762" }
+%"struct.std::__1::pair.761" = type opaque
+%"class.std::__1::__compressed_pair.762" = type { %"struct.std::__1::__compressed_pair_elem.763" }
+%"struct.std::__1::__compressed_pair_elem.763" = type { %"struct.std::__1::pair.761"** }
+%"class.std::__1::__compressed_pair.767" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.v8::String" = type { i8 }
+%"class.v8::Context" = type { i8 }
+%"class.v8::FunctionCallbackInfo" = type <{ i64*, i64*, i32, [4 x i8] }>
+%"class.v8::Isolate" = type { i8 }
+%"class.v8::internal::Relocatable" = type { i32 (...)**, %"class.v8::internal::Isolate"*, %"class.v8::internal::Relocatable"* }
+%"class.std::__1::vector.772" = type opaque
+%"class.v8::internal::AddressToIndexHashMap" = type opaque
+%"class.v8::internal::HeapObjectToIndexHashMap" = type opaque
+%"class.v8::internal::MicrotaskQueue" = type opaque
+%"class.v8::internal::CompilationStatistics" = type opaque
+%"class.v8::internal::CodeTracer" = type opaque
+%"class.v8::PromiseRejectMessage" = type { %"class.v8::Local.688", i32, %"class.v8::Local.603" }
+%"class.v8::Local.688" = type { %"class.v8::Promise"* }
+%"class.v8::Local.603" = type { %"class.v8::Value"* }
+%"class.v8::StartupData" = type { i8*, i32 }
+%"class.v8_inspector::V8Inspector" = type opaque
+%"class.v8::internal::compiler::NodeObserver" = type opaque
+%"class.v8::internal::OptimizingCompileDispatcher" = type opaque
+%"class.std::__1::unique_ptr.773" = type { %"class.std::__1::__compressed_pair.774" }
+%"class.std::__1::__compressed_pair.774" = type { %"struct.std::__1::__compressed_pair_elem.775" }
+%"struct.std::__1::__compressed_pair_elem.775" = type { %"class.v8::internal::PersistentHandlesList"* }
+%"class.v8::internal::PersistentHandlesList" = type { %"class.v8::base::Mutex", %"class.v8::internal::PersistentHandles"* }
+%"class.v8::internal::PersistentHandles" = type { %"class.v8::internal::Isolate"*, %"class.std::__1::vector.575", i64*, i64*, %"class.v8::internal::PersistentHandles"*, %"class.v8::internal::PersistentHandles"* }
+%"class.std::__1::vector.575" = type { %"class.std::__1::__vector_base.576" }
+%"class.std::__1::__vector_base.576" = type { i64**, i64**, %"class.std::__1::__compressed_pair.577" }
+%"class.std::__1::__compressed_pair.577" = type { %"struct.std::__1::__compressed_pair_elem.578" }
+%"struct.std::__1::__compressed_pair_elem.578" = type { i64** }
+%"class.std::__1::vector.779" = type { %"class.std::__1::__vector_base.780" }
+%"class.std::__1::__vector_base.780" = type { void (%"class.v8::Isolate"*)**, void (%"class.v8::Isolate"*)**, %"class.std::__1::__compressed_pair.781" }
+%"class.std::__1::__compressed_pair.781" = type { %"struct.std::__1::__compressed_pair_elem.782" }
+%"struct.std::__1::__compressed_pair_elem.782" = type { void (%"class.v8::Isolate"*)** }
+%"class.std::__1::shared_ptr.786" = type { %"class.v8::internal::metrics::Recorder"*, %"class.std::__1::__shared_weak_count"* }
+%"class.v8::internal::metrics::Recorder" = type opaque
+%"class.std::__1::unordered_map.787" = type { %"class.std::__1::__hash_table.788" }
+%"class.std::__1::__hash_table.788" = type <{ %"class.std::__1::unique_ptr.789", %"class.std::__1::__compressed_pair.799", %"class.std::__1::__compressed_pair.804", %"class.std::__1::__compressed_pair.807", [4 x i8] }>
+%"class.std::__1::unique_ptr.789" = type { %"class.std::__1::__compressed_pair.790" }
+%"class.std::__1::__compressed_pair.790" = type { %"struct.std::__1::__compressed_pair_elem.791", %"struct.std::__1::__compressed_pair_elem.793" }
+%"struct.std::__1::__compressed_pair_elem.791" = type { %"struct.std::__1::__hash_node_base.792"** }
+%"struct.std::__1::__hash_node_base.792" = type { %"struct.std::__1::__hash_node_base.792"* }
+%"struct.std::__1::__compressed_pair_elem.793" = type { %"class.std::__1::__bucket_list_deallocator.794" }
+%"class.std::__1::__bucket_list_deallocator.794" = type { %"class.std::__1::__compressed_pair.795" }
+%"class.std::__1::__compressed_pair.795" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.799" = type { %"struct.std::__1::__compressed_pair_elem.800" }
+%"struct.std::__1::__compressed_pair_elem.800" = type { %"struct.std::__1::__hash_node_base.792" }
+%"class.std::__1::__compressed_pair.804" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.807" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"struct.v8::metrics::LongTaskStats" = type { i64, i64, i64 }
+%"class.std::__1::vector.398" = type { %"class.std::__1::__vector_base.399" }
+%"class.std::__1::__vector_base.399" = type { %"class.v8::internal::Object"*, %"class.v8::internal::Object"*, %"class.std::__1::__compressed_pair.400" }
+%"class.std::__1::__compressed_pair.400" = type { %"struct.std::__1::__compressed_pair_elem.401" }
+%"struct.std::__1::__compressed_pair_elem.401" = type { %"class.v8::internal::Object"* }
+%"class.v8::internal::BuiltinsConstantsTableBuilder" = type opaque
+%"class.v8::ArrayBuffer::Allocator" = type { i32 (...)** }
+%"class.std::__1::shared_ptr.99" = type { %"class.v8::ArrayBuffer::Allocator"*, %"class.std::__1::__shared_weak_count"* }
+%"class.v8::internal::FutexWaitListNode" = type { %"class.v8::internal::Isolate"*, %"class.std::__1::shared_ptr.811", %"class.v8::internal::CancelableTaskManager"*, %"class.v8::base::ConditionVariable", %"class.v8::internal::FutexWaitListNode"*, %"class.v8::internal::FutexWaitListNode"*, %"class.std::__1::weak_ptr", i64, i8*, i8, i8, %"class.v8::Global", %"class.v8::Global.840", %"class.v8::base::TimeTicks", i64 }
+%"class.std::__1::shared_ptr.811" = type { %"class.v8::TaskRunner"*, %"class.std::__1::__shared_weak_count"* }
+%"class.v8::TaskRunner" = type { i32 (...)** }
+%"class.v8::base::ConditionVariable" = type { %union.pthread_cond_t }
+%union.pthread_cond_t = type { %struct.__pthread_cond_s }
+%struct.__pthread_cond_s = type { %union.anon.836, %union.anon.838, [2 x i32], [2 x i32], i32, i32, [2 x i32] }
+%union.anon.836 = type { i64 }
+%union.anon.838 = type { i64 }
+%"class.std::__1::weak_ptr" = type { %"class.v8::internal::BackingStore"*, %"class.std::__1::__shared_weak_count"* }
+%"class.v8::internal::BackingStore" = type <{ i8*, %"struct.std::__1::atomic", i64, %"union.v8::internal::BackingStore::TypeSpecificData", i16, [6 x i8] }>
+%"union.v8::internal::BackingStore::TypeSpecificData" = type { %"class.std::__1::shared_ptr.99" }
+%"class.v8::Global" = type { %"class.v8::PersistentBase" }
+%"class.v8::PersistentBase" = type { %"class.v8::Promise"* }
+%"class.v8::Global.840" = type { %"class.v8::PersistentBase.841" }
+%"class.v8::PersistentBase.841" = type { %"class.v8::Context"* }
+%"class.v8::internal::CancelableTaskManager" = type <{ i64, %"class.std::__1::unordered_map.812", %"class.v8::base::ConditionVariable", %"class.v8::base::Mutex", i8, [7 x i8] }>
+%"class.std::__1::unordered_map.812" = type { %"class.std::__1::__hash_table.813" }
+%"class.std::__1::__hash_table.813" = type <{ %"class.std::__1::unique_ptr.814", %"class.std::__1::__compressed_pair.824", %"class.std::__1::__compressed_pair.829", %"class.std::__1::__compressed_pair.832", [4 x i8] }>
+%"class.std::__1::unique_ptr.814" = type { %"class.std::__1::__compressed_pair.815" }
+%"class.std::__1::__compressed_pair.815" = type { %"struct.std::__1::__compressed_pair_elem.816", %"struct.std::__1::__compressed_pair_elem.818" }
+%"struct.std::__1::__compressed_pair_elem.816" = type { %"struct.std::__1::__hash_node_base.817"** }
+%"struct.std::__1::__hash_node_base.817" = type { %"struct.std::__1::__hash_node_base.817"* }
+%"struct.std::__1::__compressed_pair_elem.818" = type { %"class.std::__1::__bucket_list_deallocator.819" }
+%"class.std::__1::__bucket_list_deallocator.819" = type { %"class.std::__1::__compressed_pair.820" }
+%"class.std::__1::__compressed_pair.820" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.824" = type { %"struct.std::__1::__compressed_pair_elem.825" }
+%"struct.std::__1::__compressed_pair_elem.825" = type { %"struct.std::__1::__hash_node_base.817" }
+%"class.std::__1::__compressed_pair.829" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.832" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"class.v8::debug::ConsoleDelegate" = type { i32 (...)** }
+%"class.v8::debug::AsyncEventDelegate" = type opaque
+%"class.std::__1::unique_ptr.842" = type { %"class.std::__1::__compressed_pair.843" }
+%"class.std::__1::__compressed_pair.843" = type { %"struct.std::__1::__compressed_pair_elem.844" }
+%"struct.std::__1::__compressed_pair_elem.844" = type { %"class.v8::internal::LocalIsolate"* }
+%"class.v8::internal::LocalIsolate" = type { %"class.v8::internal::HiddenLocalFactory", %"class.v8::internal::LocalHeap", %"class.v8::internal::Isolate"*, %"class.std::__1::unique_ptr.847", %"class.v8::internal::ThreadId", i64, %"class.v8::internal::RuntimeCallStats"* }
+%"class.v8::internal::HiddenLocalFactory" = type { %"class.v8::internal::LocalFactory" }
+%"class.v8::internal::LocalFactory" = type { %"class.v8::internal::ReadOnlyRoots" }
+%"class.v8::internal::ReadOnlyRoots" = type { i64* }
+%"class.v8::internal::LocalHeap" = type { %"class.v8::internal::Heap"*, i8, %"struct.std::__1::atomic.550", i8, i8, %"class.v8::internal::LocalHeap"*, %"class.v8::internal::LocalHeap"*, %"class.std::__1::unique_ptr.554", %"class.std::__1::unique_ptr.585", %"class.std::__1::unique_ptr.353", %"class.std::__1::vector.591", %"class.v8::internal::ConcurrentAllocator" }
+%"struct.std::__1::atomic.550" = type { %"struct.std::__1::__atomic_base.551" }
+%"struct.std::__1::__atomic_base.551" = type { %"struct.std::__1::__cxx_atomic_impl.552" }
+%"struct.std::__1::__cxx_atomic_impl.552" = type { %"struct.std::__1::__cxx_atomic_base_impl.553" }
+%"struct.std::__1::__cxx_atomic_base_impl.553" = type { i32 }
+%"class.std::__1::unique_ptr.554" = type { %"class.std::__1::__compressed_pair.555" }
+%"class.std::__1::__compressed_pair.555" = type { %"struct.std::__1::__compressed_pair_elem.556" }
+%"struct.std::__1::__compressed_pair_elem.556" = type { %"class.v8::internal::LocalHandles"* }
+%"class.v8::internal::LocalHandles" = type { %"struct.v8::internal::HandleScopeData", %"class.std::__1::vector.575" }
+%"class.std::__1::unique_ptr.585" = type { %"class.std::__1::__compressed_pair.586" }
+%"class.std::__1::__compressed_pair.586" = type { %"struct.std::__1::__compressed_pair_elem.587" }
+%"struct.std::__1::__compressed_pair_elem.587" = type { %"class.v8::internal::PersistentHandles"* }
+%"class.std::__1::vector.591" = type { %"class.std::__1::__vector_base.592" }
+%"class.std::__1::__vector_base.592" = type { %"struct.std::__1::pair.593"*, %"struct.std::__1::pair.593"*, %"class.std::__1::__compressed_pair.594" }
+%"struct.std::__1::pair.593" = type opaque
+%"class.std::__1::__compressed_pair.594" = type { %"struct.std::__1::__compressed_pair_elem.595" }
+%"struct.std::__1::__compressed_pair_elem.595" = type { %"struct.std::__1::pair.593"* }
+%"class.v8::internal::ConcurrentAllocator" = type { %"class.v8::internal::LocalHeap"*, %"class.v8::internal::PagedSpace"*, %"class.v8::internal::LocalAllocationBuffer" }
+%"class.v8::internal::PagedSpace" = type opaque
+%"class.v8::internal::LocalAllocationBuffer" = type { %"class.v8::internal::Heap"*, %"class.v8::internal::LinearAllocationArea" }
+%"class.v8::internal::LinearAllocationArea" = type { i64, i64, i64 }
+%"class.std::__1::unique_ptr.847" = type { %"class.std::__1::__compressed_pair.848" }
+%"class.std::__1::__compressed_pair.848" = type { %"struct.std::__1::__compressed_pair_elem.849" }
+%"struct.std::__1::__compressed_pair_elem.849" = type { %"class.v8::internal::LocalLogger"* }
+%"class.v8::internal::LocalLogger" = type opaque
+%"class.v8::internal::RuntimeCallStats" = type opaque
+%"struct.v8::internal::ManagedPtrDestructor" = type opaque
+%"class.v8::internal::wasm::WasmEngine" = type opaque
+%"class.std::__1::unique_ptr.856" = type { %"class.std::__1::__compressed_pair.857" }
+%"class.std::__1::__compressed_pair.857" = type { %"struct.std::__1::__compressed_pair_elem.858" }
+%"struct.std::__1::__compressed_pair_elem.858" = type { %"class.v8::internal::TracingCpuProfilerImpl"* }
+%"class.v8::internal::TracingCpuProfilerImpl" = type opaque
+%"class.v8::internal::EmbeddedFileWriterInterface" = type opaque
+%"class.v8::Context::BackupIncumbentScope" = type { %"class.v8::Local.689", i64, %"class.v8::Context::BackupIncumbentScope"* }
+%"class.v8::Local.689" = type { %"class.v8::Context"* }
+%"class.v8::internal::Isolate::ThreadDataTable" = type { %"class.std::__1::unordered_map.864" }
+%"class.std::__1::unordered_map.864" = type { %"class.std::__1::__hash_table.865" }
+%"class.std::__1::__hash_table.865" = type <{ %"class.std::__1::unique_ptr.866", %"class.std::__1::__compressed_pair.876", %"class.std::__1::__compressed_pair.881", %"class.std::__1::__compressed_pair.884", [4 x i8] }>
+%"class.std::__1::unique_ptr.866" = type { %"class.std::__1::__compressed_pair.867" }
+%"class.std::__1::__compressed_pair.867" = type { %"struct.std::__1::__compressed_pair_elem.868", %"struct.std::__1::__compressed_pair_elem.870" }
+%"struct.std::__1::__compressed_pair_elem.868" = type { %"struct.std::__1::__hash_node_base.869"** }
+%"struct.std::__1::__hash_node_base.869" = type { %"struct.std::__1::__hash_node_base.869"* }
+%"struct.std::__1::__compressed_pair_elem.870" = type { %"class.std::__1::__bucket_list_deallocator.871" }
+%"class.std::__1::__bucket_list_deallocator.871" = type { %"class.std::__1::__compressed_pair.872" }
+%"class.std::__1::__compressed_pair.872" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.876" = type { %"struct.std::__1::__compressed_pair_elem.877" }
+%"struct.std::__1::__compressed_pair_elem.877" = type { %"struct.std::__1::__hash_node_base.869" }
+%"class.std::__1::__compressed_pair.881" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.884" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"struct.std::__1::atomic.890" = type { %"struct.std::__1::__atomic_base.891" }
+%"struct.std::__1::__atomic_base.891" = type { %"struct.std::__1::__cxx_atomic_impl.892" }
+%"struct.std::__1::__cxx_atomic_impl.892" = type { %"struct.std::__1::__cxx_atomic_base_impl.893" }
+%"struct.std::__1::__cxx_atomic_base_impl.893" = type { %"class.std::__1::vector.894"* }
+%"class.std::__1::vector.894" = type { %"class.std::__1::__vector_base.895" }
+%"class.std::__1::__vector_base.895" = type { %"struct.v8::MemoryRange"*, %"struct.v8::MemoryRange"*, %"class.std::__1::__compressed_pair.896" }
+%"struct.v8::MemoryRange" = type { i8*, i64 }
+%"class.std::__1::__compressed_pair.896" = type { %"struct.std::__1::__compressed_pair_elem.897" }
+%"struct.std::__1::__compressed_pair_elem.897" = type { %"struct.v8::MemoryRange"* }
+%"struct.std::__1::atomic.20" = type { %"struct.std::__1::__atomic_base.21" }
+%"struct.std::__1::__atomic_base.21" = type { %"struct.std::__1::__cxx_atomic_impl.22" }
+%"struct.std::__1::__cxx_atomic_impl.22" = type { %"struct.std::__1::__cxx_atomic_base_impl.23" }
+%"struct.std::__1::__cxx_atomic_base_impl.23" = type { i32 }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"struct.std::__1::pair"*, %"struct.std::__1::pair"*, %"class.std::__1::__compressed_pair.24" }
+%"struct.std::__1::pair" = type opaque
+%"class.std::__1::__compressed_pair.24" = type { %"struct.std::__1::__compressed_pair_elem.25" }
+%"struct.std::__1::__compressed_pair_elem.25" = type { %"struct.std::__1::pair"* }
+%"class.v8::internal::NewSpace" = type opaque
+%"class.v8::internal::CodeSpace" = type opaque
+%"class.v8::internal::OldLargeObjectSpace" = type opaque
+%"class.v8::internal::CodeLargeObjectSpace" = type opaque
+%"class.v8::internal::NewLargeObjectSpace" = type opaque
+%"class.v8::internal::ReadOnlySpace" = type opaque
+%"class.v8::internal::OldSpace" = type opaque
+%"class.v8::internal::MapSpace" = type opaque
+%"class.std::__1::unique_ptr.29" = type { %"class.std::__1::__compressed_pair.30" }
+%"class.std::__1::__compressed_pair.30" = type { %"struct.std::__1::__compressed_pair_elem.31" }
+%"struct.std::__1::__compressed_pair_elem.31" = type { %"class.v8::internal::ConcurrentAllocator"* }
+%"class.v8::internal::Space" = type { %"class.v8::internal::BaseSpace", %"class.v8::internal::AllocationCounter", %"class.v8::internal::heap::List", %"struct.std::__1::atomic"*, %"class.std::__1::unique_ptr.85" }
+%"class.v8::internal::BaseSpace" = type { i32 (...)**, %"class.v8::internal::Heap"*, i32, %"struct.std::__1::atomic", i64 }
+%"class.v8::internal::AllocationCounter" = type <{ %"class.std::__1::vector.33", %"class.std::__1::vector.33", %"class.std::__1::unordered_set", i8, [7 x i8], i64, i64, i8, [7 x i8] }>
+%"class.std::__1::vector.33" = type { %"class.std::__1::__vector_base.34" }
+%"class.std::__1::__vector_base.34" = type { %"struct.v8::internal::AllocationCounter::AllocationObserverCounter"*, %"struct.v8::internal::AllocationCounter::AllocationObserverCounter"*, %"class.std::__1::__compressed_pair.35" }
+%"struct.v8::internal::AllocationCounter::AllocationObserverCounter" = type { %"class.v8::internal::AllocationObserver"*, i64, i64 }
+%"class.std::__1::__compressed_pair.35" = type { %"struct.std::__1::__compressed_pair_elem.36" }
+%"struct.std::__1::__compressed_pair_elem.36" = type { %"struct.v8::internal::AllocationCounter::AllocationObserverCounter"* }
+%"class.std::__1::unordered_set" = type { %"class.std::__1::__hash_table.40" }
+%"class.std::__1::__hash_table.40" = type <{ %"class.std::__1::unique_ptr.41", %"class.std::__1::__compressed_pair.51", %"class.std::__1::__compressed_pair.56", %"class.std::__1::__compressed_pair.58", [4 x i8] }>
+%"class.std::__1::unique_ptr.41" = type { %"class.std::__1::__compressed_pair.42" }
+%"class.std::__1::__compressed_pair.42" = type { %"struct.std::__1::__compressed_pair_elem.43", %"struct.std::__1::__compressed_pair_elem.45" }
+%"struct.std::__1::__compressed_pair_elem.43" = type { %"struct.std::__1::__hash_node_base.44"** }
+%"struct.std::__1::__hash_node_base.44" = type { %"struct.std::__1::__hash_node_base.44"* }
+%"struct.std::__1::__compressed_pair_elem.45" = type { %"class.std::__1::__bucket_list_deallocator.46" }
+%"class.std::__1::__bucket_list_deallocator.46" = type { %"class.std::__1::__compressed_pair.47" }
+%"class.std::__1::__compressed_pair.47" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.51" = type { %"struct.std::__1::__compressed_pair_elem.52" }
+%"struct.std::__1::__compressed_pair_elem.52" = type { %"struct.std::__1::__hash_node_base.44" }
+%"class.std::__1::__compressed_pair.56" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.58" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"class.v8::internal::heap::List" = type { %"class.v8::internal::MemoryChunk"*, %"class.v8::internal::MemoryChunk"* }
+%"class.v8::internal::MemoryChunk" = type { %"class.v8::internal::BasicMemoryChunk", [2 x %"class.v8::internal::SlotSet"*], %"struct.std::__1::atomic", %"struct.std::__1::atomic.15", %"class.v8::internal::SlotSet"*, [2 x %"class.v8::internal::TypedSlotSet"*], [2 x %"class.std::__1::set"*], %"class.v8::base::Mutex"*, %"struct.std::__1::atomic.81", %"class.v8::base::Mutex"*, i64, [2 x %"struct.std::__1::atomic"], %"class.v8::internal::heap::ListNode", %"class.v8::internal::FreeListCategory"**, %"struct.std::__1::atomic.15", %"class.v8::internal::Bitmap"*, %"class.v8::internal::CodeObjectRegistry"*, %"class.v8::internal::PossiblyEmptyBuckets" }
+%"class.v8::internal::BasicMemoryChunk" = type { i64, i64, %"class.v8::internal::Heap"*, i64, i64, i64, i64, %"struct.std::__1::atomic.15", %"struct.std::__1::atomic.63", %"class.v8::internal::VirtualMemory" }
+%"struct.std::__1::atomic.63" = type { %"struct.std::__1::__atomic_base.64" }
+%"struct.std::__1::__atomic_base.64" = type { %"struct.std::__1::__cxx_atomic_impl.65" }
+%"struct.std::__1::__cxx_atomic_impl.65" = type { %"struct.std::__1::__cxx_atomic_base_impl.66" }
+%"struct.std::__1::__cxx_atomic_base_impl.66" = type { %"class.v8::internal::BaseSpace"* }
+%"class.v8::internal::SlotSet" = type { i8 }
+%"class.v8::internal::TypedSlotSet" = type { %"class.v8::internal::TypedSlots", i64 }
+%"class.v8::internal::TypedSlots" = type { i32 (...)**, %"struct.v8::internal::TypedSlots::Chunk"*, %"struct.v8::internal::TypedSlots::Chunk"* }
+%"struct.v8::internal::TypedSlots::Chunk" = type { %"struct.v8::internal::TypedSlots::Chunk"*, %"class.std::__1::vector.67" }
+%"class.std::__1::vector.67" = type { %"class.std::__1::__vector_base.68" }
+%"class.std::__1::__vector_base.68" = type { %"struct.v8::internal::TypedSlots::TypedSlot"*, %"struct.v8::internal::TypedSlots::TypedSlot"*, %"class.std::__1::__compressed_pair.69" }
+%"struct.v8::internal::TypedSlots::TypedSlot" = type { i32 }
+%"class.std::__1::__compressed_pair.69" = type { %"struct.std::__1::__compressed_pair_elem.70" }
+%"struct.std::__1::__compressed_pair_elem.70" = type { %"struct.v8::internal::TypedSlots::TypedSlot"* }
+%"class.std::__1::set" = type { %"class.std::__1::__tree" }
+%"class.std::__1::__tree" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.74", %"class.std::__1::__compressed_pair.79" }
+%"class.std::__1::__compressed_pair.74" = type { %"struct.std::__1::__compressed_pair_elem.75" }
+%"class.std::__1::__compressed_pair.79" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"struct.std::__1::atomic.81" = type { %"struct.std::__1::__atomic_base.82" }
+%"struct.std::__1::__atomic_base.82" = type { %"struct.std::__1::__cxx_atomic_impl.83" }
+%"struct.std::__1::__cxx_atomic_impl.83" = type { %"struct.std::__1::__cxx_atomic_base_impl.84" }
+%"struct.std::__1::__cxx_atomic_base_impl.84" = type { i64 }
+%"class.v8::internal::heap::ListNode" = type { %"class.v8::internal::MemoryChunk"*, %"class.v8::internal::MemoryChunk"* }
+%"class.v8::internal::FreeListCategory" = type { i32, i32, %"class.v8::internal::FreeSpace", %"class.v8::internal::FreeListCategory"*, %"class.v8::internal::FreeListCategory"* }
+%"class.v8::internal::FreeSpace" = type { %"class.v8::internal::TorqueGeneratedFreeSpace" }
+%"class.v8::internal::TorqueGeneratedFreeSpace" = type { %"class.v8::internal::HeapObject" }
+%"class.v8::internal::Bitmap" = type { i8 }
+%"class.v8::internal::CodeObjectRegistry" = type opaque
+%"class.v8::internal::PossiblyEmptyBuckets" = type { i64 }
+%"class.std::__1::unique_ptr.85" = type { %"class.std::__1::__compressed_pair.86" }
+%"class.std::__1::__compressed_pair.86" = type { %"struct.std::__1::__compressed_pair_elem.87" }
+%"struct.std::__1::__compressed_pair_elem.87" = type { %"class.v8::internal::FreeList"* }
+%"class.v8::internal::FreeList" = type { i32 (...)**, i32, i32, i64, %"struct.std::__1::atomic", %"class.v8::internal::FreeListCategory"**, i64 }
+%"class.v8::internal::ArrayBufferExtension" = type { %"struct.std::__1::atomic.91", %"struct.std::__1::atomic.95", %"class.std::__1::shared_ptr", %"class.v8::internal::ArrayBufferExtension"*, %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic.95" = type { %"struct.std::__1::__atomic_base.96" }
+%"struct.std::__1::__atomic_base.96" = type { %"struct.std::__1::__cxx_atomic_impl.97" }
+%"struct.std::__1::__cxx_atomic_impl.97" = type { %"struct.std::__1::__cxx_atomic_base_impl.98" }
+%"struct.std::__1::__cxx_atomic_base_impl.98" = type { i8 }
+%"class.std::__1::shared_ptr" = type { %"class.v8::internal::BackingStore"*, %"class.std::__1::__shared_weak_count"* }
+%"struct.std::__1::atomic.100" = type { %"struct.std::__1::__atomic_base.101" }
+%"struct.std::__1::__atomic_base.101" = type { %"struct.std::__1::__cxx_atomic_impl.102" }
+%"struct.std::__1::__cxx_atomic_impl.102" = type { %"struct.std::__1::__cxx_atomic_base_impl.103" }
+%"struct.std::__1::__cxx_atomic_base_impl.103" = type { i32 }
+%"class.v8::internal::AllocationObserver" = type { i32 (...)**, i64 }
+%"class.v8::internal::StressScavengeObserver" = type opaque
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.14" }
+%"struct.std::__1::__atomic_base.14" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i64 }
+%"class.v8::internal::Object" = type { %"class.v8::internal::TaggedImpl" }
+%"class.v8::internal::TaggedImpl" = type { i64 }
+%"class.std::__1::vector.104" = type { %"class.std::__1::__vector_base.105" }
+%"class.std::__1::__vector_base.105" = type { %"struct.v8::internal::Heap::GCCallbackTuple"*, %"struct.v8::internal::Heap::GCCallbackTuple"*, %"class.std::__1::__compressed_pair.106" }
+%"struct.v8::internal::Heap::GCCallbackTuple" = type { void (%"class.v8::Isolate"*, i32, i32, i8*)*, i32, i8* }
+%"class.std::__1::__compressed_pair.106" = type { %"struct.std::__1::__compressed_pair_elem.107" }
+%"struct.std::__1::__compressed_pair_elem.107" = type { %"struct.v8::internal::Heap::GCCallbackTuple"* }
+%"class.std::__1::unique_ptr.111" = type { %"class.std::__1::__compressed_pair.112" }
+%"class.std::__1::__compressed_pair.112" = type { %"struct.std::__1::__compressed_pair_elem.113" }
+%"struct.std::__1::__compressed_pair_elem.113" = type { %"class.v8::internal::GCTracer"* }
+%"class.v8::internal::GCTracer" = type opaque
+%"class.std::__1::unique_ptr.117" = type { %"class.std::__1::__compressed_pair.118" }
+%"class.std::__1::__compressed_pair.118" = type { %"struct.std::__1::__compressed_pair_elem.119" }
+%"struct.std::__1::__compressed_pair_elem.119" = type { %"class.v8::internal::MarkCompactCollector"* }
+%"class.v8::internal::MinorMarkCompactCollector" = type <{ %"class.v8::internal::MarkCompactCollectorBase", %"class.v8::internal::Worklist.248"*, %"class.v8::internal::YoungGenerationMarkingVisitor"*, %"class.v8::base::Semaphore", %"class.std::__1::vector.223", %"class.std::__1::vector.223", %"class.v8::internal::MinorMarkingState", %"class.v8::internal::MinorNonAtomicMarkingState", [6 x i8] }>
+%"class.v8::internal::MarkCompactCollectorBase" = type { i32 (...)**, %"class.v8::internal::Heap"* }
+%"class.v8::internal::Worklist.248" = type opaque
+%"class.v8::internal::YoungGenerationMarkingVisitor" = type opaque
+%"class.v8::base::Semaphore" = type { %union.sem_t }
+%union.sem_t = type { i64, [24 x i8] }
+%"class.std::__1::vector.223" = type { %"class.std::__1::__vector_base.224" }
+%"class.std::__1::__vector_base.224" = type { %"class.v8::internal::Page"**, %"class.v8::internal::Page"**, %"class.std::__1::__compressed_pair.225" }
+%"class.v8::internal::Page" = type { %"class.v8::internal::MemoryChunk" }
+%"class.std::__1::__compressed_pair.225" = type { %"struct.std::__1::__compressed_pair_elem.226" }
+%"struct.std::__1::__compressed_pair_elem.226" = type { %"class.v8::internal::Page"** }
+%"class.v8::internal::MinorMarkingState" = type { i8 }
+%"class.v8::internal::MinorNonAtomicMarkingState" = type { i8 }
+%"class.std::__1::unique_ptr.251" = type { %"class.std::__1::__compressed_pair.252" }
+%"class.std::__1::__compressed_pair.252" = type { %"struct.std::__1::__compressed_pair_elem.253" }
+%"struct.std::__1::__compressed_pair_elem.253" = type { %"class.v8::internal::ScavengerCollector"* }
+%"class.v8::internal::ScavengerCollector" = type opaque
+%"class.std::__1::unique_ptr.257" = type { %"class.std::__1::__compressed_pair.258" }
+%"class.std::__1::__compressed_pair.258" = type { %"struct.std::__1::__compressed_pair_elem.259" }
+%"struct.std::__1::__compressed_pair_elem.259" = type { %"class.v8::internal::ArrayBufferSweeper"* }
+%"class.v8::internal::ArrayBufferSweeper" = type opaque
+%"class.std::__1::unique_ptr.263" = type { %"class.std::__1::__compressed_pair.264" }
+%"class.std::__1::__compressed_pair.264" = type { %"struct.std::__1::__compressed_pair_elem.265" }
+%"struct.std::__1::__compressed_pair_elem.265" = type { %"class.v8::internal::MemoryAllocator"* }
+%"class.v8::internal::MemoryAllocator" = type opaque
+%"class.std::__1::unique_ptr.269" = type { %"class.std::__1::__compressed_pair.270" }
+%"class.std::__1::__compressed_pair.270" = type { %"struct.std::__1::__compressed_pair_elem.271" }
+%"struct.std::__1::__compressed_pair_elem.271" = type { %"class.v8::internal::IncrementalMarking"* }
+%"class.std::__1::unique_ptr.275" = type { %"class.std::__1::__compressed_pair.276" }
+%"class.std::__1::__compressed_pair.276" = type { %"struct.std::__1::__compressed_pair_elem.277" }
+%"struct.std::__1::__compressed_pair_elem.277" = type { %"class.v8::internal::ConcurrentMarking"* }
+%"class.v8::internal::ConcurrentMarking" = type <{ %"class.std::__1::unique_ptr.238", %"class.v8::internal::Heap"*, %"class.v8::internal::MarkingWorklists"*, %"class.v8::internal::WeakObjects"*, [8 x %"struct.v8::internal::ConcurrentMarking::TaskState"], %"struct.std::__1::atomic", %"struct.std::__1::atomic.91", [7 x i8] }>
+%"class.std::__1::unique_ptr.238" = type { %"class.std::__1::__compressed_pair.239" }
+%"class.std::__1::__compressed_pair.239" = type { %"struct.std::__1::__compressed_pair_elem.240" }
+%"struct.std::__1::__compressed_pair_elem.240" = type { %"class.v8::JobHandle"* }
+%"class.v8::JobHandle" = type { i32 (...)** }
+%"class.v8::internal::MarkingWorklists" = type { %"class.heap::base::Worklist", %"class.heap::base::Worklist", %"class.heap::base::Worklist.120", %"class.std::__1::vector.121", %"class.std::__1::vector.128", %"class.heap::base::Worklist" }
+%"class.heap::base::Worklist.120" = type { %"class.v8::base::Mutex", %"class.heap::base::Worklist<v8::internal::HeapObject, 16>::Segment"*, %"struct.std::__1::atomic" }
+%"class.heap::base::Worklist<v8::internal::HeapObject, 16>::Segment" = type opaque
+%"class.std::__1::vector.121" = type { %"class.std::__1::__vector_base.122" }
+%"class.std::__1::__vector_base.122" = type { %"struct.v8::internal::ContextWorklistPair"*, %"struct.v8::internal::ContextWorklistPair"*, %"class.std::__1::__compressed_pair.123" }
+%"struct.v8::internal::ContextWorklistPair" = type { i64, %"class.heap::base::Worklist"* }
+%"class.std::__1::__compressed_pair.123" = type { %"struct.std::__1::__compressed_pair_elem.124" }
+%"struct.std::__1::__compressed_pair_elem.124" = type { %"struct.v8::internal::ContextWorklistPair"* }
+%"class.std::__1::vector.128" = type { %"class.std::__1::__vector_base.129" }
+%"class.std::__1::__vector_base.129" = type { %"class.std::__1::unique_ptr.130"*, %"class.std::__1::unique_ptr.130"*, %"class.std::__1::__compressed_pair.131" }
+%"class.std::__1::unique_ptr.130" = type opaque
+%"class.std::__1::__compressed_pair.131" = type { %"struct.std::__1::__compressed_pair_elem.132" }
+%"struct.std::__1::__compressed_pair_elem.132" = type { %"class.std::__1::unique_ptr.130"* }
+%"class.heap::base::Worklist" = type { %"class.v8::base::Mutex", %"class.heap::base::Worklist<v8::internal::HeapObject, 64>::Segment"*, %"struct.std::__1::atomic" }
+%"class.heap::base::Worklist<v8::internal::HeapObject, 64>::Segment" = type opaque
+%"class.v8::internal::WeakObjects" = type { %"class.v8::internal::Worklist", %"class.v8::internal::Worklist.136", %"class.v8::internal::Worklist.138", %"class.v8::internal::Worklist.138", %"class.v8::internal::Worklist.138", %"class.v8::internal::Worklist.140", %"class.v8::internal::Worklist.142", %"class.v8::internal::Worklist.144", %"class.v8::internal::Worklist.146", %"class.v8::internal::Worklist.148", %"class.v8::internal::Worklist.150" }
+%"class.v8::internal::Worklist" = type <{ [8 x %"struct.v8::internal::Worklist<v8::internal::TransitionArray, 64>::PrivateSegmentHolder"], %"class.v8::internal::Worklist<v8::internal::TransitionArray, 64>::GlobalPool", i32, [4 x i8] }>
+%"struct.v8::internal::Worklist<v8::internal::TransitionArray, 64>::PrivateSegmentHolder" = type { %"class.v8::internal::Worklist<v8::internal::TransitionArray, 64>::Segment"*, %"class.v8::internal::Worklist<v8::internal::TransitionArray, 64>::Segment"*, [64 x i8] }
+%"class.v8::internal::Worklist<v8::internal::TransitionArray, 64>::Segment" = type opaque
+%"class.v8::internal::Worklist<v8::internal::TransitionArray, 64>::GlobalPool" = type { %"class.v8::base::Mutex", %"class.v8::internal::Worklist<v8::internal::TransitionArray, 64>::Segment"*, %"struct.std::__1::atomic" }
+%"class.v8::internal::Worklist.136" = type <{ [8 x %"struct.v8::internal::Worklist<v8::internal::EphemeronHashTable, 64>::PrivateSegmentHolder"], %"class.v8::internal::Worklist<v8::internal::EphemeronHashTable, 64>::GlobalPool", i32, [4 x i8] }>
+%"struct.v8::internal::Worklist<v8::internal::EphemeronHashTable, 64>::PrivateSegmentHolder" = type { %"class.v8::internal::Worklist<v8::internal::EphemeronHashTable, 64>::Segment"*, %"class.v8::internal::Worklist<v8::internal::EphemeronHashTable, 64>::Segment"*, [64 x i8] }
+%"class.v8::internal::Worklist<v8::internal::EphemeronHashTable, 64>::Segment" = type opaque
+%"class.v8::internal::Worklist<v8::internal::EphemeronHashTable, 64>::GlobalPool" = type { %"class.v8::base::Mutex", %"class.v8::internal::Worklist<v8::internal::EphemeronHashTable, 64>::Segment"*, %"struct.std::__1::atomic" }
+%"class.v8::internal::Worklist.138" = type <{ [8 x %"struct.v8::internal::Worklist<v8::internal::Ephemeron, 64>::PrivateSegmentHolder"], %"class.v8::internal::Worklist<v8::internal::Ephemeron, 64>::GlobalPool", i32, [4 x i8] }>
+%"struct.v8::internal::Worklist<v8::internal::Ephemeron, 64>::PrivateSegmentHolder" = type { %"class.v8::internal::Worklist<v8::internal::Ephemeron, 64>::Segment"*, %"class.v8::internal::Worklist<v8::internal::Ephemeron, 64>::Segment"*, [64 x i8] }
+%"class.v8::internal::Worklist<v8::internal::Ephemeron, 64>::Segment" = type opaque
+%"class.v8::internal::Worklist<v8::internal::Ephemeron, 64>::GlobalPool" = type { %"class.v8::base::Mutex", %"class.v8::internal::Worklist<v8::internal::Ephemeron, 64>::Segment"*, %"struct.std::__1::atomic" }
+%"class.v8::internal::Worklist.140" = type <{ [8 x %"struct.v8::internal::Worklist<std::__1::pair<v8::internal::HeapObject, v8::internal::CompressedHeapObjectSlot>, 64>::PrivateSegmentHolder"], %"class.v8::internal::Worklist<std::__1::pair<v8::internal::HeapObject, v8::internal::CompressedHeapObjectSlot>, 64>::GlobalPool", i32, [4 x i8] }>
+%"struct.v8::internal::Worklist<std::__1::pair<v8::internal::HeapObject, v8::internal::CompressedHeapObjectSlot>, 64>::PrivateSegmentHolder" = type { %"class.v8::internal::Worklist<std::__1::pair<v8::internal::HeapObject, v8::internal::CompressedHeapObjectSlot>, 64>::Segment"*, %"class.v8::internal::Worklist<std::__1::pair<v8::internal::HeapObject, v8::internal::CompressedHeapObjectSlot>, 64>::Segment"*, [64 x i8] }
+%"class.v8::internal::Worklist<std::__1::pair<v8::internal::HeapObject, v8::internal::CompressedHeapObjectSlot>, 64>::Segment" = type opaque
+%"class.v8::internal::Worklist<std::__1::pair<v8::internal::HeapObject, v8::internal::CompressedHeapObjectSlot>, 64>::GlobalPool" = type { %"class.v8::base::Mutex", %"class.v8::internal::Worklist<std::__1::pair<v8::internal::HeapObject, v8::internal::CompressedHeapObjectSlot>, 64>::Segment"*, %"struct.std::__1::atomic" }
+%"class.v8::internal::Worklist.142" = type <{ [8 x %"struct.v8::internal::Worklist<std::__1::pair<v8::internal::HeapObject, v8::internal::Code>, 64>::PrivateSegmentHolder"], %"class.v8::internal::Worklist<std::__1::pair<v8::internal::HeapObject, v8::internal::Code>, 64>::GlobalPool", i32, [4 x i8] }>
+%"struct.v8::internal::Worklist<std::__1::pair<v8::internal::HeapObject, v8::internal::Code>, 64>::PrivateSegmentHolder" = type { %"class.v8::internal::Worklist<std::__1::pair<v8::internal::HeapObject, v8::internal::Code>, 64>::Segment"*, %"class.v8::internal::Worklist<std::__1::pair<v8::internal::HeapObject, v8::internal::Code>, 64>::Segment"*, [64 x i8] }
+%"class.v8::internal::Worklist<std::__1::pair<v8::internal::HeapObject, v8::internal::Code>, 64>::Segment" = type opaque
+%"class.v8::internal::Worklist<std::__1::pair<v8::internal::HeapObject, v8::internal::Code>, 64>::GlobalPool" = type { %"class.v8::base::Mutex", %"class.v8::internal::Worklist<std::__1::pair<v8::internal::HeapObject, v8::internal::Code>, 64>::Segment"*, %"struct.std::__1::atomic" }
+%"class.v8::internal::Worklist.144" = type <{ [8 x %"struct.v8::internal::Worklist<v8::internal::JSWeakRef, 64>::PrivateSegmentHolder"], %"class.v8::internal::Worklist<v8::internal::JSWeakRef, 64>::GlobalPool", i32, [4 x i8] }>
+%"struct.v8::internal::Worklist<v8::internal::JSWeakRef, 64>::PrivateSegmentHolder" = type { %"class.v8::internal::Worklist<v8::internal::JSWeakRef, 64>::Segment"*, %"class.v8::internal::Worklist<v8::internal::JSWeakRef, 64>::Segment"*, [64 x i8] }
+%"class.v8::internal::Worklist<v8::internal::JSWeakRef, 64>::Segment" = type opaque
+%"class.v8::internal::Worklist<v8::internal::JSWeakRef, 64>::GlobalPool" = type { %"class.v8::base::Mutex", %"class.v8::internal::Worklist<v8::internal::JSWeakRef, 64>::Segment"*, %"struct.std::__1::atomic" }
+%"class.v8::internal::Worklist.146" = type <{ [8 x %"struct.v8::internal::Worklist<v8::internal::WeakCell, 64>::PrivateSegmentHolder"], %"class.v8::internal::Worklist<v8::internal::WeakCell, 64>::GlobalPool", i32, [4 x i8] }>
+%"struct.v8::internal::Worklist<v8::internal::WeakCell, 64>::PrivateSegmentHolder" = type { %"class.v8::internal::Worklist<v8::internal::WeakCell, 64>::Segment"*, %"class.v8::internal::Worklist<v8::internal::WeakCell, 64>::Segment"*, [64 x i8] }
+%"class.v8::internal::Worklist<v8::internal::WeakCell, 64>::Segment" = type opaque
+%"class.v8::internal::Worklist<v8::internal::WeakCell, 64>::GlobalPool" = type { %"class.v8::base::Mutex", %"class.v8::internal::Worklist<v8::internal::WeakCell, 64>::Segment"*, %"struct.std::__1::atomic" }
+%"class.v8::internal::Worklist.148" = type <{ [8 x %"struct.v8::internal::Worklist<v8::internal::SharedFunctionInfo, 64>::PrivateSegmentHolder"], %"class.v8::internal::Worklist<v8::internal::SharedFunctionInfo, 64>::GlobalPool", i32, [4 x i8] }>
+%"struct.v8::internal::Worklist<v8::internal::SharedFunctionInfo, 64>::PrivateSegmentHolder" = type { %"class.v8::internal::Worklist<v8::internal::SharedFunctionInfo, 64>::Segment"*, %"class.v8::internal::Worklist<v8::internal::SharedFunctionInfo, 64>::Segment"*, [64 x i8] }
+%"class.v8::internal::Worklist<v8::internal::SharedFunctionInfo, 64>::Segment" = type opaque
+%"class.v8::internal::Worklist<v8::internal::SharedFunctionInfo, 64>::GlobalPool" = type { %"class.v8::base::Mutex", %"class.v8::internal::Worklist<v8::internal::SharedFunctionInfo, 64>::Segment"*, %"struct.std::__1::atomic" }
+%"class.v8::internal::Worklist.150" = type <{ [8 x %"struct.v8::internal::Worklist<v8::internal::JSFunction, 64>::PrivateSegmentHolder"], %"class.v8::internal::Worklist<v8::internal::JSFunction, 64>::GlobalPool", i32, [4 x i8] }>
+%"struct.v8::internal::Worklist<v8::internal::JSFunction, 64>::PrivateSegmentHolder" = type { %"class.v8::internal::Worklist<v8::internal::JSFunction, 64>::Segment"*, %"class.v8::internal::Worklist<v8::internal::JSFunction, 64>::Segment"*, [64 x i8] }
+%"class.v8::internal::Worklist<v8::internal::JSFunction, 64>::Segment" = type opaque
+%"class.v8::internal::Worklist<v8::internal::JSFunction, 64>::GlobalPool" = type { %"class.v8::base::Mutex", %"class.v8::internal::Worklist<v8::internal::JSFunction, 64>::Segment"*, %"struct.std::__1::atomic" }
+%"struct.v8::internal::ConcurrentMarking::TaskState" = type { i64, %"class.std::__1::unordered_map.278", %"class.v8::internal::NativeContextInferrer", [7 x i8], %"class.v8::internal::NativeContextStats", [64 x i8] }
+%"class.std::__1::unordered_map.278" = type { %"class.std::__1::__hash_table.279" }
+%"class.std::__1::__hash_table.279" = type <{ %"class.std::__1::unique_ptr.280", %"class.std::__1::__compressed_pair.290", %"class.std::__1::__compressed_pair.295", %"class.std::__1::__compressed_pair.298", [4 x i8] }>
+%"class.std::__1::unique_ptr.280" = type { %"class.std::__1::__compressed_pair.281" }
+%"class.std::__1::__compressed_pair.281" = type { %"struct.std::__1::__compressed_pair_elem.282", %"struct.std::__1::__compressed_pair_elem.284" }
+%"struct.std::__1::__compressed_pair_elem.282" = type { %"struct.std::__1::__hash_node_base.283"** }
+%"struct.std::__1::__hash_node_base.283" = type { %"struct.std::__1::__hash_node_base.283"* }
+%"struct.std::__1::__compressed_pair_elem.284" = type { %"class.std::__1::__bucket_list_deallocator.285" }
+%"class.std::__1::__bucket_list_deallocator.285" = type { %"class.std::__1::__compressed_pair.286" }
+%"class.std::__1::__compressed_pair.286" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.290" = type { %"struct.std::__1::__compressed_pair_elem.291" }
+%"struct.std::__1::__compressed_pair_elem.291" = type { %"struct.std::__1::__hash_node_base.283" }
+%"class.std::__1::__compressed_pair.295" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.298" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"class.v8::internal::NativeContextInferrer" = type { i8 }
+%"class.v8::internal::NativeContextStats" = type { %"class.std::__1::unordered_map.199" }
+%"class.std::__1::unordered_map.199" = type { %"class.std::__1::__hash_table.200" }
+%"class.std::__1::__hash_table.200" = type <{ %"class.std::__1::unique_ptr.201", %"class.std::__1::__compressed_pair.211", %"class.std::__1::__compressed_pair.216", %"class.std::__1::__compressed_pair.219", [4 x i8] }>
+%"class.std::__1::unique_ptr.201" = type { %"class.std::__1::__compressed_pair.202" }
+%"class.std::__1::__compressed_pair.202" = type { %"struct.std::__1::__compressed_pair_elem.203", %"struct.std::__1::__compressed_pair_elem.205" }
+%"struct.std::__1::__compressed_pair_elem.203" = type { %"struct.std::__1::__hash_node_base.204"** }
+%"struct.std::__1::__hash_node_base.204" = type { %"struct.std::__1::__hash_node_base.204"* }
+%"struct.std::__1::__compressed_pair_elem.205" = type { %"class.std::__1::__bucket_list_deallocator.206" }
+%"class.std::__1::__bucket_list_deallocator.206" = type { %"class.std::__1::__compressed_pair.207" }
+%"class.std::__1::__compressed_pair.207" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.211" = type { %"struct.std::__1::__compressed_pair_elem.212" }
+%"struct.std::__1::__compressed_pair_elem.212" = type { %"struct.std::__1::__hash_node_base.204" }
+%"class.std::__1::__compressed_pair.216" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.219" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"class.std::__1::unique_ptr.307" = type { %"class.std::__1::__compressed_pair.308" }
+%"class.std::__1::__compressed_pair.308" = type { %"struct.std::__1::__compressed_pair_elem.309" }
+%"struct.std::__1::__compressed_pair_elem.309" = type { %"class.v8::internal::GCIdleTimeHandler"* }
+%"class.v8::internal::GCIdleTimeHandler" = type opaque
+%"class.std::__1::unique_ptr.313" = type { %"class.std::__1::__compressed_pair.314" }
+%"class.std::__1::__compressed_pair.314" = type { %"struct.std::__1::__compressed_pair_elem.315" }
+%"struct.std::__1::__compressed_pair_elem.315" = type { %"class.v8::internal::MemoryMeasurement"* }
+%"class.v8::internal::MemoryMeasurement" = type { %"class.std::__1::list", %"class.std::__1::list", %"class.std::__1::list", %"class.v8::internal::Isolate"*, i8, i8, i8, %"class.v8::base::RandomNumberGenerator" }
+%"class.std::__1::list" = type { %"class.std::__1::__list_imp" }
+%"class.std::__1::__list_imp" = type { %"struct.std::__1::__list_node_base", %"class.std::__1::__compressed_pair.316" }
+%"struct.std::__1::__list_node_base" = type { %"struct.std::__1::__list_node_base"*, %"struct.std::__1::__list_node_base"* }
+%"class.std::__1::__compressed_pair.316" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::unique_ptr.323" = type { %"class.std::__1::__compressed_pair.324" }
+%"class.std::__1::__compressed_pair.324" = type { %"struct.std::__1::__compressed_pair_elem.325" }
+%"struct.std::__1::__compressed_pair_elem.325" = type { %"class.v8::internal::MemoryReducer"* }
+%"class.v8::internal::MemoryReducer" = type opaque
+%"class.std::__1::unique_ptr.329" = type { %"class.std::__1::__compressed_pair.330" }
+%"class.std::__1::__compressed_pair.330" = type { %"struct.std::__1::__compressed_pair_elem.331" }
+%"struct.std::__1::__compressed_pair_elem.331" = type { %"class.v8::internal::ObjectStats"* }
+%"class.v8::internal::ObjectStats" = type opaque
+%"class.std::__1::unique_ptr.335" = type { %"class.std::__1::__compressed_pair.336" }
+%"class.std::__1::__compressed_pair.336" = type { %"struct.std::__1::__compressed_pair_elem.337" }
+%"struct.std::__1::__compressed_pair_elem.337" = type { %"class.v8::internal::ScavengeJob"* }
+%"class.v8::internal::ScavengeJob" = type opaque
+%"class.std::__1::unique_ptr.341" = type { %"class.std::__1::__compressed_pair.342" }
+%"class.std::__1::__compressed_pair.342" = type { %"struct.std::__1::__compressed_pair_elem.343" }
+%"struct.std::__1::__compressed_pair_elem.343" = type { %"class.v8::internal::AllocationObserver"* }
+%"class.std::__1::unique_ptr.347" = type { %"class.std::__1::__compressed_pair.348" }
+%"class.std::__1::__compressed_pair.348" = type { %"struct.std::__1::__compressed_pair_elem.349" }
+%"struct.std::__1::__compressed_pair_elem.349" = type { %"class.v8::internal::LocalEmbedderHeapTracer"* }
+%"class.v8::internal::LocalEmbedderHeapTracer" = type opaque
+%"class.std::__1::unique_ptr.353" = type { %"class.std::__1::__compressed_pair.354" }
+%"class.std::__1::__compressed_pair.354" = type { %"struct.std::__1::__compressed_pair_elem.355" }
+%"struct.std::__1::__compressed_pair_elem.355" = type { %"class.v8::internal::MarkingBarrier"* }
+%"class.std::__1::shared_ptr.359" = type { %"class.v8::internal::CodeRange"*, %"class.std::__1::__shared_weak_count"* }
+%"class.v8::internal::CodeRange" = type opaque
+%"class.v8::CppHeap" = type opaque
+%"class.v8::EmbedderRootsHandler" = type { i32 (...)** }
+%"class.v8::internal::StrongRootsEntry" = type { %"class.v8::internal::FullObjectSlot", %"class.v8::internal::FullObjectSlot", %"class.v8::internal::StrongRootsEntry"*, %"class.v8::internal::StrongRootsEntry"* }
+%"class.v8::internal::FullObjectSlot" = type { %"class.v8::internal::SlotBase" }
+%"class.v8::internal::SlotBase" = type { i64 }
+%"class.std::__1::unordered_map.360" = type { %"class.std::__1::__hash_table.361" }
+%"class.std::__1::__hash_table.361" = type <{ %"class.std::__1::unique_ptr.362", %"class.std::__1::__compressed_pair.372", %"class.std::__1::__compressed_pair.377", %"class.std::__1::__compressed_pair.380", [4 x i8] }>
+%"class.std::__1::unique_ptr.362" = type { %"class.std::__1::__compressed_pair.363" }
+%"class.std::__1::__compressed_pair.363" = type { %"struct.std::__1::__compressed_pair_elem.364", %"struct.std::__1::__compressed_pair_elem.366" }
+%"struct.std::__1::__compressed_pair_elem.364" = type { %"struct.std::__1::__hash_node_base.365"** }
+%"struct.std::__1::__hash_node_base.365" = type { %"struct.std::__1::__hash_node_base.365"* }
+%"struct.std::__1::__compressed_pair_elem.366" = type { %"class.std::__1::__bucket_list_deallocator.367" }
+%"class.std::__1::__bucket_list_deallocator.367" = type { %"class.std::__1::__compressed_pair.368" }
+%"class.std::__1::__compressed_pair.368" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.372" = type { %"struct.std::__1::__compressed_pair_elem.373" }
+%"struct.std::__1::__compressed_pair_elem.373" = type { %"struct.std::__1::__hash_node_base.365" }
+%"class.std::__1::__compressed_pair.377" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.380" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"class.std::__1::unique_ptr.386" = type { %"class.std::__1::__compressed_pair.387" }
+%"class.std::__1::__compressed_pair.387" = type { %"struct.std::__1::__compressed_pair_elem.388" }
+%"struct.std::__1::__compressed_pair_elem.388" = type { %"class.v8::internal::GlobalHandleVector"* }
+%"class.v8::internal::GlobalHandleVector" = type opaque
+%"class.std::__1::unique_ptr.392" = type { %"class.std::__1::__compressed_pair.393" }
+%"class.std::__1::__compressed_pair.393" = type { %"struct.std::__1::__compressed_pair_elem.394" }
+%"struct.std::__1::__compressed_pair_elem.394" = type { %"class.v8::internal::GlobalSafepoint"* }
+%"class.v8::internal::GlobalSafepoint" = type opaque
+%"class.v8::internal::Heap::ExternalStringTable" = type { %"class.v8::internal::Heap"*, %"class.std::__1::vector.398", %"class.std::__1::vector.398" }
+%"class.std::__1::unique_ptr.405" = type { %"class.std::__1::__compressed_pair.406" }
+%"class.std::__1::__compressed_pair.406" = type { %"struct.std::__1::__compressed_pair_elem.407" }
+%"struct.std::__1::__compressed_pair_elem.407" = type { %"class.v8::internal::CollectionBarrier"* }
+%"class.v8::internal::CollectionBarrier" = type opaque
+%"class.v8::internal::HeapObject" = type { %"class.v8::internal::Object" }
+%"class.v8::base::SharedMutex" = type { %union.pthread_rwlock_t }
+%union.pthread_rwlock_t = type { %struct.__pthread_rwlock_arch_t }
+%struct.__pthread_rwlock_arch_t = type { i32, i32, i32, i32, i32, i32, i32, i32, i8, [7 x i8], i64, i32 }
+%"class.v8::base::Mutex" = type { %union.pthread_mutex_t }
+%"class.std::__1::unordered_set.411" = type { %"class.std::__1::__hash_table.412" }
+%"class.std::__1::__hash_table.412" = type <{ %"class.std::__1::unique_ptr.413", %"class.std::__1::__compressed_pair.423", %"class.std::__1::__compressed_pair.428", %"class.std::__1::__compressed_pair.432", [4 x i8] }>
+%"class.std::__1::unique_ptr.413" = type { %"class.std::__1::__compressed_pair.414" }
+%"class.std::__1::__compressed_pair.414" = type { %"struct.std::__1::__compressed_pair_elem.415", %"struct.std::__1::__compressed_pair_elem.417" }
+%"struct.std::__1::__compressed_pair_elem.415" = type { %"struct.std::__1::__hash_node_base.416"** }
+%"struct.std::__1::__hash_node_base.416" = type { %"struct.std::__1::__hash_node_base.416"* }
+%"struct.std::__1::__compressed_pair_elem.417" = type { %"class.std::__1::__bucket_list_deallocator.418" }
+%"class.std::__1::__bucket_list_deallocator.418" = type { %"class.std::__1::__compressed_pair.419" }
+%"class.std::__1::__compressed_pair.419" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.423" = type { %"struct.std::__1::__compressed_pair_elem.424" }
+%"struct.std::__1::__compressed_pair_elem.424" = type { %"struct.std::__1::__hash_node_base.416" }
+%"class.std::__1::__compressed_pair.428" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.432" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"class.std::__1::unordered_map.461" = type { %"class.std::__1::__hash_table.462" }
+%"class.std::__1::__hash_table.462" = type <{ %"class.std::__1::unique_ptr.463", %"class.std::__1::__compressed_pair.473", %"class.std::__1::__compressed_pair.478", %"class.std::__1::__compressed_pair.481", [4 x i8] }>
+%"class.std::__1::unique_ptr.463" = type { %"class.std::__1::__compressed_pair.464" }
+%"class.std::__1::__compressed_pair.464" = type { %"struct.std::__1::__compressed_pair_elem.465", %"struct.std::__1::__compressed_pair_elem.467" }
+%"struct.std::__1::__compressed_pair_elem.465" = type { %"struct.std::__1::__hash_node_base.466"** }
+%"struct.std::__1::__hash_node_base.466" = type { %"struct.std::__1::__hash_node_base.466"* }
+%"struct.std::__1::__compressed_pair_elem.467" = type { %"class.std::__1::__bucket_list_deallocator.468" }
+%"class.std::__1::__bucket_list_deallocator.468" = type { %"class.std::__1::__compressed_pair.469" }
+%"class.std::__1::__compressed_pair.469" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.473" = type { %"struct.std::__1::__compressed_pair_elem.474" }
+%"struct.std::__1::__compressed_pair_elem.474" = type { %"struct.std::__1::__hash_node_base.466" }
+%"class.std::__1::__compressed_pair.478" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.481" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"class.std::__1::unordered_map.435" = type { %"class.std::__1::__hash_table.436" }
+%"class.std::__1::__hash_table.436" = type <{ %"class.std::__1::unique_ptr.437", %"class.std::__1::__compressed_pair.447", %"class.std::__1::__compressed_pair.452", %"class.std::__1::__compressed_pair.455", [4 x i8] }>
+%"class.std::__1::unique_ptr.437" = type { %"class.std::__1::__compressed_pair.438" }
+%"class.std::__1::__compressed_pair.438" = type { %"struct.std::__1::__compressed_pair_elem.439", %"struct.std::__1::__compressed_pair_elem.441" }
+%"struct.std::__1::__compressed_pair_elem.439" = type { %"struct.std::__1::__hash_node_base.440"** }
+%"struct.std::__1::__hash_node_base.440" = type { %"struct.std::__1::__hash_node_base.440"* }
+%"struct.std::__1::__compressed_pair_elem.441" = type { %"class.std::__1::__bucket_list_deallocator.442" }
+%"class.std::__1::__bucket_list_deallocator.442" = type { %"class.std::__1::__compressed_pair.443" }
+%"class.std::__1::__compressed_pair.443" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.447" = type { %"struct.std::__1::__compressed_pair_elem.448" }
+%"struct.std::__1::__compressed_pair_elem.448" = type { %"struct.std::__1::__hash_node_base.440" }
+%"class.std::__1::__compressed_pair.452" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.455" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"class.std::__1::unordered_map.485" = type { %"class.std::__1::__hash_table.486" }
+%"class.std::__1::__hash_table.486" = type <{ %"class.std::__1::unique_ptr.487", %"class.std::__1::__compressed_pair.497", %"class.std::__1::__compressed_pair.502", %"class.std::__1::__compressed_pair.507", [4 x i8] }>
+%"class.std::__1::unique_ptr.487" = type { %"class.std::__1::__compressed_pair.488" }
+%"class.std::__1::__compressed_pair.488" = type { %"struct.std::__1::__compressed_pair_elem.489", %"struct.std::__1::__compressed_pair_elem.491" }
+%"struct.std::__1::__compressed_pair_elem.489" = type { %"struct.std::__1::__hash_node_base.490"** }
+%"struct.std::__1::__hash_node_base.490" = type { %"struct.std::__1::__hash_node_base.490"* }
+%"struct.std::__1::__compressed_pair_elem.491" = type { %"class.std::__1::__bucket_list_deallocator.492" }
+%"class.std::__1::__bucket_list_deallocator.492" = type { %"class.std::__1::__compressed_pair.493" }
+%"class.std::__1::__compressed_pair.493" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.497" = type { %"struct.std::__1::__compressed_pair_elem.498" }
+%"struct.std::__1::__compressed_pair_elem.498" = type { %"struct.std::__1::__hash_node_base.490" }
+%"class.std::__1::__compressed_pair.502" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.507" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"class.std::__1::vector.513" = type { %"class.std::__1::__vector_base.514" }
+%"class.std::__1::__vector_base.514" = type { %"class.v8::internal::HeapObjectAllocationTracker"**, %"class.v8::internal::HeapObjectAllocationTracker"**, %"class.std::__1::__compressed_pair.515" }
+%"class.v8::internal::HeapObjectAllocationTracker" = type { i32 (...)** }
+%"class.std::__1::__compressed_pair.515" = type { %"struct.std::__1::__compressed_pair_elem.516" }
+%"struct.std::__1::__compressed_pair_elem.516" = type { %"class.v8::internal::HeapObjectAllocationTracker"** }
+%"class.std::__1::unique_ptr.520" = type { %"class.std::__1::__compressed_pair.521" }
+%"class.std::__1::__compressed_pair.521" = type { %"struct.std::__1::__compressed_pair_elem.522" }
+%"struct.std::__1::__compressed_pair_elem.522" = type { %"class.v8::internal::third_party_heap::Heap"* }
+%"class.v8::internal::third_party_heap::Heap" = type opaque
+%"class.v8::internal::MarkCompactCollector" = type <{ %"class.v8::internal::MarkCompactCollectorBase", %"class.v8::base::Mutex", %"class.v8::base::Semaphore", i8, i8, i8, i8, i8, i8, [2 x i8], %"class.v8::internal::MarkingWorklists", %"class.v8::internal::WeakObjects", %"struct.v8::internal::EphemeronMarking", %"class.std::__1::unique_ptr.159", %"class.std::__1::unique_ptr.165", %"class.v8::internal::NativeContextInferrer", [7 x i8], %"class.v8::internal::NativeContextStats", %"class.std::__1::vector.223", %"class.std::__1::vector.223", %"class.std::__1::vector.223", %"class.std::__1::vector.230", %"class.v8::internal::Sweeper"*, %"class.v8::internal::MajorMarkingState", %"class.v8::internal::MajorNonAtomicMarkingState", [2 x i8], i32, i32, [4 x i8] }>
+%"struct.v8::internal::EphemeronMarking" = type { %"class.std::__1::vector.152", i8, i64 }
+%"class.std::__1::vector.152" = type { %"class.std::__1::__vector_base.153" }
+%"class.std::__1::__vector_base.153" = type { %"class.v8::internal::HeapObject"*, %"class.v8::internal::HeapObject"*, %"class.std::__1::__compressed_pair.154" }
+%"class.std::__1::__compressed_pair.154" = type { %"struct.std::__1::__compressed_pair_elem.155" }
+%"struct.std::__1::__compressed_pair_elem.155" = type { %"class.v8::internal::HeapObject"* }
+%"class.std::__1::unique_ptr.159" = type { %"class.std::__1::__compressed_pair.160" }
+%"class.std::__1::__compressed_pair.160" = type { %"struct.std::__1::__compressed_pair_elem.161" }
+%"struct.std::__1::__compressed_pair_elem.161" = type { %"class.v8::internal::MainMarkingVisitor"* }
+%"class.v8::internal::MainMarkingVisitor" = type opaque
+%"class.std::__1::unique_ptr.165" = type { %"class.std::__1::__compressed_pair.166" }
+%"class.std::__1::__compressed_pair.166" = type { %"struct.std::__1::__compressed_pair_elem.167" }
+%"struct.std::__1::__compressed_pair_elem.167" = type { %"class.v8::internal::MarkingWorklists::Local"* }
+%"class.v8::internal::MarkingWorklists::Local" = type { %"class.heap::base::Worklist<v8::internal::HeapObject, 64>::Local", %"class.heap::base::Worklist<v8::internal::HeapObject, 16>::Local", %"class.heap::base::Worklist<v8::internal::HeapObject, 64>::Local", i64, %"class.heap::base::Worklist<v8::internal::HeapObject, 64>::Local"*, i8, [7 x i8], %"class.std::__1::unordered_map.168" }
+%"class.heap::base::Worklist<v8::internal::HeapObject, 16>::Local" = type { %"class.heap::base::Worklist.120"*, %"class.heap::base::internal::SegmentBase"*, %"class.heap::base::internal::SegmentBase"* }
+%"class.heap::base::internal::SegmentBase" = type { i16, i16 }
+%"class.std::__1::unordered_map.168" = type { %"class.std::__1::__hash_table.169" }
+%"class.std::__1::__hash_table.169" = type <{ %"class.std::__1::unique_ptr.170", %"class.std::__1::__compressed_pair.180", %"class.std::__1::__compressed_pair.185", %"class.std::__1::__compressed_pair.190", [4 x i8] }>
+%"class.std::__1::unique_ptr.170" = type { %"class.std::__1::__compressed_pair.171" }
+%"class.std::__1::__compressed_pair.171" = type { %"struct.std::__1::__compressed_pair_elem.172", %"struct.std::__1::__compressed_pair_elem.174" }
+%"struct.std::__1::__compressed_pair_elem.172" = type { %"struct.std::__1::__hash_node_base.173"** }
+%"struct.std::__1::__hash_node_base.173" = type { %"struct.std::__1::__hash_node_base.173"* }
+%"struct.std::__1::__compressed_pair_elem.174" = type { %"class.std::__1::__bucket_list_deallocator.175" }
+%"class.std::__1::__bucket_list_deallocator.175" = type { %"class.std::__1::__compressed_pair.176" }
+%"class.std::__1::__compressed_pair.176" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.180" = type { %"struct.std::__1::__compressed_pair_elem.181" }
+%"struct.std::__1::__compressed_pair_elem.181" = type { %"struct.std::__1::__hash_node_base.173" }
+%"class.std::__1::__compressed_pair.185" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.190" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"class.std::__1::vector.230" = type { %"class.std::__1::__vector_base.231" }
+%"class.std::__1::__vector_base.231" = type { %"struct.std::__1::pair.232"*, %"struct.std::__1::pair.232"*, %"class.std::__1::__compressed_pair.233" }
+%"struct.std::__1::pair.232" = type opaque
+%"class.std::__1::__compressed_pair.233" = type { %"struct.std::__1::__compressed_pair_elem.234" }
+%"struct.std::__1::__compressed_pair_elem.234" = type { %"struct.std::__1::pair.232"* }
+%"class.v8::internal::Sweeper" = type <{ %"class.v8::internal::Heap"*, %"class.v8::internal::MajorNonAtomicMarkingState"*, %"class.std::__1::unique_ptr.238", %"class.v8::base::Mutex", [3 x %"class.std::__1::vector.223"], [3 x %"class.std::__1::vector.223"], i8, %"struct.std::__1::atomic.91", [6 x i8], %"class.std::__1::vector.223", i64, %"class.v8::base::Semaphore", i8, i8, i8, [5 x i8] }>
+%"class.v8::internal::MajorNonAtomicMarkingState" = type { i8 }
+%"class.v8::internal::IncrementalMarking" = type opaque
+%"class.heap::base::Worklist<v8::internal::HeapObject, 64>::Local" = type { %"class.heap::base::Worklist"*, %"class.heap::base::internal::SegmentBase"*, %"class.heap::base::internal::SegmentBase"* }
+%"class.v8::internal::MajorMarkingState" = type { i8 }
+%"class.std::__1::unordered_map.526" = type { %"class.std::__1::__hash_table.527" }
+%"class.std::__1::__hash_table.527" = type <{ %"class.std::__1::unique_ptr.528", %"class.std::__1::__compressed_pair.538", %"class.std::__1::__compressed_pair.543", %"class.std::__1::__compressed_pair.546", [4 x i8] }>
+%"class.std::__1::unique_ptr.528" = type { %"class.std::__1::__compressed_pair.529" }
+%"class.std::__1::__compressed_pair.529" = type { %"struct.std::__1::__compressed_pair_elem.530", %"struct.std::__1::__compressed_pair_elem.532" }
+%"struct.std::__1::__compressed_pair_elem.530" = type { %"struct.std::__1::__hash_node_base.531"** }
+%"struct.std::__1::__hash_node_base.531" = type { %"struct.std::__1::__hash_node_base.531"* }
+%"struct.std::__1::__compressed_pair_elem.532" = type { %"class.std::__1::__bucket_list_deallocator.533" }
+%"class.std::__1::__bucket_list_deallocator.533" = type { %"class.std::__1::__compressed_pair.534" }
+%"class.std::__1::__compressed_pair.534" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.538" = type { %"struct.std::__1::__compressed_pair_elem.539" }
+%"struct.std::__1::__compressed_pair_elem.539" = type { %"struct.std::__1::__hash_node_base.531" }
+%"class.std::__1::__compressed_pair.543" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"class.std::__1::__compressed_pair.546" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"class.v8::internal::RelocInfo" = type opaque
+
+@_ZN2v88internal12_GLOBAL__N_123current_marking_barrierE = internal thread_local unnamed_addr global %"class.v8::internal::MarkingBarrier"* null, align 8
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden %"class.v8::internal::MarkingBarrier"* @_ZN2v88internal12WriteBarrier21CurrentMarkingBarrierEPNS0_4HeapE(%"class.v8::internal::Heap"* nocapture readonly) local_unnamed_addr #0 align 2 {
+  %2 = load %"class.v8::internal::MarkingBarrier"*, %"class.v8::internal::MarkingBarrier"** @_ZN2v88internal12_GLOBAL__N_123current_marking_barrierE, align 8
+  %3 = icmp eq %"class.v8::internal::MarkingBarrier"* %2, null
+  br i1 %3, label %4, label %7
+
+4:                                                ; preds = %1
+  %5 = getelementptr inbounds %"class.v8::internal::Heap", %"class.v8::internal::Heap"* %0, i64 0, i32 97, i32 0, i32 0, i32 0
+  %6 = load %"class.v8::internal::MarkingBarrier"*, %"class.v8::internal::MarkingBarrier"** %5, align 8
+  br label %7
+
+7:                                                ; preds = %1, %4
+  %8 = phi %"class.v8::internal::MarkingBarrier"* [ %6, %4 ], [ %2, %1 ]
+  ret %"class.v8::internal::MarkingBarrier"* %8
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable writeonly
+define hidden void @_ZN2v88internal12WriteBarrier12SetForThreadEPNS0_14MarkingBarrierE(%"class.v8::internal::MarkingBarrier"*) local_unnamed_addr #1 align 2 {
+  store %"class.v8::internal::MarkingBarrier"* %0, %"class.v8::internal::MarkingBarrier"** @_ZN2v88internal12_GLOBAL__N_123current_marking_barrierE, align 8
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable writeonly
+define hidden void @_ZN2v88internal12WriteBarrier14ClearForThreadEPNS0_14MarkingBarrierE(%"class.v8::internal::MarkingBarrier"* nocapture readnone) local_unnamed_addr #1 align 2 {
+  store %"class.v8::internal::MarkingBarrier"* null, %"class.v8::internal::MarkingBarrier"** @_ZN2v88internal12_GLOBAL__N_123current_marking_barrierE, align 8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2v88internal12WriteBarrier11MarkingSlowEPNS0_4HeapENS0_10HeapObjectENS0_24CompressedHeapObjectSlotES4_(%"class.v8::internal::Heap"* nocapture readonly, i64, i64, i64) local_unnamed_addr #2 align 2 {
+  %5 = load %"class.v8::internal::MarkingBarrier"*, %"class.v8::internal::MarkingBarrier"** @_ZN2v88internal12_GLOBAL__N_123current_marking_barrierE, align 8
+  %6 = icmp eq %"class.v8::internal::MarkingBarrier"* %5, null
+  br i1 %6, label %7, label %10
+
+7:                                                ; preds = %4
+  %8 = getelementptr inbounds %"class.v8::internal::Heap", %"class.v8::internal::Heap"* %0, i64 0, i32 97, i32 0, i32 0, i32 0
+  %9 = load %"class.v8::internal::MarkingBarrier"*, %"class.v8::internal::MarkingBarrier"** %8, align 8
+  br label %10
+
+10:                                               ; preds = %4, %7
+  %11 = phi %"class.v8::internal::MarkingBarrier"* [ %9, %7 ], [ %5, %4 ]
+  tail call void @_ZN2v88internal14MarkingBarrier5WriteENS0_10HeapObjectENS0_24CompressedHeapObjectSlotES2_(%"class.v8::internal::MarkingBarrier"* %11, i64 %1, i64 %2, i64 %3) #4
+  ret void
+}
+
+declare void @_ZN2v88internal14MarkingBarrier5WriteENS0_10HeapObjectENS0_24CompressedHeapObjectSlotES2_(%"class.v8::internal::MarkingBarrier"*, i64, i64, i64) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2v88internal12WriteBarrier11MarkingSlowEPNS0_4HeapENS0_4CodeEPNS0_9RelocInfoENS0_10HeapObjectE(%"class.v8::internal::Heap"* nocapture readonly, i64, %"class.v8::internal::RelocInfo"*, i64) local_unnamed_addr #2 align 2 {
+  %5 = load %"class.v8::internal::MarkingBarrier"*, %"class.v8::internal::MarkingBarrier"** @_ZN2v88internal12_GLOBAL__N_123current_marking_barrierE, align 8
+  %6 = icmp eq %"class.v8::internal::MarkingBarrier"* %5, null
+  br i1 %6, label %7, label %10
+
+7:                                                ; preds = %4
+  %8 = getelementptr inbounds %"class.v8::internal::Heap", %"class.v8::internal::Heap"* %0, i64 0, i32 97, i32 0, i32 0, i32 0
+  %9 = load %"class.v8::internal::MarkingBarrier"*, %"class.v8::internal::MarkingBarrier"** %8, align 8
+  br label %10
+
+10:                                               ; preds = %4, %7
+  %11 = phi %"class.v8::internal::MarkingBarrier"* [ %9, %7 ], [ %5, %4 ]
+  tail call void @_ZN2v88internal14MarkingBarrier5WriteENS0_4CodeEPNS0_9RelocInfoENS0_10HeapObjectE(%"class.v8::internal::MarkingBarrier"* %11, i64 %1, %"class.v8::internal::RelocInfo"* %2, i64 %3) #4
+  ret void
+}
+
+declare void @_ZN2v88internal14MarkingBarrier5WriteENS0_4CodeEPNS0_9RelocInfoENS0_10HeapObjectE(%"class.v8::internal::MarkingBarrier"*, i64, %"class.v8::internal::RelocInfo"*, i64) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2v88internal12WriteBarrier11MarkingSlowEPNS0_4HeapENS0_13JSArrayBufferEPNS0_20ArrayBufferExtensionE(%"class.v8::internal::Heap"* nocapture readonly, i64, %"class.v8::internal::ArrayBufferExtension"*) local_unnamed_addr #2 align 2 {
+  %4 = load %"class.v8::internal::MarkingBarrier"*, %"class.v8::internal::MarkingBarrier"** @_ZN2v88internal12_GLOBAL__N_123current_marking_barrierE, align 8
+  %5 = icmp eq %"class.v8::internal::MarkingBarrier"* %4, null
+  br i1 %5, label %6, label %9
+
+6:                                                ; preds = %3
+  %7 = getelementptr inbounds %"class.v8::internal::Heap", %"class.v8::internal::Heap"* %0, i64 0, i32 97, i32 0, i32 0, i32 0
+  %8 = load %"class.v8::internal::MarkingBarrier"*, %"class.v8::internal::MarkingBarrier"** %7, align 8
+  br label %9
+
+9:                                                ; preds = %3, %6
+  %10 = phi %"class.v8::internal::MarkingBarrier"* [ %8, %6 ], [ %4, %3 ]
+  tail call void @_ZN2v88internal14MarkingBarrier5WriteENS0_13JSArrayBufferEPNS0_20ArrayBufferExtensionE(%"class.v8::internal::MarkingBarrier"* %10, i64 %1, %"class.v8::internal::ArrayBufferExtension"* %2) #4
+  ret void
+}
+
+declare void @_ZN2v88internal14MarkingBarrier5WriteENS0_13JSArrayBufferEPNS0_20ArrayBufferExtensionE(%"class.v8::internal::MarkingBarrier"*, i64, %"class.v8::internal::ArrayBufferExtension"*) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2v88internal12WriteBarrier11MarkingSlowEPNS0_4HeapENS0_15DescriptorArrayEi(%"class.v8::internal::Heap"* nocapture readonly, i64, i32) local_unnamed_addr #2 align 2 {
+  %4 = load %"class.v8::internal::MarkingBarrier"*, %"class.v8::internal::MarkingBarrier"** @_ZN2v88internal12_GLOBAL__N_123current_marking_barrierE, align 8
+  %5 = icmp eq %"class.v8::internal::MarkingBarrier"* %4, null
+  br i1 %5, label %6, label %9
+
+6:                                                ; preds = %3
+  %7 = getelementptr inbounds %"class.v8::internal::Heap", %"class.v8::internal::Heap"* %0, i64 0, i32 97, i32 0, i32 0, i32 0
+  %8 = load %"class.v8::internal::MarkingBarrier"*, %"class.v8::internal::MarkingBarrier"** %7, align 8
+  br label %9
+
+9:                                                ; preds = %3, %6
+  %10 = phi %"class.v8::internal::MarkingBarrier"* [ %8, %6 ], [ %4, %3 ]
+  tail call void @_ZN2v88internal14MarkingBarrier5WriteENS0_15DescriptorArrayEi(%"class.v8::internal::MarkingBarrier"* %10, i64 %1, i32 %2) #4
+  ret void
+}
+
+declare void @_ZN2v88internal14MarkingBarrier5WriteENS0_15DescriptorArrayEi(%"class.v8::internal::MarkingBarrier"*, i64, i32) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN2v88internal12WriteBarrier15MarkingFromCodeEmm(i64, i64) local_unnamed_addr #2 align 2 {
+  %3 = inttoptr i64 %1 to i32*
+  %4 = load i32, i32* %3, align 4
+  %5 = zext i32 %4 to i64
+  %6 = and i64 %5, 1
+  %7 = icmp ne i64 %6, 0
+  %8 = icmp ne i32 %4, 3
+  %9 = and i1 %8, %7
+  br i1 %9, label %10, label %31
+
+10:                                               ; preds = %2
+  %11 = and i64 %1, -4294967296
+  %12 = and i64 %5, 4294967293
+  %13 = or i64 %12, %11
+  %14 = and i64 %0, -262144
+  %15 = or i64 %14, 8
+  %16 = inttoptr i64 %15 to i64*
+  %17 = load i64, i64* %16, align 8
+  %18 = and i64 %17, 262144
+  %19 = icmp eq i64 %18, 0
+  br i1 %19, label %31, label %20
+
+20:                                               ; preds = %10
+  %21 = load %"class.v8::internal::MarkingBarrier"*, %"class.v8::internal::MarkingBarrier"** @_ZN2v88internal12_GLOBAL__N_123current_marking_barrierE, align 8
+  %22 = icmp eq %"class.v8::internal::MarkingBarrier"* %21, null
+  br i1 %22, label %23, label %29
+
+23:                                               ; preds = %20
+  %24 = or i64 %14, 16
+  %25 = inttoptr i64 %24 to %"class.v8::internal::Heap"**
+  %26 = load %"class.v8::internal::Heap"*, %"class.v8::internal::Heap"** %25, align 16
+  %27 = getelementptr inbounds %"class.v8::internal::Heap", %"class.v8::internal::Heap"* %26, i64 0, i32 97, i32 0, i32 0, i32 0
+  %28 = load %"class.v8::internal::MarkingBarrier"*, %"class.v8::internal::MarkingBarrier"** %27, align 8
+  br label %29
+
+29:                                               ; preds = %23, %20
+  %30 = phi %"class.v8::internal::MarkingBarrier"* [ %28, %23 ], [ %21, %20 ]
+  tail call void @_ZN2v88internal14MarkingBarrier5WriteENS0_10HeapObjectENS0_24CompressedHeapObjectSlotES2_(%"class.v8::internal::MarkingBarrier"* %30, i64 %0, i64 %1, i64 %13) #4
+  br label %31
+
+31:                                               ; preds = %2, %10, %29
+  ret i32 0
+}
+
+attributes #0 = { norecurse nounwind readonly ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { nofree norecurse nounwind ssp uwtable writeonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}

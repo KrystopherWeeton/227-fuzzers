@@ -1,0 +1,225 @@
+; ModuleID = '../../native_client/src/trusted/service_runtime/thread_suspension_unwind.c'
+source_filename = "../../native_client/src/trusted/service_runtime/thread_suspension_unwind.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.NaClAppThread = type { %struct.NaClThreadContext, %struct.NaClMutex, %struct.NaClApp*, i32, i32, %struct.NaClThread, %struct.NaClMutex, i32, %struct.NaClAppThreadSuspendedRegisters*, i32, i64, i8*, i32, i32, i32, %struct.NaClListNode, i32, %struct.NaClCondVar }
+%struct.NaClThreadContext = type { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i32, i32, i32, i16, i16, i64, i32, i32 }
+%struct.NaClApp = type { i8, i64, i32, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i32, i32, %struct.NaClMutex, %struct.NaClCondVar, [151 x %struct.NaClSyscallTableEntry], %struct.NaClResourceNaClApp, i32, i32, %struct.NaClVmmap, %struct.NaClIntervalMultiset*, %struct.NaClDescEffector*, i32, i32, %struct.NaClDesc*, %struct.NaClMutex, i8*, %struct.NaClDynamicRegion*, i32, i32, i32, i32, i64, i32, i32, i32, %struct.NaClCPUFeaturesAbstract*, %struct.NaClValidationCache*, i32, i32, i32, i32, i32, i64, %struct.NaClMutex, %struct.DynArray, i32, %struct.NaClFastMutex, %struct.DynArray, %struct.NaClDebugCallbacks*, %struct.NaClDesc*, %struct.NaClDesc*, %struct.NaClMutex, i32, i32, i32, i32, i32, i32, i32, %struct.NaClValidatorInterface* }
+%struct.NaClSyscallTableEntry = type { i32 (%struct.NaClAppThread*)* }
+%struct.NaClResourceNaClApp = type { %struct.NaClResource, %struct.NaClApp* }
+%struct.NaClResource = type { %struct.NaClResourceSchemes*, i64 }
+%struct.NaClResourceSchemes = type { i8*, i32, %struct.NaClDesc* (%struct.NaClResource*, i8*, i32, i32, i32)* }
+%struct.NaClVmmap = type { %struct.NaClVmmapEntry**, i64, i64, i32 }
+%struct.NaClVmmapEntry = type { i64, i64, i32, i32, i32, %struct.NaClDesc*, i64, i64 }
+%struct.NaClIntervalMultiset = type { %struct.NaClIntervalMultisetVtbl* }
+%struct.NaClIntervalMultisetVtbl = type { void (%struct.NaClIntervalMultiset*)*, void (%struct.NaClIntervalMultiset*, i32, i32)*, void (%struct.NaClIntervalMultiset*, i32, i32)*, i32 (%struct.NaClIntervalMultiset*, i32, i32)* }
+%struct.NaClDescEffector = type opaque
+%struct.NaClDynamicRegion = type opaque
+%struct.NaClCPUFeaturesAbstract = type opaque
+%struct.NaClValidationCache = type opaque
+%struct.NaClFastMutex = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%struct.DynArray = type { i64, i8**, i64, i32*, i64 }
+%struct.NaClDebugCallbacks = type { void (%struct.NaClAppThread*)*, void (%struct.NaClAppThread*)*, void ()* }
+%struct.NaClDesc = type opaque
+%struct.NaClValidatorInterface = type { i32, i32, i32, i32 (i64, i8*, i64, i32, i32, i32, %struct.NaClCPUFeaturesAbstract*, %struct.NaClValidationMetadata*, %struct.NaClValidationCache*)*, i32 (i64, i8*, i8*, i64, %struct.NaClCPUFeaturesAbstract*, i32 (i8*, i8*, i8)*)*, i32 (i64, i8*, i8*, i64, %struct.NaClCPUFeaturesAbstract*)*, i64, void (%struct.NaClCPUFeaturesAbstract*)*, void (%struct.NaClCPUFeaturesAbstract*)*, i32 (i64, i64, i8*, i64, %struct.NaClCPUFeaturesAbstract*)* }
+%struct.NaClValidationMetadata = type opaque
+%struct.NaClThread = type { i64 }
+%struct.NaClMutex = type { %union.pthread_mutex_t, i32 }
+%struct.NaClAppThreadSuspendedRegisters = type opaque
+%struct.NaClListNode = type { %struct.NaClListNode*, %struct.NaClListNode* }
+%struct.NaClCondVar = type { %union.pthread_cond_t }
+%union.pthread_cond_t = type { %struct.__pthread_cond_s }
+%struct.__pthread_cond_s = type { %union.anon, %union.anon.0, [2 x i32], [2 x i32], i32, i32, [2 x i32] }
+%union.anon = type { i64 }
+%union.anon.0 = type { i64 }
+%struct.NaClSignalContext = type { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i32, i32, i32, i32, i32, i32, i32, i32 }
+
+@.str = private unnamed_addr constant [84 x i8] c"NaClGetRegistersForContextSwitch: Failed to read return address; using dummy value\0A\00", align 1
+@NaClGetTlsFastPath1 = external global i8, align 1
+@NaClGetTlsFastPath1End = external global i8, align 1
+@NaClGetTlsFastPath1RspRestored = external global i8, align 1
+@NaClGetTlsFastPath2 = external global i8, align 1
+@NaClGetTlsFastPath2End = external global i8, align 1
+@NaClGetTlsFastPath2RspRestored = external global i8, align 1
+@.str.1 = private unnamed_addr constant [50 x i8] c"NaClUserToSys: uaddr 0x%08lx, addr space %d bits\0A\00", align 1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClGetRegistersForContextSwitch(%struct.NaClAppThread*, %struct.NaClSignalContext*, i32* nocapture) local_unnamed_addr #0 {
+  %4 = alloca i64, align 8
+  %5 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 2
+  %6 = load %struct.NaClApp*, %struct.NaClApp** %5, align 8
+  %7 = getelementptr inbounds %struct.NaClSignalContext, %struct.NaClSignalContext* %1, i64 0, i32 16
+  %8 = load i64, i64* %7, align 8
+  %9 = getelementptr inbounds %struct.NaClApp, %struct.NaClApp* %6, i64 0, i32 0
+  %10 = load i8, i8* %9, align 8
+  %11 = icmp ugt i8 %10, 16
+  br i1 %11, label %14, label %12
+
+12:                                               ; preds = %3
+  %13 = zext i8 %10 to i32
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([50 x i8], [50 x i8]* @.str.1, i64 0, i64 0), i64 65536, i32 %13) #3
+  br label %14
+
+14:                                               ; preds = %12, %3
+  %15 = getelementptr inbounds %struct.NaClApp, %struct.NaClApp* %6, i64 0, i32 3
+  %16 = load i64, i64* %15, align 8
+  %17 = add i64 %16, 65536
+  %18 = icmp ult i64 %8, %17
+  br i1 %18, label %34, label %19
+
+19:                                               ; preds = %14
+  %20 = load i64, i64* %7, align 8
+  %21 = load i8, i8* %9, align 8
+  %22 = icmp ugt i8 %21, 17
+  br i1 %22, label %26, label %23
+
+23:                                               ; preds = %19
+  %24 = zext i8 %21 to i32
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([50 x i8], [50 x i8]* @.str.1, i64 0, i64 0), i64 131072, i32 %24) #3
+  %25 = load i64, i64* %15, align 8
+  br label %26
+
+26:                                               ; preds = %23, %19
+  %27 = phi i64 [ %16, %19 ], [ %25, %23 ]
+  %28 = add i64 %27, 131072
+  %29 = icmp ult i64 %20, %28
+  br i1 %29, label %30, label %34
+
+30:                                               ; preds = %26
+  store i32 2, i32* %2, align 4
+  %31 = getelementptr inbounds %struct.NaClSignalContext, %struct.NaClSignalContext* %1, i64 0, i32 7
+  %32 = load i64, i64* %31, align 8
+  %33 = add i64 %32, 8
+  store i64 %33, i64* %31, align 8
+  br label %65
+
+34:                                               ; preds = %26, %14
+  %35 = load i64, i64* %7, align 8
+  %36 = icmp uge i64 %35, ptrtoint (i8* @NaClGetTlsFastPath1 to i64)
+  %37 = icmp ult i64 %35, ptrtoint (i8* @NaClGetTlsFastPath1End to i64)
+  %38 = and i1 %36, %37
+  br i1 %38, label %39, label %46
+
+39:                                               ; preds = %34
+  store i32 6, i32* %2, align 4
+  %40 = load i64, i64* %7, align 8
+  %41 = icmp ult i64 %40, ptrtoint (i8* @NaClGetTlsFastPath1RspRestored to i64)
+  br i1 %41, label %42, label %65
+
+42:                                               ; preds = %39
+  %43 = getelementptr inbounds %struct.NaClSignalContext, %struct.NaClSignalContext* %1, i64 0, i32 7
+  %44 = load i64, i64* %43, align 8
+  %45 = add i64 %44, 8
+  store i64 %45, i64* %43, align 8
+  br label %65
+
+46:                                               ; preds = %34
+  %47 = icmp uge i64 %35, ptrtoint (i8* @NaClGetTlsFastPath2 to i64)
+  %48 = icmp ult i64 %35, ptrtoint (i8* @NaClGetTlsFastPath2End to i64)
+  %49 = and i1 %47, %48
+  br i1 %49, label %50, label %57
+
+50:                                               ; preds = %46
+  store i32 6, i32* %2, align 4
+  %51 = load i64, i64* %7, align 8
+  %52 = icmp ult i64 %51, ptrtoint (i8* @NaClGetTlsFastPath2RspRestored to i64)
+  br i1 %52, label %53, label %65
+
+53:                                               ; preds = %50
+  %54 = getelementptr inbounds %struct.NaClSignalContext, %struct.NaClSignalContext* %1, i64 0, i32 7
+  %55 = load i64, i64* %54, align 8
+  %56 = add i64 %55, 8
+  store i64 %56, i64* %54, align 8
+  br label %65
+
+57:                                               ; preds = %46
+  %58 = icmp uge i64 %35, ptrtoint (void ()* @NaClSyscallSeg to i64)
+  %59 = icmp ult i64 %35, ptrtoint (void ()* @NaClSyscallSegRegsSaved to i64)
+  %60 = and i1 %58, %59
+  br i1 %60, label %61, label %66
+
+61:                                               ; preds = %57
+  store i32 5, i32* %2, align 4
+  %62 = getelementptr inbounds %struct.NaClSignalContext, %struct.NaClSignalContext* %1, i64 0, i32 7
+  %63 = load i64, i64* %62, align 8
+  %64 = add i64 %63, 8
+  store i64 %64, i64* %62, align 8
+  br label %65
+
+65:                                               ; preds = %30, %61, %42, %39, %53, %50
+  tail call void @NaClSignalContextUnsetClobberedRegisters(%struct.NaClSignalContext* %1) #3
+  br label %68
+
+66:                                               ; preds = %57
+  store i32 7, i32* %2, align 4
+  %67 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 0
+  tail call void @NaClThreadContextToSignalContext(%struct.NaClThreadContext* %67, %struct.NaClSignalContext* %1) #3
+  br label %68
+
+68:                                               ; preds = %66, %65
+  %69 = bitcast i64* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %69) #3
+  store i64 0, i64* %4, align 8
+  %70 = load %struct.NaClApp*, %struct.NaClApp** %5, align 8
+  %71 = getelementptr inbounds %struct.NaClSignalContext, %struct.NaClSignalContext* %1, i64 0, i32 7
+  %72 = load i64, i64* %71, align 8
+  %73 = add i64 %72, 4294967288
+  %74 = and i64 %73, 4294967295
+  %75 = call i32 @NaClCopyInFromUser(%struct.NaClApp* %70, i8* nonnull %69, i64 %74, i64 8) #3
+  %76 = icmp eq i32 %75, 0
+  br i1 %76, label %77, label %78
+
+77:                                               ; preds = %68
+  call void (i32, i8*, ...) @NaClLog(i32 -2, i8* getelementptr inbounds ([84 x i8], [84 x i8]* @.str, i64 0, i64 0)) #3
+  br label %78
+
+78:                                               ; preds = %68, %77
+  %79 = load %struct.NaClApp*, %struct.NaClApp** %5, align 8
+  %80 = load i64, i64* %4, align 8
+  %81 = getelementptr inbounds %struct.NaClApp, %struct.NaClApp* %79, i64 0, i32 15
+  %82 = load i32, i32* %81, align 8
+  %83 = sext i32 %82 to i64
+  %84 = add i64 %80, 4294967295
+  %85 = add i64 %84, %83
+  %86 = sub nsw i64 0, %83
+  %87 = getelementptr inbounds %struct.NaClApp, %struct.NaClApp* %79, i64 0, i32 3
+  %88 = load i64, i64* %87, align 8
+  %89 = and i64 %86, 4294967295
+  %90 = and i64 %89, %85
+  %91 = add i64 %90, %88
+  store i64 %91, i64* %7, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %69) #3
+  ret void
+}
+
+declare void @NaClSignalContextUnsetClobberedRegisters(%struct.NaClSignalContext*) local_unnamed_addr #1
+
+declare void @NaClThreadContextToSignalContext(%struct.NaClThreadContext*, %struct.NaClSignalContext*) local_unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+declare i32 @NaClCopyInFromUser(%struct.NaClApp*, i8*, i64, i64) local_unnamed_addr #1
+
+declare void @NaClLog(i32, i8*, ...) local_unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+declare void @NaClSyscallSeg() #1
+
+declare void @NaClSyscallSegRegsSaved() #1
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}

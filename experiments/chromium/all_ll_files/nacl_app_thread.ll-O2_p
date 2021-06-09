@@ -1,0 +1,415 @@
+; ModuleID = '../../native_client/src/trusted/service_runtime/nacl_app_thread.c'
+source_filename = "../../native_client/src/trusted/service_runtime/nacl_app_thread.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.NaClThreadContext = type { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i32, i32, i32, i16, i16, i64, i32, i32 }
+%struct.NaClAppThread = type { %struct.NaClThreadContext, %struct.NaClMutex, %struct.NaClApp*, i32, i32, %struct.NaClThread, %struct.NaClMutex, i32, %struct.NaClAppThreadSuspendedRegisters*, i32, i64, i8*, i32, i32, i32, %struct.NaClListNode, i32, %struct.NaClCondVar }
+%struct.NaClApp = type { i8, i64, i32, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i32, i32, %struct.NaClMutex, %struct.NaClCondVar, [151 x %struct.NaClSyscallTableEntry], %struct.NaClResourceNaClApp, i32, i32, %struct.NaClVmmap, %struct.NaClIntervalMultiset*, %struct.NaClDescEffector*, i32, i32, %struct.NaClDesc*, %struct.NaClMutex, i8*, %struct.NaClDynamicRegion*, i32, i32, i32, i32, i64, i32, i32, i32, %struct.NaClCPUFeaturesAbstract*, %struct.NaClValidationCache*, i32, i32, i32, i32, i32, i64, %struct.NaClMutex, %struct.DynArray, i32, %struct.NaClFastMutex, %struct.DynArray, %struct.NaClDebugCallbacks*, %struct.NaClDesc*, %struct.NaClDesc*, %struct.NaClMutex, i32, i32, i32, i32, i32, i32, i32, %struct.NaClValidatorInterface* }
+%struct.NaClSyscallTableEntry = type { i32 (%struct.NaClAppThread*)* }
+%struct.NaClResourceNaClApp = type { %struct.NaClResource, %struct.NaClApp* }
+%struct.NaClResource = type { %struct.NaClResourceSchemes*, i64 }
+%struct.NaClResourceSchemes = type { i8*, i32, %struct.NaClDesc* (%struct.NaClResource*, i8*, i32, i32, i32)* }
+%struct.NaClVmmap = type { %struct.NaClVmmapEntry**, i64, i64, i32 }
+%struct.NaClVmmapEntry = type { i64, i64, i32, i32, i32, %struct.NaClDesc*, i64, i64 }
+%struct.NaClIntervalMultiset = type { %struct.NaClIntervalMultisetVtbl* }
+%struct.NaClIntervalMultisetVtbl = type { void (%struct.NaClIntervalMultiset*)*, void (%struct.NaClIntervalMultiset*, i32, i32)*, void (%struct.NaClIntervalMultiset*, i32, i32)*, i32 (%struct.NaClIntervalMultiset*, i32, i32)* }
+%struct.NaClDescEffector = type { %struct.NaClDescEffectorVtbl* }
+%struct.NaClDescEffectorVtbl = type { void (%struct.NaClDescEffector*, i64, i64)* }
+%struct.NaClDynamicRegion = type opaque
+%struct.NaClCPUFeaturesAbstract = type opaque
+%struct.NaClValidationCache = type opaque
+%struct.NaClFastMutex = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%struct.DynArray = type { i64, i8**, i64, i32*, i64 }
+%struct.NaClDebugCallbacks = type { void (%struct.NaClAppThread*)*, void (%struct.NaClAppThread*)*, void ()* }
+%struct.NaClDesc = type opaque
+%struct.NaClValidatorInterface = type { i32, i32, i32, i32 (i64, i8*, i64, i32, i32, i32, %struct.NaClCPUFeaturesAbstract*, %struct.NaClValidationMetadata*, %struct.NaClValidationCache*)*, i32 (i64, i8*, i8*, i64, %struct.NaClCPUFeaturesAbstract*, i32 (i8*, i8*, i8)*)*, i32 (i64, i8*, i8*, i64, %struct.NaClCPUFeaturesAbstract*)*, i64, void (%struct.NaClCPUFeaturesAbstract*)*, void (%struct.NaClCPUFeaturesAbstract*)*, i32 (i64, i64, i8*, i64, %struct.NaClCPUFeaturesAbstract*)* }
+%struct.NaClValidationMetadata = type opaque
+%struct.NaClThread = type { i64 }
+%struct.NaClMutex = type { %union.pthread_mutex_t, i32 }
+%struct.NaClAppThreadSuspendedRegisters = type opaque
+%struct.NaClListNode = type { %struct.NaClListNode*, %struct.NaClListNode* }
+%struct.NaClCondVar = type { %union.pthread_cond_t }
+%union.pthread_cond_t = type { %struct.__pthread_cond_s }
+%struct.__pthread_cond_s = type { %union.anon, %union.anon.0, [2 x i32], [2 x i32], i32, i32, [2 x i32] }
+%union.anon = type { i64 }
+%union.anon.0 = type { i64 }
+
+@.str = private unnamed_addr constant [32 x i8] c"NaClAppThreadLauncher: entered\0A\00", align 1
+@.str.1 = private unnamed_addr constant [23 x i8] c"      natp = 0x%016lx\0A\00", align 1
+@.str.2 = private unnamed_addr constant [23 x i8] c" prog_ctr  = 0x%016lx\0A\00", align 1
+@.str.3 = private unnamed_addr constant [23 x i8] c"stack_ptr  = 0x%016lx\0A\00", align 1
+@.str.4 = private unnamed_addr constant [40 x i8] c"Fatal error in file %s, line %d: !(%s)\0A\00", align 1
+@.str.5 = private unnamed_addr constant [66 x i8] c"../../native_client/src/trusted/service_runtime/nacl_app_thread.c\00", align 1
+@.str.6 = private unnamed_addr constant [15 x i8] c"0 < thread_idx\00", align 1
+@.str.7 = private unnamed_addr constant [29 x i8] c"thread_idx < NACL_THREAD_MAX\00", align 1
+@nacl_user = external local_unnamed_addr global [8192 x %struct.NaClThreadContext*], align 16
+@.str.8 = private unnamed_addr constant [32 x i8] c"NaClAppThreadTeardown(0x%08lx)\0A\00", align 1
+@.str.9 = private unnamed_addr constant [46 x i8] c" notifying the debug stub of the thread exit\0A\00", align 1
+@.str.10 = private unnamed_addr constant [28 x i8] c" getting thread table lock\0A\00", align 1
+@.str.11 = private unnamed_addr constant [22 x i8] c" getting thread lock\0A\00", align 1
+@.str.12 = private unnamed_addr constant [36 x i8] c" removing thread from thread table\0A\00", align 1
+@.str.13 = private unnamed_addr constant [19 x i8] c" unlocking thread\0A\00", align 1
+@.str.14 = private unnamed_addr constant [25 x i8] c" unlocking thread table\0A\00", align 1
+@.str.15 = private unnamed_addr constant [29 x i8] c" unregistering signal stack\0A\00", align 1
+@.str.16 = private unnamed_addr constant [24 x i8] c" freeing thread object\0A\00", align 1
+@.str.17 = private unnamed_addr constant [17 x i8] c" NaClThreadExit\0A\00", align 1
+@.str.18 = private unnamed_addr constant [59 x i8] c"NaClAppThreadTeardown: NaClThreadExit() should not return\0A\00", align 1
+@.str.19 = private unnamed_addr constant [26 x i8] c"         natp = 0x%016lx\0A\00", align 1
+@.str.20 = private unnamed_addr constant [26 x i8] c"          nap = 0x%016lx\0A\00", align 1
+@.str.21 = private unnamed_addr constant [26 x i8] c"usr_stack_ptr = 0x%016lx\0A\00", align 1
+
+; Function Attrs: noreturn nounwind ssp uwtable
+define hidden void @NaClAppThreadLauncher(i8*) #0 {
+  %2 = bitcast i8* %0 to %struct.NaClAppThread*
+  tail call void (i32, i8*, ...) @NaClLog(i32 4, i8* getelementptr inbounds ([32 x i8], [32 x i8]* @.str, i64 0, i64 0)) #6
+  %3 = getelementptr inbounds i8, i8* %0, i64 336
+  %4 = bitcast i8* %3 to i8**
+  %5 = load i8*, i8** %4, align 8
+  tail call void @NaClSignalStackRegister(i8* %5) #6
+  %6 = ptrtoint i8* %0 to i64
+  tail call void (i32, i8*, ...) @NaClLog(i32 4, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.1, i64 0, i64 0), i64 %6) #6
+  %7 = getelementptr inbounds i8, i8* %0, i64 128
+  %8 = bitcast i8* %7 to i64*
+  %9 = load i64, i64* %8, align 8
+  tail call void (i32, i8*, ...) @NaClLog(i32 4, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.2, i64 0, i64 0), i64 %9) #6
+  %10 = getelementptr inbounds i8, i8* %0, i64 56
+  %11 = bitcast i8* %10 to i64*
+  %12 = load i64, i64* %11, align 8
+  tail call void (i32, i8*, ...) @NaClLog(i32 4, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.3, i64 0, i64 0), i64 %12) #6
+  %13 = tail call i32 @NaClGetThreadIdx(%struct.NaClAppThread* %2) #6
+  %14 = icmp eq i32 %13, 0
+  br i1 %14, label %15, label %16
+
+15:                                               ; preds = %1
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.4, i64 0, i64 0), i8* getelementptr inbounds ([66 x i8], [66 x i8]* @.str.5, i64 0, i64 0), i32 63, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.6, i64 0, i64 0)) #6
+  br label %19
+
+16:                                               ; preds = %1
+  %17 = icmp ult i32 %13, 8192
+  br i1 %17, label %19, label %18
+
+18:                                               ; preds = %16
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.4, i64 0, i64 0), i8* getelementptr inbounds ([66 x i8], [66 x i8]* @.str.5, i64 0, i64 0), i32 64, i8* getelementptr inbounds ([29 x i8], [29 x i8]* @.str.7, i64 0, i64 0)) #6
+  br label %19
+
+19:                                               ; preds = %15, %18, %16
+  tail call void @NaClTlsSetCurrentThread(%struct.NaClAppThread* %2) #6
+  %20 = zext i32 %13 to i64
+  %21 = getelementptr inbounds [8192 x %struct.NaClThreadContext*], [8192 x %struct.NaClThreadContext*]* @nacl_user, i64 0, i64 %20
+  %22 = bitcast %struct.NaClThreadContext** %21 to i8**
+  store i8* %0, i8** %22, align 8
+  %23 = getelementptr inbounds i8, i8* %0, i64 232
+  %24 = bitcast i8* %23 to %struct.NaClApp**
+  %25 = load %struct.NaClApp*, %struct.NaClApp** %24, align 8
+  %26 = getelementptr inbounds %struct.NaClApp, %struct.NaClApp* %25, i64 0, i32 48
+  tail call void @NaClXMutexLock(%struct.NaClMutex* %26) #6
+  %27 = load %struct.NaClApp*, %struct.NaClApp** %24, align 8
+  %28 = tail call i32 @NaClAddThreadMu(%struct.NaClApp* %27, %struct.NaClAppThread* %2) #6
+  %29 = getelementptr inbounds i8, i8* %0, i64 240
+  %30 = bitcast i8* %29 to i32*
+  store i32 %28, i32* %30, align 8
+  %31 = load %struct.NaClApp*, %struct.NaClApp** %24, align 8
+  %32 = getelementptr inbounds %struct.NaClApp, %struct.NaClApp* %31, i64 0, i32 48
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* %32) #6
+  %33 = load %struct.NaClApp*, %struct.NaClApp** %24, align 8
+  tail call void @NaClVmHoleThreadStackIsSafe(%struct.NaClApp* %33) #6
+  %34 = load %struct.NaClApp*, %struct.NaClApp** %24, align 8
+  %35 = getelementptr inbounds %struct.NaClApp, %struct.NaClApp* %34, i64 0, i32 53
+  %36 = load %struct.NaClDebugCallbacks*, %struct.NaClDebugCallbacks** %35, align 8
+  %37 = icmp eq %struct.NaClDebugCallbacks* %36, null
+  br i1 %37, label %41, label %38
+
+38:                                               ; preds = %19
+  %39 = getelementptr inbounds %struct.NaClDebugCallbacks, %struct.NaClDebugCallbacks* %36, i64 0, i32 0
+  %40 = load void (%struct.NaClAppThread*)*, void (%struct.NaClAppThread*)** %39, align 8
+  tail call void %40(%struct.NaClAppThread* %2) #6
+  br label %41
+
+41:                                               ; preds = %19, %38
+  tail call void @NaClAppThreadSetSuspendState(%struct.NaClAppThread* %2, i32 2, i32 1) #6
+  %42 = load i64, i64* %8, align 8
+  tail call void @NaClStartThreadInApp(%struct.NaClAppThread* %2, i64 %42) #7
+  unreachable
+}
+
+declare void @NaClLog(i32, i8*, ...) local_unnamed_addr #1
+
+declare void @NaClSignalStackRegister(i8*) local_unnamed_addr #1
+
+declare i32 @NaClGetThreadIdx(%struct.NaClAppThread*) local_unnamed_addr #1
+
+declare void @NaClTlsSetCurrentThread(%struct.NaClAppThread*) local_unnamed_addr #1
+
+declare void @NaClXMutexLock(%struct.NaClMutex*) local_unnamed_addr #1
+
+declare i32 @NaClAddThreadMu(%struct.NaClApp*, %struct.NaClAppThread*) local_unnamed_addr #1
+
+declare void @NaClXMutexUnlock(%struct.NaClMutex*) local_unnamed_addr #1
+
+declare void @NaClVmHoleThreadStackIsSafe(%struct.NaClApp*) local_unnamed_addr #1
+
+declare void @NaClAppThreadSetSuspendState(%struct.NaClAppThread*, i32, i32) local_unnamed_addr #1
+
+; Function Attrs: noreturn
+declare void @NaClStartThreadInApp(%struct.NaClAppThread*, i64) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClAppThreadTeardown(%struct.NaClAppThread*) local_unnamed_addr #3 {
+  %2 = ptrtoint %struct.NaClAppThread* %0 to i64
+  tail call void (i32, i8*, ...) @NaClLog(i32 3, i8* getelementptr inbounds ([32 x i8], [32 x i8]* @.str.8, i64 0, i64 0), i64 %2) #6
+  %3 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 2
+  %4 = load %struct.NaClApp*, %struct.NaClApp** %3, align 8
+  %5 = getelementptr inbounds %struct.NaClApp, %struct.NaClApp* %4, i64 0, i32 53
+  %6 = load %struct.NaClDebugCallbacks*, %struct.NaClDebugCallbacks** %5, align 8
+  %7 = icmp eq %struct.NaClDebugCallbacks* %6, null
+  br i1 %7, label %12, label %8
+
+8:                                                ; preds = %1
+  tail call void (i32, i8*, ...) @NaClLog(i32 3, i8* getelementptr inbounds ([46 x i8], [46 x i8]* @.str.9, i64 0, i64 0)) #6
+  %9 = load %struct.NaClDebugCallbacks*, %struct.NaClDebugCallbacks** %5, align 8
+  %10 = getelementptr inbounds %struct.NaClDebugCallbacks, %struct.NaClDebugCallbacks* %9, i64 0, i32 1
+  %11 = load void (%struct.NaClAppThread*)*, void (%struct.NaClAppThread*)** %10, align 8
+  tail call void %11(%struct.NaClAppThread* %0) #6
+  br label %12
+
+12:                                               ; preds = %1, %8
+  tail call void (i32, i8*, ...) @NaClLog(i32 3, i8* getelementptr inbounds ([28 x i8], [28 x i8]* @.str.10, i64 0, i64 0)) #6
+  %13 = getelementptr inbounds %struct.NaClApp, %struct.NaClApp* %4, i64 0, i32 48
+  tail call void @NaClXMutexLock(%struct.NaClMutex* %13) #6
+  tail call void (i32, i8*, ...) @NaClLog(i32 3, i8* getelementptr inbounds ([22 x i8], [22 x i8]* @.str.11, i64 0, i64 0)) #6
+  %14 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 1
+  tail call void @NaClXMutexLock(%struct.NaClMutex* %14) #6
+  %15 = tail call i32 @NaClGetThreadIdx(%struct.NaClAppThread* %0) #6
+  %16 = zext i32 %15 to i64
+  %17 = getelementptr inbounds [8192 x %struct.NaClThreadContext*], [8192 x %struct.NaClThreadContext*]* @nacl_user, i64 0, i64 %16
+  store %struct.NaClThreadContext* null, %struct.NaClThreadContext** %17, align 8
+  tail call void @NaClTlsSetCurrentThread(%struct.NaClAppThread* null) #6
+  tail call void (i32, i8*, ...) @NaClLog(i32 3, i8* getelementptr inbounds ([36 x i8], [36 x i8]* @.str.12, i64 0, i64 0)) #6
+  %18 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 3
+  %19 = load i32, i32* %18, align 8
+  tail call void @NaClRemoveThreadMu(%struct.NaClApp* %4, i32 %19) #6
+  tail call void (i32, i8*, ...) @NaClLog(i32 3, i8* getelementptr inbounds ([19 x i8], [19 x i8]* @.str.13, i64 0, i64 0)) #6
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* %14) #6
+  tail call void (i32, i8*, ...) @NaClLog(i32 3, i8* getelementptr inbounds ([25 x i8], [25 x i8]* @.str.14, i64 0, i64 0)) #6
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* %13) #6
+  tail call void (i32, i8*, ...) @NaClLog(i32 3, i8* getelementptr inbounds ([29 x i8], [29 x i8]* @.str.15, i64 0, i64 0)) #6
+  tail call void @NaClSignalStackUnregister() #6
+  tail call void (i32, i8*, ...) @NaClLog(i32 3, i8* getelementptr inbounds ([24 x i8], [24 x i8]* @.str.16, i64 0, i64 0)) #6
+  tail call void @NaClAppThreadDelete(%struct.NaClAppThread* %0)
+  tail call void (i32, i8*, ...) @NaClLog(i32 3, i8* getelementptr inbounds ([17 x i8], [17 x i8]* @.str.17, i64 0, i64 0)) #6
+  tail call void @NaClThreadExit() #6
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([59 x i8], [59 x i8]* @.str.18, i64 0, i64 0)) #6
+  ret void
+}
+
+declare void @NaClRemoveThreadMu(%struct.NaClApp*, i32) local_unnamed_addr #1
+
+declare void @NaClSignalStackUnregister() local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClAppThreadDelete(%struct.NaClAppThread*) local_unnamed_addr #3 {
+  %2 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 4
+  %3 = load i32, i32* %2, align 4
+  %4 = icmp eq i32 %3, 0
+  br i1 %4, label %7, label %5
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 5
+  tail call void @NaClThreadDtor(%struct.NaClThread* %6) #6
+  br label %7
+
+7:                                                ; preds = %1, %5
+  %8 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 8
+  %9 = bitcast %struct.NaClAppThreadSuspendedRegisters** %8 to i8**
+  %10 = load i8*, i8** %9, align 8
+  tail call void @free(i8* %10) #6
+  %11 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 6
+  tail call void @NaClMutexDtor(%struct.NaClMutex* %11) #6
+  %12 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 11
+  %13 = load i8*, i8** %12, align 8
+  tail call void @NaClSignalStackFree(i8* %13) #6
+  store i8* null, i8** %12, align 8
+  %14 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 17
+  tail call void @NaClCondVarDtor(%struct.NaClCondVar* %14) #6
+  tail call void @NaClTlsFree(%struct.NaClAppThread* %0) #6
+  %15 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %0, i64 0, i32 1
+  tail call void @NaClMutexDtor(%struct.NaClMutex* %15) #6
+  %16 = bitcast %struct.NaClAppThread* %0 to i8*
+  tail call void @NaClAlignedFree(i8* %16) #6
+  ret void
+}
+
+declare void @NaClThreadExit() local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden %struct.NaClAppThread* @NaClAppThreadMake(%struct.NaClApp*, i64, i64, i32, i32) local_unnamed_addr #3 {
+  %6 = tail call i8* @NaClAlignedMalloc(i64 432, i64 8) #6
+  %7 = bitcast i8* %6 to %struct.NaClAppThread*
+  %8 = icmp eq i8* %6, null
+  br i1 %8, label %56, label %9
+
+9:                                                ; preds = %5
+  %10 = ptrtoint i8* %6 to i64
+  tail call void (i32, i8*, ...) @NaClLog(i32 4, i8* getelementptr inbounds ([26 x i8], [26 x i8]* @.str.19, i64 0, i64 0), i64 %10) #6
+  %11 = ptrtoint %struct.NaClApp* %0 to i64
+  tail call void (i32, i8*, ...) @NaClLog(i32 4, i8* getelementptr inbounds ([26 x i8], [26 x i8]* @.str.20, i64 0, i64 0), i64 %11) #6
+  tail call void (i32, i8*, ...) @NaClLog(i32 4, i8* getelementptr inbounds ([26 x i8], [26 x i8]* @.str.21, i64 0, i64 0), i64 %2) #6
+  %12 = getelementptr inbounds i8, i8* %6, i64 232
+  %13 = bitcast i8* %12 to %struct.NaClApp**
+  store %struct.NaClApp* %0, %struct.NaClApp** %13, align 8
+  %14 = getelementptr inbounds i8, i8* %6, i64 240
+  %15 = bitcast i8* %14 to i32*
+  store i32 -1, i32* %15, align 8
+  %16 = getelementptr inbounds i8, i8* %6, i64 244
+  %17 = bitcast i8* %16 to i32*
+  store i32 0, i32* %17, align 4
+  %18 = getelementptr inbounds i8, i8* %6, i64 248
+  %19 = bitcast i8* %18 to i64*
+  store i64 0, i64* %19, align 8
+  %20 = tail call i32 @NaClAppThreadInitArchSpecific(%struct.NaClAppThread* nonnull %7, i64 %1, i64 %2) #6
+  %21 = icmp eq i32 %20, 0
+  br i1 %21, label %55, label %22
+
+22:                                               ; preds = %9
+  tail call void @NaClTlsSetTlsValue1(%struct.NaClAppThread* nonnull %7, i32 %3) #6
+  tail call void @NaClTlsSetTlsValue2(%struct.NaClAppThread* nonnull %7, i32 %4) #6
+  %23 = getelementptr inbounds i8, i8* %6, i64 336
+  %24 = bitcast i8* %23 to i8**
+  %25 = getelementptr inbounds i8, i8* %6, i64 184
+  %26 = bitcast i8* %25 to %struct.NaClMutex*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %23, i8 0, i64 16, i1 false)
+  %27 = tail call i32 @NaClMutexCtor(%struct.NaClMutex* %26) #6
+  %28 = icmp eq i32 %27, 0
+  br i1 %28, label %55, label %29
+
+29:                                               ; preds = %22
+  %30 = tail call i32 @NaClSignalStackAllocate(i8** %24) #6
+  %31 = icmp eq i32 %30, 0
+  br i1 %31, label %51, label %32
+
+32:                                               ; preds = %29
+  %33 = getelementptr inbounds i8, i8* %6, i64 256
+  %34 = bitcast i8* %33 to %struct.NaClMutex*
+  %35 = tail call i32 @NaClMutexCtor(%struct.NaClMutex* %34) #6
+  %36 = icmp eq i32 %35, 0
+  br i1 %36, label %51, label %37
+
+37:                                               ; preds = %32
+  %38 = getelementptr inbounds i8, i8* %6, i64 304
+  %39 = bitcast i8* %38 to i32*
+  store i32 2, i32* %39, align 8
+  %40 = getelementptr inbounds i8, i8* %6, i64 312
+  %41 = bitcast i8* %40 to %struct.NaClAppThreadSuspendedRegisters**
+  store %struct.NaClAppThreadSuspendedRegisters* null, %struct.NaClAppThreadSuspendedRegisters** %41, align 8
+  %42 = getelementptr inbounds i8, i8* %6, i64 320
+  %43 = bitcast i8* %42 to i32*
+  store i32 0, i32* %43, align 8
+  %44 = getelementptr inbounds i8, i8* %6, i64 352
+  %45 = bitcast i8* %44 to i32*
+  store i32 0, i32* %45, align 8
+  %46 = getelementptr inbounds i8, i8* %6, i64 384
+  %47 = bitcast i8* %46 to %struct.NaClCondVar*
+  %48 = tail call i32 @NaClCondVarCtor(%struct.NaClCondVar* %47) #6
+  %49 = icmp eq i32 %48, 0
+  br i1 %49, label %50, label %56
+
+50:                                               ; preds = %37
+  tail call void @NaClMutexDtor(%struct.NaClMutex* %34) #6
+  br label %51
+
+51:                                               ; preds = %32, %29, %50
+  tail call void @NaClMutexDtor(%struct.NaClMutex* %26) #6
+  %52 = load i8*, i8** %24, align 8
+  %53 = icmp eq i8* %52, null
+  br i1 %53, label %55, label %54
+
+54:                                               ; preds = %51
+  tail call void @NaClSignalStackFree(i8* %23) #6
+  store i8* null, i8** %24, align 8
+  br label %55
+
+55:                                               ; preds = %51, %22, %9, %54
+  tail call void @NaClAlignedFree(i8* nonnull %6) #6
+  br label %56
+
+56:                                               ; preds = %37, %5, %55
+  %57 = phi %struct.NaClAppThread* [ null, %55 ], [ null, %5 ], [ %7, %37 ]
+  ret %struct.NaClAppThread* %57
+}
+
+declare i8* @NaClAlignedMalloc(i64, i64) local_unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #4
+
+declare i32 @NaClAppThreadInitArchSpecific(%struct.NaClAppThread*, i64, i64) local_unnamed_addr #1
+
+declare void @NaClTlsSetTlsValue1(%struct.NaClAppThread*, i32) local_unnamed_addr #1
+
+declare void @NaClTlsSetTlsValue2(%struct.NaClAppThread*, i32) local_unnamed_addr #1
+
+declare i32 @NaClMutexCtor(%struct.NaClMutex*) local_unnamed_addr #1
+
+declare i32 @NaClSignalStackAllocate(i8**) local_unnamed_addr #1
+
+declare i32 @NaClCondVarCtor(%struct.NaClCondVar*) local_unnamed_addr #1
+
+declare void @NaClMutexDtor(%struct.NaClMutex*) local_unnamed_addr #1
+
+declare void @NaClSignalStackFree(i8*) local_unnamed_addr #1
+
+declare void @NaClAlignedFree(i8*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClAppThreadSpawn(%struct.NaClApp*, i64, i64, i32, i32) local_unnamed_addr #3 {
+  %6 = tail call %struct.NaClAppThread* @NaClAppThreadMake(%struct.NaClApp* %0, i64 %1, i64 %2, i32 %3, i32 %4)
+  %7 = icmp eq %struct.NaClAppThread* %6, null
+  br i1 %7, label %15, label %8
+
+8:                                                ; preds = %5
+  %9 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %6, i64 0, i32 4
+  store i32 1, i32* %9, align 4
+  %10 = getelementptr inbounds %struct.NaClAppThread, %struct.NaClAppThread* %6, i64 0, i32 5
+  %11 = bitcast %struct.NaClAppThread* %6 to i8*
+  %12 = tail call i32 @NaClThreadCtor(%struct.NaClThread* %10, void (i8*)* nonnull @NaClAppThreadLauncher, i8* nonnull %11, i64 65536) #6
+  %13 = icmp eq i32 %12, 0
+  br i1 %13, label %14, label %15
+
+14:                                               ; preds = %8
+  store i32 0, i32* %9, align 4
+  tail call void @NaClAppThreadDelete(%struct.NaClAppThread* nonnull %6)
+  br label %15
+
+15:                                               ; preds = %8, %5, %14
+  %16 = phi i32 [ 0, %14 ], [ 0, %5 ], [ 1, %8 ]
+  ret i32 %16
+}
+
+declare i32 @NaClThreadCtor(%struct.NaClThread*, void (i8*)*, i8*, i64) local_unnamed_addr #1
+
+declare void @NaClThreadDtor(%struct.NaClThread*) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @free(i8* nocapture) local_unnamed_addr #5
+
+declare void @NaClCondVarDtor(%struct.NaClCondVar*) local_unnamed_addr #1
+
+declare void @NaClTlsFree(%struct.NaClAppThread*) local_unnamed_addr #1
+
+attributes #0 = { noreturn nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { noreturn "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { argmemonly nounwind }
+attributes #5 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nounwind }
+attributes #7 = { noreturn nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}

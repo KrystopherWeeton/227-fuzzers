@@ -1,0 +1,423 @@
+; ModuleID = '../../native_client/src/shared/platform/posix/nacl_file_lock.c'
+source_filename = "../../native_client/src/shared/platform/posix/nacl_file_lock.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver fmemopen, fmemopen@GLIBC_2.2.5"
+module asm ".symver glob, glob@GLIBC_2.2.5"
+module asm ".symver glob64, glob64@GLIBC_2.2.5"
+module asm ".symver quick_exit, quick_exit@GLIBC_2.10"
+
+%struct.NaClFileLockManager = type { %struct.NaClMutex, %struct.NaClFileLockEntry*, void (%struct.NaClFileLockEntry*, i32)*, void (i32)*, void (i32)* }
+%struct.NaClMutex = type { %union.pthread_mutex_t, i32 }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%struct.NaClFileLockEntry = type { i64, i64, %struct.NaClFileLockEntry*, %struct.NaClMutex, %struct.NaClCondVar, i32, i64 }
+%struct.NaClCondVar = type { %union.pthread_cond_t }
+%union.pthread_cond_t = type { %struct.__pthread_cond_s }
+%struct.__pthread_cond_s = type { %union.anon, %union.anon.0, [2 x i32], [2 x i32], i32, i32, [2 x i32] }
+%union.anon = type { i64 }
+%union.anon.0 = type { i64 }
+%struct.stat64 = type { i64, i64, i64, i32, i32, i32, i32, i64, i64, i64, i64, %struct.timespec, %struct.timespec, %struct.timespec, [3 x i64] }
+%struct.timespec = type { i64, i64 }
+
+@.str = private unnamed_addr constant [40 x i8] c"Fatal error in file %s, line %d: !(%s)\0A\00", align 1
+@.str.1 = private unnamed_addr constant [63 x i8] c"../../native_client/src/shared/platform/posix/nacl_file_lock.c\00", align 1
+@.str.2 = private unnamed_addr constant [19 x i8] c"NULL == self->head\00", align 1
+@.str.3 = private unnamed_addr constant [24 x i8] c"0 != entry->num_waiting\00", align 1
+@.str.4 = private unnamed_addr constant [17 x i8] c"NULL != existing\00", align 1
+@.str.5 = private unnamed_addr constant [73 x i8] c"NaClFileLockManagerSetFileIdentityData: fstat failed, desc %d, errno %d\0A\00", align 1
+@.str.6 = private unnamed_addr constant [53 x i8] c"NaClFileLockManagerTakeLock: flock failed: errno %d\0A\00", align 1
+@.str.7 = private unnamed_addr constant [53 x i8] c"NaClFileLockManagerDropLock: flock failed: errno %d\0A\00", align 1
+@.str.8 = private unnamed_addr constant [15 x i8] c"NULL != result\00", align 1
+@.str.10 = private unnamed_addr constant [25 x i8] c"0 == entry->holding_lock\00", align 1
+@.str.11 = private unnamed_addr constant [24 x i8] c"0 == entry->num_waiting\00", align 1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClFileLockManagerCtor(%struct.NaClFileLockManager*) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClFileLockManager, %struct.NaClFileLockManager* %0, i64 0, i32 0
+  tail call void @NaClXMutexCtor(%struct.NaClMutex* %2) #6
+  %3 = getelementptr inbounds %struct.NaClFileLockManager, %struct.NaClFileLockManager* %0, i64 0, i32 1
+  store %struct.NaClFileLockEntry* null, %struct.NaClFileLockEntry** %3, align 8
+  %4 = getelementptr inbounds %struct.NaClFileLockManager, %struct.NaClFileLockManager* %0, i64 0, i32 2
+  store void (%struct.NaClFileLockEntry*, i32)* @NaClFileLockManagerSetFileIdentityData, void (%struct.NaClFileLockEntry*, i32)** %4, align 8
+  %5 = getelementptr inbounds %struct.NaClFileLockManager, %struct.NaClFileLockManager* %0, i64 0, i32 3
+  %6 = bitcast void (i32)** %5 to <2 x void (i32)*>*
+  store <2 x void (i32)*> <void (i32)* @NaClFileLockManagerTakeLock, void (i32)* @NaClFileLockManagerDropLock>, <2 x void (i32)*>* %6, align 8
+  ret void
+}
+
+declare void @NaClXMutexCtor(%struct.NaClMutex*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @NaClFileLockManagerSetFileIdentityData(%struct.NaClFileLockEntry* nocapture, i32) #0 {
+  %3 = alloca %struct.stat64, align 16
+  %4 = bitcast %struct.stat64* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 144, i8* nonnull %4) #6
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %4, i8 -86, i64 144, i1 false)
+  %5 = call i32 @__fxstat64(i32 1, i32 %1, %struct.stat64* nonnull %3) #6
+  %6 = icmp eq i32 %5, 0
+  br i1 %6, label %10, label %7
+
+7:                                                ; preds = %2
+  %8 = tail call i32* @__errno_location() #7
+  %9 = load i32, i32* %8, align 4
+  call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([73 x i8], [73 x i8]* @.str.5, i64 0, i64 0), i32 %1, i32 %9) #6
+  br label %10
+
+10:                                               ; preds = %2, %7
+  %11 = bitcast %struct.stat64* %3 to <2 x i64>*
+  %12 = load <2 x i64>, <2 x i64>* %11, align 16
+  %13 = bitcast %struct.NaClFileLockEntry* %0 to <2 x i64>*
+  store <2 x i64> %12, <2 x i64>* %13, align 8
+  call void @llvm.lifetime.end.p0i8(i64 144, i8* nonnull %4) #6
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @NaClFileLockManagerTakeLock(i32) #0 {
+  %2 = tail call i32 @flock(i32 %0, i32 2) #6
+  %3 = icmp eq i32 %2, 0
+  br i1 %3, label %7, label %4
+
+4:                                                ; preds = %1
+  %5 = tail call i32* @__errno_location() #7
+  %6 = load i32, i32* %5, align 4
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([53 x i8], [53 x i8]* @.str.6, i64 0, i64 0), i32 %6) #6
+  br label %7
+
+7:                                                ; preds = %1, %4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @NaClFileLockManagerDropLock(i32) #0 {
+  %2 = tail call i32 @flock(i32 %0, i32 8) #6
+  %3 = icmp eq i32 %2, 0
+  br i1 %3, label %7, label %4
+
+4:                                                ; preds = %1
+  %5 = tail call i32* @__errno_location() #7
+  %6 = load i32, i32* %5, align 4
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([53 x i8], [53 x i8]* @.str.7, i64 0, i64 0), i32 %6) #6
+  br label %7
+
+7:                                                ; preds = %1, %4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClFileLockManagerDtor(%struct.NaClFileLockManager*) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClFileLockManager, %struct.NaClFileLockManager* %0, i64 0, i32 1
+  %3 = load %struct.NaClFileLockEntry*, %struct.NaClFileLockEntry** %2, align 8
+  %4 = icmp eq %struct.NaClFileLockEntry* %3, null
+  br i1 %4, label %6, label %5
+
+5:                                                ; preds = %1
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([63 x i8], [63 x i8]* @.str.1, i64 0, i64 0), i32 104, i8* getelementptr inbounds ([19 x i8], [19 x i8]* @.str.2, i64 0, i64 0)) #6
+  br label %6
+
+6:                                                ; preds = %1, %5
+  %7 = getelementptr inbounds %struct.NaClFileLockManager, %struct.NaClFileLockManager* %0, i64 0, i32 0
+  tail call void @NaClMutexDtor(%struct.NaClMutex* %7) #6
+  ret void
+}
+
+declare void @NaClLog(i32, i8*, ...) local_unnamed_addr #1
+
+declare void @NaClMutexDtor(%struct.NaClMutex*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClFileLockManagerLock(%struct.NaClFileLockManager*, i32) local_unnamed_addr #0 {
+  %3 = alloca %struct.NaClFileLockEntry, align 8
+  %4 = bitcast %struct.NaClFileLockEntry* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 136, i8* nonnull %4) #6
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %4, i8 -86, i64 136, i1 false)
+  %5 = getelementptr inbounds %struct.NaClFileLockManager, %struct.NaClFileLockManager* %0, i64 0, i32 2
+  %6 = load void (%struct.NaClFileLockEntry*, i32)*, void (%struct.NaClFileLockEntry*, i32)** %5, align 8
+  call void %6(%struct.NaClFileLockEntry* nonnull %3, i32 %1) #6
+  %7 = getelementptr inbounds %struct.NaClFileLockManager, %struct.NaClFileLockManager* %0, i64 0, i32 0
+  call void @NaClXMutexLock(%struct.NaClMutex* %7) #6
+  %8 = getelementptr inbounds %struct.NaClFileLockManager, %struct.NaClFileLockManager* %0, i64 0, i32 1
+  %9 = load %struct.NaClFileLockEntry*, %struct.NaClFileLockEntry** %8, align 8
+  %10 = icmp eq %struct.NaClFileLockEntry* %9, null
+  br i1 %10, label %32, label %11
+
+11:                                               ; preds = %2
+  %12 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %3, i64 0, i32 0
+  %13 = load i64, i64* %12, align 8
+  %14 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %3, i64 0, i32 1
+  %15 = load i64, i64* %14, align 8
+  br label %16
+
+16:                                               ; preds = %26, %11
+  %17 = phi %struct.NaClFileLockEntry* [ %9, %11 ], [ %28, %26 ]
+  %18 = phi %struct.NaClFileLockEntry** [ %8, %11 ], [ %27, %26 ]
+  %19 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %17, i64 0, i32 0
+  %20 = load i64, i64* %19, align 8
+  %21 = icmp eq i64 %20, %13
+  br i1 %21, label %22, label %26
+
+22:                                               ; preds = %16
+  %23 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %17, i64 0, i32 1
+  %24 = load i64, i64* %23, align 8
+  %25 = icmp eq i64 %24, %15
+  br i1 %25, label %30, label %26
+
+26:                                               ; preds = %22, %16
+  %27 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %17, i64 0, i32 2
+  %28 = load %struct.NaClFileLockEntry*, %struct.NaClFileLockEntry** %27, align 8
+  %29 = icmp eq %struct.NaClFileLockEntry* %28, null
+  br i1 %29, label %32, label %16
+
+30:                                               ; preds = %22
+  %31 = icmp eq %struct.NaClFileLockEntry** %18, null
+  br i1 %31, label %32, label %53
+
+32:                                               ; preds = %26, %2, %30
+  %33 = call noalias i8* @malloc(i64 136) #6
+  %34 = bitcast i8* %33 to %struct.NaClFileLockEntry*
+  %35 = icmp eq i8* %33, null
+  br i1 %35, label %36, label %37
+
+36:                                               ; preds = %32
+  call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([63 x i8], [63 x i8]* @.str.1, i64 0, i64 0), i32 40, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.8, i64 0, i64 0)) #6
+  br label %37
+
+37:                                               ; preds = %32, %36
+  %38 = load void (%struct.NaClFileLockEntry*, i32)*, void (%struct.NaClFileLockEntry*, i32)** %5, align 8
+  call void %38(%struct.NaClFileLockEntry* %34, i32 %1) #6
+  %39 = getelementptr inbounds i8, i8* %33, i64 16
+  %40 = bitcast i8* %39 to %struct.NaClFileLockEntry**
+  store %struct.NaClFileLockEntry* null, %struct.NaClFileLockEntry** %40, align 8
+  %41 = getelementptr inbounds i8, i8* %33, i64 24
+  %42 = bitcast i8* %41 to %struct.NaClMutex*
+  call void @NaClXMutexCtor(%struct.NaClMutex* %42) #6
+  %43 = getelementptr inbounds i8, i8* %33, i64 72
+  %44 = bitcast i8* %43 to %struct.NaClCondVar*
+  call void @NaClXCondVarCtor(%struct.NaClCondVar* %44) #6
+  %45 = getelementptr inbounds i8, i8* %33, i64 120
+  %46 = bitcast i8* %45 to i32*
+  store i32 1, i32* %46, align 8
+  %47 = getelementptr inbounds i8, i8* %33, i64 128
+  %48 = bitcast i8* %47 to i64*
+  store i64 0, i64* %48, align 8
+  %49 = bitcast %struct.NaClFileLockEntry** %8 to i64*
+  %50 = load i64, i64* %49, align 8
+  %51 = bitcast i8* %39 to i64*
+  store i64 %50, i64* %51, align 8
+  %52 = bitcast %struct.NaClFileLockEntry** %8 to i8**
+  store i8* %33, i8** %52, align 8
+  br label %72
+
+53:                                               ; preds = %30
+  %54 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %17, i64 0, i32 3
+  call void @NaClXMutexLock(%struct.NaClMutex* %54) #6
+  %55 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %17, i64 0, i32 6
+  %56 = load i64, i64* %55, align 8
+  %57 = add i64 %56, 1
+  store i64 %57, i64* %55, align 8
+  %58 = icmp eq i64 %57, 0
+  br i1 %58, label %59, label %60
+
+59:                                               ; preds = %53
+  call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([63 x i8], [63 x i8]* @.str.1, i64 0, i64 0), i32 129, i8* getelementptr inbounds ([24 x i8], [24 x i8]* @.str.3, i64 0, i64 0)) #6
+  br label %60
+
+60:                                               ; preds = %53, %59
+  call void @NaClXMutexUnlock(%struct.NaClMutex* %7) #6
+  %61 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %17, i64 0, i32 5
+  %62 = load i32, i32* %61, align 8
+  %63 = icmp eq i32 %62, 0
+  br i1 %63, label %69, label %64
+
+64:                                               ; preds = %60
+  %65 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %17, i64 0, i32 4
+  br label %66
+
+66:                                               ; preds = %64, %66
+  call void @NaClXCondVarWait(%struct.NaClCondVar* %65, %struct.NaClMutex* %54) #6
+  %67 = load i32, i32* %61, align 8
+  %68 = icmp eq i32 %67, 0
+  br i1 %68, label %69, label %66
+
+69:                                               ; preds = %66, %60
+  store i32 1, i32* %61, align 8
+  %70 = load i64, i64* %55, align 8
+  %71 = add i64 %70, -1
+  store i64 %71, i64* %55, align 8
+  br label %72
+
+72:                                               ; preds = %69, %37
+  %73 = phi %struct.NaClMutex* [ %54, %69 ], [ %7, %37 ]
+  call void @NaClXMutexUnlock(%struct.NaClMutex* %73) #6
+  %74 = getelementptr inbounds %struct.NaClFileLockManager, %struct.NaClFileLockManager* %0, i64 0, i32 3
+  %75 = load void (i32)*, void (i32)** %74, align 8
+  call void %75(i32 %1) #6
+  call void @llvm.lifetime.end.p0i8(i64 136, i8* nonnull %4) #6
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+declare void @NaClXMutexLock(%struct.NaClMutex*) local_unnamed_addr #1
+
+declare void @NaClXMutexUnlock(%struct.NaClMutex*) local_unnamed_addr #1
+
+declare void @NaClXCondVarWait(%struct.NaClCondVar*, %struct.NaClMutex*) local_unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClFileLockManagerUnlock(%struct.NaClFileLockManager*, i32) local_unnamed_addr #0 {
+  %3 = alloca %struct.NaClFileLockEntry, align 8
+  %4 = bitcast %struct.NaClFileLockEntry* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 136, i8* nonnull %4) #6
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %4, i8 -86, i64 136, i1 false)
+  %5 = getelementptr inbounds %struct.NaClFileLockManager, %struct.NaClFileLockManager* %0, i64 0, i32 2
+  %6 = load void (%struct.NaClFileLockEntry*, i32)*, void (%struct.NaClFileLockEntry*, i32)** %5, align 8
+  call void %6(%struct.NaClFileLockEntry* nonnull %3, i32 %1) #6
+  %7 = getelementptr inbounds %struct.NaClFileLockManager, %struct.NaClFileLockManager* %0, i64 0, i32 0
+  call void @NaClXMutexLock(%struct.NaClMutex* %7) #6
+  %8 = getelementptr inbounds %struct.NaClFileLockManager, %struct.NaClFileLockManager* %0, i64 0, i32 1
+  %9 = load %struct.NaClFileLockEntry*, %struct.NaClFileLockEntry** %8, align 8
+  %10 = icmp eq %struct.NaClFileLockEntry* %9, null
+  br i1 %10, label %32, label %11
+
+11:                                               ; preds = %2
+  %12 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %3, i64 0, i32 0
+  %13 = load i64, i64* %12, align 8
+  %14 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %3, i64 0, i32 1
+  %15 = load i64, i64* %14, align 8
+  br label %16
+
+16:                                               ; preds = %26, %11
+  %17 = phi %struct.NaClFileLockEntry* [ %9, %11 ], [ %28, %26 ]
+  %18 = phi %struct.NaClFileLockEntry** [ %8, %11 ], [ %27, %26 ]
+  %19 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %17, i64 0, i32 0
+  %20 = load i64, i64* %19, align 8
+  %21 = icmp eq i64 %20, %13
+  br i1 %21, label %22, label %26
+
+22:                                               ; preds = %16
+  %23 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %17, i64 0, i32 1
+  %24 = load i64, i64* %23, align 8
+  %25 = icmp eq i64 %24, %15
+  br i1 %25, label %30, label %26
+
+26:                                               ; preds = %22, %16
+  %27 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %17, i64 0, i32 2
+  %28 = load %struct.NaClFileLockEntry*, %struct.NaClFileLockEntry** %27, align 8
+  %29 = icmp eq %struct.NaClFileLockEntry* %28, null
+  br i1 %29, label %32, label %16
+
+30:                                               ; preds = %22
+  %31 = icmp eq %struct.NaClFileLockEntry** %18, null
+  br i1 %31, label %32, label %34
+
+32:                                               ; preds = %26, %2, %30
+  call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([63 x i8], [63 x i8]* @.str.1, i64 0, i64 0), i32 152, i8* getelementptr inbounds ([17 x i8], [17 x i8]* @.str.4, i64 0, i64 0)) #6
+  %33 = load %struct.NaClFileLockEntry*, %struct.NaClFileLockEntry** null, align 536870912
+  br label %34
+
+34:                                               ; preds = %30, %32
+  %35 = phi %struct.NaClFileLockEntry* [ %17, %30 ], [ %33, %32 ]
+  %36 = phi %struct.NaClFileLockEntry** [ %18, %30 ], [ null, %32 ]
+  %37 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %35, i64 0, i32 3
+  call void @NaClXMutexLock(%struct.NaClMutex* %37) #6
+  %38 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %35, i64 0, i32 5
+  store i32 0, i32* %38, align 8
+  %39 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %35, i64 0, i32 6
+  %40 = load i64, i64* %39, align 8
+  %41 = icmp eq i64 %40, 0
+  br i1 %41, label %42, label %57
+
+42:                                               ; preds = %34
+  %43 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %35, i64 0, i32 2
+  %44 = bitcast %struct.NaClFileLockEntry** %43 to i64*
+  %45 = load i64, i64* %44, align 8
+  %46 = bitcast %struct.NaClFileLockEntry** %36 to i64*
+  store i64 %45, i64* %46, align 8
+  call void @NaClXMutexUnlock(%struct.NaClMutex* %37) #6
+  call void @NaClXMutexUnlock(%struct.NaClMutex* %7) #6
+  %47 = load i32, i32* %38, align 8
+  %48 = icmp eq i32 %47, 0
+  br i1 %48, label %50, label %49
+
+49:                                               ; preds = %42
+  call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([63 x i8], [63 x i8]* @.str.1, i64 0, i64 0), i32 55, i8* getelementptr inbounds ([25 x i8], [25 x i8]* @.str.10, i64 0, i64 0)) #6
+  br label %50
+
+50:                                               ; preds = %49, %42
+  %51 = load i64, i64* %39, align 8
+  %52 = icmp eq i64 %51, 0
+  br i1 %52, label %54, label %53
+
+53:                                               ; preds = %50
+  call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([63 x i8], [63 x i8]* @.str.1, i64 0, i64 0), i32 56, i8* getelementptr inbounds ([24 x i8], [24 x i8]* @.str.11, i64 0, i64 0)) #6
+  br label %54
+
+54:                                               ; preds = %50, %53
+  %55 = bitcast %struct.NaClFileLockEntry* %35 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %55, i8 0, i64 24, i1 false) #6
+  call void @NaClMutexDtor(%struct.NaClMutex* %37) #6
+  %56 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %35, i64 0, i32 4
+  call void @NaClCondVarDtor(%struct.NaClCondVar* %56) #6
+  call void @free(i8* %55) #6
+  br label %59
+
+57:                                               ; preds = %34
+  call void @NaClXMutexUnlock(%struct.NaClMutex* %7) #6
+  %58 = getelementptr inbounds %struct.NaClFileLockEntry, %struct.NaClFileLockEntry* %35, i64 0, i32 4
+  call void @NaClXCondVarBroadcast(%struct.NaClCondVar* %58) #6
+  call void @NaClXMutexUnlock(%struct.NaClMutex* %37) #6
+  br label %59
+
+59:                                               ; preds = %57, %54
+  %60 = getelementptr inbounds %struct.NaClFileLockManager, %struct.NaClFileLockManager* %0, i64 0, i32 4
+  %61 = load void (i32)*, void (i32)** %60, align 8
+  call void %61(i32 %1) #6
+  call void @llvm.lifetime.end.p0i8(i64 136, i8* nonnull %4) #6
+  ret void
+}
+
+declare void @NaClXCondVarBroadcast(%struct.NaClCondVar*) local_unnamed_addr #1
+
+; Function Attrs: nounwind readnone
+declare i32* @__errno_location() local_unnamed_addr #3
+
+; Function Attrs: nounwind
+declare i32 @__fxstat64(i32, i32, %struct.stat64*) local_unnamed_addr #4
+
+; Function Attrs: nounwind
+declare i32 @flock(i32, i32) local_unnamed_addr #4
+
+; Function Attrs: nofree nounwind
+declare noalias i8* @malloc(i64) local_unnamed_addr #5
+
+declare void @NaClXCondVarCtor(%struct.NaClCondVar*) local_unnamed_addr #1
+
+declare void @NaClCondVarDtor(%struct.NaClCondVar*) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @free(i8* nocapture) local_unnamed_addr #4
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { nounwind readnone "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nofree nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nounwind }
+attributes #7 = { nounwind readnone }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}

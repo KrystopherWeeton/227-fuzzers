@@ -1,0 +1,932 @@
+; ModuleID = '../../services/network/trust_tokens/pending_trust_token_store.cc'
+source_filename = "../../services/network/trust_tokens/pending_trust_token_store.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.network::PendingTrustTokenStore" = type { i32 (...)**, %"class.base::circular_deque", %"class.std::__1::unique_ptr" }
+%"class.base::circular_deque" = type { %"class.base::internal::VectorBuffer", i64, i64 }
+%"class.base::internal::VectorBuffer" = type { %"class.base::OnceCallback"*, i64 }
+%"class.base::OnceCallback" = type { %"class.base::internal::CallbackBase" }
+%"class.base::internal::CallbackBase" = type { %class.scoped_refptr }
+%class.scoped_refptr = type { %"class.base::internal::BindStateBase"* }
+%"class.base::internal::BindStateBase" = type { %"class.base::RefCountedThreadSafe", void ()*, void (%"class.base::internal::BindStateBase"*)*, i1 (%"class.base::internal::BindStateBase"*, i32)* }
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.0" }
+%"struct.std::__1::__atomic_base.0" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"class.std::__1::unique_ptr" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"class.network::TrustTokenStore"* }
+%"class.network::TrustTokenStore" = type { i32 (...)**, %"class.std::__1::unique_ptr.1", %"class.std::__1::unique_ptr.5" }
+%"class.std::__1::unique_ptr.1" = type { %"class.std::__1::__compressed_pair.2" }
+%"class.std::__1::__compressed_pair.2" = type { %"struct.std::__1::__compressed_pair_elem.3" }
+%"struct.std::__1::__compressed_pair_elem.3" = type { %"class.network::TrustTokenPersister"* }
+%"class.network::TrustTokenPersister" = type { i32 (...)** }
+%"class.std::__1::unique_ptr.5" = type { %"class.std::__1::__compressed_pair.6" }
+%"class.std::__1::__compressed_pair.6" = type { %"struct.std::__1::__compressed_pair_elem.7" }
+%"struct.std::__1::__compressed_pair_elem.7" = type { %"class.network::TrustTokenStore::RecordExpiryDelegate"* }
+%"class.network::TrustTokenStore::RecordExpiryDelegate" = type { i32 (...)** }
+%"class.logging::CheckOpResult" = type { i8* }
+%"class.logging::CheckError" = type { %"class.logging::LogMessage"* }
+%"class.logging::LogMessage" = type { i32 (...)**, i32, %"class.std::__1::basic_ostringstream", i64, i8*, i32, %"class.base::ScopedClearLastErrorBase" }
+%"class.std::__1::basic_ostringstream" = type { %"class.std::__1::basic_ostream.base", %"class.std::__1::basic_stringbuf", %"class.std::__1::basic_ios.base" }
+%"class.std::__1::basic_ostream.base" = type { i32 (...)** }
+%"class.std::__1::basic_stringbuf" = type <{ %"class.std::__1::basic_streambuf", %"class.std::__1::basic_string", i8*, i32, [4 x i8] }>
+%"class.std::__1::basic_streambuf" = type { i32 (...)**, %"class.std::__1::locale", i8*, i8*, i8*, i8*, i8*, i8* }
+%"class.std::__1::locale" = type { %"class.std::__1::locale::__imp"* }
+%"class.std::__1::locale::__imp" = type opaque
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.14" }
+%"class.std::__1::__compressed_pair.14" = type { %"struct.std::__1::__compressed_pair_elem.15" }
+%"struct.std::__1::__compressed_pair_elem.15" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon }
+%union.anon = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.std::__1::basic_ios.base" = type <{ %"class.std::__1::ios_base", %"class.std::__1::basic_ostream"*, i32 }>
+%"class.std::__1::ios_base" = type { i32 (...)**, i32, i64, i64, i32, i32, i8*, i8*, void (i32, %"class.std::__1::ios_base"*, i32)**, i32*, i64, i64, i64*, i64, i64, i8**, i64, i64 }
+%"class.std::__1::basic_ostream" = type { i32 (...)**, %"class.std::__1::basic_ios.base" }
+%"class.base::ScopedClearLastErrorBase" = type { i32 }
+
+$_ZN4base14circular_dequeINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEE13DestructRangeEmm = comdat any
+
+$_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEE13DestructRangeIS7_Li0EEEvPS7_SA_ = comdat any
+
+$_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm = comdat any
+
+$_ZZN7logging15CheckOpValueStrIPN4base12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEENSt3__19enable_ifIXaasr4base8internal23SupportsOstreamOperatorIRKT_EE5valuentsr3std11is_functionINS9_14remove_pointerISB_E4typeEEE5valueEPcE4typeESD_ENUlRNS9_13basic_ostreamIcNS9_11char_traitsIcEEEEPKvE_8__invokeESO_SQ_ = comdat any
+
+$_ZN4base14circular_dequeINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEE25ExpandCapacityIfNecessaryEm = comdat any
+
+$_ZN4base14circular_dequeINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEE10MoveBufferERNS_8internal12VectorBufferIS6_EEmmPSA_PmSD_ = comdat any
+
+$_ZNK4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm = comdat any
+
+$_ZN4base14circular_dequeINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEE25ShrinkCapacityIfNecessaryEv = comdat any
+
+@_ZTVN7network22PendingTrustTokenStoreE = hidden unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.network::PendingTrustTokenStore"*)* @_ZN7network22PendingTrustTokenStoreD2Ev to i8*), i8* bitcast (void (%"class.network::PendingTrustTokenStore"*)* @_ZN7network22PendingTrustTokenStoreD0Ev to i8*)] }, align 8
+@.str = private unnamed_addr constant [13 x i8] c"begin <= end\00", align 1
+@.str.1 = private unnamed_addr constant [38 x i8] c"../../base/containers/vector_buffer.h\00", align 1
+@.str.2 = private unnamed_addr constant [15 x i8] c"i <= capacity_\00", align 1
+@.str.3 = private unnamed_addr constant [41 x i8] c"!RangesOverlap(from_begin, from_end, to)\00", align 1
+
+@_ZN7network22PendingTrustTokenStoreC1Ev = hidden unnamed_addr alias void (%"class.network::PendingTrustTokenStore"*), void (%"class.network::PendingTrustTokenStore"*)* @_ZN7network22PendingTrustTokenStoreC2Ev
+@_ZN7network22PendingTrustTokenStoreD1Ev = hidden unnamed_addr alias void (%"class.network::PendingTrustTokenStore"*), void (%"class.network::PendingTrustTokenStore"*)* @_ZN7network22PendingTrustTokenStoreD2Ev
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7network22PendingTrustTokenStoreC2Ev(%"class.network::PendingTrustTokenStore"* nocapture) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_ZTVN7network22PendingTrustTokenStoreE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 1
+  %4 = bitcast %"class.base::circular_deque"* %3 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %4, i8 0, i64 40, i1 false)
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7network22PendingTrustTokenStoreD2Ev(%"class.network::PendingTrustTokenStore"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_ZTVN7network22PendingTrustTokenStoreE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 2, i32 0, i32 0, i32 0
+  %4 = load %"class.network::TrustTokenStore"*, %"class.network::TrustTokenStore"** %3, align 8
+  store %"class.network::TrustTokenStore"* null, %"class.network::TrustTokenStore"** %3, align 8
+  %5 = icmp eq %"class.network::TrustTokenStore"* %4, null
+  br i1 %5, label %11, label %6
+
+6:                                                ; preds = %1
+  %7 = bitcast %"class.network::TrustTokenStore"* %4 to void (%"class.network::TrustTokenStore"*)***
+  %8 = load void (%"class.network::TrustTokenStore"*)**, void (%"class.network::TrustTokenStore"*)*** %7, align 8
+  %9 = getelementptr inbounds void (%"class.network::TrustTokenStore"*)*, void (%"class.network::TrustTokenStore"*)** %8, i64 1
+  %10 = load void (%"class.network::TrustTokenStore"*)*, void (%"class.network::TrustTokenStore"*)** %9, align 8
+  tail call void %10(%"class.network::TrustTokenStore"* nonnull %4) #9
+  br label %11
+
+11:                                               ; preds = %1, %6
+  %12 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 1
+  %13 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 1, i32 1
+  %14 = load i64, i64* %13, align 8
+  %15 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 1, i32 2
+  %16 = load i64, i64* %15, align 8
+  tail call void @_ZN4base14circular_dequeINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEE13DestructRangeEmm(%"class.base::circular_deque"* %12, i64 %14, i64 %16) #9
+  %17 = bitcast %"class.base::circular_deque"* %12 to i8**
+  %18 = load i8*, i8** %17, align 8
+  tail call void @free(i8* %18) #9
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7network22PendingTrustTokenStoreD0Ev(%"class.network::PendingTrustTokenStore"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_ZTVN7network22PendingTrustTokenStoreE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 2, i32 0, i32 0, i32 0
+  %4 = load %"class.network::TrustTokenStore"*, %"class.network::TrustTokenStore"** %3, align 8
+  store %"class.network::TrustTokenStore"* null, %"class.network::TrustTokenStore"** %3, align 8
+  %5 = icmp eq %"class.network::TrustTokenStore"* %4, null
+  br i1 %5, label %11, label %6
+
+6:                                                ; preds = %1
+  %7 = bitcast %"class.network::TrustTokenStore"* %4 to void (%"class.network::TrustTokenStore"*)***
+  %8 = load void (%"class.network::TrustTokenStore"*)**, void (%"class.network::TrustTokenStore"*)*** %7, align 8
+  %9 = getelementptr inbounds void (%"class.network::TrustTokenStore"*)*, void (%"class.network::TrustTokenStore"*)** %8, i64 1
+  %10 = load void (%"class.network::TrustTokenStore"*)*, void (%"class.network::TrustTokenStore"*)** %9, align 8
+  tail call void %10(%"class.network::TrustTokenStore"* nonnull %4) #9
+  br label %11
+
+11:                                               ; preds = %1, %6
+  %12 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 1
+  %13 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 1, i32 1
+  %14 = load i64, i64* %13, align 8
+  %15 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 1, i32 2
+  %16 = load i64, i64* %15, align 8
+  tail call void @_ZN4base14circular_dequeINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEE13DestructRangeEmm(%"class.base::circular_deque"* %12, i64 %14, i64 %16) #9
+  %17 = bitcast %"class.base::circular_deque"* %12 to i8**
+  %18 = load i8*, i8** %17, align 8
+  tail call void @free(i8* %18) #9
+  %19 = bitcast %"class.network::PendingTrustTokenStore"* %0 to i8*
+  tail call void @_ZdlPv(i8* %19) #10
+  ret void
+}
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7network22PendingTrustTokenStore12OnStoreReadyENSt3__110unique_ptrINS_15TrustTokenStoreENS1_14default_deleteIS3_EEEE(%"class.network::PendingTrustTokenStore"*, %"class.network::TrustTokenStore"*) local_unnamed_addr #0 align 2 {
+  %3 = ptrtoint %"class.network::TrustTokenStore"* %1 to i64
+  %4 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 2
+  %5 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %4, i64 0, i32 0, i32 0, i32 0
+  %6 = load %"class.network::TrustTokenStore"*, %"class.network::TrustTokenStore"** %5, align 8
+  %7 = bitcast %"class.std::__1::unique_ptr"* %4 to i64*
+  store i64 %3, i64* %7, align 8
+  %8 = icmp eq %"class.network::TrustTokenStore"* %6, null
+  br i1 %8, label %14, label %9
+
+9:                                                ; preds = %2
+  %10 = bitcast %"class.network::TrustTokenStore"* %6 to void (%"class.network::TrustTokenStore"*)***
+  %11 = load void (%"class.network::TrustTokenStore"*)**, void (%"class.network::TrustTokenStore"*)*** %10, align 8
+  %12 = getelementptr inbounds void (%"class.network::TrustTokenStore"*)*, void (%"class.network::TrustTokenStore"*)** %11, i64 1
+  %13 = load void (%"class.network::TrustTokenStore"*)*, void (%"class.network::TrustTokenStore"*)** %12, align 8
+  tail call void %13(%"class.network::TrustTokenStore"* nonnull %6) #9
+  br label %14
+
+14:                                               ; preds = %9, %2
+  tail call void @_ZN7network22PendingTrustTokenStore10ExecuteAllEv(%"class.network::PendingTrustTokenStore"* %0)
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7network22PendingTrustTokenStore10ExecuteAllEv(%"class.network::PendingTrustTokenStore"*) local_unnamed_addr #0 align 2 {
+  %2 = alloca %"class.base::OnceCallback", align 8
+  %3 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 1
+  %4 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 1, i32 1
+  %5 = load i64, i64* %4, align 8
+  %6 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 1, i32 2
+  %7 = load i64, i64* %6, align 8
+  %8 = icmp eq i64 %5, %7
+  br i1 %8, label %40, label %9
+
+9:                                                ; preds = %1
+  %10 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %3, i64 0, i32 0
+  %11 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 2, i32 0, i32 0, i32 0
+  %12 = bitcast %"class.base::OnceCallback"* %2 to i8*
+  %13 = bitcast %"class.base::OnceCallback"* %2 to i64*
+  %14 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %2, i64 0, i32 0
+  %15 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 1, i32 0, i32 1
+  br label %16
+
+16:                                               ; preds = %9, %16
+  %17 = phi i64 [ %5, %9 ], [ %37, %16 ]
+  %18 = call dereferenceable(8) %"class.base::OnceCallback"* @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm(%"class.base::internal::VectorBuffer"* %10, i64 %17) #9
+  %19 = load %"class.network::TrustTokenStore"*, %"class.network::TrustTokenStore"** %11, align 8
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %12) #9
+  %20 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %18, i64 0, i32 0, i32 0, i32 0
+  %21 = bitcast %"class.base::OnceCallback"* %18 to i64*
+  %22 = load i64, i64* %21, align 8
+  store i64 %22, i64* %13, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %20, align 8
+  %23 = inttoptr i64 %22 to %"class.base::internal::BindStateBase"*
+  %24 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %23, i64 0, i32 1
+  %25 = bitcast void ()** %24 to void (%"class.base::internal::BindStateBase"*, %"class.network::TrustTokenStore"*)**
+  %26 = load void (%"class.base::internal::BindStateBase"*, %"class.network::TrustTokenStore"*)*, void (%"class.base::internal::BindStateBase"*, %"class.network::TrustTokenStore"*)** %25, align 8
+  call void %26(%"class.base::internal::BindStateBase"* %23, %"class.network::TrustTokenStore"* %19) #9
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %14) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %12) #9
+  %27 = load i64, i64* %4, align 8
+  %28 = call dereferenceable(8) %"class.base::OnceCallback"* @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm(%"class.base::internal::VectorBuffer"* %10, i64 %27) #9
+  %29 = load i64, i64* %4, align 8
+  %30 = add i64 %29, 1
+  %31 = call dereferenceable(8) %"class.base::OnceCallback"* @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm(%"class.base::internal::VectorBuffer"* %10, i64 %30) #9
+  call void @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEE13DestructRangeIS7_Li0EEEvPS7_SA_(%"class.base::internal::VectorBuffer"* %10, %"class.base::OnceCallback"* %28, %"class.base::OnceCallback"* %31) #9
+  %32 = load i64, i64* %4, align 8
+  %33 = add i64 %32, 1
+  %34 = load i64, i64* %15, align 8
+  %35 = icmp eq i64 %33, %34
+  %36 = select i1 %35, i64 0, i64 %33
+  store i64 %36, i64* %4, align 8
+  call void @_ZN4base14circular_dequeINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEE25ShrinkCapacityIfNecessaryEv(%"class.base::circular_deque"* %3) #9
+  %37 = load i64, i64* %4, align 8
+  %38 = load i64, i64* %6, align 8
+  %39 = icmp eq i64 %37, %38
+  br i1 %39, label %40, label %16
+
+40:                                               ; preds = %16, %1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN7network22PendingTrustTokenStore16ExecuteOrEnqueueEN4base12OnceCallbackIFvPNS_15TrustTokenStoreEEEE(%"class.network::PendingTrustTokenStore"*, %"class.base::OnceCallback"* nocapture) local_unnamed_addr #0 align 2 {
+  %3 = alloca %"class.base::OnceCallback", align 8
+  %4 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 2, i32 0, i32 0, i32 0
+  %5 = load %"class.network::TrustTokenStore"*, %"class.network::TrustTokenStore"** %4, align 8
+  %6 = icmp eq %"class.network::TrustTokenStore"* %5, null
+  br i1 %6, label %18, label %7
+
+7:                                                ; preds = %2
+  %8 = bitcast %"class.base::OnceCallback"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %8) #9
+  %9 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %1, i64 0, i32 0, i32 0, i32 0
+  %10 = bitcast %"class.base::OnceCallback"* %1 to i64*
+  %11 = load i64, i64* %10, align 8
+  %12 = bitcast %"class.base::OnceCallback"* %3 to i64*
+  store i64 %11, i64* %12, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %9, align 8
+  %13 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %3, i64 0, i32 0
+  %14 = inttoptr i64 %11 to %"class.base::internal::BindStateBase"*
+  %15 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %14, i64 0, i32 1
+  %16 = bitcast void ()** %15 to void (%"class.base::internal::BindStateBase"*, %"class.network::TrustTokenStore"*)**
+  %17 = load void (%"class.base::internal::BindStateBase"*, %"class.network::TrustTokenStore"*)*, void (%"class.base::internal::BindStateBase"*, %"class.network::TrustTokenStore"*)** %16, align 8
+  tail call void %17(%"class.base::internal::BindStateBase"* %14, %"class.network::TrustTokenStore"* nonnull %5) #9
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %13) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %8) #9
+  br label %41
+
+18:                                               ; preds = %2
+  %19 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 1
+  tail call void @_ZN4base14circular_dequeINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEE25ExpandCapacityIfNecessaryEm(%"class.base::circular_deque"* %19, i64 1) #9
+  %20 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %19, i64 0, i32 0
+  %21 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 1, i32 2
+  %22 = load i64, i64* %21, align 8
+  %23 = tail call dereferenceable(8) %"class.base::OnceCallback"* @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm(%"class.base::internal::VectorBuffer"* %20, i64 %22) #9
+  %24 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %1, i64 0, i32 0, i32 0, i32 0
+  %25 = bitcast %"class.base::OnceCallback"* %1 to i64*
+  %26 = load i64, i64* %25, align 8
+  %27 = bitcast %"class.base::OnceCallback"* %23 to i64*
+  store i64 %26, i64* %27, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %24, align 8
+  %28 = load i64, i64* %21, align 8
+  %29 = getelementptr inbounds %"class.network::PendingTrustTokenStore", %"class.network::PendingTrustTokenStore"* %0, i64 0, i32 1, i32 0, i32 1
+  %30 = load i64, i64* %29, align 8
+  %31 = add i64 %30, -1
+  %32 = icmp eq i64 %28, %31
+  br i1 %32, label %33, label %34
+
+33:                                               ; preds = %18
+  store i64 0, i64* %21, align 8
+  br label %37
+
+34:                                               ; preds = %18
+  %35 = add i64 %28, 1
+  store i64 %35, i64* %21, align 8
+  %36 = icmp eq i64 %35, 0
+  br i1 %36, label %37, label %38
+
+37:                                               ; preds = %34, %33
+  br label %38
+
+38:                                               ; preds = %34, %37
+  %39 = phi i64 [ %31, %37 ], [ %28, %34 ]
+  %40 = tail call dereferenceable(8) %"class.base::OnceCallback"* @_ZNK4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm(%"class.base::internal::VectorBuffer"* %20, i64 %39) #9
+  br label %41
+
+41:                                               ; preds = %38, %7
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base14circular_dequeINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEE13DestructRangeEmm(%"class.base::circular_deque"*, i64, i64) local_unnamed_addr #0 comdat align 2 {
+  %4 = icmp eq i64 %2, %1
+  br i1 %4, label %17, label %5
+
+5:                                                ; preds = %3
+  %6 = icmp ugt i64 %2, %1
+  %7 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0
+  %8 = tail call dereferenceable(8) %"class.base::OnceCallback"* @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm(%"class.base::internal::VectorBuffer"* %7, i64 %1)
+  br i1 %6, label %14, label %9
+
+9:                                                ; preds = %5
+  %10 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0, i32 1
+  %11 = load i64, i64* %10, align 8
+  %12 = tail call dereferenceable(8) %"class.base::OnceCallback"* @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm(%"class.base::internal::VectorBuffer"* %7, i64 %11)
+  tail call void @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEE13DestructRangeIS7_Li0EEEvPS7_SA_(%"class.base::internal::VectorBuffer"* %7, %"class.base::OnceCallback"* %8, %"class.base::OnceCallback"* %12)
+  %13 = tail call dereferenceable(8) %"class.base::OnceCallback"* @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm(%"class.base::internal::VectorBuffer"* %7, i64 0)
+  br label %14
+
+14:                                               ; preds = %5, %9
+  %15 = phi %"class.base::OnceCallback"* [ %13, %9 ], [ %8, %5 ]
+  %16 = tail call dereferenceable(8) %"class.base::OnceCallback"* @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm(%"class.base::internal::VectorBuffer"* %7, i64 %2)
+  tail call void @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEE13DestructRangeIS7_Li0EEEvPS7_SA_(%"class.base::internal::VectorBuffer"* %7, %"class.base::OnceCallback"* %15, %"class.base::OnceCallback"* %16)
+  br label %17
+
+17:                                               ; preds = %14, %3
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEE13DestructRangeIS7_Li0EEEvPS7_SA_(%"class.base::internal::VectorBuffer"*, %"class.base::OnceCallback"*, %"class.base::OnceCallback"*) local_unnamed_addr #0 comdat align 2 {
+  %4 = alloca %"class.logging::CheckOpResult", align 8
+  %5 = alloca %"class.base::OnceCallback"*, align 8
+  %6 = alloca %"class.base::OnceCallback"*, align 8
+  %7 = alloca %"class.logging::CheckOpResult", align 8
+  %8 = alloca %"class.logging::CheckError", align 8
+  store %"class.base::OnceCallback"* %1, %"class.base::OnceCallback"** %5, align 8
+  store %"class.base::OnceCallback"* %2, %"class.base::OnceCallback"** %6, align 8
+  %9 = bitcast %"class.logging::CheckOpResult"* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %9) #9
+  %10 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %7, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %10, align 8
+  %11 = bitcast %"class.logging::CheckOpResult"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %11)
+  %12 = icmp ugt %"class.base::OnceCallback"* %1, %2
+  br i1 %12, label %14, label %13
+
+13:                                               ; preds = %3
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %11)
+  store i8* null, i8** %10, align 8
+  br label %25
+
+14:                                               ; preds = %3
+  %15 = bitcast %"class.base::OnceCallback"** %5 to i8*
+  %16 = call i8* @_ZN7logging14StreamValToStrEPKvPFvRNSt3__113basic_ostreamIcNS2_11char_traitsIcEEEES1_E(i8* nonnull %15, void (%"class.std::__1::basic_ostream"*, i8*)* nonnull @_ZZN7logging15CheckOpValueStrIPN4base12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEENSt3__19enable_ifIXaasr4base8internal23SupportsOstreamOperatorIRKT_EE5valuentsr3std11is_functionINS9_14remove_pointerISB_E4typeEEE5valueEPcE4typeESD_ENUlRNS9_13basic_ostreamIcNS9_11char_traitsIcEEEEPKvE_8__invokeESO_SQ_) #9
+  %17 = bitcast %"class.base::OnceCallback"** %6 to i8*
+  %18 = call i8* @_ZN7logging14StreamValToStrEPKvPFvRNSt3__113basic_ostreamIcNS2_11char_traitsIcEEEES1_E(i8* nonnull %17, void (%"class.std::__1::basic_ostream"*, i8*)* nonnull @_ZZN7logging15CheckOpValueStrIPN4base12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEENSt3__19enable_ifIXaasr4base8internal23SupportsOstreamOperatorIRKT_EE5valuentsr3std11is_functionINS9_14remove_pointerISB_E4typeEEE5valueEPcE4typeESD_ENUlRNS9_13basic_ostreamIcNS9_11char_traitsIcEEEEPKvE_8__invokeESO_SQ_) #9
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %4, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @.str, i64 0, i64 0), i8* %16, i8* %18) #9
+  %19 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %4, i64 0, i32 0
+  %20 = load i8*, i8** %19, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %11)
+  store i8* %20, i8** %10, align 8
+  %21 = icmp eq i8* %20, null
+  br i1 %21, label %25, label %22
+
+22:                                               ; preds = %14
+  %23 = bitcast %"class.logging::CheckError"* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %23) #9
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %8, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.1, i64 0, i64 0), i32 110, %"class.logging::CheckOpResult"* nonnull %7) #9
+  %24 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %8) #9
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %8) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %23) #9
+  br label %25
+
+25:                                               ; preds = %13, %14, %22
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %9) #9
+  %26 = load %"class.base::OnceCallback"*, %"class.base::OnceCallback"** %5, align 8
+  %27 = load %"class.base::OnceCallback"*, %"class.base::OnceCallback"** %6, align 8
+  %28 = icmp eq %"class.base::OnceCallback"* %26, %27
+  br i1 %28, label %36, label %29
+
+29:                                               ; preds = %25, %29
+  %30 = phi %"class.base::OnceCallback"* [ %33, %29 ], [ %26, %25 ]
+  %31 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %30, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* %31) #9
+  %32 = load %"class.base::OnceCallback"*, %"class.base::OnceCallback"** %5, align 8
+  %33 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %32, i64 1
+  store %"class.base::OnceCallback"* %33, %"class.base::OnceCallback"** %5, align 8
+  %34 = load %"class.base::OnceCallback"*, %"class.base::OnceCallback"** %6, align 8
+  %35 = icmp eq %"class.base::OnceCallback"* %33, %34
+  br i1 %35, label %36, label %29
+
+36:                                               ; preds = %29, %25
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden dereferenceable(8) %"class.base::OnceCallback"* @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm(%"class.base::internal::VectorBuffer"*, i64) local_unnamed_addr #0 comdat align 2 {
+  %3 = alloca %"class.logging::CheckOpResult", align 8
+  %4 = alloca %"class.logging::CheckOpResult", align 8
+  %5 = alloca %"class.logging::CheckError", align 8
+  %6 = bitcast %"class.logging::CheckOpResult"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %6) #9
+  %7 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %4, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %7, align 8
+  %8 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %0, i64 0, i32 1
+  %9 = load i64, i64* %8, align 8
+  %10 = bitcast %"class.logging::CheckOpResult"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %10)
+  %11 = icmp ult i64 %9, %1
+  br i1 %11, label %13, label %12
+
+12:                                               ; preds = %2
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* null, i8** %7, align 8
+  br label %22
+
+13:                                               ; preds = %2
+  %14 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 %1) #9
+  %15 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 %9) #9
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %3, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.2, i64 0, i64 0), i8* %14, i8* %15) #9
+  %16 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %3, i64 0, i32 0
+  %17 = load i8*, i8** %16, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* %17, i8** %7, align 8
+  %18 = icmp eq i8* %17, null
+  br i1 %18, label %22, label %19
+
+19:                                               ; preds = %13
+  %20 = bitcast %"class.logging::CheckError"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %20) #9
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %5, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.1, i64 0, i64 0), i32 84, %"class.logging::CheckOpResult"* nonnull %4) #9
+  %21 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %5) #9
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %5) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %20) #9
+  br label %22
+
+22:                                               ; preds = %12, %13, %19
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %6) #9
+  %23 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %0, i64 0, i32 0
+  %24 = load %"class.base::OnceCallback"*, %"class.base::OnceCallback"** %23, align 8
+  %25 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %24, i64 %1
+  ret %"class.base::OnceCallback"* %25
+}
+
+declare void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* sret, i8*, i32, %"class.logging::CheckOpResult"*) local_unnamed_addr #3
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"*) local_unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"*) unnamed_addr #4
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"*) unnamed_addr #4
+
+declare void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"*, i8*, i8*, i8*) unnamed_addr #3
+
+declare i8* @_ZN7logging14StreamValToStrEPKvPFvRNSt3__113basic_ostreamIcNS2_11char_traitsIcEEEES1_E(i8*, void (%"class.std::__1::basic_ostream"*, i8*)*) local_unnamed_addr #3
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden void @_ZZN7logging15CheckOpValueStrIPN4base12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEENSt3__19enable_ifIXaasr4base8internal23SupportsOstreamOperatorIRKT_EE5valuentsr3std11is_functionINS9_14remove_pointerISB_E4typeEEE5valueEPcE4typeESD_ENUlRNS9_13basic_ostreamIcNS9_11char_traitsIcEEEEPKvE_8__invokeESO_SQ_(%"class.std::__1::basic_ostream"* dereferenceable(160), i8*) #5 comdat align 2 {
+  %3 = bitcast i8* %1 to i8**
+  %4 = load i8*, i8** %3, align 8
+  %5 = tail call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEPKv(%"class.std::__1::basic_ostream"* %0, i8* %4) #9
+  ret void
+}
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEPKv(%"class.std::__1::basic_ostream"*, i8*) local_unnamed_addr #3
+
+declare i8* @_ZN7logging15CheckOpValueStrEm(i64) local_unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @free(i8* nocapture) local_unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base14circular_dequeINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEE25ExpandCapacityIfNecessaryEm(%"class.base::circular_deque"*, i64) local_unnamed_addr #0 comdat align 2 {
+  %3 = alloca <2 x i64>, align 16
+  %4 = bitcast <2 x i64>* %3 to %"class.base::internal::VectorBuffer"*
+  %5 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 1
+  %6 = load i64, i64* %5, align 8
+  %7 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 2
+  %8 = load i64, i64* %7, align 8
+  %9 = icmp ult i64 %8, %6
+  br i1 %9, label %14, label %10
+
+10:                                               ; preds = %2
+  %11 = sub i64 %8, %6
+  %12 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0, i32 1
+  %13 = load i64, i64* %12, align 8
+  br label %19
+
+14:                                               ; preds = %2
+  %15 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0, i32 1
+  %16 = load i64, i64* %15, align 8
+  %17 = sub i64 %8, %6
+  %18 = add i64 %17, %16
+  br label %19
+
+19:                                               ; preds = %10, %14
+  %20 = phi i64 [ %13, %10 ], [ %16, %14 ]
+  %21 = phi i64 [ %11, %10 ], [ %18, %14 ]
+  %22 = add i64 %21, %1
+  %23 = icmp eq i64 %20, 0
+  %24 = add i64 %20, -1
+  %25 = select i1 %23, i64 0, i64 %24
+  %26 = icmp ult i64 %25, %22
+  br i1 %26, label %27, label %49
+
+27:                                               ; preds = %19
+  %28 = icmp ugt i64 %22, 3
+  %29 = select i1 %28, i64 %22, i64 3
+  %30 = lshr i64 %25, 2
+  %31 = add i64 %30, %25
+  %32 = icmp ult i64 %29, %31
+  %33 = select i1 %32, i64 %31, i64 %29
+  %34 = bitcast <2 x i64>* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %34) #9
+  %35 = add i64 %33, 1
+  %36 = tail call { i64, i1 } @llvm.umul.with.overflow.i64(i64 %35, i64 8) #9
+  %37 = extractvalue { i64, i1 } %36, 1
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %34, i8 -86, i64 16, i1 false) #9
+  br i1 %37, label %38, label %39, !prof !2
+
+38:                                               ; preds = %27
+  tail call void @llvm.trap() #9
+  unreachable
+
+39:                                               ; preds = %27
+  %40 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %4, i64 0, i32 1
+  %41 = extractvalue { i64, i1 } %36, 0
+  %42 = tail call noalias i8* @malloc(i64 %41) #9
+  %43 = bitcast <2 x i64>* %3 to i8**
+  store i8* %42, i8** %43, align 16
+  store i64 %35, i64* %40, align 8
+  %44 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0
+  call void @_ZN4base14circular_dequeINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEE10MoveBufferERNS_8internal12VectorBufferIS6_EEmmPSA_PmSD_(%"class.base::internal::VectorBuffer"* dereferenceable(16) %44, i64 %6, i64 %8, %"class.base::internal::VectorBuffer"* nonnull %4, i64* %5, i64* %7) #9
+  %45 = bitcast %"class.base::circular_deque"* %0 to i8**
+  %46 = load i8*, i8** %45, align 8
+  call void @free(i8* %46) #9
+  %47 = load <2 x i64>, <2 x i64>* %3, align 16
+  %48 = bitcast %"class.base::circular_deque"* %0 to <2 x i64>*
+  store <2 x i64> %47, <2 x i64>* %48, align 8
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %34) #9
+  br label %49
+
+49:                                               ; preds = %19, %39
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base14circular_dequeINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEE10MoveBufferERNS_8internal12VectorBufferIS6_EEmmPSA_PmSD_(%"class.base::internal::VectorBuffer"* dereferenceable(16), i64, i64, %"class.base::internal::VectorBuffer"*, i64*, i64*) local_unnamed_addr #0 comdat align 2 {
+  %7 = alloca %"class.logging::CheckError", align 8
+  %8 = alloca %"class.logging::CheckError", align 8
+  %9 = alloca %"class.logging::CheckError", align 8
+  %10 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %0, i64 0, i32 1
+  %11 = load i64, i64* %10, align 8
+  store i64 0, i64* %4, align 8
+  %12 = icmp ugt i64 %2, %1
+  br i1 %12, label %13, label %51
+
+13:                                               ; preds = %6
+  %14 = tail call dereferenceable(8) %"class.base::OnceCallback"* @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm(%"class.base::internal::VectorBuffer"* %0, i64 %1)
+  %15 = tail call dereferenceable(8) %"class.base::OnceCallback"* @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm(%"class.base::internal::VectorBuffer"* %0, i64 %2)
+  %16 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %3, i64 0, i32 0
+  %17 = load %"class.base::OnceCallback"*, %"class.base::OnceCallback"** %16, align 8
+  %18 = ptrtoint %"class.base::OnceCallback"* %14 to i64
+  %19 = icmp ult %"class.base::OnceCallback"* %17, %15
+  br i1 %19, label %20, label %36
+
+20:                                               ; preds = %13
+  %21 = ptrtoint %"class.base::OnceCallback"* %17 to i64
+  %22 = ptrtoint %"class.base::OnceCallback"* %15 to i64
+  %23 = tail call { i64, i1 } @llvm.usub.with.overflow.i64(i64 %22, i64 %18) #9
+  %24 = extractvalue { i64, i1 } %23, 1
+  %25 = extractvalue { i64, i1 } %23, 0
+  %26 = tail call { i64, i1 } @llvm.uadd.with.overflow.i64(i64 %21, i64 %25) #9
+  %27 = extractvalue { i64, i1 } %26, 1
+  %28 = or i1 %24, %27
+  br i1 %28, label %29, label %30, !prof !2
+
+29:                                               ; preds = %20
+  tail call void @llvm.trap() #9
+  unreachable
+
+30:                                               ; preds = %20
+  %31 = extractvalue { i64, i1 } %26, 0
+  %32 = icmp ugt i64 %31, %18
+  br i1 %32, label %33, label %36
+
+33:                                               ; preds = %30
+  %34 = bitcast %"class.logging::CheckError"* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %34) #9
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %8, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.1, i64 0, i64 0), i32 150, i8* getelementptr inbounds ([41 x i8], [41 x i8]* @.str.3, i64 0, i64 0)) #9
+  %35 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %8) #9
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %8) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %34) #9
+  br label %36
+
+36:                                               ; preds = %33, %30, %13
+  %37 = icmp eq %"class.base::OnceCallback"* %14, %15
+  br i1 %37, label %49, label %38
+
+38:                                               ; preds = %36, %38
+  %39 = phi %"class.base::OnceCallback"* [ %47, %38 ], [ %17, %36 ]
+  %40 = phi %"class.base::OnceCallback"* [ %46, %38 ], [ %14, %36 ]
+  %41 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %40, i64 0, i32 0, i32 0, i32 0
+  %42 = bitcast %"class.base::OnceCallback"* %40 to i64*
+  %43 = load i64, i64* %42, align 8
+  %44 = bitcast %"class.base::OnceCallback"* %39 to i64*
+  store i64 %43, i64* %44, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %41, align 8
+  %45 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %40, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* %45) #9
+  %46 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %40, i64 1
+  %47 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %39, i64 1
+  %48 = icmp eq %"class.base::OnceCallback"* %46, %15
+  br i1 %48, label %49, label %38
+
+49:                                               ; preds = %38, %36
+  %50 = sub i64 %2, %1
+  br label %127
+
+51:                                               ; preds = %6
+  %52 = icmp ult i64 %2, %1
+  br i1 %52, label %53, label %127
+
+53:                                               ; preds = %51
+  %54 = tail call dereferenceable(8) %"class.base::OnceCallback"* @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm(%"class.base::internal::VectorBuffer"* %0, i64 %1)
+  %55 = tail call dereferenceable(8) %"class.base::OnceCallback"* @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm(%"class.base::internal::VectorBuffer"* %0, i64 %11)
+  %56 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %3, i64 0, i32 0
+  %57 = load %"class.base::OnceCallback"*, %"class.base::OnceCallback"** %56, align 8
+  %58 = ptrtoint %"class.base::OnceCallback"* %54 to i64
+  %59 = icmp ult %"class.base::OnceCallback"* %57, %55
+  br i1 %59, label %60, label %76
+
+60:                                               ; preds = %53
+  %61 = ptrtoint %"class.base::OnceCallback"* %57 to i64
+  %62 = ptrtoint %"class.base::OnceCallback"* %55 to i64
+  %63 = tail call { i64, i1 } @llvm.usub.with.overflow.i64(i64 %62, i64 %58) #9
+  %64 = extractvalue { i64, i1 } %63, 1
+  %65 = extractvalue { i64, i1 } %63, 0
+  %66 = tail call { i64, i1 } @llvm.uadd.with.overflow.i64(i64 %61, i64 %65) #9
+  %67 = extractvalue { i64, i1 } %66, 1
+  %68 = or i1 %64, %67
+  br i1 %68, label %69, label %70, !prof !2
+
+69:                                               ; preds = %60
+  tail call void @llvm.trap() #9
+  unreachable
+
+70:                                               ; preds = %60
+  %71 = extractvalue { i64, i1 } %66, 0
+  %72 = icmp ugt i64 %71, %58
+  br i1 %72, label %73, label %76
+
+73:                                               ; preds = %70
+  %74 = bitcast %"class.logging::CheckError"* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %74) #9
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %7, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.1, i64 0, i64 0), i32 150, i8* getelementptr inbounds ([41 x i8], [41 x i8]* @.str.3, i64 0, i64 0)) #9
+  %75 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %7) #9
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %7) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %74) #9
+  br label %76
+
+76:                                               ; preds = %73, %70, %53
+  %77 = icmp eq %"class.base::OnceCallback"* %54, %55
+  br i1 %77, label %89, label %78
+
+78:                                               ; preds = %76, %78
+  %79 = phi %"class.base::OnceCallback"* [ %87, %78 ], [ %57, %76 ]
+  %80 = phi %"class.base::OnceCallback"* [ %86, %78 ], [ %54, %76 ]
+  %81 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %80, i64 0, i32 0, i32 0, i32 0
+  %82 = bitcast %"class.base::OnceCallback"* %80 to i64*
+  %83 = load i64, i64* %82, align 8
+  %84 = bitcast %"class.base::OnceCallback"* %79 to i64*
+  store i64 %83, i64* %84, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %81, align 8
+  %85 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %80, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* %85) #9
+  %86 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %80, i64 1
+  %87 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %79, i64 1
+  %88 = icmp eq %"class.base::OnceCallback"* %86, %55
+  br i1 %88, label %89, label %78
+
+89:                                               ; preds = %78, %76
+  %90 = sub i64 %11, %1
+  %91 = call dereferenceable(8) %"class.base::OnceCallback"* @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm(%"class.base::internal::VectorBuffer"* %0, i64 0)
+  %92 = call dereferenceable(8) %"class.base::OnceCallback"* @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm(%"class.base::internal::VectorBuffer"* %0, i64 %2)
+  %93 = call dereferenceable(8) %"class.base::OnceCallback"* @_ZN4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm(%"class.base::internal::VectorBuffer"* %3, i64 %90)
+  %94 = ptrtoint %"class.base::OnceCallback"* %91 to i64
+  %95 = icmp ult %"class.base::OnceCallback"* %93, %92
+  br i1 %95, label %96, label %112
+
+96:                                               ; preds = %89
+  %97 = ptrtoint %"class.base::OnceCallback"* %93 to i64
+  %98 = ptrtoint %"class.base::OnceCallback"* %92 to i64
+  %99 = call { i64, i1 } @llvm.usub.with.overflow.i64(i64 %98, i64 %94) #9
+  %100 = extractvalue { i64, i1 } %99, 1
+  %101 = extractvalue { i64, i1 } %99, 0
+  %102 = call { i64, i1 } @llvm.uadd.with.overflow.i64(i64 %97, i64 %101) #9
+  %103 = extractvalue { i64, i1 } %102, 1
+  %104 = or i1 %100, %103
+  br i1 %104, label %105, label %106, !prof !2
+
+105:                                              ; preds = %96
+  call void @llvm.trap() #9
+  unreachable
+
+106:                                              ; preds = %96
+  %107 = extractvalue { i64, i1 } %102, 0
+  %108 = icmp ugt i64 %107, %94
+  br i1 %108, label %109, label %112
+
+109:                                              ; preds = %106
+  %110 = bitcast %"class.logging::CheckError"* %9 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %110) #9
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %9, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.1, i64 0, i64 0), i32 150, i8* getelementptr inbounds ([41 x i8], [41 x i8]* @.str.3, i64 0, i64 0)) #9
+  %111 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %9) #9
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %9) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %110) #9
+  br label %112
+
+112:                                              ; preds = %109, %106, %89
+  %113 = icmp eq %"class.base::OnceCallback"* %91, %92
+  br i1 %113, label %125, label %114
+
+114:                                              ; preds = %112, %114
+  %115 = phi %"class.base::OnceCallback"* [ %123, %114 ], [ %93, %112 ]
+  %116 = phi %"class.base::OnceCallback"* [ %122, %114 ], [ %91, %112 ]
+  %117 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %116, i64 0, i32 0, i32 0, i32 0
+  %118 = bitcast %"class.base::OnceCallback"* %116 to i64*
+  %119 = load i64, i64* %118, align 8
+  %120 = bitcast %"class.base::OnceCallback"* %115 to i64*
+  store i64 %119, i64* %120, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %117, align 8
+  %121 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %116, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* %121) #9
+  %122 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %116, i64 1
+  %123 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %115, i64 1
+  %124 = icmp eq %"class.base::OnceCallback"* %122, %92
+  br i1 %124, label %125, label %114
+
+125:                                              ; preds = %114, %112
+  %126 = add i64 %90, %2
+  br label %127
+
+127:                                              ; preds = %51, %125, %49
+  %128 = phi i64 [ %126, %125 ], [ %50, %49 ], [ 0, %51 ]
+  store i64 %128, i64* %5, align 8
+  ret void
+}
+
+; Function Attrs: nofree nounwind
+declare noalias i8* @malloc(i64) local_unnamed_addr #6
+
+; Function Attrs: nounwind readnone speculatable
+declare { i64, i1 } @llvm.umul.with.overflow.i64(i64, i64) #7
+
+; Function Attrs: cold noreturn nounwind
+declare void @llvm.trap() #8
+
+declare void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* sret, i8*, i32, i8*) local_unnamed_addr #3
+
+; Function Attrs: nounwind readnone speculatable
+declare { i64, i1 } @llvm.uadd.with.overflow.i64(i64, i64) #7
+
+; Function Attrs: nounwind readnone speculatable
+declare { i64, i1 } @llvm.usub.with.overflow.i64(i64, i64) #7
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden dereferenceable(8) %"class.base::OnceCallback"* @_ZNK4base8internal12VectorBufferINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEEixEm(%"class.base::internal::VectorBuffer"*, i64) local_unnamed_addr #0 comdat align 2 {
+  %3 = alloca %"class.logging::CheckOpResult", align 8
+  %4 = alloca %"class.logging::CheckOpResult", align 8
+  %5 = alloca %"class.logging::CheckError", align 8
+  %6 = bitcast %"class.logging::CheckOpResult"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %6) #9
+  %7 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %4, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %7, align 8
+  %8 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %0, i64 0, i32 1
+  %9 = load i64, i64* %8, align 8
+  %10 = bitcast %"class.logging::CheckOpResult"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %10)
+  %11 = icmp ult i64 %9, %1
+  br i1 %11, label %13, label %12
+
+12:                                               ; preds = %2
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* null, i8** %7, align 8
+  br label %22
+
+13:                                               ; preds = %2
+  %14 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 %1) #9
+  %15 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 %9) #9
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %3, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.2, i64 0, i64 0), i8* %14, i8* %15) #9
+  %16 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %3, i64 0, i32 0
+  %17 = load i8*, i8** %16, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* %17, i8** %7, align 8
+  %18 = icmp eq i8* %17, null
+  br i1 %18, label %22, label %19
+
+19:                                               ; preds = %13
+  %20 = bitcast %"class.logging::CheckError"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %20) #9
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %5, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.1, i64 0, i64 0), i32 89, %"class.logging::CheckOpResult"* nonnull %4) #9
+  %21 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %5) #9
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %5) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %20) #9
+  br label %22
+
+22:                                               ; preds = %12, %13, %19
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %6) #9
+  %23 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %0, i64 0, i32 0
+  %24 = load %"class.base::OnceCallback"*, %"class.base::OnceCallback"** %23, align 8
+  %25 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %24, i64 %1
+  ret %"class.base::OnceCallback"* %25
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base14circular_dequeINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEE25ShrinkCapacityIfNecessaryEv(%"class.base::circular_deque"*) local_unnamed_addr #0 comdat align 2 {
+  %2 = alloca <2 x i64>, align 16
+  %3 = bitcast <2 x i64>* %2 to %"class.base::internal::VectorBuffer"*
+  %4 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0, i32 1
+  %5 = load i64, i64* %4, align 8
+  %6 = icmp eq i64 %5, 0
+  %7 = add i64 %5, -1
+  %8 = select i1 %6, i64 0, i64 %7
+  %9 = icmp ult i64 %8, 4
+  br i1 %9, label %43, label %10
+
+10:                                               ; preds = %1
+  %11 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 1
+  %12 = load i64, i64* %11, align 8
+  %13 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 2
+  %14 = load i64, i64* %13, align 8
+  %15 = icmp ult i64 %14, %12
+  %16 = sub i64 %14, %12
+  %17 = select i1 %15, i64 %5, i64 0
+  %18 = add i64 %17, %16
+  %19 = sub i64 %8, %18
+  %20 = icmp ult i64 %19, %18
+  br i1 %20, label %43, label %21
+
+21:                                               ; preds = %10
+  %22 = lshr i64 %18, 2
+  %23 = add i64 %22, %18
+  %24 = icmp ugt i64 %23, 3
+  %25 = select i1 %24, i64 %23, i64 3
+  %26 = icmp ult i64 %25, %8
+  br i1 %26, label %27, label %43
+
+27:                                               ; preds = %21
+  %28 = bitcast <2 x i64>* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %28) #9
+  %29 = add nuw i64 %25, 1
+  %30 = tail call { i64, i1 } @llvm.umul.with.overflow.i64(i64 %29, i64 8) #9
+  %31 = extractvalue { i64, i1 } %30, 1
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %28, i8 -86, i64 16, i1 false) #9
+  br i1 %31, label %32, label %33, !prof !2
+
+32:                                               ; preds = %27
+  tail call void @llvm.trap() #9
+  unreachable
+
+33:                                               ; preds = %27
+  %34 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %3, i64 0, i32 1
+  %35 = extractvalue { i64, i1 } %30, 0
+  %36 = tail call noalias i8* @malloc(i64 %35) #9
+  %37 = bitcast <2 x i64>* %2 to i8**
+  store i8* %36, i8** %37, align 16
+  store i64 %29, i64* %34, align 8
+  %38 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0
+  call void @_ZN4base14circular_dequeINS_12OnceCallbackIFvPN7network15TrustTokenStoreEEEEE10MoveBufferERNS_8internal12VectorBufferIS6_EEmmPSA_PmSD_(%"class.base::internal::VectorBuffer"* dereferenceable(16) %38, i64 %12, i64 %14, %"class.base::internal::VectorBuffer"* nonnull %3, i64* %11, i64* %13) #9
+  %39 = bitcast %"class.base::circular_deque"* %0 to i8**
+  %40 = load i8*, i8** %39, align 8
+  call void @free(i8* %40) #9
+  %41 = load <2 x i64>, <2 x i64>* %2, align 16
+  %42 = bitcast %"class.base::circular_deque"* %0 to <2 x i64>*
+  store <2 x i64> %41, <2 x i64>* %42, align 8
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %28) #9
+  br label %43
+
+43:                                               ; preds = %10, %33, %21, %1
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { inlinehint nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nofree nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { nounwind readnone speculatable }
+attributes #8 = { cold noreturn nounwind }
+attributes #9 = { nounwind }
+attributes #10 = { builtin nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{!"branch_weights", i32 1, i32 2000}

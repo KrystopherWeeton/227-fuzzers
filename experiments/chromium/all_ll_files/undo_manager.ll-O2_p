@@ -1,0 +1,2968 @@
+; ModuleID = '../../components/undo/undo_manager.cc'
+source_filename = "../../components/undo/undo_manager.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%class.UndoGroup = type { %"class.std::__1::vector", i32, i32 }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"*, %"class.std::__1::__compressed_pair" }
+%"class.std::__1::unique_ptr" = type { %"class.std::__1::__compressed_pair.1" }
+%"class.std::__1::__compressed_pair.1" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"struct.std::__1::__compressed_pair_elem.2" = type { %class.UndoOperation* }
+%class.UndoOperation = type { i32 (...)** }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"class.std::__1::unique_ptr"* }
+%class.UndoManager = type <{ %"class.std::__1::vector.4", %"class.std::__1::vector.4", %"class.base::ObserverList", i32, [4 x i8], %"class.std::__1::unique_ptr.6", %class.UndoGroup*, i32, i8, i8, [2 x i8] }>
+%"class.std::__1::vector.4" = type { %"class.std::__1::__vector_base.5" }
+%"class.std::__1::__vector_base.5" = type { %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"*, %"class.std::__1::__compressed_pair.12" }
+%"class.std::__1::__compressed_pair.12" = type { %"struct.std::__1::__compressed_pair_elem.13" }
+%"struct.std::__1::__compressed_pair_elem.13" = type { %"class.std::__1::unique_ptr.6"* }
+%"class.base::ObserverList" = type <{ %"class.std::__1::vector.17", %"class.base::LinkedList", i64, i32, [4 x i8] }>
+%"class.std::__1::vector.17" = type { %"class.std::__1::__vector_base.18" }
+%"class.std::__1::__vector_base.18" = type { %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"*, %"class.std::__1::__compressed_pair.19" }
+%"class.base::internal::UncheckedObserverAdapter" = type { i8* }
+%"class.std::__1::__compressed_pair.19" = type { %"struct.std::__1::__compressed_pair_elem.20" }
+%"struct.std::__1::__compressed_pair_elem.20" = type { %"class.base::internal::UncheckedObserverAdapter"* }
+%"class.base::LinkedList" = type { %"class.base::LinkNode" }
+%"class.base::LinkNode" = type { %"class.base::internal::LinkNodeBase" }
+%"class.base::internal::LinkNodeBase" = type { %"class.base::internal::LinkNodeBase"*, %"class.base::internal::LinkNodeBase"* }
+%"class.std::__1::unique_ptr.6" = type { %"class.std::__1::__compressed_pair.7" }
+%"class.std::__1::__compressed_pair.7" = type { %"struct.std::__1::__compressed_pair_elem.8" }
+%"struct.std::__1::__compressed_pair_elem.8" = type { %class.UndoGroup* }
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.24" }
+%"class.std::__1::__compressed_pair.24" = type { %"struct.std::__1::__compressed_pair_elem.25" }
+%"struct.std::__1::__compressed_pair_elem.25" = type { %"struct.std::__1::basic_string<char16_t, std::__1::char_traits<char16_t>, std::__1::allocator<char16_t> >::__rep" }
+%"struct.std::__1::basic_string<char16_t, std::__1::char_traits<char16_t>, std::__1::allocator<char16_t> >::__rep" = type { %union.anon }
+%union.anon = type { %"struct.std::__1::basic_string<char16_t, std::__1::char_traits<char16_t>, std::__1::allocator<char16_t> >::__long" }
+%"struct.std::__1::basic_string<char16_t, std::__1::char_traits<char16_t>, std::__1::allocator<char16_t> >::__long" = type { i16*, i64, i64 }
+%"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter" = type { %"class.base::internal::WeakLinkNode", i64, i64 }
+%"class.base::internal::WeakLinkNode" = type { %"class.base::LinkNode", %"class.base::ObserverList"* }
+%class.UndoManagerObserver = type { i32 (...)** }
+%"class.std::__1::__vector_base_common" = type { i8 }
+
+$_ZNSt3__16vectorINS_10unique_ptrI9UndoGroupNS_14default_deleteIS2_EEEENS_9allocatorIS5_EEE5eraseENS_11__wrap_iterIPKS5_EE = comdat any
+
+$_ZNSt3__16vectorINS_10unique_ptrI13UndoOperationNS_14default_deleteIS2_EEEENS_9allocatorIS5_EEE21__push_back_slow_pathIS5_EEvOT_ = comdat any
+
+$_ZNSt3__16vectorINS_10unique_ptrI9UndoGroupNS_14default_deleteIS2_EEEENS_9allocatorIS5_EEE21__push_back_slow_pathIS5_EEvOT_ = comdat any
+
+@_ZN9UndoGroupC1Ev = hidden unnamed_addr alias void (%class.UndoGroup*), void (%class.UndoGroup*)* @_ZN9UndoGroupC2Ev
+@_ZN9UndoGroupD1Ev = hidden unnamed_addr alias void (%class.UndoGroup*), void (%class.UndoGroup*)* @_ZN9UndoGroupD2Ev
+@_ZN11UndoManagerC1Ev = hidden unnamed_addr alias void (%class.UndoManager*), void (%class.UndoManager*)* @_ZN11UndoManagerC2Ev
+@_ZN11UndoManagerD1Ev = hidden unnamed_addr alias void (%class.UndoManager*), void (%class.UndoManager*)* @_ZN11UndoManagerD2Ev
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN9UndoGroupC2Ev(%class.UndoGroup* nocapture) unnamed_addr #0 align 2 {
+  %2 = bitcast %class.UndoGroup* %0 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %2, i8 0, i64 24, i1 false) #10
+  %3 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %0, i64 0, i32 1
+  store i32 21124, i32* %3, align 8
+  %4 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %0, i64 0, i32 2
+  store i32 21125, i32* %4, align 4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN9UndoGroupD2Ev(%class.UndoGroup* nocapture) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %0, i64 0, i32 0, i32 0, i32 0
+  %3 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %2, align 8
+  %4 = icmp eq %"class.std::__1::unique_ptr"* %3, null
+  br i1 %4, label %28, label %5
+
+5:                                                ; preds = %1
+  %6 = bitcast %"class.std::__1::unique_ptr"* %3 to i8*
+  %7 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %0, i64 0, i32 0, i32 0, i32 1
+  %8 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %7, align 8
+  %9 = icmp eq %"class.std::__1::unique_ptr"* %8, %3
+  br i1 %9, label %26, label %10
+
+10:                                               ; preds = %5, %21
+  %11 = phi %"class.std::__1::unique_ptr"* [ %12, %21 ], [ %8, %5 ]
+  %12 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %11, i64 -1
+  %13 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %12, i64 0, i32 0, i32 0, i32 0
+  %14 = load %class.UndoOperation*, %class.UndoOperation** %13, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %13, align 8
+  %15 = icmp eq %class.UndoOperation* %14, null
+  br i1 %15, label %21, label %16
+
+16:                                               ; preds = %10
+  %17 = bitcast %class.UndoOperation* %14 to void (%class.UndoOperation*)***
+  %18 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %17, align 8
+  %19 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %18, i64 1
+  %20 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %19, align 8
+  tail call void %20(%class.UndoOperation* nonnull %14) #10
+  br label %21
+
+21:                                               ; preds = %16, %10
+  %22 = icmp eq %"class.std::__1::unique_ptr"* %12, %3
+  br i1 %22, label %23, label %10
+
+23:                                               ; preds = %21
+  %24 = bitcast %class.UndoGroup* %0 to i8**
+  %25 = load i8*, i8** %24, align 8
+  br label %26
+
+26:                                               ; preds = %23, %5
+  %27 = phi i8* [ %25, %23 ], [ %6, %5 ]
+  store %"class.std::__1::unique_ptr"* %3, %"class.std::__1::unique_ptr"** %7, align 8
+  tail call void @_ZdlPv(i8* %27) #11
+  br label %28
+
+28:                                               ; preds = %1, %26
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN9UndoGroup12AddOperationENSt3__110unique_ptrI13UndoOperationNS0_14default_deleteIS2_EEEE(%class.UndoGroup*, %class.UndoOperation*) local_unnamed_addr #0 align 2 {
+  %3 = alloca %"class.std::__1::unique_ptr", align 8
+  %4 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %3, i64 0, i32 0, i32 0, i32 0
+  store %class.UndoOperation* %1, %class.UndoOperation** %4, align 8
+  %5 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %0, i64 0, i32 0
+  %6 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %0, i64 0, i32 0, i32 0, i32 0
+  %7 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %6, align 8
+  %8 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %0, i64 0, i32 0, i32 0, i32 1
+  %9 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %8, align 8
+  %10 = icmp eq %"class.std::__1::unique_ptr"* %7, %9
+  %11 = ptrtoint %class.UndoOperation* %1 to i64
+  br i1 %10, label %12, label %25
+
+12:                                               ; preds = %2
+  %13 = bitcast %class.UndoOperation* %1 to i32 (%class.UndoOperation*)***
+  %14 = load i32 (%class.UndoOperation*)**, i32 (%class.UndoOperation*)*** %13, align 8
+  %15 = getelementptr inbounds i32 (%class.UndoOperation*)*, i32 (%class.UndoOperation*)** %14, i64 3
+  %16 = load i32 (%class.UndoOperation*)*, i32 (%class.UndoOperation*)** %15, align 8
+  %17 = tail call i32 %16(%class.UndoOperation* %1) #10
+  %18 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %0, i64 0, i32 1
+  store i32 %17, i32* %18, align 8
+  %19 = load i32 (%class.UndoOperation*)**, i32 (%class.UndoOperation*)*** %13, align 8
+  %20 = getelementptr inbounds i32 (%class.UndoOperation*)*, i32 (%class.UndoOperation*)** %19, i64 4
+  %21 = load i32 (%class.UndoOperation*)*, i32 (%class.UndoOperation*)** %20, align 8
+  %22 = tail call i32 %21(%class.UndoOperation* %1) #10
+  %23 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %0, i64 0, i32 2
+  store i32 %22, i32* %23, align 4
+  %24 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %8, align 8
+  br label %25
+
+25:                                               ; preds = %12, %2
+  %26 = phi %"class.std::__1::unique_ptr"* [ %24, %12 ], [ %9, %2 ]
+  %27 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %0, i64 0, i32 0, i32 0, i32 2, i32 0, i32 0
+  %28 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %27, align 8
+  %29 = icmp ult %"class.std::__1::unique_ptr"* %26, %28
+  br i1 %29, label %30, label %35
+
+30:                                               ; preds = %25
+  store %class.UndoOperation* null, %class.UndoOperation** %4, align 8
+  %31 = bitcast %"class.std::__1::unique_ptr"* %26 to i64*
+  store i64 %11, i64* %31, align 8
+  %32 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %26, i64 1
+  %33 = ptrtoint %"class.std::__1::unique_ptr"* %32 to i64
+  %34 = bitcast %"class.std::__1::unique_ptr"** %8 to i64*
+  store i64 %33, i64* %34, align 8
+  br label %36
+
+35:                                               ; preds = %25
+  call void @_ZNSt3__16vectorINS_10unique_ptrI13UndoOperationNS_14default_deleteIS2_EEEENS_9allocatorIS5_EEE21__push_back_slow_pathIS5_EEvOT_(%"class.std::__1::vector"* %5, %"class.std::__1::unique_ptr"* nonnull dereferenceable(8) %3) #10
+  br label %36
+
+36:                                               ; preds = %30, %35
+  %37 = load %class.UndoOperation*, %class.UndoOperation** %4, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %4, align 8
+  %38 = icmp eq %class.UndoOperation* %37, null
+  br i1 %38, label %44, label %39
+
+39:                                               ; preds = %36
+  %40 = bitcast %class.UndoOperation* %37 to void (%class.UndoOperation*)***
+  %41 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %40, align 8
+  %42 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %41, i64 1
+  %43 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %42, align 8
+  call void %43(%class.UndoOperation* nonnull %37) #10
+  br label %44
+
+44:                                               ; preds = %36, %39
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN9UndoGroup4UndoEv(%class.UndoGroup* nocapture readonly) local_unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %0, i64 0, i32 0, i32 0, i32 1
+  %3 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %2, align 8
+  %4 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %0, i64 0, i32 0, i32 0, i32 0
+  %5 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %4, align 8
+  %6 = icmp eq %"class.std::__1::unique_ptr"* %3, %5
+  br i1 %6, label %7, label %8
+
+7:                                                ; preds = %8, %1
+  ret void
+
+8:                                                ; preds = %1, %8
+  %9 = phi %"class.std::__1::unique_ptr"* [ %10, %8 ], [ %3, %1 ]
+  %10 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %9, i64 -1
+  %11 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %10, i64 0, i32 0, i32 0, i32 0
+  %12 = load %class.UndoOperation*, %class.UndoOperation** %11, align 8
+  %13 = bitcast %class.UndoOperation* %12 to void (%class.UndoOperation*)***
+  %14 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %13, align 8
+  %15 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %14, i64 2
+  %16 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %15, align 8
+  tail call void %16(%class.UndoOperation* %12) #10
+  %17 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %4, align 8
+  %18 = icmp eq %"class.std::__1::unique_ptr"* %10, %17
+  br i1 %18, label %7, label %8
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN11UndoManagerC2Ev(%class.UndoManager*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 1, i32 0, i32 0
+  %3 = bitcast %class.UndoManager* %0 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %3, i8 0, i64 72, i1 false)
+  tail call void @_ZN4base8internal12LinkNodeBaseC2EPS1_S2_(%"class.base::internal::LinkNodeBase"* %2, %"class.base::internal::LinkNodeBase"* %2, %"class.base::internal::LinkNodeBase"* %2) #10
+  %4 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 2
+  store i64 0, i64* %4, align 8
+  %5 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 3
+  store i32 0, i32* %5, align 8
+  %6 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 3
+  store i32 0, i32* %6, align 8
+  %7 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 5
+  %8 = bitcast %"class.std::__1::unique_ptr.6"* %7 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %8, i8 0, i64 22, i1 false)
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN11UndoManagerD2Ev(%class.UndoManager*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 5, i32 0, i32 0, i32 0
+  %3 = load %class.UndoGroup*, %class.UndoGroup** %2, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %2, align 8
+  %4 = icmp eq %class.UndoGroup* %3, null
+  br i1 %4, label %34, label %5
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %3, i64 0, i32 0, i32 0, i32 0
+  %7 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %6, align 8
+  %8 = icmp eq %"class.std::__1::unique_ptr"* %7, null
+  br i1 %8, label %32, label %9
+
+9:                                                ; preds = %5
+  %10 = bitcast %"class.std::__1::unique_ptr"* %7 to i8*
+  %11 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %3, i64 0, i32 0, i32 0, i32 1
+  %12 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %11, align 8
+  %13 = icmp eq %"class.std::__1::unique_ptr"* %12, %7
+  br i1 %13, label %30, label %14
+
+14:                                               ; preds = %9, %25
+  %15 = phi %"class.std::__1::unique_ptr"* [ %16, %25 ], [ %12, %9 ]
+  %16 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %15, i64 -1
+  %17 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %16, i64 0, i32 0, i32 0, i32 0
+  %18 = load %class.UndoOperation*, %class.UndoOperation** %17, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %17, align 8
+  %19 = icmp eq %class.UndoOperation* %18, null
+  br i1 %19, label %25, label %20
+
+20:                                               ; preds = %14
+  %21 = bitcast %class.UndoOperation* %18 to void (%class.UndoOperation*)***
+  %22 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %21, align 8
+  %23 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %22, i64 1
+  %24 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %23, align 8
+  tail call void %24(%class.UndoOperation* nonnull %18) #10
+  br label %25
+
+25:                                               ; preds = %20, %14
+  %26 = icmp eq %"class.std::__1::unique_ptr"* %16, %7
+  br i1 %26, label %27, label %14
+
+27:                                               ; preds = %25
+  %28 = bitcast %class.UndoGroup* %3 to i8**
+  %29 = load i8*, i8** %28, align 8
+  br label %30
+
+30:                                               ; preds = %27, %9
+  %31 = phi i8* [ %29, %27 ], [ %10, %9 ]
+  store %"class.std::__1::unique_ptr"* %7, %"class.std::__1::unique_ptr"** %11, align 8
+  tail call void @_ZdlPv(i8* %31) #11
+  br label %32
+
+32:                                               ; preds = %30, %5
+  %33 = bitcast %class.UndoGroup* %3 to i8*
+  tail call void @_ZdlPv(i8* %33) #11
+  br label %34
+
+34:                                               ; preds = %1, %32
+  %35 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 1, i32 0, i32 0, i32 1
+  %36 = bitcast %"class.base::internal::LinkNodeBase"** %35 to %"class.base::LinkNode"**
+  %37 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 1, i32 0
+  %38 = load %"class.base::LinkNode"*, %"class.base::LinkNode"** %36, align 8
+  %39 = icmp eq %"class.base::LinkNode"* %38, %37
+  br i1 %39, label %52, label %40
+
+40:                                               ; preds = %34, %49
+  %41 = phi %"class.base::LinkNode"* [ %50, %49 ], [ %38, %34 ]
+  %42 = getelementptr inbounds %"class.base::LinkNode", %"class.base::LinkNode"* %41, i64 1
+  %43 = bitcast %"class.base::LinkNode"* %42 to %"class.base::ObserverList"**
+  %44 = load %"class.base::ObserverList"*, %"class.base::ObserverList"** %43, align 8
+  %45 = icmp eq %"class.base::ObserverList"* %44, null
+  br i1 %45, label %49, label %46
+
+46:                                               ; preds = %40
+  store %"class.base::ObserverList"* null, %"class.base::ObserverList"** %43, align 8
+  %47 = getelementptr inbounds %"class.base::LinkNode", %"class.base::LinkNode"* %41, i64 0, i32 0
+  tail call void @_ZN4base8internal12LinkNodeBase14RemoveFromListEv(%"class.base::internal::LinkNodeBase"* %47) #10
+  %48 = load %"class.base::LinkNode"*, %"class.base::LinkNode"** %36, align 8
+  br label %49
+
+49:                                               ; preds = %46, %40
+  %50 = phi %"class.base::LinkNode"* [ %41, %40 ], [ %48, %46 ]
+  %51 = icmp eq %"class.base::LinkNode"* %50, %37
+  br i1 %51, label %52, label %40
+
+52:                                               ; preds = %49, %34
+  %53 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 0, i32 0, i32 0
+  %54 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %53, align 8
+  %55 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %54, null
+  br i1 %55, label %61, label %56
+
+56:                                               ; preds = %52
+  %57 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %54 to i64
+  %58 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 0, i32 0, i32 1
+  %59 = bitcast %"class.base::internal::UncheckedObserverAdapter"** %58 to i64*
+  store i64 %57, i64* %59, align 8
+  %60 = bitcast %"class.base::internal::UncheckedObserverAdapter"* %54 to i8*
+  tail call void @_ZdlPv(i8* %60) #11
+  br label %61
+
+61:                                               ; preds = %52, %56
+  %62 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 1
+  %63 = getelementptr inbounds %"class.std::__1::vector.4", %"class.std::__1::vector.4"* %62, i64 0, i32 0, i32 0
+  %64 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %63, align 8
+  %65 = icmp eq %"class.std::__1::unique_ptr.6"* %64, null
+  br i1 %65, label %113, label %66
+
+66:                                               ; preds = %61
+  %67 = bitcast %"class.std::__1::unique_ptr.6"* %64 to i8*
+  %68 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 1, i32 0, i32 1
+  %69 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %68, align 8
+  %70 = icmp eq %"class.std::__1::unique_ptr.6"* %69, %64
+  br i1 %70, label %111, label %71
+
+71:                                               ; preds = %66, %106
+  %72 = phi %"class.std::__1::unique_ptr.6"* [ %73, %106 ], [ %69, %66 ]
+  %73 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %72, i64 -1
+  %74 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %73, i64 0, i32 0, i32 0, i32 0
+  %75 = load %class.UndoGroup*, %class.UndoGroup** %74, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %74, align 8
+  %76 = icmp eq %class.UndoGroup* %75, null
+  br i1 %76, label %106, label %77
+
+77:                                               ; preds = %71
+  %78 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %75, i64 0, i32 0, i32 0, i32 0
+  %79 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %78, align 8
+  %80 = icmp eq %"class.std::__1::unique_ptr"* %79, null
+  br i1 %80, label %104, label %81
+
+81:                                               ; preds = %77
+  %82 = bitcast %"class.std::__1::unique_ptr"* %79 to i8*
+  %83 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %75, i64 0, i32 0, i32 0, i32 1
+  %84 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %83, align 8
+  %85 = icmp eq %"class.std::__1::unique_ptr"* %84, %79
+  br i1 %85, label %102, label %86
+
+86:                                               ; preds = %81, %97
+  %87 = phi %"class.std::__1::unique_ptr"* [ %88, %97 ], [ %84, %81 ]
+  %88 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %87, i64 -1
+  %89 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %88, i64 0, i32 0, i32 0, i32 0
+  %90 = load %class.UndoOperation*, %class.UndoOperation** %89, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %89, align 8
+  %91 = icmp eq %class.UndoOperation* %90, null
+  br i1 %91, label %97, label %92
+
+92:                                               ; preds = %86
+  %93 = bitcast %class.UndoOperation* %90 to void (%class.UndoOperation*)***
+  %94 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %93, align 8
+  %95 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %94, i64 1
+  %96 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %95, align 8
+  tail call void %96(%class.UndoOperation* nonnull %90) #10
+  br label %97
+
+97:                                               ; preds = %92, %86
+  %98 = icmp eq %"class.std::__1::unique_ptr"* %88, %79
+  br i1 %98, label %99, label %86
+
+99:                                               ; preds = %97
+  %100 = bitcast %class.UndoGroup* %75 to i8**
+  %101 = load i8*, i8** %100, align 8
+  br label %102
+
+102:                                              ; preds = %99, %81
+  %103 = phi i8* [ %101, %99 ], [ %82, %81 ]
+  store %"class.std::__1::unique_ptr"* %79, %"class.std::__1::unique_ptr"** %83, align 8
+  tail call void @_ZdlPv(i8* %103) #11
+  br label %104
+
+104:                                              ; preds = %102, %77
+  %105 = bitcast %class.UndoGroup* %75 to i8*
+  tail call void @_ZdlPv(i8* %105) #11
+  br label %106
+
+106:                                              ; preds = %104, %71
+  %107 = icmp eq %"class.std::__1::unique_ptr.6"* %73, %64
+  br i1 %107, label %108, label %71
+
+108:                                              ; preds = %106
+  %109 = bitcast %"class.std::__1::vector.4"* %62 to i8**
+  %110 = load i8*, i8** %109, align 8
+  br label %111
+
+111:                                              ; preds = %66, %108
+  %112 = phi i8* [ %110, %108 ], [ %67, %66 ]
+  store %"class.std::__1::unique_ptr.6"* %64, %"class.std::__1::unique_ptr.6"** %68, align 8
+  tail call void @_ZdlPv(i8* %112) #11
+  br label %113
+
+113:                                              ; preds = %61, %111
+  %114 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 0, i32 0, i32 0
+  %115 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %114, align 8
+  %116 = icmp eq %"class.std::__1::unique_ptr.6"* %115, null
+  br i1 %116, label %164, label %117
+
+117:                                              ; preds = %113
+  %118 = bitcast %"class.std::__1::unique_ptr.6"* %115 to i8*
+  %119 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 0, i32 0, i32 1
+  %120 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %119, align 8
+  %121 = icmp eq %"class.std::__1::unique_ptr.6"* %120, %115
+  br i1 %121, label %162, label %122
+
+122:                                              ; preds = %117, %157
+  %123 = phi %"class.std::__1::unique_ptr.6"* [ %124, %157 ], [ %120, %117 ]
+  %124 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %123, i64 -1
+  %125 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %124, i64 0, i32 0, i32 0, i32 0
+  %126 = load %class.UndoGroup*, %class.UndoGroup** %125, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %125, align 8
+  %127 = icmp eq %class.UndoGroup* %126, null
+  br i1 %127, label %157, label %128
+
+128:                                              ; preds = %122
+  %129 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %126, i64 0, i32 0, i32 0, i32 0
+  %130 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %129, align 8
+  %131 = icmp eq %"class.std::__1::unique_ptr"* %130, null
+  br i1 %131, label %155, label %132
+
+132:                                              ; preds = %128
+  %133 = bitcast %"class.std::__1::unique_ptr"* %130 to i8*
+  %134 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %126, i64 0, i32 0, i32 0, i32 1
+  %135 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %134, align 8
+  %136 = icmp eq %"class.std::__1::unique_ptr"* %135, %130
+  br i1 %136, label %153, label %137
+
+137:                                              ; preds = %132, %148
+  %138 = phi %"class.std::__1::unique_ptr"* [ %139, %148 ], [ %135, %132 ]
+  %139 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %138, i64 -1
+  %140 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %139, i64 0, i32 0, i32 0, i32 0
+  %141 = load %class.UndoOperation*, %class.UndoOperation** %140, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %140, align 8
+  %142 = icmp eq %class.UndoOperation* %141, null
+  br i1 %142, label %148, label %143
+
+143:                                              ; preds = %137
+  %144 = bitcast %class.UndoOperation* %141 to void (%class.UndoOperation*)***
+  %145 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %144, align 8
+  %146 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %145, i64 1
+  %147 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %146, align 8
+  tail call void %147(%class.UndoOperation* nonnull %141) #10
+  br label %148
+
+148:                                              ; preds = %143, %137
+  %149 = icmp eq %"class.std::__1::unique_ptr"* %139, %130
+  br i1 %149, label %150, label %137
+
+150:                                              ; preds = %148
+  %151 = bitcast %class.UndoGroup* %126 to i8**
+  %152 = load i8*, i8** %151, align 8
+  br label %153
+
+153:                                              ; preds = %150, %132
+  %154 = phi i8* [ %152, %150 ], [ %133, %132 ]
+  store %"class.std::__1::unique_ptr"* %130, %"class.std::__1::unique_ptr"** %134, align 8
+  tail call void @_ZdlPv(i8* %154) #11
+  br label %155
+
+155:                                              ; preds = %153, %128
+  %156 = bitcast %class.UndoGroup* %126 to i8*
+  tail call void @_ZdlPv(i8* %156) #11
+  br label %157
+
+157:                                              ; preds = %155, %122
+  %158 = icmp eq %"class.std::__1::unique_ptr.6"* %124, %115
+  br i1 %158, label %159, label %122
+
+159:                                              ; preds = %157
+  %160 = bitcast %class.UndoManager* %0 to i8**
+  %161 = load i8*, i8** %160, align 8
+  br label %162
+
+162:                                              ; preds = %117, %159
+  %163 = phi i8* [ %161, %159 ], [ %118, %117 ]
+  store %"class.std::__1::unique_ptr.6"* %115, %"class.std::__1::unique_ptr.6"** %119, align 8
+  tail call void @_ZdlPv(i8* %163) #11
+  br label %164
+
+164:                                              ; preds = %113, %162
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN11UndoManager4UndoEv(%class.UndoManager*) local_unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 8
+  %3 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 0
+  tail call void @_ZN11UndoManager4UndoEPbPNSt3__16vectorINS1_10unique_ptrI9UndoGroupNS1_14default_deleteIS4_EEEENS1_9allocatorIS7_EEEE(%class.UndoManager* %0, i8* %2, %"class.std::__1::vector.4"* %3)
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN11UndoManager4UndoEPbPNSt3__16vectorINS1_10unique_ptrI9UndoGroupNS1_14default_deleteIS4_EEEENS1_9allocatorIS7_EEEE(%class.UndoManager*, i8*, %"class.std::__1::vector.4"*) local_unnamed_addr #0 align 2 {
+  %4 = getelementptr inbounds %"class.std::__1::vector.4", %"class.std::__1::vector.4"* %2, i64 0, i32 0, i32 0
+  %5 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %4, align 8
+  %6 = getelementptr inbounds %"class.std::__1::vector.4", %"class.std::__1::vector.4"* %2, i64 0, i32 0, i32 1
+  %7 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %6, align 8
+  %8 = icmp eq %"class.std::__1::unique_ptr.6"* %5, %7
+  br i1 %8, label %80, label %9
+
+9:                                                ; preds = %3
+  %10 = load i8, i8* %1, align 1, !range !2
+  store i8 1, i8* %1, align 1
+  %11 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %6, align 8
+  %12 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %11, i64 -1
+  %13 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %12, i64 0, i32 0, i32 0, i32 0
+  %14 = bitcast %"class.std::__1::unique_ptr.6"* %12 to i64*
+  %15 = load i64, i64* %14, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %13, align 8
+  %16 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 6
+  %17 = inttoptr i64 %15 to %class.UndoGroup*
+  %18 = bitcast %class.UndoGroup** %16 to i64*
+  %19 = load i64, i64* %18, align 8
+  store i64 %15, i64* %18, align 8
+  %20 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %4, align 8
+  %21 = bitcast %"class.std::__1::unique_ptr.6"** %6 to i64*
+  %22 = load i64, i64* %21, align 8
+  %23 = ptrtoint %"class.std::__1::unique_ptr.6"* %20 to i64
+  %24 = sub i64 %22, %23
+  %25 = ashr exact i64 %24, 3
+  %26 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %20, i64 %25
+  %27 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %26, i64 -1
+  %28 = tail call %"class.std::__1::unique_ptr.6"* @_ZNSt3__16vectorINS_10unique_ptrI9UndoGroupNS_14default_deleteIS2_EEEENS_9allocatorIS5_EEE5eraseENS_11__wrap_iterIPKS5_EE(%"class.std::__1::vector.4"* %2, %"class.std::__1::unique_ptr.6"* %27)
+  tail call void @_ZN11UndoManager20StartGroupingActionsEv(%class.UndoManager* %0)
+  %29 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %17, i64 0, i32 0, i32 0, i32 1
+  %30 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %29, align 8
+  %31 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %17, i64 0, i32 0, i32 0, i32 0
+  %32 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %31, align 8
+  %33 = icmp eq %"class.std::__1::unique_ptr"* %30, %32
+  br i1 %33, label %45, label %34
+
+34:                                               ; preds = %9, %34
+  %35 = phi %"class.std::__1::unique_ptr"* [ %36, %34 ], [ %30, %9 ]
+  %36 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %35, i64 -1
+  %37 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %36, i64 0, i32 0, i32 0, i32 0
+  %38 = load %class.UndoOperation*, %class.UndoOperation** %37, align 8
+  %39 = bitcast %class.UndoOperation* %38 to void (%class.UndoOperation*)***
+  %40 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %39, align 8
+  %41 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %40, i64 2
+  %42 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %41, align 8
+  tail call void %42(%class.UndoOperation* %38) #10
+  %43 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %31, align 8
+  %44 = icmp eq %"class.std::__1::unique_ptr"* %36, %43
+  br i1 %44, label %45, label %34
+
+45:                                               ; preds = %34, %9
+  tail call void @_ZN11UndoManager18EndGroupingActionsEv(%class.UndoManager* %0)
+  tail call void @_ZN11UndoManager30NotifyOnUndoManagerStateChangeEv(%class.UndoManager* %0)
+  %46 = icmp eq %class.UndoGroup** %16, null
+  br i1 %46, label %48, label %47
+
+47:                                               ; preds = %45
+  store i64 %19, i64* %18, align 8
+  br label %48
+
+48:                                               ; preds = %45, %47
+  %49 = icmp eq i64 %15, 0
+  br i1 %49, label %77, label %50
+
+50:                                               ; preds = %48
+  %51 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %31, align 8
+  %52 = icmp eq %"class.std::__1::unique_ptr"* %51, null
+  br i1 %52, label %75, label %53
+
+53:                                               ; preds = %50
+  %54 = bitcast %"class.std::__1::unique_ptr"* %51 to i8*
+  %55 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %29, align 8
+  %56 = icmp eq %"class.std::__1::unique_ptr"* %55, %51
+  br i1 %56, label %73, label %57
+
+57:                                               ; preds = %53, %68
+  %58 = phi %"class.std::__1::unique_ptr"* [ %59, %68 ], [ %55, %53 ]
+  %59 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %58, i64 -1
+  %60 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %59, i64 0, i32 0, i32 0, i32 0
+  %61 = load %class.UndoOperation*, %class.UndoOperation** %60, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %60, align 8
+  %62 = icmp eq %class.UndoOperation* %61, null
+  br i1 %62, label %68, label %63
+
+63:                                               ; preds = %57
+  %64 = bitcast %class.UndoOperation* %61 to void (%class.UndoOperation*)***
+  %65 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %64, align 8
+  %66 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %65, i64 1
+  %67 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %66, align 8
+  tail call void %67(%class.UndoOperation* nonnull %61) #10
+  br label %68
+
+68:                                               ; preds = %63, %57
+  %69 = icmp eq %"class.std::__1::unique_ptr"* %59, %51
+  br i1 %69, label %70, label %57
+
+70:                                               ; preds = %68
+  %71 = inttoptr i64 %15 to i8**
+  %72 = load i8*, i8** %71, align 8
+  br label %73
+
+73:                                               ; preds = %70, %53
+  %74 = phi i8* [ %72, %70 ], [ %54, %53 ]
+  store %"class.std::__1::unique_ptr"* %51, %"class.std::__1::unique_ptr"** %29, align 8
+  tail call void @_ZdlPv(i8* %74) #11
+  br label %75
+
+75:                                               ; preds = %73, %50
+  %76 = inttoptr i64 %15 to i8*
+  tail call void @_ZdlPv(i8* %76) #11
+  br label %77
+
+77:                                               ; preds = %48, %75
+  %78 = icmp eq i8* %1, null
+  br i1 %78, label %80, label %79
+
+79:                                               ; preds = %77
+  store i8 %10, i8* %1, align 1
+  br label %80
+
+80:                                               ; preds = %79, %77, %3
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN11UndoManager4RedoEv(%class.UndoManager*) local_unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 9
+  %3 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 1
+  tail call void @_ZN11UndoManager4UndoEPbPNSt3__16vectorINS1_10unique_ptrI9UndoGroupNS1_14default_deleteIS4_EEEENS1_9allocatorIS7_EEEE(%class.UndoManager* %0, i8* %2, %"class.std::__1::vector.4"* %3)
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZNK11UndoManager12GetUndoLabelEv(%"class.std::__1::basic_string"* noalias sret, %class.UndoManager* nocapture readonly) local_unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %1, i64 0, i32 0, i32 0, i32 0
+  %4 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %3, align 8
+  %5 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %1, i64 0, i32 0, i32 0, i32 1
+  %6 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %5, align 8
+  %7 = icmp eq %"class.std::__1::unique_ptr.6"* %4, %6
+  br i1 %7, label %13, label %8
+
+8:                                                ; preds = %2
+  %9 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %6, i64 -1, i32 0, i32 0, i32 0
+  %10 = load %class.UndoGroup*, %class.UndoGroup** %9, align 8
+  %11 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %10, i64 0, i32 1
+  %12 = load i32, i32* %11, align 8
+  br label %13
+
+13:                                               ; preds = %2, %8
+  %14 = phi i32 [ %12, %8 ], [ 21124, %2 ]
+  tail call void @_ZN9l10n_util14GetStringUTF16Ei(%"class.std::__1::basic_string"* sret %0, i32 %14) #10
+  ret void
+}
+
+declare void @_ZN9l10n_util14GetStringUTF16Ei(%"class.std::__1::basic_string"* sret, i32) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZNK11UndoManager12GetRedoLabelEv(%"class.std::__1::basic_string"* noalias sret, %class.UndoManager* nocapture readonly) local_unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %1, i64 0, i32 1, i32 0, i32 0
+  %4 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %3, align 8
+  %5 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %1, i64 0, i32 1, i32 0, i32 1
+  %6 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %5, align 8
+  %7 = icmp eq %"class.std::__1::unique_ptr.6"* %4, %6
+  br i1 %7, label %13, label %8
+
+8:                                                ; preds = %2
+  %9 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %6, i64 -1, i32 0, i32 0, i32 0
+  %10 = load %class.UndoGroup*, %class.UndoGroup** %9, align 8
+  %11 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %10, i64 0, i32 2
+  %12 = load i32, i32* %11, align 4
+  br label %13
+
+13:                                               ; preds = %2, %8
+  %14 = phi i32 [ %12, %8 ], [ 21125, %2 ]
+  tail call void @_ZN9l10n_util14GetStringUTF16Ei(%"class.std::__1::basic_string"* sret %0, i32 %14) #10
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN11UndoManager16AddUndoOperationENSt3__110unique_ptrI13UndoOperationNS0_14default_deleteIS2_EEEE(%class.UndoManager*, %class.UndoOperation*) local_unnamed_addr #0 align 2 {
+  %3 = alloca %"class.std::__1::unique_ptr", align 8
+  %4 = alloca %"class.std::__1::unique_ptr", align 8
+  %5 = ptrtoint %class.UndoOperation* %1 to i64
+  %6 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 7
+  %7 = load i32, i32* %6, align 8
+  %8 = icmp sgt i32 %7, 0
+  br i1 %8, label %9, label %16
+
+9:                                                ; preds = %2
+  tail call void @_ZN11UndoManager19RemoveAllOperationsEv(%class.UndoManager* %0)
+  %10 = icmp eq %class.UndoOperation* %1, null
+  br i1 %10, label %105, label %11
+
+11:                                               ; preds = %9
+  %12 = bitcast %class.UndoOperation* %1 to void (%class.UndoOperation*)***
+  %13 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %12, align 8
+  %14 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %13, i64 1
+  %15 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %14, align 8
+  tail call void %15(%class.UndoOperation* nonnull %1) #10
+  br label %105
+
+16:                                               ; preds = %2
+  %17 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 3
+  %18 = load i32, i32* %17, align 8
+  %19 = icmp eq i32 %18, 0
+  br i1 %19, label %64, label %20
+
+20:                                               ; preds = %16
+  %21 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 5, i32 0, i32 0, i32 0
+  %22 = load %class.UndoGroup*, %class.UndoGroup** %21, align 8
+  %23 = bitcast %"class.std::__1::unique_ptr"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %23)
+  %24 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %3, i64 0, i32 0, i32 0, i32 0
+  store %class.UndoOperation* %1, %class.UndoOperation** %24, align 8
+  %25 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %22, i64 0, i32 0
+  %26 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %22, i64 0, i32 0, i32 0, i32 0
+  %27 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %26, align 8
+  %28 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %22, i64 0, i32 0, i32 0, i32 1
+  %29 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %28, align 8
+  %30 = icmp eq %"class.std::__1::unique_ptr"* %27, %29
+  br i1 %30, label %31, label %44
+
+31:                                               ; preds = %20
+  %32 = bitcast %class.UndoOperation* %1 to i32 (%class.UndoOperation*)***
+  %33 = load i32 (%class.UndoOperation*)**, i32 (%class.UndoOperation*)*** %32, align 8
+  %34 = getelementptr inbounds i32 (%class.UndoOperation*)*, i32 (%class.UndoOperation*)** %33, i64 3
+  %35 = load i32 (%class.UndoOperation*)*, i32 (%class.UndoOperation*)** %34, align 8
+  %36 = tail call i32 %35(%class.UndoOperation* %1) #10
+  %37 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %22, i64 0, i32 1
+  store i32 %36, i32* %37, align 8
+  %38 = load i32 (%class.UndoOperation*)**, i32 (%class.UndoOperation*)*** %32, align 8
+  %39 = getelementptr inbounds i32 (%class.UndoOperation*)*, i32 (%class.UndoOperation*)** %38, i64 4
+  %40 = load i32 (%class.UndoOperation*)*, i32 (%class.UndoOperation*)** %39, align 8
+  %41 = tail call i32 %40(%class.UndoOperation* %1) #10
+  %42 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %22, i64 0, i32 2
+  store i32 %41, i32* %42, align 4
+  %43 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %28, align 8
+  br label %44
+
+44:                                               ; preds = %31, %20
+  %45 = phi %"class.std::__1::unique_ptr"* [ %43, %31 ], [ %29, %20 ]
+  %46 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %22, i64 0, i32 0, i32 0, i32 2, i32 0, i32 0
+  %47 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %46, align 8
+  %48 = icmp ult %"class.std::__1::unique_ptr"* %45, %47
+  br i1 %48, label %49, label %54
+
+49:                                               ; preds = %44
+  store %class.UndoOperation* null, %class.UndoOperation** %24, align 8
+  %50 = bitcast %"class.std::__1::unique_ptr"* %45 to i64*
+  store i64 %5, i64* %50, align 8
+  %51 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %45, i64 1
+  %52 = ptrtoint %"class.std::__1::unique_ptr"* %51 to i64
+  %53 = bitcast %"class.std::__1::unique_ptr"** %28 to i64*
+  store i64 %52, i64* %53, align 8
+  br label %55
+
+54:                                               ; preds = %44
+  call void @_ZNSt3__16vectorINS_10unique_ptrI13UndoOperationNS_14default_deleteIS2_EEEENS_9allocatorIS5_EEE21__push_back_slow_pathIS5_EEvOT_(%"class.std::__1::vector"* %25, %"class.std::__1::unique_ptr"* nonnull dereferenceable(8) %3) #10
+  br label %55
+
+55:                                               ; preds = %54, %49
+  %56 = load %class.UndoOperation*, %class.UndoOperation** %24, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %24, align 8
+  %57 = icmp eq %class.UndoOperation* %56, null
+  br i1 %57, label %63, label %58
+
+58:                                               ; preds = %55
+  %59 = bitcast %class.UndoOperation* %56 to void (%class.UndoOperation*)***
+  %60 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %59, align 8
+  %61 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %60, i64 1
+  %62 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %61, align 8
+  call void %62(%class.UndoOperation* nonnull %56) #10
+  br label %63
+
+63:                                               ; preds = %55, %58
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %23)
+  br label %105
+
+64:                                               ; preds = %16
+  %65 = tail call i8* @_Znwm(i64 32) #11
+  %66 = bitcast i8* %65 to %class.UndoGroup*
+  tail call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %65, i8 0, i64 24, i1 false) #10
+  %67 = getelementptr inbounds i8, i8* %65, i64 24
+  %68 = bitcast i8* %67 to i32*
+  store i32 21124, i32* %68, align 8
+  %69 = getelementptr inbounds i8, i8* %65, i64 28
+  %70 = bitcast i8* %69 to i32*
+  store i32 21125, i32* %70, align 4
+  %71 = bitcast %"class.std::__1::unique_ptr"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %71)
+  %72 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %4, i64 0, i32 0, i32 0, i32 0
+  store %class.UndoOperation* %1, %class.UndoOperation** %72, align 8
+  %73 = getelementptr inbounds i8, i8* %65, i64 8
+  %74 = bitcast i8* %73 to %"class.std::__1::unique_ptr"**
+  %75 = bitcast %class.UndoOperation* %1 to i32 (%class.UndoOperation*)***
+  %76 = load i32 (%class.UndoOperation*)**, i32 (%class.UndoOperation*)*** %75, align 8
+  %77 = getelementptr inbounds i32 (%class.UndoOperation*)*, i32 (%class.UndoOperation*)** %76, i64 3
+  %78 = load i32 (%class.UndoOperation*)*, i32 (%class.UndoOperation*)** %77, align 8
+  %79 = tail call i32 %78(%class.UndoOperation* %1) #10
+  store i32 %79, i32* %68, align 8
+  %80 = load i32 (%class.UndoOperation*)**, i32 (%class.UndoOperation*)*** %75, align 8
+  %81 = getelementptr inbounds i32 (%class.UndoOperation*)*, i32 (%class.UndoOperation*)** %80, i64 4
+  %82 = load i32 (%class.UndoOperation*)*, i32 (%class.UndoOperation*)** %81, align 8
+  %83 = tail call i32 %82(%class.UndoOperation* %1) #10
+  store i32 %83, i32* %70, align 4
+  %84 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %74, align 8
+  %85 = getelementptr inbounds i8, i8* %65, i64 16
+  %86 = bitcast i8* %85 to %"class.std::__1::unique_ptr"**
+  %87 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %86, align 8
+  %88 = icmp ult %"class.std::__1::unique_ptr"* %84, %87
+  br i1 %88, label %89, label %94
+
+89:                                               ; preds = %64
+  store %class.UndoOperation* null, %class.UndoOperation** %72, align 8
+  %90 = bitcast %"class.std::__1::unique_ptr"* %84 to i64*
+  store i64 %5, i64* %90, align 8
+  %91 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %84, i64 1
+  %92 = ptrtoint %"class.std::__1::unique_ptr"* %91 to i64
+  %93 = bitcast i8* %73 to i64*
+  store i64 %92, i64* %93, align 8
+  br label %96
+
+94:                                               ; preds = %64
+  %95 = bitcast i8* %65 to %"class.std::__1::vector"*
+  call void @_ZNSt3__16vectorINS_10unique_ptrI13UndoOperationNS_14default_deleteIS2_EEEENS_9allocatorIS5_EEE21__push_back_slow_pathIS5_EEvOT_(%"class.std::__1::vector"* nonnull %95, %"class.std::__1::unique_ptr"* nonnull dereferenceable(8) %4) #10
+  br label %96
+
+96:                                               ; preds = %94, %89
+  %97 = load %class.UndoOperation*, %class.UndoOperation** %72, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %72, align 8
+  %98 = icmp eq %class.UndoOperation* %97, null
+  br i1 %98, label %104, label %99
+
+99:                                               ; preds = %96
+  %100 = bitcast %class.UndoOperation* %97 to void (%class.UndoOperation*)***
+  %101 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %100, align 8
+  %102 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %101, i64 1
+  %103 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %102, align 8
+  call void %103(%class.UndoOperation* nonnull %97) #10
+  br label %104
+
+104:                                              ; preds = %96, %99
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %71)
+  call void @_ZN11UndoManager12AddUndoGroupEP9UndoGroup(%class.UndoManager* %0, %class.UndoGroup* nonnull %66)
+  br label %105
+
+105:                                              ; preds = %104, %63, %9, %11
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden zeroext i1 @_ZNK11UndoManager22IsUndoTrakingSuspendedEv(%class.UndoManager* nocapture readonly) local_unnamed_addr #3 align 2 {
+  %2 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 7
+  %3 = load i32, i32* %2, align 8
+  %4 = icmp sgt i32 %3, 0
+  ret i1 %4
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN11UndoManager19RemoveAllOperationsEv(%class.UndoManager*) local_unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 0, i32 0, i32 0
+  %3 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %2, align 8
+  %4 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 0, i32 0, i32 1
+  %5 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %4, align 8
+  %6 = icmp eq %"class.std::__1::unique_ptr.6"* %5, %3
+  br i1 %6, label %44, label %7
+
+7:                                                ; preds = %1, %42
+  %8 = phi %"class.std::__1::unique_ptr.6"* [ %9, %42 ], [ %5, %1 ]
+  %9 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %8, i64 -1
+  %10 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %9, i64 0, i32 0, i32 0, i32 0
+  %11 = load %class.UndoGroup*, %class.UndoGroup** %10, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %10, align 8
+  %12 = icmp eq %class.UndoGroup* %11, null
+  br i1 %12, label %42, label %13
+
+13:                                               ; preds = %7
+  %14 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %11, i64 0, i32 0, i32 0, i32 0
+  %15 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %14, align 8
+  %16 = icmp eq %"class.std::__1::unique_ptr"* %15, null
+  br i1 %16, label %40, label %17
+
+17:                                               ; preds = %13
+  %18 = bitcast %"class.std::__1::unique_ptr"* %15 to i8*
+  %19 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %11, i64 0, i32 0, i32 0, i32 1
+  %20 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %19, align 8
+  %21 = icmp eq %"class.std::__1::unique_ptr"* %20, %15
+  br i1 %21, label %38, label %22
+
+22:                                               ; preds = %17, %33
+  %23 = phi %"class.std::__1::unique_ptr"* [ %24, %33 ], [ %20, %17 ]
+  %24 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %23, i64 -1
+  %25 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %24, i64 0, i32 0, i32 0, i32 0
+  %26 = load %class.UndoOperation*, %class.UndoOperation** %25, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %25, align 8
+  %27 = icmp eq %class.UndoOperation* %26, null
+  br i1 %27, label %33, label %28
+
+28:                                               ; preds = %22
+  %29 = bitcast %class.UndoOperation* %26 to void (%class.UndoOperation*)***
+  %30 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %29, align 8
+  %31 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %30, i64 1
+  %32 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %31, align 8
+  tail call void %32(%class.UndoOperation* nonnull %26) #10
+  br label %33
+
+33:                                               ; preds = %28, %22
+  %34 = icmp eq %"class.std::__1::unique_ptr"* %24, %15
+  br i1 %34, label %35, label %22
+
+35:                                               ; preds = %33
+  %36 = bitcast %class.UndoGroup* %11 to i8**
+  %37 = load i8*, i8** %36, align 8
+  br label %38
+
+38:                                               ; preds = %35, %17
+  %39 = phi i8* [ %37, %35 ], [ %18, %17 ]
+  store %"class.std::__1::unique_ptr"* %15, %"class.std::__1::unique_ptr"** %19, align 8
+  tail call void @_ZdlPv(i8* %39) #11
+  br label %40
+
+40:                                               ; preds = %38, %13
+  %41 = bitcast %class.UndoGroup* %11 to i8*
+  tail call void @_ZdlPv(i8* %41) #11
+  br label %42
+
+42:                                               ; preds = %40, %7
+  %43 = icmp eq %"class.std::__1::unique_ptr.6"* %9, %3
+  br i1 %43, label %44, label %7
+
+44:                                               ; preds = %42, %1
+  store %"class.std::__1::unique_ptr.6"* %3, %"class.std::__1::unique_ptr.6"** %4, align 8
+  %45 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 1, i32 0, i32 0
+  %46 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %45, align 8
+  %47 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 1, i32 0, i32 1
+  %48 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %47, align 8
+  %49 = icmp eq %"class.std::__1::unique_ptr.6"* %48, %46
+  br i1 %49, label %87, label %50
+
+50:                                               ; preds = %44, %85
+  %51 = phi %"class.std::__1::unique_ptr.6"* [ %52, %85 ], [ %48, %44 ]
+  %52 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %51, i64 -1
+  %53 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %52, i64 0, i32 0, i32 0, i32 0
+  %54 = load %class.UndoGroup*, %class.UndoGroup** %53, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %53, align 8
+  %55 = icmp eq %class.UndoGroup* %54, null
+  br i1 %55, label %85, label %56
+
+56:                                               ; preds = %50
+  %57 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %54, i64 0, i32 0, i32 0, i32 0
+  %58 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %57, align 8
+  %59 = icmp eq %"class.std::__1::unique_ptr"* %58, null
+  br i1 %59, label %83, label %60
+
+60:                                               ; preds = %56
+  %61 = bitcast %"class.std::__1::unique_ptr"* %58 to i8*
+  %62 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %54, i64 0, i32 0, i32 0, i32 1
+  %63 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %62, align 8
+  %64 = icmp eq %"class.std::__1::unique_ptr"* %63, %58
+  br i1 %64, label %81, label %65
+
+65:                                               ; preds = %60, %76
+  %66 = phi %"class.std::__1::unique_ptr"* [ %67, %76 ], [ %63, %60 ]
+  %67 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %66, i64 -1
+  %68 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %67, i64 0, i32 0, i32 0, i32 0
+  %69 = load %class.UndoOperation*, %class.UndoOperation** %68, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %68, align 8
+  %70 = icmp eq %class.UndoOperation* %69, null
+  br i1 %70, label %76, label %71
+
+71:                                               ; preds = %65
+  %72 = bitcast %class.UndoOperation* %69 to void (%class.UndoOperation*)***
+  %73 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %72, align 8
+  %74 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %73, i64 1
+  %75 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %74, align 8
+  tail call void %75(%class.UndoOperation* nonnull %69) #10
+  br label %76
+
+76:                                               ; preds = %71, %65
+  %77 = icmp eq %"class.std::__1::unique_ptr"* %67, %58
+  br i1 %77, label %78, label %65
+
+78:                                               ; preds = %76
+  %79 = bitcast %class.UndoGroup* %54 to i8**
+  %80 = load i8*, i8** %79, align 8
+  br label %81
+
+81:                                               ; preds = %78, %60
+  %82 = phi i8* [ %80, %78 ], [ %61, %60 ]
+  store %"class.std::__1::unique_ptr"* %58, %"class.std::__1::unique_ptr"** %62, align 8
+  tail call void @_ZdlPv(i8* %82) #11
+  br label %83
+
+83:                                               ; preds = %81, %56
+  %84 = bitcast %class.UndoGroup* %54 to i8*
+  tail call void @_ZdlPv(i8* %84) #11
+  br label %85
+
+85:                                               ; preds = %83, %50
+  %86 = icmp eq %"class.std::__1::unique_ptr.6"* %52, %46
+  br i1 %86, label %87, label %50
+
+87:                                               ; preds = %85, %44
+  store %"class.std::__1::unique_ptr.6"* %46, %"class.std::__1::unique_ptr.6"** %47, align 8
+  tail call void @_ZN11UndoManager30NotifyOnUndoManagerStateChangeEv(%class.UndoManager* %0)
+  ret void
+}
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN11UndoManager12AddUndoGroupEP9UndoGroup(%class.UndoManager*, %class.UndoGroup*) local_unnamed_addr #0 align 2 {
+  %3 = alloca %"class.std::__1::unique_ptr.6", align 8
+  %4 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 8
+  %5 = load i8, i8* %4, align 4, !range !2
+  %6 = icmp eq i8 %5, 0
+  %7 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 1
+  %8 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 0
+  %9 = select i1 %6, %"class.std::__1::vector.4"* %8, %"class.std::__1::vector.4"* %7
+  %10 = bitcast %"class.std::__1::unique_ptr.6"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %10) #10
+  %11 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %3, i64 0, i32 0, i32 0, i32 0
+  store %class.UndoGroup* %1, %class.UndoGroup** %11, align 8
+  %12 = getelementptr inbounds %"class.std::__1::vector.4", %"class.std::__1::vector.4"* %9, i64 0, i32 0, i32 1
+  %13 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %12, align 8
+  %14 = getelementptr inbounds %"class.std::__1::vector.4", %"class.std::__1::vector.4"* %9, i64 0, i32 0, i32 2, i32 0, i32 0
+  %15 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %14, align 8
+  %16 = icmp ult %"class.std::__1::unique_ptr.6"* %13, %15
+  br i1 %16, label %17, label %23
+
+17:                                               ; preds = %2
+  %18 = ptrtoint %class.UndoGroup* %1 to i64
+  store %class.UndoGroup* null, %class.UndoGroup** %11, align 8
+  %19 = bitcast %"class.std::__1::unique_ptr.6"* %13 to i64*
+  store i64 %18, i64* %19, align 8
+  %20 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %13, i64 1
+  %21 = ptrtoint %"class.std::__1::unique_ptr.6"* %20 to i64
+  %22 = bitcast %"class.std::__1::unique_ptr.6"** %12 to i64*
+  store i64 %21, i64* %22, align 8
+  br label %24
+
+23:                                               ; preds = %2
+  call void @_ZNSt3__16vectorINS_10unique_ptrI9UndoGroupNS_14default_deleteIS2_EEEENS_9allocatorIS5_EEE21__push_back_slow_pathIS5_EEvOT_(%"class.std::__1::vector.4"* %9, %"class.std::__1::unique_ptr.6"* nonnull dereferenceable(8) %3) #10
+  br label %24
+
+24:                                               ; preds = %17, %23
+  %25 = load %class.UndoGroup*, %class.UndoGroup** %11, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %11, align 8
+  %26 = icmp eq %class.UndoGroup* %25, null
+  br i1 %26, label %56, label %27
+
+27:                                               ; preds = %24
+  %28 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %25, i64 0, i32 0, i32 0, i32 0
+  %29 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %28, align 8
+  %30 = icmp eq %"class.std::__1::unique_ptr"* %29, null
+  br i1 %30, label %54, label %31
+
+31:                                               ; preds = %27
+  %32 = bitcast %"class.std::__1::unique_ptr"* %29 to i8*
+  %33 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %25, i64 0, i32 0, i32 0, i32 1
+  %34 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %33, align 8
+  %35 = icmp eq %"class.std::__1::unique_ptr"* %34, %29
+  br i1 %35, label %52, label %36
+
+36:                                               ; preds = %31, %47
+  %37 = phi %"class.std::__1::unique_ptr"* [ %38, %47 ], [ %34, %31 ]
+  %38 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %37, i64 -1
+  %39 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %38, i64 0, i32 0, i32 0, i32 0
+  %40 = load %class.UndoOperation*, %class.UndoOperation** %39, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %39, align 8
+  %41 = icmp eq %class.UndoOperation* %40, null
+  br i1 %41, label %47, label %42
+
+42:                                               ; preds = %36
+  %43 = bitcast %class.UndoOperation* %40 to void (%class.UndoOperation*)***
+  %44 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %43, align 8
+  %45 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %44, i64 1
+  %46 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %45, align 8
+  call void %46(%class.UndoOperation* nonnull %40) #10
+  br label %47
+
+47:                                               ; preds = %42, %36
+  %48 = icmp eq %"class.std::__1::unique_ptr"* %38, %29
+  br i1 %48, label %49, label %36
+
+49:                                               ; preds = %47
+  %50 = bitcast %class.UndoGroup* %25 to i8**
+  %51 = load i8*, i8** %50, align 8
+  br label %52
+
+52:                                               ; preds = %49, %31
+  %53 = phi i8* [ %51, %49 ], [ %32, %31 ]
+  store %"class.std::__1::unique_ptr"* %29, %"class.std::__1::unique_ptr"** %33, align 8
+  call void @_ZdlPv(i8* %53) #11
+  br label %54
+
+54:                                               ; preds = %52, %27
+  %55 = bitcast %class.UndoGroup* %25 to i8*
+  call void @_ZdlPv(i8* %55) #11
+  br label %56
+
+56:                                               ; preds = %24, %54
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10) #10
+  %57 = load i8, i8* %4, align 4, !range !2
+  %58 = icmp eq i8 %57, 0
+  br i1 %58, label %59, label %111
+
+59:                                               ; preds = %56
+  %60 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 9
+  %61 = load i8, i8* %60, align 1, !range !2
+  %62 = icmp eq i8 %61, 0
+  br i1 %62, label %63, label %110
+
+63:                                               ; preds = %59
+  %64 = getelementptr inbounds %"class.std::__1::vector.4", %"class.std::__1::vector.4"* %7, i64 0, i32 0, i32 0
+  %65 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %64, align 8
+  %66 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 1, i32 0, i32 1
+  %67 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %66, align 8
+  %68 = icmp eq %"class.std::__1::unique_ptr.6"* %67, %65
+  br i1 %68, label %69, label %70
+
+69:                                               ; preds = %63
+  store %"class.std::__1::unique_ptr.6"* %65, %"class.std::__1::unique_ptr.6"** %66, align 8
+  br label %110
+
+70:                                               ; preds = %63, %105
+  %71 = phi %"class.std::__1::unique_ptr.6"* [ %72, %105 ], [ %67, %63 ]
+  %72 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %71, i64 -1
+  %73 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %72, i64 0, i32 0, i32 0, i32 0
+  %74 = load %class.UndoGroup*, %class.UndoGroup** %73, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %73, align 8
+  %75 = icmp eq %class.UndoGroup* %74, null
+  br i1 %75, label %105, label %76
+
+76:                                               ; preds = %70
+  %77 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %74, i64 0, i32 0, i32 0, i32 0
+  %78 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %77, align 8
+  %79 = icmp eq %"class.std::__1::unique_ptr"* %78, null
+  br i1 %79, label %103, label %80
+
+80:                                               ; preds = %76
+  %81 = bitcast %"class.std::__1::unique_ptr"* %78 to i8*
+  %82 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %74, i64 0, i32 0, i32 0, i32 1
+  %83 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %82, align 8
+  %84 = icmp eq %"class.std::__1::unique_ptr"* %83, %78
+  br i1 %84, label %101, label %85
+
+85:                                               ; preds = %80, %96
+  %86 = phi %"class.std::__1::unique_ptr"* [ %87, %96 ], [ %83, %80 ]
+  %87 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %86, i64 -1
+  %88 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %87, i64 0, i32 0, i32 0, i32 0
+  %89 = load %class.UndoOperation*, %class.UndoOperation** %88, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %88, align 8
+  %90 = icmp eq %class.UndoOperation* %89, null
+  br i1 %90, label %96, label %91
+
+91:                                               ; preds = %85
+  %92 = bitcast %class.UndoOperation* %89 to void (%class.UndoOperation*)***
+  %93 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %92, align 8
+  %94 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %93, i64 1
+  %95 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %94, align 8
+  call void %95(%class.UndoOperation* nonnull %89) #10
+  br label %96
+
+96:                                               ; preds = %91, %85
+  %97 = icmp eq %"class.std::__1::unique_ptr"* %87, %78
+  br i1 %97, label %98, label %85
+
+98:                                               ; preds = %96
+  %99 = bitcast %class.UndoGroup* %74 to i8**
+  %100 = load i8*, i8** %99, align 8
+  br label %101
+
+101:                                              ; preds = %98, %80
+  %102 = phi i8* [ %100, %98 ], [ %81, %80 ]
+  store %"class.std::__1::unique_ptr"* %78, %"class.std::__1::unique_ptr"** %82, align 8
+  call void @_ZdlPv(i8* %102) #11
+  br label %103
+
+103:                                              ; preds = %101, %76
+  %104 = bitcast %class.UndoGroup* %74 to i8*
+  call void @_ZdlPv(i8* %104) #11
+  br label %105
+
+105:                                              ; preds = %103, %70
+  %106 = icmp eq %"class.std::__1::unique_ptr.6"* %72, %65
+  br i1 %106, label %107, label %70
+
+107:                                              ; preds = %105
+  %108 = load i8, i8* %4, align 4, !range !2
+  store %"class.std::__1::unique_ptr.6"* %65, %"class.std::__1::unique_ptr.6"** %66, align 8
+  %109 = icmp eq i8 %108, 0
+  br i1 %109, label %110, label %111
+
+110:                                              ; preds = %59, %69, %107
+  br label %111
+
+111:                                              ; preds = %56, %107, %110
+  %112 = phi %"class.std::__1::vector.4"* [ %8, %110 ], [ %7, %107 ], [ %7, %56 ]
+  %113 = getelementptr inbounds %"class.std::__1::vector.4", %"class.std::__1::vector.4"* %112, i64 0, i32 0, i32 1
+  %114 = bitcast %"class.std::__1::unique_ptr.6"** %113 to i64*
+  %115 = load i64, i64* %114, align 8
+  %116 = bitcast %"class.std::__1::vector.4"* %112 to i64*
+  %117 = load i64, i64* %116, align 8
+  %118 = sub i64 %115, %117
+  %119 = ashr exact i64 %118, 3
+  %120 = icmp ugt i64 %119, 100
+  br i1 %120, label %121, label %124
+
+121:                                              ; preds = %111
+  %122 = inttoptr i64 %117 to %"class.std::__1::unique_ptr.6"*
+  %123 = call %"class.std::__1::unique_ptr.6"* @_ZNSt3__16vectorINS_10unique_ptrI9UndoGroupNS_14default_deleteIS2_EEEENS_9allocatorIS5_EEE5eraseENS_11__wrap_iterIPKS5_EE(%"class.std::__1::vector.4"* %112, %"class.std::__1::unique_ptr.6"* %122)
+  br label %124
+
+124:                                              ; preds = %121, %111
+  call void @_ZN11UndoManager30NotifyOnUndoManagerStateChangeEv(%class.UndoManager* %0)
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN11UndoManager20StartGroupingActionsEv(%class.UndoManager* nocapture) local_unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 3
+  %3 = load i32, i32* %2, align 8
+  %4 = icmp eq i32 %3, 0
+  br i1 %4, label %5, label %47
+
+5:                                                ; preds = %1
+  %6 = tail call i8* @_Znwm(i64 32) #11
+  tail call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %6, i8 0, i64 24, i1 false) #10
+  %7 = getelementptr inbounds i8, i8* %6, i64 24
+  %8 = bitcast i8* %7 to i32*
+  store i32 21124, i32* %8, align 8
+  %9 = getelementptr inbounds i8, i8* %6, i64 28
+  %10 = bitcast i8* %9 to i32*
+  store i32 21125, i32* %10, align 4
+  %11 = ptrtoint i8* %6 to i64
+  %12 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 5
+  %13 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %12, i64 0, i32 0, i32 0, i32 0
+  %14 = load %class.UndoGroup*, %class.UndoGroup** %13, align 8
+  %15 = bitcast %"class.std::__1::unique_ptr.6"* %12 to i64*
+  store i64 %11, i64* %15, align 8
+  %16 = icmp eq %class.UndoGroup* %14, null
+  br i1 %16, label %47, label %17
+
+17:                                               ; preds = %5
+  %18 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %14, i64 0, i32 0, i32 0, i32 0
+  %19 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %18, align 8
+  %20 = icmp eq %"class.std::__1::unique_ptr"* %19, null
+  br i1 %20, label %44, label %21
+
+21:                                               ; preds = %17
+  %22 = bitcast %"class.std::__1::unique_ptr"* %19 to i8*
+  %23 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %14, i64 0, i32 0, i32 0, i32 1
+  %24 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %23, align 8
+  %25 = icmp eq %"class.std::__1::unique_ptr"* %24, %19
+  br i1 %25, label %42, label %26
+
+26:                                               ; preds = %21, %37
+  %27 = phi %"class.std::__1::unique_ptr"* [ %28, %37 ], [ %24, %21 ]
+  %28 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %27, i64 -1
+  %29 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %28, i64 0, i32 0, i32 0, i32 0
+  %30 = load %class.UndoOperation*, %class.UndoOperation** %29, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %29, align 8
+  %31 = icmp eq %class.UndoOperation* %30, null
+  br i1 %31, label %37, label %32
+
+32:                                               ; preds = %26
+  %33 = bitcast %class.UndoOperation* %30 to void (%class.UndoOperation*)***
+  %34 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %33, align 8
+  %35 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %34, i64 1
+  %36 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %35, align 8
+  tail call void %36(%class.UndoOperation* nonnull %30) #10
+  br label %37
+
+37:                                               ; preds = %32, %26
+  %38 = icmp eq %"class.std::__1::unique_ptr"* %28, %19
+  br i1 %38, label %39, label %26
+
+39:                                               ; preds = %37
+  %40 = bitcast %class.UndoGroup* %14 to i8**
+  %41 = load i8*, i8** %40, align 8
+  br label %42
+
+42:                                               ; preds = %39, %21
+  %43 = phi i8* [ %41, %39 ], [ %22, %21 ]
+  store %"class.std::__1::unique_ptr"* %19, %"class.std::__1::unique_ptr"** %23, align 8
+  tail call void @_ZdlPv(i8* %43) #11
+  br label %44
+
+44:                                               ; preds = %42, %17
+  %45 = bitcast %class.UndoGroup* %14 to i8*
+  tail call void @_ZdlPv(i8* %45) #11
+  %46 = load i32, i32* %2, align 8
+  br label %47
+
+47:                                               ; preds = %5, %44, %1
+  %48 = phi i32 [ 0, %5 ], [ %46, %44 ], [ %3, %1 ]
+  %49 = add nsw i32 %48, 1
+  store i32 %49, i32* %2, align 8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN11UndoManager18EndGroupingActionsEv(%class.UndoManager*) local_unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 3
+  %3 = load i32, i32* %2, align 8
+  %4 = add nsw i32 %3, -1
+  store i32 %4, i32* %2, align 8
+  %5 = icmp sgt i32 %4, 0
+  br i1 %5, label %44, label %6
+
+6:                                                ; preds = %1
+  %7 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 5, i32 0, i32 0, i32 0
+  %8 = load %class.UndoGroup*, %class.UndoGroup** %7, align 8
+  %9 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %8, i64 0, i32 0, i32 0, i32 0
+  %10 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %9, align 8
+  %11 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %8, i64 0, i32 0, i32 0, i32 1
+  %12 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %11, align 8
+  %13 = icmp eq %"class.std::__1::unique_ptr"* %10, %12
+  store %class.UndoGroup* null, %class.UndoGroup** %7, align 8
+  br i1 %13, label %15, label %14
+
+14:                                               ; preds = %6
+  tail call void @_ZN11UndoManager12AddUndoGroupEP9UndoGroup(%class.UndoManager* %0, %class.UndoGroup* %8)
+  br label %44
+
+15:                                               ; preds = %6
+  %16 = icmp eq %class.UndoGroup* %8, null
+  br i1 %16, label %44, label %17
+
+17:                                               ; preds = %15
+  %18 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %9, align 8
+  %19 = icmp eq %"class.std::__1::unique_ptr"* %18, null
+  br i1 %19, label %42, label %20
+
+20:                                               ; preds = %17
+  %21 = bitcast %"class.std::__1::unique_ptr"* %18 to i8*
+  %22 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %11, align 8
+  %23 = icmp eq %"class.std::__1::unique_ptr"* %22, %18
+  br i1 %23, label %40, label %24
+
+24:                                               ; preds = %20, %35
+  %25 = phi %"class.std::__1::unique_ptr"* [ %26, %35 ], [ %22, %20 ]
+  %26 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %25, i64 -1
+  %27 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %26, i64 0, i32 0, i32 0, i32 0
+  %28 = load %class.UndoOperation*, %class.UndoOperation** %27, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %27, align 8
+  %29 = icmp eq %class.UndoOperation* %28, null
+  br i1 %29, label %35, label %30
+
+30:                                               ; preds = %24
+  %31 = bitcast %class.UndoOperation* %28 to void (%class.UndoOperation*)***
+  %32 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %31, align 8
+  %33 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %32, i64 1
+  %34 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %33, align 8
+  tail call void %34(%class.UndoOperation* nonnull %28) #10
+  br label %35
+
+35:                                               ; preds = %30, %24
+  %36 = icmp eq %"class.std::__1::unique_ptr"* %26, %18
+  br i1 %36, label %37, label %24
+
+37:                                               ; preds = %35
+  %38 = bitcast %class.UndoGroup* %8 to i8**
+  %39 = load i8*, i8** %38, align 8
+  br label %40
+
+40:                                               ; preds = %37, %20
+  %41 = phi i8* [ %39, %37 ], [ %21, %20 ]
+  store %"class.std::__1::unique_ptr"* %18, %"class.std::__1::unique_ptr"** %11, align 8
+  tail call void @_ZdlPv(i8* %41) #11
+  br label %42
+
+42:                                               ; preds = %40, %17
+  %43 = bitcast %class.UndoGroup* %8 to i8*
+  tail call void @_ZdlPv(i8* %43) #11
+  br label %44
+
+44:                                               ; preds = %42, %15, %14, %1
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN11UndoManager19SuspendUndoTrackingEv(%class.UndoManager* nocapture) local_unnamed_addr #5 align 2 {
+  %2 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 7
+  %3 = load i32, i32* %2, align 8
+  %4 = add nsw i32 %3, 1
+  store i32 %4, i32* %2, align 8
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN11UndoManager18ResumeUndoTrackingEv(%class.UndoManager* nocapture) local_unnamed_addr #5 align 2 {
+  %2 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 7
+  %3 = load i32, i32* %2, align 8
+  %4 = add nsw i32 %3, -1
+  store i32 %4, i32* %2, align 8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN11UndoManager30NotifyOnUndoManagerStateChangeEv(%class.UndoManager*) local_unnamed_addr #0 align 2 {
+  %2 = alloca %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter", align 8
+  %3 = alloca %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter", align 8
+  %4 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2
+  %5 = bitcast %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 40, i8* nonnull %5) #10
+  %6 = getelementptr inbounds %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter", %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter"* %2, i64 0, i32 0, i32 1
+  %7 = getelementptr inbounds %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter", %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter"* %2, i64 0, i32 1
+  %8 = getelementptr inbounds %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter", %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter"* %2, i64 0, i32 2
+  %9 = getelementptr inbounds %"class.base::ObserverList", %"class.base::ObserverList"* %4, i64 0, i32 0, i32 0, i32 0
+  %10 = bitcast %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter"* %2 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %10, i8 -86, i64 40, i1 false)
+  %11 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %9, align 8, !noalias !3
+  %12 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 0, i32 0, i32 1
+  %13 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %12, align 8, !noalias !3
+  %14 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %11, %13
+  %15 = getelementptr inbounds %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter", %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter"* %2, i64 0, i32 0, i32 0, i32 0
+  call void @_ZN4base8internal12LinkNodeBaseC2Ev(%"class.base::internal::LinkNodeBase"* nonnull %15) #10
+  br i1 %14, label %16, label %18
+
+16:                                               ; preds = %1
+  %17 = bitcast %"class.base::ObserverList"** %6 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %17, i8 0, i64 24, i1 false) #10, !alias.scope !3
+  br label %58
+
+18:                                               ; preds = %1
+  store %"class.base::ObserverList"* %4, %"class.base::ObserverList"** %6, align 8
+  %19 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 1, i32 0, i32 0
+  call void @_ZN4base8internal12LinkNodeBase16InsertBeforeBaseEPS1_(%"class.base::internal::LinkNodeBase"* nonnull %15, %"class.base::internal::LinkNodeBase"* %19) #10
+  store i64 0, i64* %7, align 8
+  %20 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 3
+  %21 = load i32, i32* %20, align 8
+  %22 = icmp eq i32 %21, 0
+  br i1 %22, label %30, label %23
+
+23:                                               ; preds = %18
+  %24 = bitcast %"class.base::internal::UncheckedObserverAdapter"** %12 to i64*
+  %25 = load i64, i64* %24, align 8
+  %26 = bitcast %"class.base::ObserverList"* %4 to i64*
+  %27 = load i64, i64* %26, align 8
+  %28 = sub i64 %25, %27
+  %29 = ashr exact i64 %28, 3
+  br label %30
+
+30:                                               ; preds = %23, %18
+  %31 = phi i64 [ %29, %23 ], [ -1, %18 ]
+  store i64 %31, i64* %8, align 8
+  %32 = load %"class.base::ObserverList"*, %"class.base::ObserverList"** %6, align 8
+  %33 = getelementptr inbounds %"class.base::ObserverList", %"class.base::ObserverList"* %32, i64 0, i32 0, i32 0, i32 1
+  %34 = bitcast %"class.base::internal::UncheckedObserverAdapter"** %33 to i64*
+  %35 = load i64, i64* %34, align 8
+  %36 = bitcast %"class.base::ObserverList"* %32 to i64*
+  %37 = load i64, i64* %36, align 8
+  %38 = sub i64 %35, %37
+  %39 = ashr exact i64 %38, 3
+  %40 = icmp ult i64 %39, %31
+  %41 = select i1 %40, i64 %39, i64 %31
+  %42 = icmp eq i64 %41, 0
+  br i1 %42, label %58, label %43
+
+43:                                               ; preds = %30
+  %44 = inttoptr i64 %37 to %"class.base::internal::UncheckedObserverAdapter"*
+  %45 = getelementptr inbounds %"class.base::ObserverList", %"class.base::ObserverList"* %32, i64 0, i32 0, i32 0, i32 0
+  %46 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %44, i64 0, i32 0
+  %47 = load i8*, i8** %46, align 8
+  %48 = icmp eq i8* %47, null
+  br i1 %48, label %49, label %58
+
+49:                                               ; preds = %43, %53
+  %50 = phi i64 [ %51, %53 ], [ 0, %43 ]
+  %51 = add nuw i64 %50, 1
+  store i64 %51, i64* %7, align 8
+  %52 = icmp ult i64 %51, %41
+  br i1 %52, label %53, label %58
+
+53:                                               ; preds = %49
+  %54 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %45, align 8
+  %55 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %54, i64 %51, i32 0
+  %56 = load i8*, i8** %55, align 8
+  %57 = icmp eq i8* %56, null
+  br i1 %57, label %49, label %58
+
+58:                                               ; preds = %53, %49, %43, %30, %16
+  %59 = bitcast %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 40, i8* nonnull %59) #10
+  %60 = getelementptr inbounds %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter", %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter"* %3, i64 0, i32 0, i32 1
+  %61 = getelementptr inbounds %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter", %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter"* %3, i64 0, i32 1
+  %62 = getelementptr inbounds %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter", %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter"* %3, i64 0, i32 2
+  %63 = getelementptr inbounds %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter", %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter"* %3, i64 0, i32 0, i32 0, i32 0
+  %64 = bitcast %"class.base::ObserverList<UndoManagerObserver, false, true, base::internal::UncheckedObserverAdapter>::Iter"* %3 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %64, i8 -86, i64 40, i1 false)
+  call void @_ZN4base8internal12LinkNodeBaseC2Ev(%"class.base::internal::LinkNodeBase"* nonnull %63) #10
+  %65 = bitcast %"class.base::ObserverList"** %60 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %65, i8 0, i64 24, i1 false) #10, !alias.scope !6
+  %66 = load %"class.base::ObserverList"*, %"class.base::ObserverList"** %6, align 8
+  br label %67
+
+67:                                               ; preds = %306, %58
+  %68 = phi %"class.base::ObserverList"* [ %66, %58 ], [ %304, %306 ]
+  %69 = icmp eq %"class.base::ObserverList"* %68, null
+  br i1 %69, label %85, label %70
+
+70:                                               ; preds = %67
+  %71 = load i64, i64* %7, align 8
+  %72 = getelementptr inbounds %"class.base::ObserverList", %"class.base::ObserverList"* %68, i64 0, i32 0, i32 0, i32 1
+  %73 = bitcast %"class.base::internal::UncheckedObserverAdapter"** %72 to i64*
+  %74 = load i64, i64* %73, align 8
+  %75 = bitcast %"class.base::ObserverList"* %68 to i64*
+  %76 = load i64, i64* %75, align 8
+  %77 = sub i64 %74, %76
+  %78 = ashr exact i64 %77, 3
+  %79 = load i64, i64* %8, align 8
+  %80 = icmp ult i64 %78, %79
+  %81 = select i1 %80, i64 %78, i64 %79
+  %82 = icmp eq i64 %71, %81
+  br i1 %82, label %85, label %83
+
+83:                                               ; preds = %70
+  %84 = load %"class.base::ObserverList"*, %"class.base::ObserverList"** %60, align 8
+  br label %101
+
+85:                                               ; preds = %70, %67
+  %86 = load %"class.base::ObserverList"*, %"class.base::ObserverList"** %60, align 8
+  %87 = icmp eq %"class.base::ObserverList"* %86, null
+  br i1 %87, label %201, label %88
+
+88:                                               ; preds = %85
+  %89 = load i64, i64* %61, align 8
+  %90 = getelementptr inbounds %"class.base::ObserverList", %"class.base::ObserverList"* %86, i64 0, i32 0, i32 0, i32 1
+  %91 = bitcast %"class.base::internal::UncheckedObserverAdapter"** %90 to i64*
+  %92 = load i64, i64* %91, align 8
+  %93 = bitcast %"class.base::ObserverList"* %86 to i64*
+  %94 = load i64, i64* %93, align 8
+  %95 = sub i64 %92, %94
+  %96 = ashr exact i64 %95, 3
+  %97 = load i64, i64* %62, align 8
+  %98 = icmp ult i64 %96, %97
+  %99 = select i1 %98, i64 %96, i64 %97
+  %100 = icmp eq i64 %89, %99
+  br i1 %100, label %110, label %101
+
+101:                                              ; preds = %88, %83
+  %102 = phi %"class.base::ObserverList"* [ %84, %83 ], [ %86, %88 ]
+  %103 = icmp eq %"class.base::ObserverList"* %68, %102
+  %104 = load i64, i64* %7, align 8
+  %105 = load i64, i64* %61, align 8
+  %106 = icmp eq i64 %104, %105
+  %107 = and i1 %103, %106
+  br i1 %107, label %108, label %295
+
+108:                                              ; preds = %101
+  %109 = icmp eq %"class.base::ObserverList"* %68, null
+  br i1 %109, label %201, label %110
+
+110:                                              ; preds = %88, %108
+  %111 = phi %"class.base::ObserverList"* [ %68, %108 ], [ %86, %88 ]
+  %112 = getelementptr inbounds %"class.base::ObserverList", %"class.base::ObserverList"* %111, i64 0, i32 1
+  %113 = getelementptr inbounds %"class.base::ObserverList", %"class.base::ObserverList"* %111, i64 0, i32 1, i32 0, i32 0, i32 1
+  %114 = bitcast %"class.base::internal::LinkNodeBase"** %113 to %"class.base::LinkNode"**
+  %115 = load %"class.base::LinkNode"*, %"class.base::LinkNode"** %114, align 8
+  %116 = bitcast %"class.base::LinkedList"* %112 to %"class.base::LinkNode"**
+  %117 = load %"class.base::LinkNode"*, %"class.base::LinkNode"** %116, align 8
+  %118 = icmp eq %"class.base::LinkNode"* %115, %117
+  br i1 %118, label %119, label %197
+
+119:                                              ; preds = %110
+  %120 = getelementptr inbounds %"class.base::ObserverList", %"class.base::ObserverList"* %111, i64 0, i32 0, i32 0, i32 0
+  %121 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %120, align 8
+  %122 = getelementptr inbounds %"class.base::ObserverList", %"class.base::ObserverList"* %111, i64 0, i32 0, i32 0, i32 1
+  %123 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %122, align 8
+  %124 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %121, %123
+  br i1 %124, label %133, label %125
+
+125:                                              ; preds = %119, %130
+  %126 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %131, %130 ], [ %121, %119 ]
+  %127 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %126, i64 0, i32 0
+  %128 = load i8*, i8** %127, align 8
+  %129 = icmp eq i8* %128, null
+  br i1 %129, label %133, label %130
+
+130:                                              ; preds = %125
+  %131 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %126, i64 1
+  %132 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %131, %123
+  br i1 %132, label %197, label %125
+
+133:                                              ; preds = %125, %119
+  %134 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %121, %119 ], [ %126, %125 ]
+  %135 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %134 to i64
+  %136 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %134, %123
+  br i1 %136, label %197, label %137
+
+137:                                              ; preds = %133
+  %138 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %134, i64 1
+  %139 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %138, %123
+  br i1 %139, label %192, label %140
+
+140:                                              ; preds = %137
+  %141 = getelementptr %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %123, i64 -2, i32 0
+  %142 = ptrtoint i8** %141 to i64
+  %143 = sub i64 %142, %135
+  %144 = lshr i64 %143, 3
+  %145 = add nuw nsw i64 %144, 1
+  %146 = and i64 %145, 3
+  %147 = icmp eq i64 %146, 0
+  br i1 %147, label %166, label %148
+
+148:                                              ; preds = %140, %161
+  %149 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %163, %161 ], [ %138, %140 ]
+  %150 = phi i64 [ %162, %161 ], [ %135, %140 ]
+  %151 = phi i64 [ %164, %161 ], [ %146, %140 ]
+  %152 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %149, i64 0, i32 0
+  %153 = load i8*, i8** %152, align 8
+  %154 = icmp eq i8* %153, null
+  br i1 %154, label %161, label %155
+
+155:                                              ; preds = %148
+  %156 = ptrtoint i8* %153 to i64
+  %157 = inttoptr i64 %150 to %"class.base::internal::UncheckedObserverAdapter"*
+  %158 = inttoptr i64 %150 to i64*
+  store i64 %156, i64* %158, align 8
+  %159 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %157, i64 1
+  %160 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %159 to i64
+  br label %161
+
+161:                                              ; preds = %155, %148
+  %162 = phi i64 [ %150, %148 ], [ %160, %155 ]
+  %163 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %149, i64 1
+  %164 = add i64 %151, -1
+  %165 = icmp eq i64 %164, 0
+  br i1 %165, label %166, label %148, !llvm.loop !9
+
+166:                                              ; preds = %161, %140
+  %167 = phi i64 [ undef, %140 ], [ %162, %161 ]
+  %168 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %138, %140 ], [ %163, %161 ]
+  %169 = phi i64 [ %135, %140 ], [ %162, %161 ]
+  %170 = icmp ult i64 %143, 24
+  br i1 %170, label %188, label %171
+
+171:                                              ; preds = %166, %396
+  %172 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %398, %396 ], [ %168, %166 ]
+  %173 = phi i64 [ %397, %396 ], [ %169, %166 ]
+  %174 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %172, i64 0, i32 0
+  %175 = load i8*, i8** %174, align 8
+  %176 = icmp eq i8* %175, null
+  br i1 %176, label %183, label %177
+
+177:                                              ; preds = %171
+  %178 = ptrtoint i8* %175 to i64
+  %179 = inttoptr i64 %173 to %"class.base::internal::UncheckedObserverAdapter"*
+  %180 = inttoptr i64 %173 to i64*
+  store i64 %178, i64* %180, align 8
+  %181 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %179, i64 1
+  %182 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %181 to i64
+  br label %183
+
+183:                                              ; preds = %177, %171
+  %184 = phi i64 [ %173, %171 ], [ %182, %177 ]
+  %185 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %172, i64 1, i32 0
+  %186 = load i8*, i8** %185, align 8
+  %187 = icmp eq i8* %186, null
+  br i1 %187, label %374, label %368
+
+188:                                              ; preds = %396, %166
+  %189 = phi i64 [ %167, %166 ], [ %397, %396 ]
+  %190 = inttoptr i64 %189 to %"class.base::internal::UncheckedObserverAdapter"*
+  %191 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %122, align 8
+  br label %192
+
+192:                                              ; preds = %188, %137
+  %193 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %123, %137 ], [ %191, %188 ]
+  %194 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %134, %137 ], [ %190, %188 ]
+  %195 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %194, %193
+  br i1 %195, label %197, label %196
+
+196:                                              ; preds = %192
+  store %"class.base::internal::UncheckedObserverAdapter"* %194, %"class.base::internal::UncheckedObserverAdapter"** %122, align 8
+  br label %197
+
+197:                                              ; preds = %130, %196, %192, %133, %110
+  %198 = load %"class.base::ObserverList"*, %"class.base::ObserverList"** %60, align 8
+  %199 = icmp eq %"class.base::ObserverList"* %198, null
+  br i1 %199, label %201, label %200
+
+200:                                              ; preds = %197
+  store %"class.base::ObserverList"* null, %"class.base::ObserverList"** %60, align 8
+  call void @_ZN4base8internal12LinkNodeBase14RemoveFromListEv(%"class.base::internal::LinkNodeBase"* nonnull %63) #10
+  br label %201
+
+201:                                              ; preds = %85, %108, %197, %200
+  call void @llvm.lifetime.end.p0i8(i64 40, i8* nonnull %59) #10
+  %202 = load %"class.base::ObserverList"*, %"class.base::ObserverList"** %6, align 8
+  %203 = icmp eq %"class.base::ObserverList"* %202, null
+  br i1 %203, label %294, label %204
+
+204:                                              ; preds = %201
+  %205 = getelementptr inbounds %"class.base::ObserverList", %"class.base::ObserverList"* %202, i64 0, i32 1
+  %206 = getelementptr inbounds %"class.base::ObserverList", %"class.base::ObserverList"* %202, i64 0, i32 1, i32 0, i32 0, i32 1
+  %207 = bitcast %"class.base::internal::LinkNodeBase"** %206 to %"class.base::LinkNode"**
+  %208 = load %"class.base::LinkNode"*, %"class.base::LinkNode"** %207, align 8
+  %209 = bitcast %"class.base::LinkedList"* %205 to %"class.base::LinkNode"**
+  %210 = load %"class.base::LinkNode"*, %"class.base::LinkNode"** %209, align 8
+  %211 = icmp eq %"class.base::LinkNode"* %208, %210
+  br i1 %211, label %212, label %290
+
+212:                                              ; preds = %204
+  %213 = getelementptr inbounds %"class.base::ObserverList", %"class.base::ObserverList"* %202, i64 0, i32 0, i32 0, i32 0
+  %214 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %213, align 8
+  %215 = getelementptr inbounds %"class.base::ObserverList", %"class.base::ObserverList"* %202, i64 0, i32 0, i32 0, i32 1
+  %216 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %215, align 8
+  %217 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %214, %216
+  br i1 %217, label %226, label %218
+
+218:                                              ; preds = %212, %223
+  %219 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %224, %223 ], [ %214, %212 ]
+  %220 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %219, i64 0, i32 0
+  %221 = load i8*, i8** %220, align 8
+  %222 = icmp eq i8* %221, null
+  br i1 %222, label %226, label %223
+
+223:                                              ; preds = %218
+  %224 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %219, i64 1
+  %225 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %224, %216
+  br i1 %225, label %290, label %218
+
+226:                                              ; preds = %218, %212
+  %227 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %214, %212 ], [ %219, %218 ]
+  %228 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %227 to i64
+  %229 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %227, %216
+  br i1 %229, label %290, label %230
+
+230:                                              ; preds = %226
+  %231 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %227, i64 1
+  %232 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %231, %216
+  br i1 %232, label %285, label %233
+
+233:                                              ; preds = %230
+  %234 = getelementptr %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %216, i64 -2, i32 0
+  %235 = ptrtoint i8** %234 to i64
+  %236 = sub i64 %235, %228
+  %237 = lshr i64 %236, 3
+  %238 = add nuw nsw i64 %237, 1
+  %239 = and i64 %238, 3
+  %240 = icmp eq i64 %239, 0
+  br i1 %240, label %259, label %241
+
+241:                                              ; preds = %233, %254
+  %242 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %256, %254 ], [ %231, %233 ]
+  %243 = phi i64 [ %255, %254 ], [ %228, %233 ]
+  %244 = phi i64 [ %257, %254 ], [ %239, %233 ]
+  %245 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %242, i64 0, i32 0
+  %246 = load i8*, i8** %245, align 8
+  %247 = icmp eq i8* %246, null
+  br i1 %247, label %254, label %248
+
+248:                                              ; preds = %241
+  %249 = ptrtoint i8* %246 to i64
+  %250 = inttoptr i64 %243 to %"class.base::internal::UncheckedObserverAdapter"*
+  %251 = inttoptr i64 %243 to i64*
+  store i64 %249, i64* %251, align 8
+  %252 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %250, i64 1
+  %253 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %252 to i64
+  br label %254
+
+254:                                              ; preds = %248, %241
+  %255 = phi i64 [ %243, %241 ], [ %253, %248 ]
+  %256 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %242, i64 1
+  %257 = add i64 %244, -1
+  %258 = icmp eq i64 %257, 0
+  br i1 %258, label %259, label %241, !llvm.loop !11
+
+259:                                              ; preds = %254, %233
+  %260 = phi i64 [ undef, %233 ], [ %255, %254 ]
+  %261 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %231, %233 ], [ %256, %254 ]
+  %262 = phi i64 [ %228, %233 ], [ %255, %254 ]
+  %263 = icmp ult i64 %236, 24
+  br i1 %263, label %281, label %264
+
+264:                                              ; preds = %259, %364
+  %265 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %366, %364 ], [ %261, %259 ]
+  %266 = phi i64 [ %365, %364 ], [ %262, %259 ]
+  %267 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %265, i64 0, i32 0
+  %268 = load i8*, i8** %267, align 8
+  %269 = icmp eq i8* %268, null
+  br i1 %269, label %276, label %270
+
+270:                                              ; preds = %264
+  %271 = ptrtoint i8* %268 to i64
+  %272 = inttoptr i64 %266 to %"class.base::internal::UncheckedObserverAdapter"*
+  %273 = inttoptr i64 %266 to i64*
+  store i64 %271, i64* %273, align 8
+  %274 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %272, i64 1
+  %275 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %274 to i64
+  br label %276
+
+276:                                              ; preds = %270, %264
+  %277 = phi i64 [ %266, %264 ], [ %275, %270 ]
+  %278 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %265, i64 1, i32 0
+  %279 = load i8*, i8** %278, align 8
+  %280 = icmp eq i8* %279, null
+  br i1 %280, label %342, label %336
+
+281:                                              ; preds = %364, %259
+  %282 = phi i64 [ %260, %259 ], [ %365, %364 ]
+  %283 = inttoptr i64 %282 to %"class.base::internal::UncheckedObserverAdapter"*
+  %284 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %215, align 8
+  br label %285
+
+285:                                              ; preds = %281, %230
+  %286 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %216, %230 ], [ %284, %281 ]
+  %287 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %227, %230 ], [ %283, %281 ]
+  %288 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %287, %286
+  br i1 %288, label %290, label %289
+
+289:                                              ; preds = %285
+  store %"class.base::internal::UncheckedObserverAdapter"* %287, %"class.base::internal::UncheckedObserverAdapter"** %215, align 8
+  br label %290
+
+290:                                              ; preds = %223, %289, %285, %226, %204
+  %291 = load %"class.base::ObserverList"*, %"class.base::ObserverList"** %6, align 8
+  %292 = icmp eq %"class.base::ObserverList"* %291, null
+  br i1 %292, label %294, label %293
+
+293:                                              ; preds = %290
+  store %"class.base::ObserverList"* null, %"class.base::ObserverList"** %6, align 8
+  call void @_ZN4base8internal12LinkNodeBase14RemoveFromListEv(%"class.base::internal::LinkNodeBase"* nonnull %15) #10
+  br label %294
+
+294:                                              ; preds = %201, %290, %293
+  call void @llvm.lifetime.end.p0i8(i64 40, i8* nonnull %5) #10
+  ret void
+
+295:                                              ; preds = %101
+  %296 = getelementptr inbounds %"class.base::ObserverList", %"class.base::ObserverList"* %68, i64 0, i32 0, i32 0, i32 0
+  %297 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %296, align 8
+  %298 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %297, i64 %104
+  %299 = bitcast %"class.base::internal::UncheckedObserverAdapter"* %298 to %class.UndoManagerObserver**
+  %300 = load %class.UndoManagerObserver*, %class.UndoManagerObserver** %299, align 8
+  %301 = bitcast %class.UndoManagerObserver* %300 to void (%class.UndoManagerObserver*)***
+  %302 = load void (%class.UndoManagerObserver*)**, void (%class.UndoManagerObserver*)*** %301, align 8
+  %303 = load void (%class.UndoManagerObserver*)*, void (%class.UndoManagerObserver*)** %302, align 8
+  call void %303(%class.UndoManagerObserver* %300) #10
+  %304 = load %"class.base::ObserverList"*, %"class.base::ObserverList"** %6, align 8
+  %305 = icmp eq %"class.base::ObserverList"* %304, null
+  br i1 %305, label %306, label %307
+
+306:                                              ; preds = %331, %327, %295, %307, %321
+  br label %67
+
+307:                                              ; preds = %295
+  %308 = load i64, i64* %7, align 8
+  %309 = add i64 %308, 1
+  store i64 %309, i64* %7, align 8
+  %310 = getelementptr inbounds %"class.base::ObserverList", %"class.base::ObserverList"* %304, i64 0, i32 0, i32 0, i32 1
+  %311 = bitcast %"class.base::internal::UncheckedObserverAdapter"** %310 to i64*
+  %312 = load i64, i64* %311, align 8
+  %313 = bitcast %"class.base::ObserverList"* %304 to i64*
+  %314 = load i64, i64* %313, align 8
+  %315 = sub i64 %312, %314
+  %316 = ashr exact i64 %315, 3
+  %317 = load i64, i64* %8, align 8
+  %318 = icmp ult i64 %316, %317
+  %319 = select i1 %318, i64 %316, i64 %317
+  %320 = icmp ult i64 %309, %319
+  br i1 %320, label %321, label %306
+
+321:                                              ; preds = %307
+  %322 = inttoptr i64 %314 to %"class.base::internal::UncheckedObserverAdapter"*
+  %323 = getelementptr inbounds %"class.base::ObserverList", %"class.base::ObserverList"* %304, i64 0, i32 0, i32 0, i32 0
+  %324 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %322, i64 %309, i32 0
+  %325 = load i8*, i8** %324, align 8
+  %326 = icmp eq i8* %325, null
+  br i1 %326, label %327, label %306
+
+327:                                              ; preds = %321, %331
+  %328 = phi i64 [ %329, %331 ], [ %309, %321 ]
+  %329 = add nuw i64 %328, 1
+  store i64 %329, i64* %7, align 8
+  %330 = icmp ult i64 %329, %319
+  br i1 %330, label %331, label %306
+
+331:                                              ; preds = %327
+  %332 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %323, align 8
+  %333 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %332, i64 %329, i32 0
+  %334 = load i8*, i8** %333, align 8
+  %335 = icmp eq i8* %334, null
+  br i1 %335, label %327, label %306
+
+336:                                              ; preds = %276
+  %337 = ptrtoint i8* %279 to i64
+  %338 = inttoptr i64 %277 to %"class.base::internal::UncheckedObserverAdapter"*
+  %339 = inttoptr i64 %277 to i64*
+  store i64 %337, i64* %339, align 8
+  %340 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %338, i64 1
+  %341 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %340 to i64
+  br label %342
+
+342:                                              ; preds = %336, %276
+  %343 = phi i64 [ %277, %276 ], [ %341, %336 ]
+  %344 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %265, i64 2, i32 0
+  %345 = load i8*, i8** %344, align 8
+  %346 = icmp eq i8* %345, null
+  br i1 %346, label %353, label %347
+
+347:                                              ; preds = %342
+  %348 = ptrtoint i8* %345 to i64
+  %349 = inttoptr i64 %343 to %"class.base::internal::UncheckedObserverAdapter"*
+  %350 = inttoptr i64 %343 to i64*
+  store i64 %348, i64* %350, align 8
+  %351 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %349, i64 1
+  %352 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %351 to i64
+  br label %353
+
+353:                                              ; preds = %347, %342
+  %354 = phi i64 [ %343, %342 ], [ %352, %347 ]
+  %355 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %265, i64 3, i32 0
+  %356 = load i8*, i8** %355, align 8
+  %357 = icmp eq i8* %356, null
+  br i1 %357, label %364, label %358
+
+358:                                              ; preds = %353
+  %359 = ptrtoint i8* %356 to i64
+  %360 = inttoptr i64 %354 to %"class.base::internal::UncheckedObserverAdapter"*
+  %361 = inttoptr i64 %354 to i64*
+  store i64 %359, i64* %361, align 8
+  %362 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %360, i64 1
+  %363 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %362 to i64
+  br label %364
+
+364:                                              ; preds = %358, %353
+  %365 = phi i64 [ %354, %353 ], [ %363, %358 ]
+  %366 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %265, i64 4
+  %367 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %366, %216
+  br i1 %367, label %281, label %264
+
+368:                                              ; preds = %183
+  %369 = ptrtoint i8* %186 to i64
+  %370 = inttoptr i64 %184 to %"class.base::internal::UncheckedObserverAdapter"*
+  %371 = inttoptr i64 %184 to i64*
+  store i64 %369, i64* %371, align 8
+  %372 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %370, i64 1
+  %373 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %372 to i64
+  br label %374
+
+374:                                              ; preds = %368, %183
+  %375 = phi i64 [ %184, %183 ], [ %373, %368 ]
+  %376 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %172, i64 2, i32 0
+  %377 = load i8*, i8** %376, align 8
+  %378 = icmp eq i8* %377, null
+  br i1 %378, label %385, label %379
+
+379:                                              ; preds = %374
+  %380 = ptrtoint i8* %377 to i64
+  %381 = inttoptr i64 %375 to %"class.base::internal::UncheckedObserverAdapter"*
+  %382 = inttoptr i64 %375 to i64*
+  store i64 %380, i64* %382, align 8
+  %383 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %381, i64 1
+  %384 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %383 to i64
+  br label %385
+
+385:                                              ; preds = %379, %374
+  %386 = phi i64 [ %375, %374 ], [ %384, %379 ]
+  %387 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %172, i64 3, i32 0
+  %388 = load i8*, i8** %387, align 8
+  %389 = icmp eq i8* %388, null
+  br i1 %389, label %396, label %390
+
+390:                                              ; preds = %385
+  %391 = ptrtoint i8* %388 to i64
+  %392 = inttoptr i64 %386 to %"class.base::internal::UncheckedObserverAdapter"*
+  %393 = inttoptr i64 %386 to i64*
+  store i64 %391, i64* %393, align 8
+  %394 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %392, i64 1
+  %395 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %394 to i64
+  br label %396
+
+396:                                              ; preds = %390, %385
+  %397 = phi i64 [ %386, %385 ], [ %395, %390 ]
+  %398 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %172, i64 4
+  %399 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %398, %123
+  br i1 %399, label %188, label %171
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN11UndoManager11AddObserverEP19UndoManagerObserver(%class.UndoManager*, %class.UndoManagerObserver*) local_unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2
+  %4 = icmp eq %class.UndoManagerObserver* %1, null
+  br i1 %4, label %5, label %8
+
+5:                                                ; preds = %2
+  %6 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 0, i32 0, i32 1
+  %7 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %6, align 8
+  br label %26
+
+8:                                                ; preds = %2
+  %9 = getelementptr inbounds %"class.base::ObserverList", %"class.base::ObserverList"* %3, i64 0, i32 0, i32 0, i32 0
+  %10 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %9, align 8
+  %11 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 0, i32 0, i32 1
+  %12 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %11, align 8
+  %13 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %10, %12
+  %14 = bitcast %class.UndoManagerObserver* %1 to i8*
+  br i1 %13, label %23, label %15
+
+15:                                               ; preds = %8, %20
+  %16 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %21, %20 ], [ %10, %8 ]
+  %17 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %16, i64 0, i32 0
+  %18 = load i8*, i8** %17, align 8
+  %19 = icmp eq i8* %18, %14
+  br i1 %19, label %23, label %20
+
+20:                                               ; preds = %15
+  %21 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %16, i64 1
+  %22 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %21, %12
+  br i1 %22, label %26, label %15
+
+23:                                               ; preds = %15, %8
+  %24 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %10, %8 ], [ %16, %15 ]
+  %25 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %24, %12
+  br i1 %25, label %26, label %99
+
+26:                                               ; preds = %20, %5, %23
+  %27 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %7, %5 ], [ %12, %23 ], [ %12, %20 ]
+  %28 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 2
+  %29 = load i64, i64* %28, align 8
+  %30 = add i64 %29, 1
+  store i64 %30, i64* %28, align 8
+  %31 = ptrtoint %class.UndoManagerObserver* %1 to i64
+  %32 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 0, i32 0, i32 1
+  %33 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 0, i32 0, i32 2, i32 0, i32 0
+  %34 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %33, align 8
+  %35 = icmp ult %"class.base::internal::UncheckedObserverAdapter"* %27, %34
+  %36 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %34 to i64
+  br i1 %35, label %37, label %42
+
+37:                                               ; preds = %26
+  %38 = bitcast %"class.base::internal::UncheckedObserverAdapter"* %27 to i64*
+  store i64 %31, i64* %38, align 8
+  %39 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %27, i64 1
+  %40 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %39 to i64
+  %41 = bitcast %"class.base::internal::UncheckedObserverAdapter"** %32 to i64*
+  store i64 %40, i64* %41, align 8
+  br label %99
+
+42:                                               ; preds = %26
+  %43 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %27 to i64
+  %44 = bitcast %"class.base::internal::UncheckedObserverAdapter"** %32 to i64*
+  %45 = bitcast %"class.base::ObserverList"* %3 to i64*
+  %46 = load i64, i64* %45, align 8
+  %47 = sub i64 %43, %46
+  %48 = ashr exact i64 %47, 3
+  %49 = add nsw i64 %48, 1
+  %50 = icmp ugt i64 %49, 2305843009213693951
+  br i1 %50, label %51, label %53
+
+51:                                               ; preds = %42
+  %52 = bitcast %"class.base::ObserverList"* %3 to %"class.std::__1::__vector_base_common"*
+  tail call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"* %52) #12
+  unreachable
+
+53:                                               ; preds = %42
+  %54 = bitcast %"class.base::internal::UncheckedObserverAdapter"** %33 to i64*
+  %55 = sub i64 %36, %46
+  %56 = ashr exact i64 %55, 3
+  %57 = icmp ult i64 %56, 1152921504606846975
+  br i1 %57, label %58, label %66
+
+58:                                               ; preds = %53
+  %59 = ashr exact i64 %55, 2
+  %60 = icmp ult i64 %59, %49
+  %61 = select i1 %60, i64 %49, i64 %59
+  %62 = icmp eq i64 %61, 0
+  br i1 %62, label %71, label %63
+
+63:                                               ; preds = %58
+  %64 = icmp ugt i64 %61, 2305843009213693951
+  br i1 %64, label %65, label %66
+
+65:                                               ; preds = %63
+  tail call void @abort() #12
+  unreachable
+
+66:                                               ; preds = %63, %53
+  %67 = phi i64 [ %61, %63 ], [ 2305843009213693951, %53 ]
+  %68 = shl i64 %67, 3
+  %69 = tail call i8* @_Znwm(i64 %68) #11
+  %70 = bitcast i8* %69 to %"class.base::internal::UncheckedObserverAdapter"*
+  br label %71
+
+71:                                               ; preds = %66, %58
+  %72 = phi i64 [ %67, %66 ], [ 0, %58 ]
+  %73 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %70, %66 ], [ null, %58 ]
+  %74 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %73, i64 %48
+  %75 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %73, i64 %72
+  %76 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %75 to i64
+  %77 = bitcast %"class.base::internal::UncheckedObserverAdapter"* %74 to i64*
+  store i64 %31, i64* %77, align 8
+  %78 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %74, i64 1
+  %79 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %78 to i64
+  %80 = getelementptr inbounds %"class.base::ObserverList", %"class.base::ObserverList"* %3, i64 0, i32 0, i32 0, i32 0
+  %81 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %80, align 8
+  %82 = load i64, i64* %44, align 8
+  %83 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %81 to i64
+  %84 = sub i64 %82, %83
+  %85 = ashr exact i64 %84, 3
+  %86 = sub nsw i64 0, %85
+  %87 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %74, i64 %86
+  %88 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %87 to i64
+  %89 = icmp sgt i64 %84, 0
+  br i1 %89, label %90, label %94
+
+90:                                               ; preds = %71
+  %91 = bitcast %"class.base::internal::UncheckedObserverAdapter"* %87 to i8*
+  %92 = bitcast %"class.base::internal::UncheckedObserverAdapter"* %81 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %91, i8* align 8 %92, i64 %84, i1 false) #10
+  %93 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %80, align 8
+  br label %94
+
+94:                                               ; preds = %90, %71
+  %95 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %81, %71 ], [ %93, %90 ]
+  store i64 %88, i64* %45, align 8
+  store i64 %79, i64* %44, align 8
+  store i64 %76, i64* %54, align 8
+  %96 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %95, null
+  br i1 %96, label %99, label %97
+
+97:                                               ; preds = %94
+  %98 = bitcast %"class.base::internal::UncheckedObserverAdapter"* %95 to i8*
+  tail call void @_ZdlPv(i8* %98) #11
+  br label %99
+
+99:                                               ; preds = %97, %94, %37, %23
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN11UndoManager14RemoveObserverEP19UndoManagerObserver(%class.UndoManager*, %class.UndoManagerObserver* readnone) local_unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 0, i32 0, i32 0
+  %4 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %3, align 8
+  %5 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 0, i32 0, i32 1
+  %6 = load %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"** %5, align 8
+  %7 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %4, %6
+  %8 = bitcast %class.UndoManagerObserver* %1 to i8*
+  %9 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %6 to i64
+  br i1 %7, label %18, label %10
+
+10:                                               ; preds = %2, %15
+  %11 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %16, %15 ], [ %4, %2 ]
+  %12 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %11, i64 0, i32 0
+  %13 = load i8*, i8** %12, align 8
+  %14 = icmp eq i8* %13, %8
+  br i1 %14, label %18, label %15
+
+15:                                               ; preds = %10
+  %16 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %11, i64 1
+  %17 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %16, %6
+  br i1 %17, label %47, label %10
+
+18:                                               ; preds = %10, %2
+  %19 = phi %"class.base::internal::UncheckedObserverAdapter"* [ %4, %2 ], [ %11, %10 ]
+  %20 = icmp eq %"class.base::internal::UncheckedObserverAdapter"* %19, %6
+  br i1 %20, label %47, label %21
+
+21:                                               ; preds = %18
+  %22 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %19, i64 0, i32 0
+  %23 = load i8*, i8** %22, align 8
+  %24 = icmp eq i8* %23, null
+  br i1 %24, label %29, label %25
+
+25:                                               ; preds = %21
+  %26 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 2
+  %27 = load i64, i64* %26, align 8
+  %28 = add i64 %27, -1
+  store i64 %28, i64* %26, align 8
+  br label %29
+
+29:                                               ; preds = %25, %21
+  %30 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 1, i32 0, i32 0, i32 1
+  %31 = bitcast %"class.base::internal::LinkNodeBase"** %30 to %"class.base::LinkNode"**
+  %32 = load %"class.base::LinkNode"*, %"class.base::LinkNode"** %31, align 8
+  %33 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 2, i32 1, i32 0
+  %34 = icmp eq %"class.base::LinkNode"* %32, %33
+  br i1 %34, label %35, label %46
+
+35:                                               ; preds = %29
+  %36 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %19, i64 1
+  %37 = ptrtoint %"class.base::internal::UncheckedObserverAdapter"* %36 to i64
+  %38 = sub i64 %9, %37
+  %39 = ashr exact i64 %38, 3
+  %40 = icmp eq i64 %38, 0
+  br i1 %40, label %44, label %41
+
+41:                                               ; preds = %35
+  %42 = bitcast %"class.base::internal::UncheckedObserverAdapter"* %19 to i8*
+  %43 = bitcast %"class.base::internal::UncheckedObserverAdapter"* %36 to i8*
+  tail call void @llvm.memmove.p0i8.p0i8.i64(i8* align 8 %42, i8* align 8 %43, i64 %38, i1 false) #10
+  br label %44
+
+44:                                               ; preds = %41, %35
+  %45 = getelementptr inbounds %"class.base::internal::UncheckedObserverAdapter", %"class.base::internal::UncheckedObserverAdapter"* %19, i64 %39
+  store %"class.base::internal::UncheckedObserverAdapter"* %45, %"class.base::internal::UncheckedObserverAdapter"** %5, align 8
+  br label %47
+
+46:                                               ; preds = %29
+  store i8* null, i8** %22, align 8
+  br label %47
+
+47:                                               ; preds = %15, %18, %44, %46
+  ret void
+}
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden %"class.std::__1::unique_ptr.6"* @_ZNSt3__16vectorINS_10unique_ptrI9UndoGroupNS_14default_deleteIS2_EEEENS_9allocatorIS5_EEE5eraseENS_11__wrap_iterIPKS5_EE(%"class.std::__1::vector.4"*, %"class.std::__1::unique_ptr.6"*) local_unnamed_addr #6 comdat align 2 {
+  %3 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %1, i64 1
+  %4 = getelementptr inbounds %"class.std::__1::vector.4", %"class.std::__1::vector.4"* %0, i64 0, i32 0, i32 1
+  %5 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %4, align 8
+  %6 = icmp eq %"class.std::__1::unique_ptr.6"* %3, %5
+  br i1 %6, label %53, label %7
+
+7:                                                ; preds = %2, %46
+  %8 = phi %"class.std::__1::unique_ptr.6"* [ %48, %46 ], [ %1, %2 ]
+  %9 = phi %"class.std::__1::unique_ptr.6"* [ %47, %46 ], [ %3, %2 ]
+  %10 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %9, i64 0, i32 0, i32 0, i32 0
+  %11 = bitcast %"class.std::__1::unique_ptr.6"* %9 to i64*
+  %12 = load i64, i64* %11, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %10, align 8
+  %13 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %8, i64 0, i32 0, i32 0, i32 0
+  %14 = load %class.UndoGroup*, %class.UndoGroup** %13, align 8
+  %15 = bitcast %"class.std::__1::unique_ptr.6"* %8 to i64*
+  store i64 %12, i64* %15, align 8
+  %16 = icmp eq %class.UndoGroup* %14, null
+  br i1 %16, label %46, label %17
+
+17:                                               ; preds = %7
+  %18 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %14, i64 0, i32 0, i32 0, i32 0
+  %19 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %18, align 8
+  %20 = icmp eq %"class.std::__1::unique_ptr"* %19, null
+  br i1 %20, label %44, label %21
+
+21:                                               ; preds = %17
+  %22 = bitcast %"class.std::__1::unique_ptr"* %19 to i8*
+  %23 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %14, i64 0, i32 0, i32 0, i32 1
+  %24 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %23, align 8
+  %25 = icmp eq %"class.std::__1::unique_ptr"* %24, %19
+  br i1 %25, label %42, label %26
+
+26:                                               ; preds = %21, %37
+  %27 = phi %"class.std::__1::unique_ptr"* [ %28, %37 ], [ %24, %21 ]
+  %28 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %27, i64 -1
+  %29 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %28, i64 0, i32 0, i32 0, i32 0
+  %30 = load %class.UndoOperation*, %class.UndoOperation** %29, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %29, align 8
+  %31 = icmp eq %class.UndoOperation* %30, null
+  br i1 %31, label %37, label %32
+
+32:                                               ; preds = %26
+  %33 = bitcast %class.UndoOperation* %30 to void (%class.UndoOperation*)***
+  %34 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %33, align 8
+  %35 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %34, i64 1
+  %36 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %35, align 8
+  tail call void %36(%class.UndoOperation* nonnull %30) #10
+  br label %37
+
+37:                                               ; preds = %32, %26
+  %38 = icmp eq %"class.std::__1::unique_ptr"* %28, %19
+  br i1 %38, label %39, label %26
+
+39:                                               ; preds = %37
+  %40 = bitcast %class.UndoGroup* %14 to i8**
+  %41 = load i8*, i8** %40, align 8
+  br label %42
+
+42:                                               ; preds = %39, %21
+  %43 = phi i8* [ %41, %39 ], [ %22, %21 ]
+  store %"class.std::__1::unique_ptr"* %19, %"class.std::__1::unique_ptr"** %23, align 8
+  tail call void @_ZdlPv(i8* %43) #11
+  br label %44
+
+44:                                               ; preds = %42, %17
+  %45 = bitcast %class.UndoGroup* %14 to i8*
+  tail call void @_ZdlPv(i8* %45) #11
+  br label %46
+
+46:                                               ; preds = %44, %7
+  %47 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %9, i64 1
+  %48 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %8, i64 1
+  %49 = icmp eq %"class.std::__1::unique_ptr.6"* %47, %5
+  br i1 %49, label %50, label %7
+
+50:                                               ; preds = %46
+  %51 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %4, align 8
+  %52 = icmp eq %"class.std::__1::unique_ptr.6"* %51, %48
+  br i1 %52, label %93, label %53
+
+53:                                               ; preds = %2, %50
+  %54 = phi %"class.std::__1::unique_ptr.6"* [ %48, %50 ], [ %1, %2 ]
+  %55 = phi %"class.std::__1::unique_ptr.6"* [ %51, %50 ], [ %3, %2 ]
+  br label %56
+
+56:                                               ; preds = %53, %91
+  %57 = phi %"class.std::__1::unique_ptr.6"* [ %58, %91 ], [ %55, %53 ]
+  %58 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %57, i64 -1
+  %59 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %58, i64 0, i32 0, i32 0, i32 0
+  %60 = load %class.UndoGroup*, %class.UndoGroup** %59, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %59, align 8
+  %61 = icmp eq %class.UndoGroup* %60, null
+  br i1 %61, label %91, label %62
+
+62:                                               ; preds = %56
+  %63 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %60, i64 0, i32 0, i32 0, i32 0
+  %64 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %63, align 8
+  %65 = icmp eq %"class.std::__1::unique_ptr"* %64, null
+  br i1 %65, label %89, label %66
+
+66:                                               ; preds = %62
+  %67 = bitcast %"class.std::__1::unique_ptr"* %64 to i8*
+  %68 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %60, i64 0, i32 0, i32 0, i32 1
+  %69 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %68, align 8
+  %70 = icmp eq %"class.std::__1::unique_ptr"* %69, %64
+  br i1 %70, label %87, label %71
+
+71:                                               ; preds = %66, %82
+  %72 = phi %"class.std::__1::unique_ptr"* [ %73, %82 ], [ %69, %66 ]
+  %73 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %72, i64 -1
+  %74 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %73, i64 0, i32 0, i32 0, i32 0
+  %75 = load %class.UndoOperation*, %class.UndoOperation** %74, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %74, align 8
+  %76 = icmp eq %class.UndoOperation* %75, null
+  br i1 %76, label %82, label %77
+
+77:                                               ; preds = %71
+  %78 = bitcast %class.UndoOperation* %75 to void (%class.UndoOperation*)***
+  %79 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %78, align 8
+  %80 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %79, i64 1
+  %81 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %80, align 8
+  tail call void %81(%class.UndoOperation* nonnull %75) #10
+  br label %82
+
+82:                                               ; preds = %77, %71
+  %83 = icmp eq %"class.std::__1::unique_ptr"* %73, %64
+  br i1 %83, label %84, label %71
+
+84:                                               ; preds = %82
+  %85 = bitcast %class.UndoGroup* %60 to i8**
+  %86 = load i8*, i8** %85, align 8
+  br label %87
+
+87:                                               ; preds = %84, %66
+  %88 = phi i8* [ %86, %84 ], [ %67, %66 ]
+  store %"class.std::__1::unique_ptr"* %64, %"class.std::__1::unique_ptr"** %68, align 8
+  tail call void @_ZdlPv(i8* %88) #11
+  br label %89
+
+89:                                               ; preds = %87, %62
+  %90 = bitcast %class.UndoGroup* %60 to i8*
+  tail call void @_ZdlPv(i8* %90) #11
+  br label %91
+
+91:                                               ; preds = %89, %56
+  %92 = icmp eq %"class.std::__1::unique_ptr.6"* %58, %54
+  br i1 %92, label %93, label %56
+
+93:                                               ; preds = %91, %50
+  %94 = phi %"class.std::__1::unique_ptr.6"* [ %48, %50 ], [ %54, %91 ]
+  store %"class.std::__1::unique_ptr.6"* %94, %"class.std::__1::unique_ptr.6"** %4, align 8
+  ret %"class.std::__1::unique_ptr.6"* %1
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden %"class.std::__1::vector.4"* @_ZN11UndoManager18GetActiveUndoGroupEv(%class.UndoManager* readonly) local_unnamed_addr #3 align 2 {
+  %2 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 8
+  %3 = load i8, i8* %2, align 4, !range !2
+  %4 = icmp eq i8 %3, 0
+  %5 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 1
+  %6 = getelementptr inbounds %class.UndoManager, %class.UndoManager* %0, i64 0, i32 0
+  %7 = select i1 %4, %"class.std::__1::vector.4"* %6, %"class.std::__1::vector.4"* %5
+  ret %"class.std::__1::vector.4"* %7
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #1
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #7
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden void @_ZNSt3__16vectorINS_10unique_ptrI13UndoOperationNS_14default_deleteIS2_EEEENS_9allocatorIS5_EEE21__push_back_slow_pathIS5_EEvOT_(%"class.std::__1::vector"*, %"class.std::__1::unique_ptr"* dereferenceable(8)) local_unnamed_addr #6 comdat align 2 {
+  %3 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 1
+  %4 = bitcast %"class.std::__1::unique_ptr"** %3 to i64*
+  %5 = load i64, i64* %4, align 8
+  %6 = bitcast %"class.std::__1::vector"* %0 to i64*
+  %7 = load i64, i64* %6, align 8
+  %8 = sub i64 %5, %7
+  %9 = ashr exact i64 %8, 3
+  %10 = add nsw i64 %9, 1
+  %11 = icmp ugt i64 %10, 2305843009213693951
+  br i1 %11, label %12, label %14
+
+12:                                               ; preds = %2
+  %13 = bitcast %"class.std::__1::vector"* %0 to %"class.std::__1::__vector_base_common"*
+  tail call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"* %13) #12
+  unreachable
+
+14:                                               ; preds = %2
+  %15 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 2, i32 0, i32 0
+  %16 = bitcast %"class.std::__1::unique_ptr"** %15 to i64*
+  %17 = load i64, i64* %16, align 8
+  %18 = sub i64 %17, %7
+  %19 = ashr exact i64 %18, 3
+  %20 = icmp ult i64 %19, 1152921504606846975
+  br i1 %20, label %21, label %29
+
+21:                                               ; preds = %14
+  %22 = ashr exact i64 %18, 2
+  %23 = icmp ult i64 %22, %10
+  %24 = select i1 %23, i64 %10, i64 %22
+  %25 = icmp eq i64 %24, 0
+  br i1 %25, label %34, label %26
+
+26:                                               ; preds = %21
+  %27 = icmp ugt i64 %24, 2305843009213693951
+  br i1 %27, label %28, label %29
+
+28:                                               ; preds = %26
+  tail call void @abort() #12
+  unreachable
+
+29:                                               ; preds = %14, %26
+  %30 = phi i64 [ %24, %26 ], [ 2305843009213693951, %14 ]
+  %31 = shl i64 %30, 3
+  %32 = tail call i8* @_Znwm(i64 %31) #11
+  %33 = bitcast i8* %32 to %"class.std::__1::unique_ptr"*
+  br label %34
+
+34:                                               ; preds = %21, %29
+  %35 = phi i64 [ %30, %29 ], [ 0, %21 ]
+  %36 = phi %"class.std::__1::unique_ptr"* [ %33, %29 ], [ null, %21 ]
+  %37 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %36, i64 %9
+  %38 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %36, i64 %35
+  %39 = ptrtoint %"class.std::__1::unique_ptr"* %38 to i64
+  %40 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %1, i64 0, i32 0, i32 0, i32 0
+  %41 = bitcast %"class.std::__1::unique_ptr"* %1 to i64*
+  %42 = load i64, i64* %41, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %40, align 8
+  %43 = bitcast %"class.std::__1::unique_ptr"* %37 to i64*
+  store i64 %42, i64* %43, align 8
+  %44 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %37, i64 1
+  %45 = ptrtoint %"class.std::__1::unique_ptr"* %44 to i64
+  %46 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 0
+  %47 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %46, align 8
+  %48 = ptrtoint %"class.std::__1::unique_ptr"* %47 to i64
+  %49 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %3, align 8
+  %50 = icmp eq %"class.std::__1::unique_ptr"* %49, %47
+  br i1 %50, label %132, label %51
+
+51:                                               ; preds = %34
+  %52 = getelementptr %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %49, i64 -1, i32 0, i32 0, i32 0
+  %53 = ptrtoint %class.UndoOperation** %52 to i64
+  %54 = sub i64 %53, %48
+  %55 = lshr i64 %54, 3
+  %56 = add nuw nsw i64 %55, 1
+  %57 = and i64 %56, 7
+  %58 = icmp eq i64 %57, 0
+  br i1 %58, label %71, label %59
+
+59:                                               ; preds = %51, %59
+  %60 = phi %"class.std::__1::unique_ptr"* [ %63, %59 ], [ %37, %51 ]
+  %61 = phi %"class.std::__1::unique_ptr"* [ %64, %59 ], [ %49, %51 ]
+  %62 = phi i64 [ %69, %59 ], [ %57, %51 ]
+  %63 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %60, i64 -1
+  %64 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %61, i64 -1
+  %65 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %64, i64 0, i32 0, i32 0, i32 0
+  %66 = bitcast %"class.std::__1::unique_ptr"* %64 to i64*
+  %67 = load i64, i64* %66, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %65, align 8
+  %68 = bitcast %"class.std::__1::unique_ptr"* %63 to i64*
+  store i64 %67, i64* %68, align 8
+  %69 = add i64 %62, -1
+  %70 = icmp eq i64 %69, 0
+  br i1 %70, label %71, label %59, !llvm.loop !12
+
+71:                                               ; preds = %59, %51
+  %72 = phi %"class.std::__1::unique_ptr"* [ undef, %51 ], [ %63, %59 ]
+  %73 = phi %"class.std::__1::unique_ptr"* [ %37, %51 ], [ %63, %59 ]
+  %74 = phi %"class.std::__1::unique_ptr"* [ %49, %51 ], [ %64, %59 ]
+  %75 = icmp ult i64 %54, 56
+  br i1 %75, label %128, label %76
+
+76:                                               ; preds = %71, %76
+  %77 = phi %"class.std::__1::unique_ptr"* [ %121, %76 ], [ %73, %71 ]
+  %78 = phi %"class.std::__1::unique_ptr"* [ %122, %76 ], [ %74, %71 ]
+  %79 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %77, i64 -1
+  %80 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %78, i64 -1
+  %81 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %80, i64 0, i32 0, i32 0, i32 0
+  %82 = bitcast %"class.std::__1::unique_ptr"* %80 to i64*
+  %83 = load i64, i64* %82, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %81, align 8
+  %84 = bitcast %"class.std::__1::unique_ptr"* %79 to i64*
+  store i64 %83, i64* %84, align 8
+  %85 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %77, i64 -2
+  %86 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %78, i64 -2
+  %87 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %86, i64 0, i32 0, i32 0, i32 0
+  %88 = bitcast %"class.std::__1::unique_ptr"* %86 to i64*
+  %89 = load i64, i64* %88, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %87, align 8
+  %90 = bitcast %"class.std::__1::unique_ptr"* %85 to i64*
+  store i64 %89, i64* %90, align 8
+  %91 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %77, i64 -3
+  %92 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %78, i64 -3
+  %93 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %92, i64 0, i32 0, i32 0, i32 0
+  %94 = bitcast %"class.std::__1::unique_ptr"* %92 to i64*
+  %95 = load i64, i64* %94, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %93, align 8
+  %96 = bitcast %"class.std::__1::unique_ptr"* %91 to i64*
+  store i64 %95, i64* %96, align 8
+  %97 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %77, i64 -4
+  %98 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %78, i64 -4
+  %99 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %98, i64 0, i32 0, i32 0, i32 0
+  %100 = bitcast %"class.std::__1::unique_ptr"* %98 to i64*
+  %101 = load i64, i64* %100, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %99, align 8
+  %102 = bitcast %"class.std::__1::unique_ptr"* %97 to i64*
+  store i64 %101, i64* %102, align 8
+  %103 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %77, i64 -5
+  %104 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %78, i64 -5
+  %105 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %104, i64 0, i32 0, i32 0, i32 0
+  %106 = bitcast %"class.std::__1::unique_ptr"* %104 to i64*
+  %107 = load i64, i64* %106, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %105, align 8
+  %108 = bitcast %"class.std::__1::unique_ptr"* %103 to i64*
+  store i64 %107, i64* %108, align 8
+  %109 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %77, i64 -6
+  %110 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %78, i64 -6
+  %111 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %110, i64 0, i32 0, i32 0, i32 0
+  %112 = bitcast %"class.std::__1::unique_ptr"* %110 to i64*
+  %113 = load i64, i64* %112, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %111, align 8
+  %114 = bitcast %"class.std::__1::unique_ptr"* %109 to i64*
+  store i64 %113, i64* %114, align 8
+  %115 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %77, i64 -7
+  %116 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %78, i64 -7
+  %117 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %116, i64 0, i32 0, i32 0, i32 0
+  %118 = bitcast %"class.std::__1::unique_ptr"* %116 to i64*
+  %119 = load i64, i64* %118, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %117, align 8
+  %120 = bitcast %"class.std::__1::unique_ptr"* %115 to i64*
+  store i64 %119, i64* %120, align 8
+  %121 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %77, i64 -8
+  %122 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %78, i64 -8
+  %123 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %122, i64 0, i32 0, i32 0, i32 0
+  %124 = bitcast %"class.std::__1::unique_ptr"* %122 to i64*
+  %125 = load i64, i64* %124, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %123, align 8
+  %126 = bitcast %"class.std::__1::unique_ptr"* %121 to i64*
+  store i64 %125, i64* %126, align 8
+  %127 = icmp eq %"class.std::__1::unique_ptr"* %122, %47
+  br i1 %127, label %128, label %76
+
+128:                                              ; preds = %76, %71
+  %129 = phi %"class.std::__1::unique_ptr"* [ %72, %71 ], [ %121, %76 ]
+  %130 = load i64, i64* %6, align 8
+  %131 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %3, align 8
+  br label %132
+
+132:                                              ; preds = %34, %128
+  %133 = phi %"class.std::__1::unique_ptr"* [ %131, %128 ], [ %47, %34 ]
+  %134 = phi %"class.std::__1::unique_ptr"* [ %129, %128 ], [ %37, %34 ]
+  %135 = phi i64 [ %130, %128 ], [ %48, %34 ]
+  %136 = ptrtoint %"class.std::__1::unique_ptr"* %134 to i64
+  store i64 %136, i64* %6, align 8
+  store i64 %45, i64* %4, align 8
+  store i64 %39, i64* %16, align 8
+  %137 = inttoptr i64 %135 to %"class.std::__1::unique_ptr"*
+  %138 = icmp eq %"class.std::__1::unique_ptr"* %133, %137
+  br i1 %138, label %152, label %139
+
+139:                                              ; preds = %132, %150
+  %140 = phi %"class.std::__1::unique_ptr"* [ %141, %150 ], [ %133, %132 ]
+  %141 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %140, i64 -1
+  %142 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %141, i64 0, i32 0, i32 0, i32 0
+  %143 = load %class.UndoOperation*, %class.UndoOperation** %142, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %142, align 8
+  %144 = icmp eq %class.UndoOperation* %143, null
+  br i1 %144, label %150, label %145
+
+145:                                              ; preds = %139
+  %146 = bitcast %class.UndoOperation* %143 to void (%class.UndoOperation*)***
+  %147 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %146, align 8
+  %148 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %147, i64 1
+  %149 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %148, align 8
+  tail call void %149(%class.UndoOperation* nonnull %143) #10
+  br label %150
+
+150:                                              ; preds = %145, %139
+  %151 = icmp eq %"class.std::__1::unique_ptr"* %141, %137
+  br i1 %151, label %152, label %139
+
+152:                                              ; preds = %150, %132
+  %153 = icmp eq i64 %135, 0
+  br i1 %153, label %156, label %154
+
+154:                                              ; preds = %152
+  %155 = inttoptr i64 %135 to i8*
+  tail call void @_ZdlPv(i8* %155) #11
+  br label %156
+
+156:                                              ; preds = %152, %154
+  ret void
+}
+
+; Function Attrs: noreturn
+declare void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"*) local_unnamed_addr #8
+
+; Function Attrs: noreturn nounwind
+declare void @abort() local_unnamed_addr #9
+
+declare void @_ZN4base8internal12LinkNodeBaseC2EPS1_S2_(%"class.base::internal::LinkNodeBase"*, %"class.base::internal::LinkNodeBase"*, %"class.base::internal::LinkNodeBase"*) unnamed_addr #2
+
+declare void @_ZN4base8internal12LinkNodeBase14RemoveFromListEv(%"class.base::internal::LinkNodeBase"*) local_unnamed_addr #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memmove.p0i8.p0i8.i64(i8* nocapture, i8* nocapture readonly, i64, i1 immarg) #1
+
+declare void @_ZN4base8internal12LinkNodeBaseC2Ev(%"class.base::internal::LinkNodeBase"*) unnamed_addr #2
+
+declare void @_ZN4base8internal12LinkNodeBase16InsertBeforeBaseEPS1_(%"class.base::internal::LinkNodeBase"*, %"class.base::internal::LinkNodeBase"*) local_unnamed_addr #2
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden void @_ZNSt3__16vectorINS_10unique_ptrI9UndoGroupNS_14default_deleteIS2_EEEENS_9allocatorIS5_EEE21__push_back_slow_pathIS5_EEvOT_(%"class.std::__1::vector.4"*, %"class.std::__1::unique_ptr.6"* dereferenceable(8)) local_unnamed_addr #6 comdat align 2 {
+  %3 = getelementptr inbounds %"class.std::__1::vector.4", %"class.std::__1::vector.4"* %0, i64 0, i32 0, i32 1
+  %4 = bitcast %"class.std::__1::unique_ptr.6"** %3 to i64*
+  %5 = load i64, i64* %4, align 8
+  %6 = bitcast %"class.std::__1::vector.4"* %0 to i64*
+  %7 = load i64, i64* %6, align 8
+  %8 = sub i64 %5, %7
+  %9 = ashr exact i64 %8, 3
+  %10 = add nsw i64 %9, 1
+  %11 = icmp ugt i64 %10, 2305843009213693951
+  br i1 %11, label %12, label %14
+
+12:                                               ; preds = %2
+  %13 = bitcast %"class.std::__1::vector.4"* %0 to %"class.std::__1::__vector_base_common"*
+  tail call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"* %13) #12
+  unreachable
+
+14:                                               ; preds = %2
+  %15 = getelementptr inbounds %"class.std::__1::vector.4", %"class.std::__1::vector.4"* %0, i64 0, i32 0, i32 2, i32 0, i32 0
+  %16 = bitcast %"class.std::__1::unique_ptr.6"** %15 to i64*
+  %17 = load i64, i64* %16, align 8
+  %18 = sub i64 %17, %7
+  %19 = ashr exact i64 %18, 3
+  %20 = icmp ult i64 %19, 1152921504606846975
+  br i1 %20, label %21, label %29
+
+21:                                               ; preds = %14
+  %22 = ashr exact i64 %18, 2
+  %23 = icmp ult i64 %22, %10
+  %24 = select i1 %23, i64 %10, i64 %22
+  %25 = icmp eq i64 %24, 0
+  br i1 %25, label %34, label %26
+
+26:                                               ; preds = %21
+  %27 = icmp ugt i64 %24, 2305843009213693951
+  br i1 %27, label %28, label %29
+
+28:                                               ; preds = %26
+  tail call void @abort() #12
+  unreachable
+
+29:                                               ; preds = %14, %26
+  %30 = phi i64 [ %24, %26 ], [ 2305843009213693951, %14 ]
+  %31 = shl i64 %30, 3
+  %32 = tail call i8* @_Znwm(i64 %31) #11
+  %33 = bitcast i8* %32 to %"class.std::__1::unique_ptr.6"*
+  br label %34
+
+34:                                               ; preds = %21, %29
+  %35 = phi i64 [ %30, %29 ], [ 0, %21 ]
+  %36 = phi %"class.std::__1::unique_ptr.6"* [ %33, %29 ], [ null, %21 ]
+  %37 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %36, i64 %9
+  %38 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %36, i64 %35
+  %39 = ptrtoint %"class.std::__1::unique_ptr.6"* %38 to i64
+  %40 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %1, i64 0, i32 0, i32 0, i32 0
+  %41 = bitcast %"class.std::__1::unique_ptr.6"* %1 to i64*
+  %42 = load i64, i64* %41, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %40, align 8
+  %43 = bitcast %"class.std::__1::unique_ptr.6"* %37 to i64*
+  store i64 %42, i64* %43, align 8
+  %44 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %37, i64 1
+  %45 = ptrtoint %"class.std::__1::unique_ptr.6"* %44 to i64
+  %46 = getelementptr inbounds %"class.std::__1::vector.4", %"class.std::__1::vector.4"* %0, i64 0, i32 0, i32 0
+  %47 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %46, align 8
+  %48 = ptrtoint %"class.std::__1::unique_ptr.6"* %47 to i64
+  %49 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %3, align 8
+  %50 = icmp eq %"class.std::__1::unique_ptr.6"* %49, %47
+  br i1 %50, label %132, label %51
+
+51:                                               ; preds = %34
+  %52 = getelementptr %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %49, i64 -1, i32 0, i32 0, i32 0
+  %53 = ptrtoint %class.UndoGroup** %52 to i64
+  %54 = sub i64 %53, %48
+  %55 = lshr i64 %54, 3
+  %56 = add nuw nsw i64 %55, 1
+  %57 = and i64 %56, 7
+  %58 = icmp eq i64 %57, 0
+  br i1 %58, label %71, label %59
+
+59:                                               ; preds = %51, %59
+  %60 = phi %"class.std::__1::unique_ptr.6"* [ %63, %59 ], [ %37, %51 ]
+  %61 = phi %"class.std::__1::unique_ptr.6"* [ %64, %59 ], [ %49, %51 ]
+  %62 = phi i64 [ %69, %59 ], [ %57, %51 ]
+  %63 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %60, i64 -1
+  %64 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %61, i64 -1
+  %65 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %64, i64 0, i32 0, i32 0, i32 0
+  %66 = bitcast %"class.std::__1::unique_ptr.6"* %64 to i64*
+  %67 = load i64, i64* %66, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %65, align 8
+  %68 = bitcast %"class.std::__1::unique_ptr.6"* %63 to i64*
+  store i64 %67, i64* %68, align 8
+  %69 = add i64 %62, -1
+  %70 = icmp eq i64 %69, 0
+  br i1 %70, label %71, label %59, !llvm.loop !13
+
+71:                                               ; preds = %59, %51
+  %72 = phi %"class.std::__1::unique_ptr.6"* [ undef, %51 ], [ %63, %59 ]
+  %73 = phi %"class.std::__1::unique_ptr.6"* [ %37, %51 ], [ %63, %59 ]
+  %74 = phi %"class.std::__1::unique_ptr.6"* [ %49, %51 ], [ %64, %59 ]
+  %75 = icmp ult i64 %54, 56
+  br i1 %75, label %128, label %76
+
+76:                                               ; preds = %71, %76
+  %77 = phi %"class.std::__1::unique_ptr.6"* [ %121, %76 ], [ %73, %71 ]
+  %78 = phi %"class.std::__1::unique_ptr.6"* [ %122, %76 ], [ %74, %71 ]
+  %79 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %77, i64 -1
+  %80 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %78, i64 -1
+  %81 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %80, i64 0, i32 0, i32 0, i32 0
+  %82 = bitcast %"class.std::__1::unique_ptr.6"* %80 to i64*
+  %83 = load i64, i64* %82, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %81, align 8
+  %84 = bitcast %"class.std::__1::unique_ptr.6"* %79 to i64*
+  store i64 %83, i64* %84, align 8
+  %85 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %77, i64 -2
+  %86 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %78, i64 -2
+  %87 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %86, i64 0, i32 0, i32 0, i32 0
+  %88 = bitcast %"class.std::__1::unique_ptr.6"* %86 to i64*
+  %89 = load i64, i64* %88, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %87, align 8
+  %90 = bitcast %"class.std::__1::unique_ptr.6"* %85 to i64*
+  store i64 %89, i64* %90, align 8
+  %91 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %77, i64 -3
+  %92 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %78, i64 -3
+  %93 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %92, i64 0, i32 0, i32 0, i32 0
+  %94 = bitcast %"class.std::__1::unique_ptr.6"* %92 to i64*
+  %95 = load i64, i64* %94, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %93, align 8
+  %96 = bitcast %"class.std::__1::unique_ptr.6"* %91 to i64*
+  store i64 %95, i64* %96, align 8
+  %97 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %77, i64 -4
+  %98 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %78, i64 -4
+  %99 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %98, i64 0, i32 0, i32 0, i32 0
+  %100 = bitcast %"class.std::__1::unique_ptr.6"* %98 to i64*
+  %101 = load i64, i64* %100, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %99, align 8
+  %102 = bitcast %"class.std::__1::unique_ptr.6"* %97 to i64*
+  store i64 %101, i64* %102, align 8
+  %103 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %77, i64 -5
+  %104 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %78, i64 -5
+  %105 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %104, i64 0, i32 0, i32 0, i32 0
+  %106 = bitcast %"class.std::__1::unique_ptr.6"* %104 to i64*
+  %107 = load i64, i64* %106, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %105, align 8
+  %108 = bitcast %"class.std::__1::unique_ptr.6"* %103 to i64*
+  store i64 %107, i64* %108, align 8
+  %109 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %77, i64 -6
+  %110 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %78, i64 -6
+  %111 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %110, i64 0, i32 0, i32 0, i32 0
+  %112 = bitcast %"class.std::__1::unique_ptr.6"* %110 to i64*
+  %113 = load i64, i64* %112, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %111, align 8
+  %114 = bitcast %"class.std::__1::unique_ptr.6"* %109 to i64*
+  store i64 %113, i64* %114, align 8
+  %115 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %77, i64 -7
+  %116 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %78, i64 -7
+  %117 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %116, i64 0, i32 0, i32 0, i32 0
+  %118 = bitcast %"class.std::__1::unique_ptr.6"* %116 to i64*
+  %119 = load i64, i64* %118, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %117, align 8
+  %120 = bitcast %"class.std::__1::unique_ptr.6"* %115 to i64*
+  store i64 %119, i64* %120, align 8
+  %121 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %77, i64 -8
+  %122 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %78, i64 -8
+  %123 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %122, i64 0, i32 0, i32 0, i32 0
+  %124 = bitcast %"class.std::__1::unique_ptr.6"* %122 to i64*
+  %125 = load i64, i64* %124, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %123, align 8
+  %126 = bitcast %"class.std::__1::unique_ptr.6"* %121 to i64*
+  store i64 %125, i64* %126, align 8
+  %127 = icmp eq %"class.std::__1::unique_ptr.6"* %122, %47
+  br i1 %127, label %128, label %76
+
+128:                                              ; preds = %76, %71
+  %129 = phi %"class.std::__1::unique_ptr.6"* [ %72, %71 ], [ %121, %76 ]
+  %130 = load i64, i64* %6, align 8
+  %131 = load %"class.std::__1::unique_ptr.6"*, %"class.std::__1::unique_ptr.6"** %3, align 8
+  br label %132
+
+132:                                              ; preds = %34, %128
+  %133 = phi %"class.std::__1::unique_ptr.6"* [ %131, %128 ], [ %47, %34 ]
+  %134 = phi %"class.std::__1::unique_ptr.6"* [ %129, %128 ], [ %37, %34 ]
+  %135 = phi i64 [ %130, %128 ], [ %48, %34 ]
+  %136 = ptrtoint %"class.std::__1::unique_ptr.6"* %134 to i64
+  store i64 %136, i64* %6, align 8
+  store i64 %45, i64* %4, align 8
+  store i64 %39, i64* %16, align 8
+  %137 = inttoptr i64 %135 to %"class.std::__1::unique_ptr.6"*
+  %138 = icmp eq %"class.std::__1::unique_ptr.6"* %133, %137
+  br i1 %138, label %176, label %139
+
+139:                                              ; preds = %132, %174
+  %140 = phi %"class.std::__1::unique_ptr.6"* [ %141, %174 ], [ %133, %132 ]
+  %141 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %140, i64 -1
+  %142 = getelementptr inbounds %"class.std::__1::unique_ptr.6", %"class.std::__1::unique_ptr.6"* %141, i64 0, i32 0, i32 0, i32 0
+  %143 = load %class.UndoGroup*, %class.UndoGroup** %142, align 8
+  store %class.UndoGroup* null, %class.UndoGroup** %142, align 8
+  %144 = icmp eq %class.UndoGroup* %143, null
+  br i1 %144, label %174, label %145
+
+145:                                              ; preds = %139
+  %146 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %143, i64 0, i32 0, i32 0, i32 0
+  %147 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %146, align 8
+  %148 = icmp eq %"class.std::__1::unique_ptr"* %147, null
+  br i1 %148, label %172, label %149
+
+149:                                              ; preds = %145
+  %150 = bitcast %"class.std::__1::unique_ptr"* %147 to i8*
+  %151 = getelementptr inbounds %class.UndoGroup, %class.UndoGroup* %143, i64 0, i32 0, i32 0, i32 1
+  %152 = load %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"** %151, align 8
+  %153 = icmp eq %"class.std::__1::unique_ptr"* %152, %147
+  br i1 %153, label %170, label %154
+
+154:                                              ; preds = %149, %165
+  %155 = phi %"class.std::__1::unique_ptr"* [ %156, %165 ], [ %152, %149 ]
+  %156 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %155, i64 -1
+  %157 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %156, i64 0, i32 0, i32 0, i32 0
+  %158 = load %class.UndoOperation*, %class.UndoOperation** %157, align 8
+  store %class.UndoOperation* null, %class.UndoOperation** %157, align 8
+  %159 = icmp eq %class.UndoOperation* %158, null
+  br i1 %159, label %165, label %160
+
+160:                                              ; preds = %154
+  %161 = bitcast %class.UndoOperation* %158 to void (%class.UndoOperation*)***
+  %162 = load void (%class.UndoOperation*)**, void (%class.UndoOperation*)*** %161, align 8
+  %163 = getelementptr inbounds void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %162, i64 1
+  %164 = load void (%class.UndoOperation*)*, void (%class.UndoOperation*)** %163, align 8
+  tail call void %164(%class.UndoOperation* nonnull %158) #10
+  br label %165
+
+165:                                              ; preds = %160, %154
+  %166 = icmp eq %"class.std::__1::unique_ptr"* %156, %147
+  br i1 %166, label %167, label %154
+
+167:                                              ; preds = %165
+  %168 = bitcast %class.UndoGroup* %143 to i8**
+  %169 = load i8*, i8** %168, align 8
+  br label %170
+
+170:                                              ; preds = %167, %149
+  %171 = phi i8* [ %169, %167 ], [ %150, %149 ]
+  store %"class.std::__1::unique_ptr"* %147, %"class.std::__1::unique_ptr"** %151, align 8
+  tail call void @_ZdlPv(i8* %171) #11
+  br label %172
+
+172:                                              ; preds = %170, %145
+  %173 = bitcast %class.UndoGroup* %143 to i8*
+  tail call void @_ZdlPv(i8* %173) #11
+  br label %174
+
+174:                                              ; preds = %172, %139
+  %175 = icmp eq %"class.std::__1::unique_ptr.6"* %141, %137
+  br i1 %175, label %176, label %139
+
+176:                                              ; preds = %174, %132
+  %177 = icmp eq i64 %135, 0
+  br i1 %177, label %180, label %178
+
+178:                                              ; preds = %176
+  %179 = inttoptr i64 %135 to i8*
+  tail call void @_ZdlPv(i8* %179) #11
+  br label %180
+
+180:                                              ; preds = %176, %178
+  ret void
+}
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { argmemonly nounwind }
+attributes #2 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { norecurse nounwind readonly ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nofree norecurse nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { inlinehint nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { noreturn "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #9 = { noreturn nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #10 = { nounwind }
+attributes #11 = { builtin nounwind }
+attributes #12 = { noreturn nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{i8 0, i8 2}
+!3 = !{!4}
+!4 = distinct !{!4, !5, !"_ZNK4base12ObserverListI19UndoManagerObserverLb0ELb1ENS_8internal24UncheckedObserverAdapterEE5beginEv: argument 0"}
+!5 = distinct !{!5, !"_ZNK4base12ObserverListI19UndoManagerObserverLb0ELb1ENS_8internal24UncheckedObserverAdapterEE5beginEv"}
+!6 = !{!7}
+!7 = distinct !{!7, !8, !"_ZNK4base12ObserverListI19UndoManagerObserverLb0ELb1ENS_8internal24UncheckedObserverAdapterEE3endEv: argument 0"}
+!8 = distinct !{!8, !"_ZNK4base12ObserverListI19UndoManagerObserverLb0ELb1ENS_8internal24UncheckedObserverAdapterEE3endEv"}
+!9 = distinct !{!9, !10}
+!10 = !{!"llvm.loop.unroll.disable"}
+!11 = distinct !{!11, !10}
+!12 = distinct !{!12, !10}
+!13 = distinct !{!13, !10}

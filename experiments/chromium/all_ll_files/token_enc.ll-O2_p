@@ -1,0 +1,1808 @@
+; ModuleID = '../../third_party/libwebp/src/enc/token_enc.c'
+source_filename = "../../third_party/libwebp/src/enc/token_enc.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.VP8TBuffer = type { %struct.VP8Tokens*, %struct.VP8Tokens**, i16*, i32, i32, i32 }
+%struct.VP8Tokens = type { %struct.VP8Tokens* }
+%struct.VP8Residual = type { i32, i32, i16*, i32, [3 x [11 x i8]]*, [3 x [11 x i32]]*, [3 x i16*]* }
+%struct.VP8BitWriter = type { i32, i32, i32, i32, i8*, i64, i64, i32 }
+
+@VP8EncBands = external local_unnamed_addr constant [17 x i8], align 16
+@VP8Cat3 = external local_unnamed_addr constant [0 x i8], align 1
+@VP8Cat4 = external local_unnamed_addr constant [0 x i8], align 1
+@VP8Cat5 = external local_unnamed_addr constant [0 x i8], align 1
+@VP8Cat6 = external local_unnamed_addr constant [0 x i8], align 1
+@VP8EntropyCost = external local_unnamed_addr constant [256 x i16], align 16
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable writeonly
+define hidden void @VP8TBufferInit(%struct.VP8TBuffer*, i32) local_unnamed_addr #0 {
+  %3 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %0, i64 0, i32 2
+  store i16* null, i16** %3, align 8
+  %4 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %0, i64 0, i32 0
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %4, align 8
+  %5 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %0, i64 0, i32 1
+  store %struct.VP8Tokens** %4, %struct.VP8Tokens*** %5, align 8
+  %6 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %0, i64 0, i32 3
+  store i32 0, i32* %6, align 8
+  %7 = icmp sgt i32 %1, 8192
+  %8 = select i1 %7, i32 %1, i32 8192
+  %9 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %0, i64 0, i32 4
+  store i32 %8, i32* %9, align 4
+  %10 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %0, i64 0, i32 5
+  store i32 0, i32* %10, align 8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @VP8TBufferClear(%struct.VP8TBuffer*) local_unnamed_addr #1 {
+  %2 = icmp eq %struct.VP8TBuffer* %0, null
+  br i1 %2, label %22, label %3
+
+3:                                                ; preds = %1
+  %4 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %0, i64 0, i32 0
+  %5 = load %struct.VP8Tokens*, %struct.VP8Tokens** %4, align 8
+  %6 = icmp eq %struct.VP8Tokens* %5, null
+  br i1 %6, label %13, label %7
+
+7:                                                ; preds = %3, %7
+  %8 = phi %struct.VP8Tokens* [ %11, %7 ], [ %5, %3 ]
+  %9 = bitcast %struct.VP8Tokens* %8 to i8*
+  %10 = getelementptr inbounds %struct.VP8Tokens, %struct.VP8Tokens* %8, i64 0, i32 0
+  %11 = load %struct.VP8Tokens*, %struct.VP8Tokens** %10, align 8
+  tail call void @WebPSafeFree(i8* %9) #4
+  %12 = icmp eq %struct.VP8Tokens* %11, null
+  br i1 %12, label %13, label %7
+
+13:                                               ; preds = %7, %3
+  %14 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %0, i64 0, i32 4
+  %15 = load i32, i32* %14, align 4
+  %16 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %0, i64 0, i32 2
+  store i16* null, i16** %16, align 8
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %4, align 8
+  %17 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %0, i64 0, i32 1
+  store %struct.VP8Tokens** %4, %struct.VP8Tokens*** %17, align 8
+  %18 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %0, i64 0, i32 3
+  store i32 0, i32* %18, align 8
+  %19 = icmp sgt i32 %15, 8192
+  %20 = select i1 %19, i32 %15, i32 8192
+  store i32 %20, i32* %14, align 4
+  %21 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %0, i64 0, i32 5
+  store i32 0, i32* %21, align 8
+  br label %22
+
+22:                                               ; preds = %1, %13
+  ret void
+}
+
+declare void @WebPSafeFree(i8*) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @VP8RecordCoeffTokens(i32, %struct.VP8Residual* nocapture readonly, %struct.VP8TBuffer*) local_unnamed_addr #1 {
+  %4 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %1, i64 0, i32 2
+  %5 = load i16*, i16** %4, align 8
+  %6 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %1, i64 0, i32 3
+  %7 = load i32, i32* %6, align 8
+  %8 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %1, i64 0, i32 1
+  %9 = load i32, i32* %8, align 4
+  %10 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %1, i64 0, i32 0
+  %11 = load i32, i32* %10, align 8
+  %12 = shl nsw i32 %7, 3
+  %13 = add nsw i32 %11, %12
+  %14 = mul nsw i32 %13, 3
+  %15 = add nsw i32 %14, %0
+  %16 = mul nsw i32 %15, 11
+  %17 = getelementptr inbounds %struct.VP8Residual, %struct.VP8Residual* %1, i64 0, i32 5
+  %18 = load [3 x [11 x i32]]*, [3 x [11 x i32]]** %17, align 8
+  %19 = sext i32 %11 to i64
+  %20 = sext i32 %0 to i64
+  %21 = getelementptr inbounds [3 x [11 x i32]], [3 x [11 x i32]]* %18, i64 %19, i64 %20, i64 0
+  %22 = lshr i32 %9, 31
+  %23 = xor i32 %22, 1
+  %24 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %2, i64 0, i32 3
+  %25 = load i32, i32* %24, align 8
+  %26 = icmp sgt i32 %25, 0
+  br i1 %26, label %27, label %30
+
+27:                                               ; preds = %3
+  %28 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %2, i64 0, i32 2
+  %29 = load i16*, i16** %28, align 8
+  br label %54
+
+30:                                               ; preds = %3
+  %31 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %2, i64 0, i32 5
+  %32 = load i32, i32* %31, align 8
+  %33 = icmp eq i32 %32, 0
+  br i1 %33, label %34, label %42
+
+34:                                               ; preds = %30
+  %35 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %2, i64 0, i32 4
+  %36 = load i32, i32* %35, align 4
+  %37 = sext i32 %36 to i64
+  %38 = shl nsw i64 %37, 1
+  %39 = add nsw i64 %38, 8
+  %40 = tail call i8* @WebPSafeMalloc(i64 1, i64 %39) #4
+  %41 = icmp eq i8* %40, null
+  br i1 %41, label %42, label %43
+
+42:                                               ; preds = %34, %30
+  store i32 1, i32* %31, align 8
+  br label %63
+
+43:                                               ; preds = %34
+  %44 = bitcast i8* %40 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %44, align 8
+  %45 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %2, i64 0, i32 1
+  %46 = bitcast %struct.VP8Tokens*** %45 to i8***
+  %47 = load i8**, i8*** %46, align 8
+  store i8* %40, i8** %47, align 8
+  %48 = bitcast %struct.VP8Tokens*** %45 to i8**
+  store i8* %40, i8** %48, align 8
+  %49 = load i32, i32* %35, align 4
+  store i32 %49, i32* %24, align 8
+  %50 = getelementptr inbounds i8, i8* %40, i64 8
+  %51 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %2, i64 0, i32 2
+  %52 = bitcast i16** %51 to i8**
+  store i8* %50, i8** %52, align 8
+  %53 = bitcast i8* %50 to i16*
+  br label %54
+
+54:                                               ; preds = %43, %27
+  %55 = phi i16* [ %53, %43 ], [ %29, %27 ]
+  %56 = phi i32 [ %49, %43 ], [ %25, %27 ]
+  %57 = add nsw i32 %56, -1
+  store i32 %57, i32* %24, align 8
+  %58 = shl nuw nsw i32 %23, 15
+  %59 = or i32 %16, %58
+  %60 = trunc i32 %59 to i16
+  %61 = sext i32 %57 to i64
+  %62 = getelementptr inbounds i16, i16* %55, i64 %61
+  store i16 %60, i16* %62, align 2
+  br label %63
+
+63:                                               ; preds = %54, %42
+  %64 = load i32, i32* %21, align 4
+  %65 = icmp ugt i32 %64, -131073
+  br i1 %65, label %66, label %70
+
+66:                                               ; preds = %63
+  %67 = add nsw i32 %64, 1
+  %68 = lshr i32 %67, 1
+  %69 = and i32 %68, 2147450879
+  br label %70
+
+70:                                               ; preds = %63, %66
+  %71 = phi i32 [ %69, %66 ], [ %64, %63 ]
+  %72 = or i32 %23, 65536
+  %73 = add i32 %71, %72
+  store i32 %73, i32* %21, align 4
+  %74 = icmp eq i32 %23, 0
+  br i1 %74, label %952, label %75
+
+75:                                               ; preds = %70
+  %76 = icmp slt i32 %11, 16
+  br i1 %76, label %77, label %952
+
+77:                                               ; preds = %75
+  %78 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %2, i64 0, i32 5
+  %79 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %2, i64 0, i32 4
+  %80 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %2, i64 0, i32 1
+  %81 = bitcast %struct.VP8Tokens*** %80 to i8***
+  %82 = bitcast %struct.VP8Tokens*** %80 to i8**
+  %83 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %2, i64 0, i32 2
+  %84 = bitcast i16** %83 to i8**
+  %85 = sext i32 %9 to i64
+  br label %86
+
+86:                                               ; preds = %948, %77
+  %87 = phi i64 [ %19, %77 ], [ %90, %948 ]
+  %88 = phi i32* [ %21, %77 ], [ %950, %948 ]
+  %89 = phi i32 [ %16, %77 ], [ %949, %948 ]
+  %90 = add nsw i64 %87, 1
+  %91 = getelementptr inbounds i16, i16* %5, i64 %87
+  %92 = load i16, i16* %91, align 2
+  %93 = sext i16 %92 to i32
+  %94 = icmp slt i16 %92, 0
+  %95 = and i16 %92, -32768
+  %96 = sub nsw i32 0, %93
+  %97 = select i1 %94, i32 %96, i32 %93
+  %98 = icmp ne i16 %92, 0
+  %99 = zext i1 %98 to i32
+  %100 = add i32 %89, 1
+  %101 = getelementptr inbounds i32, i32* %88, i64 1
+  %102 = load i32, i32* %24, align 8
+  %103 = icmp sgt i32 %102, 0
+  br i1 %103, label %104, label %106
+
+104:                                              ; preds = %86
+  %105 = load i16*, i16** %83, align 8
+  br label %123
+
+106:                                              ; preds = %86
+  %107 = load i32, i32* %78, align 8
+  %108 = icmp eq i32 %107, 0
+  br i1 %108, label %109, label %116
+
+109:                                              ; preds = %106
+  %110 = load i32, i32* %79, align 4
+  %111 = sext i32 %110 to i64
+  %112 = shl nsw i64 %111, 1
+  %113 = add nsw i64 %112, 8
+  %114 = tail call i8* @WebPSafeMalloc(i64 1, i64 %113) #4
+  %115 = icmp eq i8* %114, null
+  br i1 %115, label %116, label %117
+
+116:                                              ; preds = %109, %106
+  store i32 1, i32* %78, align 8
+  br label %132
+
+117:                                              ; preds = %109
+  %118 = bitcast i8* %114 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %118, align 8
+  %119 = load i8**, i8*** %81, align 8
+  store i8* %114, i8** %119, align 8
+  store i8* %114, i8** %82, align 8
+  %120 = load i32, i32* %79, align 4
+  store i32 %120, i32* %24, align 8
+  %121 = getelementptr inbounds i8, i8* %114, i64 8
+  store i8* %121, i8** %84, align 8
+  %122 = bitcast i8* %121 to i16*
+  br label %123
+
+123:                                              ; preds = %117, %104
+  %124 = phi i16* [ %122, %117 ], [ %105, %104 ]
+  %125 = phi i32 [ %120, %117 ], [ %102, %104 ]
+  %126 = add nsw i32 %125, -1
+  store i32 %126, i32* %24, align 8
+  %127 = shl nuw nsw i32 %99, 15
+  %128 = or i32 %127, %100
+  %129 = trunc i32 %128 to i16
+  %130 = sext i32 %126 to i64
+  %131 = getelementptr inbounds i16, i16* %124, i64 %130
+  store i16 %129, i16* %131, align 2
+  br label %132
+
+132:                                              ; preds = %123, %116
+  %133 = load i32, i32* %101, align 4
+  %134 = icmp ugt i32 %133, -131073
+  br i1 %134, label %135, label %139
+
+135:                                              ; preds = %132
+  %136 = add nsw i32 %133, 1
+  %137 = lshr i32 %136, 1
+  %138 = and i32 %137, 2147450879
+  br label %139
+
+139:                                              ; preds = %132, %135
+  %140 = phi i32 [ %138, %135 ], [ %133, %132 ]
+  %141 = select i1 %98, i32 65537, i32 65536
+  %142 = add nuw i32 %140, %141
+  store i32 %142, i32* %101, align 4
+  br i1 %98, label %152, label %143
+
+143:                                              ; preds = %139
+  %144 = getelementptr inbounds [17 x i8], [17 x i8]* @VP8EncBands, i64 0, i64 %90
+  %145 = load i8, i8* %144, align 1
+  %146 = zext i8 %145 to i32
+  %147 = add nsw i32 %12, %146
+  %148 = mul i32 %147, 33
+  %149 = load [3 x [11 x i32]]*, [3 x [11 x i32]]** %17, align 8
+  %150 = zext i8 %145 to i64
+  %151 = getelementptr inbounds [3 x [11 x i32]], [3 x [11 x i32]]* %149, i64 %150, i64 0, i64 0
+  br label %948
+
+152:                                              ; preds = %139
+  %153 = icmp ugt i32 %97, 1
+  %154 = zext i1 %153 to i32
+  %155 = add i32 %89, 2
+  %156 = getelementptr inbounds i32, i32* %88, i64 2
+  %157 = load i32, i32* %24, align 8
+  %158 = icmp sgt i32 %157, 0
+  br i1 %158, label %159, label %161
+
+159:                                              ; preds = %152
+  %160 = load i16*, i16** %83, align 8
+  br label %178
+
+161:                                              ; preds = %152
+  %162 = load i32, i32* %78, align 8
+  %163 = icmp eq i32 %162, 0
+  br i1 %163, label %164, label %171
+
+164:                                              ; preds = %161
+  %165 = load i32, i32* %79, align 4
+  %166 = sext i32 %165 to i64
+  %167 = shl nsw i64 %166, 1
+  %168 = add nsw i64 %167, 8
+  %169 = tail call i8* @WebPSafeMalloc(i64 1, i64 %168) #4
+  %170 = icmp eq i8* %169, null
+  br i1 %170, label %171, label %172
+
+171:                                              ; preds = %164, %161
+  store i32 1, i32* %78, align 8
+  br label %187
+
+172:                                              ; preds = %164
+  %173 = bitcast i8* %169 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %173, align 8
+  %174 = load i8**, i8*** %81, align 8
+  store i8* %169, i8** %174, align 8
+  store i8* %169, i8** %82, align 8
+  %175 = load i32, i32* %79, align 4
+  store i32 %175, i32* %24, align 8
+  %176 = getelementptr inbounds i8, i8* %169, i64 8
+  store i8* %176, i8** %84, align 8
+  %177 = bitcast i8* %176 to i16*
+  br label %178
+
+178:                                              ; preds = %172, %159
+  %179 = phi i16* [ %177, %172 ], [ %160, %159 ]
+  %180 = phi i32 [ %175, %172 ], [ %157, %159 ]
+  %181 = add nsw i32 %180, -1
+  store i32 %181, i32* %24, align 8
+  %182 = shl nuw nsw i32 %154, 15
+  %183 = or i32 %182, %155
+  %184 = trunc i32 %183 to i16
+  %185 = sext i32 %181 to i64
+  %186 = getelementptr inbounds i16, i16* %179, i64 %185
+  store i16 %184, i16* %186, align 2
+  br label %187
+
+187:                                              ; preds = %178, %171
+  %188 = load i32, i32* %156, align 4
+  %189 = icmp ugt i32 %188, -131073
+  br i1 %189, label %190, label %194
+
+190:                                              ; preds = %187
+  %191 = add nsw i32 %188, 1
+  %192 = lshr i32 %191, 1
+  %193 = and i32 %192, 2147450879
+  br label %194
+
+194:                                              ; preds = %187, %190
+  %195 = phi i32 [ %193, %190 ], [ %188, %187 ]
+  %196 = select i1 %153, i32 65537, i32 65536
+  %197 = add nuw i32 %195, %196
+  store i32 %197, i32* %156, align 4
+  br i1 %153, label %198, label %862
+
+198:                                              ; preds = %194
+  %199 = icmp ugt i32 %97, 4
+  %200 = zext i1 %199 to i32
+  %201 = add i32 %89, 3
+  %202 = getelementptr inbounds i32, i32* %88, i64 3
+  %203 = load i32, i32* %24, align 8
+  %204 = icmp sgt i32 %203, 0
+  br i1 %204, label %205, label %207
+
+205:                                              ; preds = %198
+  %206 = load i16*, i16** %83, align 8
+  br label %224
+
+207:                                              ; preds = %198
+  %208 = load i32, i32* %78, align 8
+  %209 = icmp eq i32 %208, 0
+  br i1 %209, label %210, label %217
+
+210:                                              ; preds = %207
+  %211 = load i32, i32* %79, align 4
+  %212 = sext i32 %211 to i64
+  %213 = shl nsw i64 %212, 1
+  %214 = add nsw i64 %213, 8
+  %215 = tail call i8* @WebPSafeMalloc(i64 1, i64 %214) #4
+  %216 = icmp eq i8* %215, null
+  br i1 %216, label %217, label %218
+
+217:                                              ; preds = %210, %207
+  store i32 1, i32* %78, align 8
+  br label %233
+
+218:                                              ; preds = %210
+  %219 = bitcast i8* %215 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %219, align 8
+  %220 = load i8**, i8*** %81, align 8
+  store i8* %215, i8** %220, align 8
+  store i8* %215, i8** %82, align 8
+  %221 = load i32, i32* %79, align 4
+  store i32 %221, i32* %24, align 8
+  %222 = getelementptr inbounds i8, i8* %215, i64 8
+  store i8* %222, i8** %84, align 8
+  %223 = bitcast i8* %222 to i16*
+  br label %224
+
+224:                                              ; preds = %218, %205
+  %225 = phi i16* [ %223, %218 ], [ %206, %205 ]
+  %226 = phi i32 [ %221, %218 ], [ %203, %205 ]
+  %227 = add nsw i32 %226, -1
+  store i32 %227, i32* %24, align 8
+  %228 = shl nuw nsw i32 %200, 15
+  %229 = or i32 %228, %201
+  %230 = trunc i32 %229 to i16
+  %231 = sext i32 %227 to i64
+  %232 = getelementptr inbounds i16, i16* %225, i64 %231
+  store i16 %230, i16* %232, align 2
+  br label %233
+
+233:                                              ; preds = %224, %217
+  %234 = load i32, i32* %202, align 4
+  %235 = icmp ugt i32 %234, -131073
+  br i1 %235, label %236, label %240
+
+236:                                              ; preds = %233
+  %237 = add nsw i32 %234, 1
+  %238 = lshr i32 %237, 1
+  %239 = and i32 %238, 2147450879
+  br label %240
+
+240:                                              ; preds = %233, %236
+  %241 = phi i32 [ %239, %236 ], [ %234, %233 ]
+  %242 = select i1 %199, i32 65537, i32 65536
+  %243 = add nuw i32 %241, %242
+  store i32 %243, i32* %202, align 4
+  br i1 %199, label %336, label %244
+
+244:                                              ; preds = %240
+  %245 = icmp ne i32 %97, 2
+  %246 = zext i1 %245 to i32
+  %247 = add i32 %89, 4
+  %248 = getelementptr inbounds i32, i32* %88, i64 4
+  %249 = load i32, i32* %24, align 8
+  %250 = icmp sgt i32 %249, 0
+  br i1 %250, label %251, label %253
+
+251:                                              ; preds = %244
+  %252 = load i16*, i16** %83, align 8
+  br label %270
+
+253:                                              ; preds = %244
+  %254 = load i32, i32* %78, align 8
+  %255 = icmp eq i32 %254, 0
+  br i1 %255, label %256, label %263
+
+256:                                              ; preds = %253
+  %257 = load i32, i32* %79, align 4
+  %258 = sext i32 %257 to i64
+  %259 = shl nsw i64 %258, 1
+  %260 = add nsw i64 %259, 8
+  %261 = tail call i8* @WebPSafeMalloc(i64 1, i64 %260) #4
+  %262 = icmp eq i8* %261, null
+  br i1 %262, label %263, label %264
+
+263:                                              ; preds = %256, %253
+  store i32 1, i32* %78, align 8
+  br label %279
+
+264:                                              ; preds = %256
+  %265 = bitcast i8* %261 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %265, align 8
+  %266 = load i8**, i8*** %81, align 8
+  store i8* %261, i8** %266, align 8
+  store i8* %261, i8** %82, align 8
+  %267 = load i32, i32* %79, align 4
+  store i32 %267, i32* %24, align 8
+  %268 = getelementptr inbounds i8, i8* %261, i64 8
+  store i8* %268, i8** %84, align 8
+  %269 = bitcast i8* %268 to i16*
+  br label %270
+
+270:                                              ; preds = %264, %251
+  %271 = phi i16* [ %269, %264 ], [ %252, %251 ]
+  %272 = phi i32 [ %267, %264 ], [ %249, %251 ]
+  %273 = add nsw i32 %272, -1
+  store i32 %273, i32* %24, align 8
+  %274 = shl nuw nsw i32 %246, 15
+  %275 = or i32 %274, %247
+  %276 = trunc i32 %275 to i16
+  %277 = sext i32 %273 to i64
+  %278 = getelementptr inbounds i16, i16* %271, i64 %277
+  store i16 %276, i16* %278, align 2
+  br label %279
+
+279:                                              ; preds = %270, %263
+  %280 = load i32, i32* %248, align 4
+  %281 = icmp ugt i32 %280, -131073
+  br i1 %281, label %282, label %286
+
+282:                                              ; preds = %279
+  %283 = add nsw i32 %280, 1
+  %284 = lshr i32 %283, 1
+  %285 = and i32 %284, 2147450879
+  br label %286
+
+286:                                              ; preds = %279, %282
+  %287 = phi i32 [ %285, %282 ], [ %280, %279 ]
+  %288 = select i1 %245, i32 65537, i32 65536
+  %289 = add nuw i32 %287, %288
+  store i32 %289, i32* %248, align 4
+  br i1 %245, label %290, label %862
+
+290:                                              ; preds = %286
+  %291 = icmp eq i32 %97, 4
+  %292 = zext i1 %291 to i32
+  %293 = add i32 %89, 5
+  %294 = getelementptr inbounds i32, i32* %88, i64 5
+  %295 = load i32, i32* %24, align 8
+  %296 = icmp sgt i32 %295, 0
+  br i1 %296, label %297, label %299
+
+297:                                              ; preds = %290
+  %298 = load i16*, i16** %83, align 8
+  br label %316
+
+299:                                              ; preds = %290
+  %300 = load i32, i32* %78, align 8
+  %301 = icmp eq i32 %300, 0
+  br i1 %301, label %302, label %309
+
+302:                                              ; preds = %299
+  %303 = load i32, i32* %79, align 4
+  %304 = sext i32 %303 to i64
+  %305 = shl nsw i64 %304, 1
+  %306 = add nsw i64 %305, 8
+  %307 = tail call i8* @WebPSafeMalloc(i64 1, i64 %306) #4
+  %308 = icmp eq i8* %307, null
+  br i1 %308, label %309, label %310
+
+309:                                              ; preds = %302, %299
+  store i32 1, i32* %78, align 8
+  br label %325
+
+310:                                              ; preds = %302
+  %311 = bitcast i8* %307 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %311, align 8
+  %312 = load i8**, i8*** %81, align 8
+  store i8* %307, i8** %312, align 8
+  store i8* %307, i8** %82, align 8
+  %313 = load i32, i32* %79, align 4
+  store i32 %313, i32* %24, align 8
+  %314 = getelementptr inbounds i8, i8* %307, i64 8
+  store i8* %314, i8** %84, align 8
+  %315 = bitcast i8* %314 to i16*
+  br label %316
+
+316:                                              ; preds = %310, %297
+  %317 = phi i16* [ %315, %310 ], [ %298, %297 ]
+  %318 = phi i32 [ %313, %310 ], [ %295, %297 ]
+  %319 = add nsw i32 %318, -1
+  store i32 %319, i32* %24, align 8
+  %320 = shl nuw nsw i32 %292, 15
+  %321 = or i32 %320, %293
+  %322 = trunc i32 %321 to i16
+  %323 = sext i32 %319 to i64
+  %324 = getelementptr inbounds i16, i16* %317, i64 %323
+  store i16 %322, i16* %324, align 2
+  br label %325
+
+325:                                              ; preds = %316, %309
+  %326 = load i32, i32* %294, align 4
+  %327 = icmp ugt i32 %326, -131073
+  br i1 %327, label %328, label %332
+
+328:                                              ; preds = %325
+  %329 = add nsw i32 %326, 1
+  %330 = lshr i32 %329, 1
+  %331 = and i32 %330, 2147450879
+  br label %332
+
+332:                                              ; preds = %325, %328
+  %333 = phi i32 [ %331, %328 ], [ %326, %325 ]
+  %334 = select i1 %291, i32 65537, i32 65536
+  %335 = add nuw i32 %333, %334
+  store i32 %335, i32* %294, align 4
+  br label %862
+
+336:                                              ; preds = %240
+  %337 = icmp ugt i32 %97, 10
+  %338 = zext i1 %337 to i32
+  %339 = add i32 %89, 6
+  %340 = getelementptr inbounds i32, i32* %88, i64 6
+  %341 = load i32, i32* %24, align 8
+  %342 = icmp sgt i32 %341, 0
+  br i1 %342, label %343, label %345
+
+343:                                              ; preds = %336
+  %344 = load i16*, i16** %83, align 8
+  br label %362
+
+345:                                              ; preds = %336
+  %346 = load i32, i32* %78, align 8
+  %347 = icmp eq i32 %346, 0
+  br i1 %347, label %348, label %355
+
+348:                                              ; preds = %345
+  %349 = load i32, i32* %79, align 4
+  %350 = sext i32 %349 to i64
+  %351 = shl nsw i64 %350, 1
+  %352 = add nsw i64 %351, 8
+  %353 = tail call i8* @WebPSafeMalloc(i64 1, i64 %352) #4
+  %354 = icmp eq i8* %353, null
+  br i1 %354, label %355, label %356
+
+355:                                              ; preds = %348, %345
+  store i32 1, i32* %78, align 8
+  br label %371
+
+356:                                              ; preds = %348
+  %357 = bitcast i8* %353 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %357, align 8
+  %358 = load i8**, i8*** %81, align 8
+  store i8* %353, i8** %358, align 8
+  store i8* %353, i8** %82, align 8
+  %359 = load i32, i32* %79, align 4
+  store i32 %359, i32* %24, align 8
+  %360 = getelementptr inbounds i8, i8* %353, i64 8
+  store i8* %360, i8** %84, align 8
+  %361 = bitcast i8* %360 to i16*
+  br label %362
+
+362:                                              ; preds = %356, %343
+  %363 = phi i16* [ %361, %356 ], [ %344, %343 ]
+  %364 = phi i32 [ %359, %356 ], [ %341, %343 ]
+  %365 = add nsw i32 %364, -1
+  store i32 %365, i32* %24, align 8
+  %366 = shl nuw nsw i32 %338, 15
+  %367 = or i32 %366, %339
+  %368 = trunc i32 %367 to i16
+  %369 = sext i32 %365 to i64
+  %370 = getelementptr inbounds i16, i16* %363, i64 %369
+  store i16 %368, i16* %370, align 2
+  br label %371
+
+371:                                              ; preds = %362, %355
+  %372 = load i32, i32* %340, align 4
+  %373 = icmp ugt i32 %372, -131073
+  br i1 %373, label %374, label %378
+
+374:                                              ; preds = %371
+  %375 = add nsw i32 %372, 1
+  %376 = lshr i32 %375, 1
+  %377 = and i32 %376, 2147450879
+  br label %378
+
+378:                                              ; preds = %371, %374
+  %379 = phi i32 [ %377, %374 ], [ %372, %371 ]
+  %380 = select i1 %337, i32 65537, i32 65536
+  %381 = add nuw i32 %379, %380
+  store i32 %381, i32* %340, align 4
+  br i1 %337, label %523, label %382
+
+382:                                              ; preds = %378
+  %383 = icmp ugt i32 %97, 6
+  %384 = zext i1 %383 to i32
+  %385 = add i32 %89, 7
+  %386 = getelementptr inbounds i32, i32* %88, i64 7
+  %387 = load i32, i32* %24, align 8
+  %388 = icmp sgt i32 %387, 0
+  br i1 %388, label %389, label %391
+
+389:                                              ; preds = %382
+  %390 = load i16*, i16** %83, align 8
+  br label %408
+
+391:                                              ; preds = %382
+  %392 = load i32, i32* %78, align 8
+  %393 = icmp eq i32 %392, 0
+  br i1 %393, label %394, label %401
+
+394:                                              ; preds = %391
+  %395 = load i32, i32* %79, align 4
+  %396 = sext i32 %395 to i64
+  %397 = shl nsw i64 %396, 1
+  %398 = add nsw i64 %397, 8
+  %399 = tail call i8* @WebPSafeMalloc(i64 1, i64 %398) #4
+  %400 = icmp eq i8* %399, null
+  br i1 %400, label %401, label %402
+
+401:                                              ; preds = %394, %391
+  store i32 1, i32* %78, align 8
+  br label %417
+
+402:                                              ; preds = %394
+  %403 = bitcast i8* %399 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %403, align 8
+  %404 = load i8**, i8*** %81, align 8
+  store i8* %399, i8** %404, align 8
+  store i8* %399, i8** %82, align 8
+  %405 = load i32, i32* %79, align 4
+  store i32 %405, i32* %24, align 8
+  %406 = getelementptr inbounds i8, i8* %399, i64 8
+  store i8* %406, i8** %84, align 8
+  %407 = bitcast i8* %406 to i16*
+  br label %408
+
+408:                                              ; preds = %402, %389
+  %409 = phi i16* [ %407, %402 ], [ %390, %389 ]
+  %410 = phi i32 [ %405, %402 ], [ %387, %389 ]
+  %411 = add nsw i32 %410, -1
+  store i32 %411, i32* %24, align 8
+  %412 = shl nuw nsw i32 %384, 15
+  %413 = or i32 %412, %385
+  %414 = trunc i32 %413 to i16
+  %415 = sext i32 %411 to i64
+  %416 = getelementptr inbounds i16, i16* %409, i64 %415
+  store i16 %414, i16* %416, align 2
+  br label %417
+
+417:                                              ; preds = %408, %401
+  %418 = load i32, i32* %386, align 4
+  %419 = icmp ugt i32 %418, -131073
+  br i1 %419, label %420, label %424
+
+420:                                              ; preds = %417
+  %421 = add nsw i32 %418, 1
+  %422 = lshr i32 %421, 1
+  %423 = and i32 %422, 2147450879
+  br label %424
+
+424:                                              ; preds = %417, %420
+  %425 = phi i32 [ %423, %420 ], [ %418, %417 ]
+  %426 = select i1 %383, i32 65537, i32 65536
+  %427 = add nuw i32 %425, %426
+  store i32 %427, i32* %386, align 4
+  br i1 %383, label %460, label %428
+
+428:                                              ; preds = %424
+  %429 = icmp eq i32 %97, 6
+  %430 = zext i1 %429 to i16
+  %431 = load i32, i32* %24, align 8
+  %432 = icmp sgt i32 %431, 0
+  br i1 %432, label %433, label %435
+
+433:                                              ; preds = %428
+  %434 = load i16*, i16** %83, align 8
+  br label %452
+
+435:                                              ; preds = %428
+  %436 = load i32, i32* %78, align 8
+  %437 = icmp eq i32 %436, 0
+  br i1 %437, label %438, label %445
+
+438:                                              ; preds = %435
+  %439 = load i32, i32* %79, align 4
+  %440 = sext i32 %439 to i64
+  %441 = shl nsw i64 %440, 1
+  %442 = add nsw i64 %441, 8
+  %443 = tail call i8* @WebPSafeMalloc(i64 1, i64 %442) #4
+  %444 = icmp eq i8* %443, null
+  br i1 %444, label %445, label %446
+
+445:                                              ; preds = %438, %435
+  store i32 1, i32* %78, align 8
+  br label %862
+
+446:                                              ; preds = %438
+  %447 = bitcast i8* %443 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %447, align 8
+  %448 = load i8**, i8*** %81, align 8
+  store i8* %443, i8** %448, align 8
+  store i8* %443, i8** %82, align 8
+  %449 = load i32, i32* %79, align 4
+  store i32 %449, i32* %24, align 8
+  %450 = getelementptr inbounds i8, i8* %443, i64 8
+  store i8* %450, i8** %84, align 8
+  %451 = bitcast i8* %450 to i16*
+  br label %452
+
+452:                                              ; preds = %446, %433
+  %453 = phi i16* [ %451, %446 ], [ %434, %433 ]
+  %454 = phi i32 [ %449, %446 ], [ %431, %433 ]
+  %455 = add nsw i32 %454, -1
+  store i32 %455, i32* %24, align 8
+  %456 = shl nuw i16 %430, 15
+  %457 = or i16 %456, 16543
+  %458 = sext i32 %455 to i64
+  %459 = getelementptr inbounds i16, i16* %453, i64 %458
+  store i16 %457, i16* %459, align 2
+  br label %862
+
+460:                                              ; preds = %424
+  %461 = icmp ugt i32 %97, 8
+  %462 = zext i1 %461 to i16
+  %463 = load i32, i32* %24, align 8
+  %464 = icmp sgt i32 %463, 0
+  br i1 %464, label %465, label %467
+
+465:                                              ; preds = %460
+  %466 = load i16*, i16** %83, align 8
+  br label %484
+
+467:                                              ; preds = %460
+  %468 = load i32, i32* %78, align 8
+  %469 = icmp eq i32 %468, 0
+  br i1 %469, label %470, label %477
+
+470:                                              ; preds = %467
+  %471 = load i32, i32* %79, align 4
+  %472 = sext i32 %471 to i64
+  %473 = shl nsw i64 %472, 1
+  %474 = add nsw i64 %473, 8
+  %475 = tail call i8* @WebPSafeMalloc(i64 1, i64 %474) #4
+  %476 = icmp eq i8* %475, null
+  br i1 %476, label %477, label %478
+
+477:                                              ; preds = %470, %467
+  store i32 1, i32* %78, align 8
+  br label %492
+
+478:                                              ; preds = %470
+  %479 = bitcast i8* %475 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %479, align 8
+  %480 = load i8**, i8*** %81, align 8
+  store i8* %475, i8** %480, align 8
+  store i8* %475, i8** %82, align 8
+  %481 = load i32, i32* %79, align 4
+  store i32 %481, i32* %24, align 8
+  %482 = getelementptr inbounds i8, i8* %475, i64 8
+  store i8* %482, i8** %84, align 8
+  %483 = bitcast i8* %482 to i16*
+  br label %484
+
+484:                                              ; preds = %478, %465
+  %485 = phi i16* [ %483, %478 ], [ %466, %465 ]
+  %486 = phi i32 [ %481, %478 ], [ %463, %465 ]
+  %487 = add nsw i32 %486, -1
+  store i32 %487, i32* %24, align 8
+  %488 = shl nuw i16 %462, 15
+  %489 = or i16 %488, 16549
+  %490 = sext i32 %487 to i64
+  %491 = getelementptr inbounds i16, i16* %485, i64 %490
+  store i16 %489, i16* %491, align 2
+  br label %492
+
+492:                                              ; preds = %477, %484
+  %493 = load i32, i32* %24, align 8
+  %494 = icmp sgt i32 %493, 0
+  br i1 %494, label %495, label %497
+
+495:                                              ; preds = %492
+  %496 = load i16*, i16** %83, align 8
+  br label %514
+
+497:                                              ; preds = %492
+  %498 = load i32, i32* %78, align 8
+  %499 = icmp eq i32 %498, 0
+  br i1 %499, label %500, label %507
+
+500:                                              ; preds = %497
+  %501 = load i32, i32* %79, align 4
+  %502 = sext i32 %501 to i64
+  %503 = shl nsw i64 %502, 1
+  %504 = add nsw i64 %503, 8
+  %505 = tail call i8* @WebPSafeMalloc(i64 1, i64 %504) #4
+  %506 = icmp eq i8* %505, null
+  br i1 %506, label %507, label %508
+
+507:                                              ; preds = %500, %497
+  store i32 1, i32* %78, align 8
+  br label %862
+
+508:                                              ; preds = %500
+  %509 = bitcast i8* %505 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %509, align 8
+  %510 = load i8**, i8*** %81, align 8
+  store i8* %505, i8** %510, align 8
+  store i8* %505, i8** %82, align 8
+  %511 = load i32, i32* %79, align 4
+  store i32 %511, i32* %24, align 8
+  %512 = getelementptr inbounds i8, i8* %505, i64 8
+  store i8* %512, i8** %84, align 8
+  %513 = bitcast i8* %512 to i16*
+  br label %514
+
+514:                                              ; preds = %508, %495
+  %515 = phi i16* [ %513, %508 ], [ %496, %495 ]
+  %516 = phi i32 [ %511, %508 ], [ %493, %495 ]
+  %517 = add nsw i32 %516, -1
+  store i32 %517, i32* %24, align 8
+  %518 = trunc i32 %97 to i16
+  %519 = shl i16 %518, 15
+  %520 = xor i16 %519, -16239
+  %521 = sext i32 %517 to i64
+  %522 = getelementptr inbounds i16, i16* %515, i64 %521
+  store i16 %520, i16* %522, align 2
+  br label %862
+
+523:                                              ; preds = %378
+  %524 = add nsw i32 %97, -3
+  %525 = icmp ult i32 %524, 16
+  br i1 %525, label %526, label %607
+
+526:                                              ; preds = %523
+  %527 = getelementptr inbounds i32, i32* %88, i64 8
+  %528 = load i32, i32* %24, align 8
+  %529 = icmp sgt i32 %528, 0
+  br i1 %529, label %530, label %532
+
+530:                                              ; preds = %526
+  %531 = load i16*, i16** %83, align 8
+  br label %549
+
+532:                                              ; preds = %526
+  %533 = load i32, i32* %78, align 8
+  %534 = icmp eq i32 %533, 0
+  br i1 %534, label %535, label %542
+
+535:                                              ; preds = %532
+  %536 = load i32, i32* %79, align 4
+  %537 = sext i32 %536 to i64
+  %538 = shl nsw i64 %537, 1
+  %539 = add nsw i64 %538, 8
+  %540 = tail call i8* @WebPSafeMalloc(i64 1, i64 %539) #4
+  %541 = icmp eq i8* %540, null
+  br i1 %541, label %542, label %543
+
+542:                                              ; preds = %535, %532
+  store i32 1, i32* %78, align 8
+  br label %557
+
+543:                                              ; preds = %535
+  %544 = bitcast i8* %540 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %544, align 8
+  %545 = load i8**, i8*** %81, align 8
+  store i8* %540, i8** %545, align 8
+  store i8* %540, i8** %82, align 8
+  %546 = load i32, i32* %79, align 4
+  store i32 %546, i32* %24, align 8
+  %547 = getelementptr inbounds i8, i8* %540, i64 8
+  store i8* %547, i8** %84, align 8
+  %548 = bitcast i8* %547 to i16*
+  br label %549
+
+549:                                              ; preds = %543, %530
+  %550 = phi i16* [ %548, %543 ], [ %531, %530 ]
+  %551 = phi i32 [ %546, %543 ], [ %528, %530 ]
+  %552 = add nsw i32 %551, -1
+  store i32 %552, i32* %24, align 8
+  %553 = trunc i32 %89 to i16
+  %554 = add i16 %553, 8
+  %555 = sext i32 %552 to i64
+  %556 = getelementptr inbounds i16, i16* %550, i64 %555
+  store i16 %554, i16* %556, align 2
+  br label %557
+
+557:                                              ; preds = %549, %542
+  %558 = load i32, i32* %527, align 4
+  %559 = icmp ugt i32 %558, -131073
+  br i1 %559, label %560, label %564
+
+560:                                              ; preds = %557
+  %561 = add nsw i32 %558, 1
+  %562 = lshr i32 %561, 1
+  %563 = and i32 %562, 2147450879
+  br label %564
+
+564:                                              ; preds = %557, %560
+  %565 = phi i32 [ %563, %560 ], [ %558, %557 ]
+  %566 = add nuw i32 %565, 65536
+  store i32 %566, i32* %527, align 4
+  %567 = getelementptr inbounds i32, i32* %88, i64 9
+  %568 = load i32, i32* %24, align 8
+  %569 = icmp sgt i32 %568, 0
+  br i1 %569, label %570, label %572
+
+570:                                              ; preds = %564
+  %571 = load i16*, i16** %83, align 8
+  br label %589
+
+572:                                              ; preds = %564
+  %573 = load i32, i32* %78, align 8
+  %574 = icmp eq i32 %573, 0
+  br i1 %574, label %575, label %582
+
+575:                                              ; preds = %572
+  %576 = load i32, i32* %79, align 4
+  %577 = sext i32 %576 to i64
+  %578 = shl nsw i64 %577, 1
+  %579 = add nsw i64 %578, 8
+  %580 = tail call i8* @WebPSafeMalloc(i64 1, i64 %579) #4
+  %581 = icmp eq i8* %580, null
+  br i1 %581, label %582, label %583
+
+582:                                              ; preds = %575, %572
+  store i32 1, i32* %78, align 8
+  br label %597
+
+583:                                              ; preds = %575
+  %584 = bitcast i8* %580 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %584, align 8
+  %585 = load i8**, i8*** %81, align 8
+  store i8* %580, i8** %585, align 8
+  store i8* %580, i8** %82, align 8
+  %586 = load i32, i32* %79, align 4
+  store i32 %586, i32* %24, align 8
+  %587 = getelementptr inbounds i8, i8* %580, i64 8
+  store i8* %587, i8** %84, align 8
+  %588 = bitcast i8* %587 to i16*
+  br label %589
+
+589:                                              ; preds = %583, %570
+  %590 = phi i16* [ %588, %583 ], [ %571, %570 ]
+  %591 = phi i32 [ %586, %583 ], [ %568, %570 ]
+  %592 = add nsw i32 %591, -1
+  store i32 %592, i32* %24, align 8
+  %593 = trunc i32 %89 to i16
+  %594 = add i16 %593, 9
+  %595 = sext i32 %592 to i64
+  %596 = getelementptr inbounds i16, i16* %590, i64 %595
+  store i16 %594, i16* %596, align 2
+  br label %597
+
+597:                                              ; preds = %589, %582
+  %598 = load i32, i32* %567, align 4
+  %599 = icmp ugt i32 %598, -131073
+  br i1 %599, label %600, label %604
+
+600:                                              ; preds = %597
+  %601 = add nsw i32 %598, 1
+  %602 = lshr i32 %601, 1
+  %603 = and i32 %602, 2147450879
+  br label %604
+
+604:                                              ; preds = %597, %600
+  %605 = phi i32 [ %603, %600 ], [ %598, %597 ]
+  %606 = add nuw i32 %605, 65536
+  br label %813
+
+607:                                              ; preds = %523
+  %608 = icmp ult i32 %524, 32
+  br i1 %608, label %609, label %691
+
+609:                                              ; preds = %607
+  %610 = getelementptr inbounds i32, i32* %88, i64 8
+  %611 = load i32, i32* %24, align 8
+  %612 = icmp sgt i32 %611, 0
+  br i1 %612, label %613, label %615
+
+613:                                              ; preds = %609
+  %614 = load i16*, i16** %83, align 8
+  br label %632
+
+615:                                              ; preds = %609
+  %616 = load i32, i32* %78, align 8
+  %617 = icmp eq i32 %616, 0
+  br i1 %617, label %618, label %625
+
+618:                                              ; preds = %615
+  %619 = load i32, i32* %79, align 4
+  %620 = sext i32 %619 to i64
+  %621 = shl nsw i64 %620, 1
+  %622 = add nsw i64 %621, 8
+  %623 = tail call i8* @WebPSafeMalloc(i64 1, i64 %622) #4
+  %624 = icmp eq i8* %623, null
+  br i1 %624, label %625, label %626
+
+625:                                              ; preds = %618, %615
+  store i32 1, i32* %78, align 8
+  br label %640
+
+626:                                              ; preds = %618
+  %627 = bitcast i8* %623 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %627, align 8
+  %628 = load i8**, i8*** %81, align 8
+  store i8* %623, i8** %628, align 8
+  store i8* %623, i8** %82, align 8
+  %629 = load i32, i32* %79, align 4
+  store i32 %629, i32* %24, align 8
+  %630 = getelementptr inbounds i8, i8* %623, i64 8
+  store i8* %630, i8** %84, align 8
+  %631 = bitcast i8* %630 to i16*
+  br label %632
+
+632:                                              ; preds = %626, %613
+  %633 = phi i16* [ %631, %626 ], [ %614, %613 ]
+  %634 = phi i32 [ %629, %626 ], [ %611, %613 ]
+  %635 = add nsw i32 %634, -1
+  store i32 %635, i32* %24, align 8
+  %636 = trunc i32 %89 to i16
+  %637 = add i16 %636, 8
+  %638 = sext i32 %635 to i64
+  %639 = getelementptr inbounds i16, i16* %633, i64 %638
+  store i16 %637, i16* %639, align 2
+  br label %640
+
+640:                                              ; preds = %632, %625
+  %641 = load i32, i32* %610, align 4
+  %642 = icmp ugt i32 %641, -131073
+  br i1 %642, label %643, label %647
+
+643:                                              ; preds = %640
+  %644 = add nsw i32 %641, 1
+  %645 = lshr i32 %644, 1
+  %646 = and i32 %645, 2147450879
+  br label %647
+
+647:                                              ; preds = %640, %643
+  %648 = phi i32 [ %646, %643 ], [ %641, %640 ]
+  %649 = add nuw i32 %648, 65536
+  store i32 %649, i32* %610, align 4
+  %650 = getelementptr inbounds i32, i32* %88, i64 9
+  %651 = load i32, i32* %24, align 8
+  %652 = icmp sgt i32 %651, 0
+  br i1 %652, label %653, label %655
+
+653:                                              ; preds = %647
+  %654 = load i16*, i16** %83, align 8
+  br label %672
+
+655:                                              ; preds = %647
+  %656 = load i32, i32* %78, align 8
+  %657 = icmp eq i32 %656, 0
+  br i1 %657, label %658, label %665
+
+658:                                              ; preds = %655
+  %659 = load i32, i32* %79, align 4
+  %660 = sext i32 %659 to i64
+  %661 = shl nsw i64 %660, 1
+  %662 = add nsw i64 %661, 8
+  %663 = tail call i8* @WebPSafeMalloc(i64 1, i64 %662) #4
+  %664 = icmp eq i8* %663, null
+  br i1 %664, label %665, label %666
+
+665:                                              ; preds = %658, %655
+  store i32 1, i32* %78, align 8
+  br label %681
+
+666:                                              ; preds = %658
+  %667 = bitcast i8* %663 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %667, align 8
+  %668 = load i8**, i8*** %81, align 8
+  store i8* %663, i8** %668, align 8
+  store i8* %663, i8** %82, align 8
+  %669 = load i32, i32* %79, align 4
+  store i32 %669, i32* %24, align 8
+  %670 = getelementptr inbounds i8, i8* %663, i64 8
+  store i8* %670, i8** %84, align 8
+  %671 = bitcast i8* %670 to i16*
+  br label %672
+
+672:                                              ; preds = %666, %653
+  %673 = phi i16* [ %671, %666 ], [ %654, %653 ]
+  %674 = phi i32 [ %669, %666 ], [ %651, %653 ]
+  %675 = add nsw i32 %674, -1
+  store i32 %675, i32* %24, align 8
+  %676 = trunc i32 %89 to i16
+  %677 = add i16 %676, 9
+  %678 = or i16 %677, -32768
+  %679 = sext i32 %675 to i64
+  %680 = getelementptr inbounds i16, i16* %673, i64 %679
+  store i16 %678, i16* %680, align 2
+  br label %681
+
+681:                                              ; preds = %672, %665
+  %682 = load i32, i32* %650, align 4
+  %683 = icmp ugt i32 %682, -131073
+  br i1 %683, label %684, label %688
+
+684:                                              ; preds = %681
+  %685 = add nsw i32 %682, 1
+  %686 = lshr i32 %685, 1
+  %687 = and i32 %686, 2147450879
+  br label %688
+
+688:                                              ; preds = %681, %684
+  %689 = phi i32 [ %687, %684 ], [ %682, %681 ]
+  %690 = add nuw i32 %689, 65537
+  br label %813
+
+691:                                              ; preds = %607
+  %692 = icmp ult i32 %524, 64
+  %693 = getelementptr inbounds i32, i32* %88, i64 8
+  %694 = load i32, i32* %24, align 8
+  %695 = icmp sgt i32 %694, 0
+  br i1 %695, label %696, label %698
+
+696:                                              ; preds = %691
+  %697 = load i16*, i16** %83, align 8
+  br label %715
+
+698:                                              ; preds = %691
+  %699 = load i32, i32* %78, align 8
+  %700 = icmp eq i32 %699, 0
+  br i1 %700, label %701, label %708
+
+701:                                              ; preds = %698
+  %702 = load i32, i32* %79, align 4
+  %703 = sext i32 %702 to i64
+  %704 = shl nsw i64 %703, 1
+  %705 = add nsw i64 %704, 8
+  %706 = tail call i8* @WebPSafeMalloc(i64 1, i64 %705) #4
+  %707 = icmp eq i8* %706, null
+  br i1 %707, label %708, label %709
+
+708:                                              ; preds = %701, %698
+  store i32 1, i32* %78, align 8
+  br label %724
+
+709:                                              ; preds = %701
+  %710 = bitcast i8* %706 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %710, align 8
+  %711 = load i8**, i8*** %81, align 8
+  store i8* %706, i8** %711, align 8
+  store i8* %706, i8** %82, align 8
+  %712 = load i32, i32* %79, align 4
+  store i32 %712, i32* %24, align 8
+  %713 = getelementptr inbounds i8, i8* %706, i64 8
+  store i8* %713, i8** %84, align 8
+  %714 = bitcast i8* %713 to i16*
+  br label %715
+
+715:                                              ; preds = %709, %696
+  %716 = phi i16* [ %714, %709 ], [ %697, %696 ]
+  %717 = phi i32 [ %712, %709 ], [ %694, %696 ]
+  %718 = add nsw i32 %717, -1
+  store i32 %718, i32* %24, align 8
+  %719 = trunc i32 %89 to i16
+  %720 = add i16 %719, 8
+  %721 = or i16 %720, -32768
+  %722 = sext i32 %718 to i64
+  %723 = getelementptr inbounds i16, i16* %716, i64 %722
+  store i16 %721, i16* %723, align 2
+  br label %724
+
+724:                                              ; preds = %715, %708
+  %725 = load i32, i32* %693, align 4
+  %726 = icmp ugt i32 %725, -131073
+  br i1 %726, label %727, label %731
+
+727:                                              ; preds = %724
+  %728 = add nsw i32 %725, 1
+  %729 = lshr i32 %728, 1
+  %730 = and i32 %729, 2147450879
+  br label %731
+
+731:                                              ; preds = %724, %727
+  %732 = phi i32 [ %730, %727 ], [ %725, %724 ]
+  %733 = add nuw i32 %732, 65537
+  store i32 %733, i32* %693, align 4
+  %734 = add i32 %89, 10
+  %735 = getelementptr inbounds i32, i32* %88, i64 9
+  %736 = load i32, i32* %24, align 8
+  %737 = icmp sgt i32 %736, 0
+  br i1 %692, label %738, label %775
+
+738:                                              ; preds = %731
+  br i1 %737, label %739, label %741
+
+739:                                              ; preds = %738
+  %740 = load i16*, i16** %83, align 8
+  br label %758
+
+741:                                              ; preds = %738
+  %742 = load i32, i32* %78, align 8
+  %743 = icmp eq i32 %742, 0
+  br i1 %743, label %744, label %751
+
+744:                                              ; preds = %741
+  %745 = load i32, i32* %79, align 4
+  %746 = sext i32 %745 to i64
+  %747 = shl nsw i64 %746, 1
+  %748 = add nsw i64 %747, 8
+  %749 = tail call i8* @WebPSafeMalloc(i64 1, i64 %748) #4
+  %750 = icmp eq i8* %749, null
+  br i1 %750, label %751, label %752
+
+751:                                              ; preds = %744, %741
+  store i32 1, i32* %78, align 8
+  br label %765
+
+752:                                              ; preds = %744
+  %753 = bitcast i8* %749 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %753, align 8
+  %754 = load i8**, i8*** %81, align 8
+  store i8* %749, i8** %754, align 8
+  store i8* %749, i8** %82, align 8
+  %755 = load i32, i32* %79, align 4
+  store i32 %755, i32* %24, align 8
+  %756 = getelementptr inbounds i8, i8* %749, i64 8
+  store i8* %756, i8** %84, align 8
+  %757 = bitcast i8* %756 to i16*
+  br label %758
+
+758:                                              ; preds = %752, %739
+  %759 = phi i16* [ %757, %752 ], [ %740, %739 ]
+  %760 = phi i32 [ %755, %752 ], [ %736, %739 ]
+  %761 = add nsw i32 %760, -1
+  store i32 %761, i32* %24, align 8
+  %762 = trunc i32 %734 to i16
+  %763 = sext i32 %761 to i64
+  %764 = getelementptr inbounds i16, i16* %759, i64 %763
+  store i16 %762, i16* %764, align 2
+  br label %765
+
+765:                                              ; preds = %758, %751
+  %766 = load i32, i32* %735, align 4
+  %767 = icmp ugt i32 %766, -131073
+  br i1 %767, label %768, label %772
+
+768:                                              ; preds = %765
+  %769 = add nsw i32 %766, 1
+  %770 = lshr i32 %769, 1
+  %771 = and i32 %770, 2147450879
+  br label %772
+
+772:                                              ; preds = %765, %768
+  %773 = phi i32 [ %771, %768 ], [ %766, %765 ]
+  %774 = add nuw i32 %773, 65536
+  br label %813
+
+775:                                              ; preds = %731
+  br i1 %737, label %776, label %778
+
+776:                                              ; preds = %775
+  %777 = load i16*, i16** %83, align 8
+  br label %795
+
+778:                                              ; preds = %775
+  %779 = load i32, i32* %78, align 8
+  %780 = icmp eq i32 %779, 0
+  br i1 %780, label %781, label %788
+
+781:                                              ; preds = %778
+  %782 = load i32, i32* %79, align 4
+  %783 = sext i32 %782 to i64
+  %784 = shl nsw i64 %783, 1
+  %785 = add nsw i64 %784, 8
+  %786 = tail call i8* @WebPSafeMalloc(i64 1, i64 %785) #4
+  %787 = icmp eq i8* %786, null
+  br i1 %787, label %788, label %789
+
+788:                                              ; preds = %781, %778
+  store i32 1, i32* %78, align 8
+  br label %803
+
+789:                                              ; preds = %781
+  %790 = bitcast i8* %786 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %790, align 8
+  %791 = load i8**, i8*** %81, align 8
+  store i8* %786, i8** %791, align 8
+  store i8* %786, i8** %82, align 8
+  %792 = load i32, i32* %79, align 4
+  store i32 %792, i32* %24, align 8
+  %793 = getelementptr inbounds i8, i8* %786, i64 8
+  store i8* %793, i8** %84, align 8
+  %794 = bitcast i8* %793 to i16*
+  br label %795
+
+795:                                              ; preds = %789, %776
+  %796 = phi i16* [ %794, %789 ], [ %777, %776 ]
+  %797 = phi i32 [ %792, %789 ], [ %736, %776 ]
+  %798 = add nsw i32 %797, -1
+  store i32 %798, i32* %24, align 8
+  %799 = trunc i32 %734 to i16
+  %800 = or i16 %799, -32768
+  %801 = sext i32 %798 to i64
+  %802 = getelementptr inbounds i16, i16* %796, i64 %801
+  store i16 %800, i16* %802, align 2
+  br label %803
+
+803:                                              ; preds = %795, %788
+  %804 = load i32, i32* %735, align 4
+  %805 = icmp ugt i32 %804, -131073
+  br i1 %805, label %806, label %810
+
+806:                                              ; preds = %803
+  %807 = add nsw i32 %804, 1
+  %808 = lshr i32 %807, 1
+  %809 = and i32 %808, 2147450879
+  br label %810
+
+810:                                              ; preds = %803, %806
+  %811 = phi i32 [ %809, %806 ], [ %804, %803 ]
+  %812 = add nuw i32 %811, 65537
+  br label %813
+
+813:                                              ; preds = %688, %810, %772, %604
+  %814 = phi i32* [ %650, %688 ], [ %735, %810 ], [ %735, %772 ], [ %567, %604 ]
+  %815 = phi i32 [ %690, %688 ], [ %812, %810 ], [ %774, %772 ], [ %606, %604 ]
+  %816 = phi i32 [ -19, %688 ], [ -67, %810 ], [ -35, %772 ], [ -11, %604 ]
+  %817 = phi i32 [ 8, %688 ], [ 1024, %810 ], [ 16, %772 ], [ 4, %604 ]
+  %818 = phi i8* [ getelementptr inbounds ([0 x i8], [0 x i8]* @VP8Cat4, i64 0, i64 0), %688 ], [ getelementptr inbounds ([0 x i8], [0 x i8]* @VP8Cat6, i64 0, i64 0), %810 ], [ getelementptr inbounds ([0 x i8], [0 x i8]* @VP8Cat5, i64 0, i64 0), %772 ], [ getelementptr inbounds ([0 x i8], [0 x i8]* @VP8Cat3, i64 0, i64 0), %604 ]
+  store i32 %815, i32* %814, align 4
+  %819 = add nsw i32 %97, %816
+  br label %820
+
+820:                                              ; preds = %813, %859
+  %821 = phi i8* [ %818, %813 ], [ %826, %859 ]
+  %822 = phi i32 [ %817, %813 ], [ %860, %859 ]
+  %823 = and i32 %822, %819
+  %824 = icmp ne i32 %823, 0
+  %825 = zext i1 %824 to i16
+  %826 = getelementptr inbounds i8, i8* %821, i64 1
+  %827 = load i8, i8* %821, align 1
+  %828 = zext i8 %827 to i16
+  %829 = load i32, i32* %24, align 8
+  %830 = icmp sgt i32 %829, 0
+  br i1 %830, label %831, label %833
+
+831:                                              ; preds = %820
+  %832 = load i16*, i16** %83, align 8
+  br label %850
+
+833:                                              ; preds = %820
+  %834 = load i32, i32* %78, align 8
+  %835 = icmp eq i32 %834, 0
+  br i1 %835, label %836, label %843
+
+836:                                              ; preds = %833
+  %837 = load i32, i32* %79, align 4
+  %838 = sext i32 %837 to i64
+  %839 = shl nsw i64 %838, 1
+  %840 = add nsw i64 %839, 8
+  %841 = tail call i8* @WebPSafeMalloc(i64 1, i64 %840) #4
+  %842 = icmp eq i8* %841, null
+  br i1 %842, label %843, label %844
+
+843:                                              ; preds = %836, %833
+  store i32 1, i32* %78, align 8
+  br label %859
+
+844:                                              ; preds = %836
+  %845 = bitcast i8* %841 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %845, align 8
+  %846 = load i8**, i8*** %81, align 8
+  store i8* %841, i8** %846, align 8
+  store i8* %841, i8** %82, align 8
+  %847 = load i32, i32* %79, align 4
+  store i32 %847, i32* %24, align 8
+  %848 = getelementptr inbounds i8, i8* %841, i64 8
+  store i8* %848, i8** %84, align 8
+  %849 = bitcast i8* %848 to i16*
+  br label %850
+
+850:                                              ; preds = %844, %831
+  %851 = phi i16* [ %849, %844 ], [ %832, %831 ]
+  %852 = phi i32 [ %847, %844 ], [ %829, %831 ]
+  %853 = add nsw i32 %852, -1
+  store i32 %853, i32* %24, align 8
+  %854 = shl nuw i16 %825, 15
+  %855 = or i16 %854, %828
+  %856 = or i16 %855, 16384
+  %857 = sext i32 %853 to i64
+  %858 = getelementptr inbounds i16, i16* %851, i64 %857
+  store i16 %856, i16* %858, align 2
+  br label %859
+
+859:                                              ; preds = %843, %850
+  %860 = ashr i32 %822, 1
+  %861 = icmp eq i32 %860, 0
+  br i1 %861, label %862, label %820
+
+862:                                              ; preds = %859, %332, %445, %452, %507, %514, %286, %194
+  %863 = phi i32 [ 11, %194 ], [ 22, %286 ], [ 22, %514 ], [ 22, %507 ], [ 22, %452 ], [ 22, %445 ], [ 22, %332 ], [ 22, %859 ]
+  %864 = phi i64 [ 1, %194 ], [ 2, %286 ], [ 2, %514 ], [ 2, %507 ], [ 2, %452 ], [ 2, %445 ], [ 2, %332 ], [ 2, %859 ]
+  %865 = getelementptr inbounds [17 x i8], [17 x i8]* @VP8EncBands, i64 0, i64 %90
+  %866 = load i8, i8* %865, align 1
+  %867 = zext i8 %866 to i32
+  %868 = add nsw i32 %12, %867
+  %869 = mul i32 %868, 33
+  %870 = add i32 %869, %863
+  %871 = load [3 x [11 x i32]]*, [3 x [11 x i32]]** %17, align 8
+  %872 = zext i8 %866 to i64
+  %873 = getelementptr inbounds [3 x [11 x i32]], [3 x [11 x i32]]* %871, i64 %872, i64 %864, i64 0
+  %874 = load i32, i32* %24, align 8
+  %875 = icmp sgt i32 %874, 0
+  br i1 %875, label %876, label %878
+
+876:                                              ; preds = %862
+  %877 = load i16*, i16** %83, align 8
+  br label %895
+
+878:                                              ; preds = %862
+  %879 = load i32, i32* %78, align 8
+  %880 = icmp eq i32 %879, 0
+  br i1 %880, label %881, label %888
+
+881:                                              ; preds = %878
+  %882 = load i32, i32* %79, align 4
+  %883 = sext i32 %882 to i64
+  %884 = shl nsw i64 %883, 1
+  %885 = add nsw i64 %884, 8
+  %886 = tail call i8* @WebPSafeMalloc(i64 1, i64 %885) #4
+  %887 = icmp eq i8* %886, null
+  br i1 %887, label %888, label %889
+
+888:                                              ; preds = %881, %878
+  store i32 1, i32* %78, align 8
+  br label %902
+
+889:                                              ; preds = %881
+  %890 = bitcast i8* %886 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %890, align 8
+  %891 = load i8**, i8*** %81, align 8
+  store i8* %886, i8** %891, align 8
+  store i8* %886, i8** %82, align 8
+  %892 = load i32, i32* %79, align 4
+  store i32 %892, i32* %24, align 8
+  %893 = getelementptr inbounds i8, i8* %886, i64 8
+  store i8* %893, i8** %84, align 8
+  %894 = bitcast i8* %893 to i16*
+  br label %895
+
+895:                                              ; preds = %889, %876
+  %896 = phi i16* [ %894, %889 ], [ %877, %876 ]
+  %897 = phi i32 [ %892, %889 ], [ %874, %876 ]
+  %898 = add nsw i32 %897, -1
+  store i32 %898, i32* %24, align 8
+  %899 = or i16 %95, 16512
+  %900 = sext i32 %898 to i64
+  %901 = getelementptr inbounds i16, i16* %896, i64 %900
+  store i16 %899, i16* %901, align 2
+  br label %902
+
+902:                                              ; preds = %888, %895
+  %903 = icmp eq i64 %90, 16
+  br i1 %903, label %952, label %904
+
+904:                                              ; preds = %902
+  %905 = icmp slt i64 %87, %85
+  %906 = zext i1 %905 to i32
+  %907 = load i32, i32* %24, align 8
+  %908 = icmp sgt i32 %907, 0
+  br i1 %908, label %909, label %911
+
+909:                                              ; preds = %904
+  %910 = load i16*, i16** %83, align 8
+  br label %928
+
+911:                                              ; preds = %904
+  %912 = load i32, i32* %78, align 8
+  %913 = icmp eq i32 %912, 0
+  br i1 %913, label %914, label %921
+
+914:                                              ; preds = %911
+  %915 = load i32, i32* %79, align 4
+  %916 = sext i32 %915 to i64
+  %917 = shl nsw i64 %916, 1
+  %918 = add nsw i64 %917, 8
+  %919 = tail call i8* @WebPSafeMalloc(i64 1, i64 %918) #4
+  %920 = icmp eq i8* %919, null
+  br i1 %920, label %921, label %922
+
+921:                                              ; preds = %914, %911
+  store i32 1, i32* %78, align 8
+  br label %937
+
+922:                                              ; preds = %914
+  %923 = bitcast i8* %919 to %struct.VP8Tokens**
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %923, align 8
+  %924 = load i8**, i8*** %81, align 8
+  store i8* %919, i8** %924, align 8
+  store i8* %919, i8** %82, align 8
+  %925 = load i32, i32* %79, align 4
+  store i32 %925, i32* %24, align 8
+  %926 = getelementptr inbounds i8, i8* %919, i64 8
+  store i8* %926, i8** %84, align 8
+  %927 = bitcast i8* %926 to i16*
+  br label %928
+
+928:                                              ; preds = %922, %909
+  %929 = phi i16* [ %927, %922 ], [ %910, %909 ]
+  %930 = phi i32 [ %925, %922 ], [ %907, %909 ]
+  %931 = add nsw i32 %930, -1
+  store i32 %931, i32* %24, align 8
+  %932 = shl nuw nsw i32 %906, 15
+  %933 = or i32 %870, %932
+  %934 = trunc i32 %933 to i16
+  %935 = sext i32 %931 to i64
+  %936 = getelementptr inbounds i16, i16* %929, i64 %935
+  store i16 %934, i16* %936, align 2
+  br label %937
+
+937:                                              ; preds = %928, %921
+  %938 = load i32, i32* %873, align 4
+  %939 = icmp ugt i32 %938, -131073
+  br i1 %939, label %940, label %944
+
+940:                                              ; preds = %937
+  %941 = add nsw i32 %938, 1
+  %942 = lshr i32 %941, 1
+  %943 = and i32 %942, 2147450879
+  br label %944
+
+944:                                              ; preds = %937, %940
+  %945 = phi i32 [ %943, %940 ], [ %938, %937 ]
+  %946 = select i1 %905, i32 65537, i32 65536
+  %947 = add nuw i32 %945, %946
+  store i32 %947, i32* %873, align 4
+  br i1 %905, label %948, label %952
+
+948:                                              ; preds = %944, %143
+  %949 = phi i32 [ %148, %143 ], [ %870, %944 ]
+  %950 = phi i32* [ %151, %143 ], [ %873, %944 ]
+  %951 = icmp eq i64 %90, 16
+  br i1 %951, label %952, label %86
+
+952:                                              ; preds = %902, %944, %948, %75, %70
+  %953 = phi i32 [ 0, %70 ], [ 1, %75 ], [ 1, %948 ], [ 1, %944 ], [ 1, %902 ]
+  ret i32 %953
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @VP8EmitTokens(%struct.VP8TBuffer* nocapture, %struct.VP8BitWriter*, i8* nocapture readonly, i32) local_unnamed_addr #1 {
+  %5 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %0, i64 0, i32 0
+  %6 = load %struct.VP8Tokens*, %struct.VP8Tokens** %5, align 8
+  %7 = icmp eq %struct.VP8Tokens* %6, null
+  br i1 %7, label %53, label %8
+
+8:                                                ; preds = %4
+  %9 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %0, i64 0, i32 3
+  %10 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %0, i64 0, i32 4
+  %11 = icmp eq i32 %3, 0
+  br label %12
+
+12:                                               ; preds = %8, %52
+  %13 = phi %struct.VP8Tokens* [ %6, %8 ], [ %15, %52 ]
+  %14 = getelementptr inbounds %struct.VP8Tokens, %struct.VP8Tokens* %13, i64 0, i32 0
+  %15 = load %struct.VP8Tokens*, %struct.VP8Tokens** %14, align 8
+  %16 = icmp eq %struct.VP8Tokens* %15, null
+  br i1 %16, label %17, label %19
+
+17:                                               ; preds = %12
+  %18 = load i32, i32* %9, align 8
+  br label %19
+
+19:                                               ; preds = %12, %17
+  %20 = phi i32 [ %18, %17 ], [ 0, %12 ]
+  %21 = load i32, i32* %10, align 4
+  %22 = getelementptr inbounds %struct.VP8Tokens, %struct.VP8Tokens* %13, i64 1
+  %23 = bitcast %struct.VP8Tokens* %22 to i16*
+  %24 = icmp sgt i32 %21, %20
+  br i1 %24, label %25, label %49
+
+25:                                               ; preds = %19
+  %26 = sext i32 %21 to i64
+  %27 = sext i32 %20 to i64
+  br label %28
+
+28:                                               ; preds = %25, %45
+  %29 = phi i64 [ %26, %25 ], [ %30, %45 ]
+  %30 = add nsw i64 %29, -1
+  %31 = getelementptr inbounds i16, i16* %23, i64 %30
+  %32 = load i16, i16* %31, align 2
+  %33 = zext i16 %32 to i32
+  %34 = lshr i32 %33, 15
+  %35 = and i32 %33, 16384
+  %36 = icmp eq i32 %35, 0
+  br i1 %36, label %39, label %37
+
+37:                                               ; preds = %28
+  %38 = and i32 %33, 255
+  br label %45
+
+39:                                               ; preds = %28
+  %40 = and i32 %33, 16383
+  %41 = zext i32 %40 to i64
+  %42 = getelementptr inbounds i8, i8* %2, i64 %41
+  %43 = load i8, i8* %42, align 1
+  %44 = zext i8 %43 to i32
+  br label %45
+
+45:                                               ; preds = %39, %37
+  %46 = phi i32 [ %44, %39 ], [ %38, %37 ]
+  %47 = tail call i32 @VP8PutBit(%struct.VP8BitWriter* %1, i32 %34, i32 %46) #4
+  %48 = icmp sgt i64 %30, %27
+  br i1 %48, label %28, label %49
+
+49:                                               ; preds = %45, %19
+  br i1 %11, label %52, label %50
+
+50:                                               ; preds = %49
+  %51 = bitcast %struct.VP8Tokens* %13 to i8*
+  tail call void @WebPSafeFree(i8* nonnull %51) #4
+  br label %52
+
+52:                                               ; preds = %49, %50
+  br i1 %16, label %53, label %12
+
+53:                                               ; preds = %52, %4
+  %54 = icmp eq i32 %3, 0
+  br i1 %54, label %56, label %55
+
+55:                                               ; preds = %53
+  store %struct.VP8Tokens* null, %struct.VP8Tokens** %5, align 8
+  br label %56
+
+56:                                               ; preds = %53, %55
+  ret i32 1
+}
+
+declare i32 @VP8PutBit(%struct.VP8BitWriter*, i32, i32) local_unnamed_addr #2
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden i64 @VP8EstimateTokenSize(%struct.VP8TBuffer* nocapture readonly, i8* nocapture readonly) local_unnamed_addr #3 {
+  %3 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %0, i64 0, i32 0
+  %4 = load %struct.VP8Tokens*, %struct.VP8Tokens** %3, align 8
+  %5 = icmp eq %struct.VP8Tokens* %4, null
+  br i1 %5, label %60, label %6
+
+6:                                                ; preds = %2
+  %7 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %0, i64 0, i32 3
+  %8 = getelementptr inbounds %struct.VP8TBuffer, %struct.VP8TBuffer* %0, i64 0, i32 4
+  %9 = load i32, i32* %8, align 4
+  %10 = sext i32 %9 to i64
+  br label %13
+
+11:                                               ; preds = %53, %21
+  %12 = phi i64 [ %14, %21 ], [ %58, %53 ]
+  br i1 %18, label %60, label %13
+
+13:                                               ; preds = %6, %11
+  %14 = phi i64 [ 0, %6 ], [ %12, %11 ]
+  %15 = phi %struct.VP8Tokens* [ %4, %6 ], [ %17, %11 ]
+  %16 = getelementptr inbounds %struct.VP8Tokens, %struct.VP8Tokens* %15, i64 0, i32 0
+  %17 = load %struct.VP8Tokens*, %struct.VP8Tokens** %16, align 8
+  %18 = icmp eq %struct.VP8Tokens* %17, null
+  br i1 %18, label %19, label %21
+
+19:                                               ; preds = %13
+  %20 = load i32, i32* %7, align 8
+  br label %21
+
+21:                                               ; preds = %13, %19
+  %22 = phi i32 [ %20, %19 ], [ 0, %13 ]
+  %23 = getelementptr inbounds %struct.VP8Tokens, %struct.VP8Tokens* %15, i64 1
+  %24 = bitcast %struct.VP8Tokens* %23 to i16*
+  %25 = icmp sgt i32 %9, %22
+  br i1 %25, label %26, label %11
+
+26:                                               ; preds = %21
+  %27 = sext i32 %22 to i64
+  br label %28
+
+28:                                               ; preds = %26, %53
+  %29 = phi i64 [ %10, %26 ], [ %31, %53 ]
+  %30 = phi i64 [ %14, %26 ], [ %58, %53 ]
+  %31 = add nsw i64 %29, -1
+  %32 = getelementptr inbounds i16, i16* %24, i64 %31
+  %33 = load i16, i16* %32, align 2
+  %34 = zext i16 %33 to i32
+  %35 = and i32 %34, 16384
+  %36 = icmp eq i32 %35, 0
+  br i1 %36, label %44, label %37
+
+37:                                               ; preds = %28
+  %38 = zext i16 %33 to i64
+  %39 = shl nuw i32 %34, 16
+  %40 = ashr i32 %39, 31
+  %41 = zext i32 %40 to i64
+  %42 = xor i64 %41, %38
+  %43 = and i64 %42, 255
+  br label %53
+
+44:                                               ; preds = %28
+  %45 = and i32 %34, 16383
+  %46 = zext i32 %45 to i64
+  %47 = getelementptr inbounds i8, i8* %1, i64 %46
+  %48 = load i8, i8* %47, align 1
+  %49 = ashr i16 %33, 15
+  %50 = trunc i16 %49 to i8
+  %51 = xor i8 %48, %50
+  %52 = zext i8 %51 to i64
+  br label %53
+
+53:                                               ; preds = %44, %37
+  %54 = phi i64 [ %43, %37 ], [ %52, %44 ]
+  %55 = getelementptr inbounds [256 x i16], [256 x i16]* @VP8EntropyCost, i64 0, i64 %54
+  %56 = load i16, i16* %55, align 2
+  %57 = zext i16 %56 to i64
+  %58 = add i64 %30, %57
+  %59 = icmp sgt i64 %31, %27
+  br i1 %59, label %28, label %11
+
+60:                                               ; preds = %11, %2
+  %61 = phi i64 [ 0, %2 ], [ %12, %11 ]
+  ret i64 %61
+}
+
+declare i8* @WebPSafeMalloc(i64, i64) local_unnamed_addr #2
+
+attributes #0 = { nofree norecurse nounwind ssp uwtable writeonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { norecurse nounwind readonly ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}

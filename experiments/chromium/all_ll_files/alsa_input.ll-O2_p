@@ -1,0 +1,2538 @@
+; ModuleID = '../../media/audio/alsa/alsa_input.cc'
+source_filename = "../../media/audio/alsa/alsa_input.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver fmemopen, fmemopen@GLIBC_2.2.5"
+module asm ".symver glob, glob@GLIBC_2.2.5"
+module asm ".symver glob64, glob64@GLIBC_2.2.5"
+module asm ".symver quick_exit, quick_exit@GLIBC_2.10"
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.std::__1::locale::id" = type <{ %"struct.std::__1::once_flag", i32, [4 x i8] }>
+%"struct.std::__1::once_flag" = type { i64 }
+%"class.media::AlsaPcmInputStream" = type <{ %"class.media::AgcAudioStream", %"class.media::AudioManagerBase"*, %"class.std::__1::basic_string", %"class.media::AudioParameters", i32, [4 x i8], %"class.media::AlsaWrapper"*, %"class.base::TimeDelta", %"class.media::AudioInputStream::AudioInputCallback"*, %"class.base::TimeTicks", %struct._snd_pcm*, %struct._snd_mixer*, %struct._snd_mixer_elem*, %"class.std::__1::unique_ptr.77", i8, [7 x i8], %"class.std::__1::unique_ptr.83", %"class.base::Thread", i8, [7 x i8] }>
+%"class.media::AgcAudioStream" = type { %"class.media::AudioInputStream", %"class.base::ThreadChecker", %"class.base::RepeatingTimer", i8, double, %"struct.std::__1::atomic.10" }
+%"class.media::AudioInputStream" = type { i32 (...)** }
+%"class.base::ThreadChecker" = type { i8 }
+%"class.base::RepeatingTimer" = type { %"class.base::internal::TimerBase", %"class.base::RepeatingCallback" }
+%"class.base::internal::TimerBase" = type { i32 (...)**, %class.scoped_refptr, %"class.base::SequenceCheckerDoNothing", %"class.base::internal::TaskDestructionDetector"*, %"class.base::Location", %"class.base::TimeDelta", %"class.base::TimeTicks", %"class.base::TimeTicks", %"class.base::TickClock"*, i8, %"class.base::WeakPtrFactory" }
+%class.scoped_refptr = type { %"class.base::SequencedTaskRunner"* }
+%"class.base::SequencedTaskRunner" = type { %"class.base::TaskRunner.base", [4 x i8] }
+%"class.base::TaskRunner.base" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe" }>
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.0" }
+%"struct.std::__1::__atomic_base.0" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"class.base::SequenceCheckerDoNothing" = type { i8 }
+%"class.base::internal::TaskDestructionDetector" = type opaque
+%"class.base::Location" = type { i8*, i8*, i32, i8* }
+%"class.base::TickClock" = type { i32 (...)** }
+%"class.base::WeakPtrFactory" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.base::internal::WeakPtrFactoryBase" = type { %"class.base::internal::WeakReferenceOwner", i64 }
+%"class.base::internal::WeakReferenceOwner" = type { %class.scoped_refptr.1 }
+%class.scoped_refptr.1 = type { %"class.base::internal::WeakReference::Flag"* }
+%"class.base::internal::WeakReference::Flag" = type <{ %"class.base::RefCountedThreadSafe.2", %"class.base::AtomicFlag", [3 x i8] }>
+%"class.base::RefCountedThreadSafe.2" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::AtomicFlag" = type { %"struct.std::__1::atomic.3" }
+%"struct.std::__1::atomic.3" = type { %"struct.std::__1::__atomic_base.4" }
+%"struct.std::__1::__atomic_base.4" = type { %"struct.std::__1::__atomic_base.5" }
+%"struct.std::__1::__atomic_base.5" = type { %"struct.std::__1::__cxx_atomic_impl.6" }
+%"struct.std::__1::__cxx_atomic_impl.6" = type { %"struct.std::__1::__cxx_atomic_base_impl.7" }
+%"struct.std::__1::__cxx_atomic_base_impl.7" = type { i8 }
+%"class.base::RepeatingCallback" = type { %"class.base::internal::CallbackBaseCopyable" }
+%"class.base::internal::CallbackBaseCopyable" = type { %"class.base::internal::CallbackBase" }
+%"class.base::internal::CallbackBase" = type { %class.scoped_refptr.8 }
+%class.scoped_refptr.8 = type { %"class.base::internal::BindStateBase"* }
+%"class.base::internal::BindStateBase" = type { %"class.base::RefCountedThreadSafe.9", void ()*, void (%"class.base::internal::BindStateBase"*)*, i1 (%"class.base::internal::BindStateBase"*, i32)* }
+%"class.base::RefCountedThreadSafe.9" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"struct.std::__1::atomic.10" = type { %"struct.std::__1::__atomic_base.11" }
+%"struct.std::__1::__atomic_base.11" = type { %"struct.std::__1::__cxx_atomic_impl.12" }
+%"struct.std::__1::__cxx_atomic_impl.12" = type { %"struct.std::__1::__cxx_atomic_base_impl.13" }
+%"struct.std::__1::__cxx_atomic_base_impl.13" = type { double }
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.64" }
+%"class.std::__1::__compressed_pair.64" = type { %"struct.std::__1::__compressed_pair_elem.65" }
+%"struct.std::__1::__compressed_pair_elem.65" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon }
+%union.anon = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.media::AudioParameters" = type { i32, i32, i32, i32, i32, i32, %"class.std::__1::vector.69", i32, %"class.absl::optional" }
+%"class.std::__1::vector.69" = type { %"class.std::__1::__vector_base.70" }
+%"class.std::__1::__vector_base.70" = type { %"class.gfx::Point3F"*, %"class.gfx::Point3F"*, %"class.std::__1::__compressed_pair.71" }
+%"class.gfx::Point3F" = type { float, float, float }
+%"class.std::__1::__compressed_pair.71" = type { %"struct.std::__1::__compressed_pair_elem.72" }
+%"struct.std::__1::__compressed_pair_elem.72" = type { %"class.gfx::Point3F"* }
+%"class.absl::optional" = type { %"class.absl::optional_internal::optional_data" }
+%"class.absl::optional_internal::optional_data" = type { %"class.absl::optional_internal::optional_data_base" }
+%"class.absl::optional_internal::optional_data_base" = type { %"class.absl::optional_internal::optional_data_dtor_base" }
+%"class.absl::optional_internal::optional_data_dtor_base" = type { i8, %union.anon.76 }
+%union.anon.76 = type { %"struct.media::AudioParameters::HardwareCapabilities" }
+%"struct.media::AudioParameters::HardwareCapabilities" = type { i32, i32 }
+%"class.base::TimeDelta" = type { i64 }
+%"class.media::AudioInputStream::AudioInputCallback" = type { i32 (...)** }
+%"class.base::TimeTicks" = type { %"class.base::time_internal::TimeBase" }
+%"class.base::time_internal::TimeBase" = type { i64 }
+%struct._snd_pcm = type opaque
+%struct._snd_mixer = type opaque
+%struct._snd_mixer_elem = type opaque
+%"class.std::__1::unique_ptr.77" = type { %"class.std::__1::__compressed_pair.78" }
+%"class.std::__1::__compressed_pair.78" = type { %"struct.std::__1::__compressed_pair_elem.79" }
+%"struct.std::__1::__compressed_pair_elem.79" = type { i8* }
+%"class.std::__1::unique_ptr.83" = type { %"class.std::__1::__compressed_pair.84" }
+%"class.std::__1::__compressed_pair.84" = type { %"struct.std::__1::__compressed_pair_elem.85" }
+%"struct.std::__1::__compressed_pair_elem.85" = type { %"class.media::AudioBus"* }
+%"class.media::AudioBus" = type { i32 (...)**, %"class.std::__1::unique_ptr.86", i8, i64, i32, %"class.std::__1::vector.90", i32, i8, %"class.base::OnceCallback" }
+%"class.std::__1::unique_ptr.86" = type { %"class.std::__1::__compressed_pair.87" }
+%"class.std::__1::__compressed_pair.87" = type { %"struct.std::__1::__compressed_pair_elem.88" }
+%"struct.std::__1::__compressed_pair_elem.88" = type { float* }
+%"class.std::__1::vector.90" = type { %"class.std::__1::__vector_base.91" }
+%"class.std::__1::__vector_base.91" = type { float**, float**, %"class.std::__1::__compressed_pair.92" }
+%"class.std::__1::__compressed_pair.92" = type { %"struct.std::__1::__compressed_pair_elem.93" }
+%"struct.std::__1::__compressed_pair_elem.93" = type { float** }
+%"class.base::OnceCallback" = type { %"class.base::internal::CallbackBase" }
+%"class.base::Thread" = type <{ %"class.base::PlatformThread::Delegate", i8, i8, i8, [5 x i8], %"class.base::Lock", %"class.base::PlatformThreadHandle", %"class.base::Lock", i32, [4 x i8], %"class.base::WaitableEvent", %"class.std::__1::unique_ptr.106", %"class.base::RunLoop"*, i32, [4 x i8], %"class.std::__1::basic_string", %"class.base::WaitableEvent", %"class.base::SequenceCheckerDoNothing", [7 x i8] }>
+%"class.base::PlatformThread::Delegate" = type { i32 (...)** }
+%"class.base::PlatformThreadHandle" = type { i64 }
+%"class.base::Lock" = type { %"class.base::internal::LockImpl" }
+%"class.base::internal::LockImpl" = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%"class.std::__1::unique_ptr.106" = type { %"class.std::__1::__compressed_pair.107" }
+%"class.std::__1::__compressed_pair.107" = type { %"struct.std::__1::__compressed_pair_elem.108" }
+%"struct.std::__1::__compressed_pair_elem.108" = type { %"class.base::Thread::Delegate"* }
+%"class.base::Thread::Delegate" = type { i32 (...)** }
+%"class.base::RunLoop" = type opaque
+%"class.base::WaitableEvent" = type <{ %class.scoped_refptr.100, i8, [7 x i8] }>
+%class.scoped_refptr.100 = type { %"struct.base::WaitableEvent::WaitableEventKernel"* }
+%"struct.base::WaitableEvent::WaitableEventKernel" = type { %"class.base::RefCountedThreadSafe.101", %"class.base::Lock", i8, i8, %"class.std::__1::list" }
+%"class.base::RefCountedThreadSafe.101" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.std::__1::list" = type { %"class.std::__1::__list_imp" }
+%"class.std::__1::__list_imp" = type { %"struct.std::__1::__list_node_base", %"class.std::__1::__compressed_pair.102" }
+%"struct.std::__1::__list_node_base" = type { %"struct.std::__1::__list_node_base"*, %"struct.std::__1::__list_node_base"* }
+%"class.std::__1::__compressed_pair.102" = type { %"struct.std::__1::__compressed_pair_elem.25" }
+%"struct.std::__1::__compressed_pair_elem.25" = type { i64 }
+%"class.media::AudioManagerBase" = type { %"class.media::AudioManager", i32, i32, %"class.base::ObserverList", %"class.std::__1::unordered_set", %"class.std::__1::vector.39", %"class.media::AudioLogFactory"*, %"class.std::__1::unique_ptr.47" }
+%"class.media::AudioManager" = type { i32 (...)**, %"class.std::__1::unique_ptr", i8, %"class.base::RepeatingCallback.15", %"class.base::RepeatingCallback.16" }
+%"class.std::__1::unique_ptr" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"class.media::AudioThread"* }
+%"class.media::AudioThread" = type { i32 (...)** }
+%"class.base::RepeatingCallback.15" = type { %"class.base::internal::CallbackBaseCopyable" }
+%"class.base::RepeatingCallback.16" = type { %"class.base::internal::CallbackBaseCopyable" }
+%"class.base::ObserverList" = type <{ %"class.std::__1::vector", %"class.base::LinkedList", i64, i32, [4 x i8] }>
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"class.base::internal::UncheckedObserverAdapter"*, %"class.base::internal::UncheckedObserverAdapter"*, %"class.std::__1::__compressed_pair.17" }
+%"class.base::internal::UncheckedObserverAdapter" = type { i8* }
+%"class.std::__1::__compressed_pair.17" = type { %"struct.std::__1::__compressed_pair_elem.18" }
+%"struct.std::__1::__compressed_pair_elem.18" = type { %"class.base::internal::UncheckedObserverAdapter"* }
+%"class.base::LinkedList" = type { %"class.base::LinkNode" }
+%"class.base::LinkNode" = type { %"class.base::internal::LinkNodeBase" }
+%"class.base::internal::LinkNodeBase" = type { %"class.base::internal::LinkNodeBase"*, %"class.base::internal::LinkNodeBase"* }
+%"class.std::__1::unordered_set" = type { %"class.std::__1::__hash_table" }
+%"class.std::__1::__hash_table" = type <{ %"class.std::__1::unique_ptr.20", %"class.std::__1::__compressed_pair.29", %"class.std::__1::__compressed_pair.34", %"class.std::__1::__compressed_pair.36", [4 x i8] }>
+%"class.std::__1::unique_ptr.20" = type { %"class.std::__1::__compressed_pair.21" }
+%"class.std::__1::__compressed_pair.21" = type { %"struct.std::__1::__compressed_pair_elem.22", %"struct.std::__1::__compressed_pair_elem.23" }
+%"struct.std::__1::__compressed_pair_elem.22" = type { %"struct.std::__1::__hash_node_base"** }
+%"struct.std::__1::__hash_node_base" = type { %"struct.std::__1::__hash_node_base"* }
+%"struct.std::__1::__compressed_pair_elem.23" = type { %"class.std::__1::__bucket_list_deallocator" }
+%"class.std::__1::__bucket_list_deallocator" = type { %"class.std::__1::__compressed_pair.24" }
+%"class.std::__1::__compressed_pair.24" = type { %"struct.std::__1::__compressed_pair_elem.25" }
+%"class.std::__1::__compressed_pair.29" = type { %"struct.std::__1::__compressed_pair_elem.30" }
+%"struct.std::__1::__compressed_pair_elem.30" = type { %"struct.std::__1::__hash_node_base" }
+%"class.std::__1::__compressed_pair.34" = type { %"struct.std::__1::__compressed_pair_elem.25" }
+%"class.std::__1::__compressed_pair.36" = type { %"struct.std::__1::__compressed_pair_elem.37" }
+%"struct.std::__1::__compressed_pair_elem.37" = type { float }
+%"class.std::__1::vector.39" = type { %"class.std::__1::__vector_base.40" }
+%"class.std::__1::__vector_base.40" = type { %"class.std::__1::unique_ptr.41"*, %"class.std::__1::unique_ptr.41"*, %"class.std::__1::__compressed_pair.42" }
+%"class.std::__1::unique_ptr.41" = type opaque
+%"class.std::__1::__compressed_pair.42" = type { %"struct.std::__1::__compressed_pair_elem.43" }
+%"struct.std::__1::__compressed_pair_elem.43" = type { %"class.std::__1::unique_ptr.41"* }
+%"class.media::AudioLogFactory" = type { i32 (...)** }
+%"class.std::__1::unique_ptr.47" = type { %"class.std::__1::__compressed_pair.48" }
+%"class.std::__1::__compressed_pair.48" = type { %"struct.std::__1::__compressed_pair_elem.49" }
+%"struct.std::__1::__compressed_pair_elem.49" = type { %"class.media::AudioDebugRecordingManager"* }
+%"class.media::AudioDebugRecordingManager" = type { i32 (...)**, %class.scoped_refptr.50, %"class.std::__1::map", %"class.base::RepeatingCallback.59", %"class.base::WeakPtrFactory.60" }
+%class.scoped_refptr.50 = type { %"class.base::SingleThreadTaskRunner"* }
+%"class.base::SingleThreadTaskRunner" = type { %"class.base::SequencedTaskRunner.base", [4 x i8] }
+%"class.base::SequencedTaskRunner.base" = type { %"class.base::TaskRunner.base" }
+%"class.std::__1::map" = type { %"class.std::__1::__tree" }
+%"class.std::__1::__tree" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.51", %"class.std::__1::__compressed_pair.56" }
+%"class.std::__1::__tree_end_node" = type { %"class.std::__1::__tree_node_base"* }
+%"class.std::__1::__tree_node_base" = type opaque
+%"class.std::__1::__compressed_pair.51" = type { %"struct.std::__1::__compressed_pair_elem.52" }
+%"struct.std::__1::__compressed_pair_elem.52" = type { %"class.std::__1::__tree_end_node" }
+%"class.std::__1::__compressed_pair.56" = type { %"struct.std::__1::__compressed_pair_elem.25" }
+%"class.base::RepeatingCallback.59" = type { %"class.base::internal::CallbackBaseCopyable" }
+%"class.base::WeakPtrFactory.60" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.media::AlsaWrapper" = type { i32 (...)** }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short" = type { [23 x i8], %struct.anon }
+%struct.anon = type { i8 }
+%"class.logging::CheckError" = type { %"class.logging::LogMessage"* }
+%"class.logging::LogMessage" = type { i32 (...)**, i32, %"class.std::__1::basic_ostringstream", i64, i8*, i32, %"class.base::ScopedClearLastErrorBase" }
+%"class.std::__1::basic_ostringstream" = type { %"class.std::__1::basic_ostream.base", %"class.std::__1::basic_stringbuf", %"class.std::__1::basic_ios.base" }
+%"class.std::__1::basic_ostream.base" = type { i32 (...)** }
+%"class.std::__1::basic_stringbuf" = type <{ %"class.std::__1::basic_streambuf", %"class.std::__1::basic_string", i8*, i32, [4 x i8] }>
+%"class.std::__1::basic_streambuf" = type { i32 (...)**, %"class.std::__1::locale", i8*, i8*, i8*, i8*, i8*, i8* }
+%"class.std::__1::locale" = type { %"class.std::__1::locale::__imp"* }
+%"class.std::__1::locale::__imp" = type opaque
+%"class.std::__1::basic_ios.base" = type <{ %"class.std::__1::ios_base", %"class.std::__1::basic_ostream"*, i32 }>
+%"class.std::__1::ios_base" = type { i32 (...)**, i32, i64, i64, i32, i32, i8*, i8*, void (i32, %"class.std::__1::ios_base"*, i32)**, i32*, i64, i64, i64*, i64, i64, i8**, i64, i64 }
+%"class.std::__1::basic_ostream" = type { i32 (...)**, %"class.std::__1::basic_ios.base" }
+%"class.base::ScopedClearLastErrorBase" = type { i32 }
+%"struct.base::Thread::Options" = type <{ i32, [4 x i8], %"class.base::Thread::Delegate"*, i32, [4 x i8], %"class.base::sequence_manager::TimeDomain"*, %"class.base::RepeatingCallback.112", i64, i32, i8, i8, [2 x i8] }>
+%"class.base::sequence_manager::TimeDomain" = type opaque
+%"class.base::RepeatingCallback.112" = type { %"class.base::internal::CallbackBaseCopyable" }
+%"class.base::TaskRunner" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe", [4 x i8] }>
+%"class.logging::CheckOpResult" = type { i8* }
+%"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry" = type { i8, %"class.std::__1::basic_ostream"* }
+%"class.std::__1::locale::facet" = type { %"class.std::__1::__shared_count" }
+%"class.std::__1::__shared_count" = type { i32 (...)**, i64 }
+%"class.std::__1::ctype" = type <{ %"class.std::__1::locale::facet", i16*, i8, [7 x i8] }>
+
+$_ZN5media14AgcAudioStreamINS_16AudioInputStreamEE8StartAgcEv = comdat any
+
+$_ZN5media14AgcAudioStreamINS_16AudioInputStreamEE23SetAutomaticGainControlEb = comdat any
+
+$_ZN5media14AgcAudioStreamINS_16AudioInputStreamEE23GetAutomaticGainControlEv = comdat any
+
+$_ZNK4base9TimeDeltamiES0_ = comdat any
+
+$_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m = comdat any
+
+$_ZNSt3__116__pad_and_outputIcNS_11char_traitsIcEEEENS_19ostreambuf_iteratorIT_T0_EES6_PKS4_S8_S8_RNS_8ios_baseES4_ = comdat any
+
+$_ZN5media14AgcAudioStreamINS_16AudioInputStreamEED2Ev = comdat any
+
+$_ZN5media14AgcAudioStreamINS_16AudioInputStreamEED0Ev = comdat any
+
+$_ZN5media14AgcAudioStreamINS_16AudioInputStreamEE32QueryAndStoreNewMicrophoneVolumeEv = comdat any
+
+$_ZN4base8internal7InvokerINS0_9BindStateIMN5media14AgcAudioStreamINS3_16AudioInputStreamEEEFvvEJNS0_17UnretainedWrapperIS6_EEEEEFvvEE3RunEPNS0_13BindStateBaseE = comdat any
+
+$_ZN4base8internal9BindStateIMN5media14AgcAudioStreamINS2_16AudioInputStreamEEEFvvEJNS0_17UnretainedWrapperIS5_EEEE7DestroyEPKNS0_13BindStateBaseE = comdat any
+
+$_ZN4base8internal7InvokerINS0_9BindStateIMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS4_EEEEEFvvEE7RunOnceEPNS0_13BindStateBaseE = comdat any
+
+$_ZN4base8internal9BindStateIMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS3_EEEE7DestroyEPKNS0_13BindStateBaseE = comdat any
+
+$_ZTVN5media14AgcAudioStreamINS_16AudioInputStreamEEE = comdat any
+
+@_ZN5media18AlsaPcmInputStream17kAutoSelectDeviceE = hidden constant [1 x i8] zeroinitializer, align 1
+@_ZTVN5media18AlsaPcmInputStreamE = hidden unnamed_addr constant { [15 x i8*] } { [15 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.media::AlsaPcmInputStream"*)* @_ZN5media18AlsaPcmInputStreamD2Ev to i8*), i8* bitcast (void (%"class.media::AlsaPcmInputStream"*)* @_ZN5media18AlsaPcmInputStreamD0Ev to i8*), i8* bitcast (i32 (%"class.media::AlsaPcmInputStream"*)* @_ZN5media18AlsaPcmInputStream4OpenEv to i8*), i8* bitcast (void (%"class.media::AlsaPcmInputStream"*, %"class.media::AudioInputStream::AudioInputCallback"*)* @_ZN5media18AlsaPcmInputStream5StartEPNS_16AudioInputStream18AudioInputCallbackE to i8*), i8* bitcast (void (%"class.media::AlsaPcmInputStream"*)* @_ZN5media18AlsaPcmInputStream4StopEv to i8*), i8* bitcast (void (%"class.media::AlsaPcmInputStream"*)* @_ZN5media18AlsaPcmInputStream5CloseEv to i8*), i8* bitcast (double (%"class.media::AlsaPcmInputStream"*)* @_ZN5media18AlsaPcmInputStream12GetMaxVolumeEv to i8*), i8* bitcast (void (%"class.media::AlsaPcmInputStream"*, double)* @_ZN5media18AlsaPcmInputStream9SetVolumeEd to i8*), i8* bitcast (double (%"class.media::AlsaPcmInputStream"*)* @_ZN5media18AlsaPcmInputStream9GetVolumeEv to i8*), i8* bitcast (i1 (%"class.media::AgcAudioStream"*, i1)* @_ZN5media14AgcAudioStreamINS_16AudioInputStreamEE23SetAutomaticGainControlEb to i8*), i8* bitcast (i1 (%"class.media::AgcAudioStream"*)* @_ZN5media14AgcAudioStreamINS_16AudioInputStreamEE23GetAutomaticGainControlEv to i8*), i8* bitcast (i1 (%"class.media::AlsaPcmInputStream"*)* @_ZN5media18AlsaPcmInputStream7IsMutedEv to i8*), i8* bitcast (void (%"class.media::AlsaPcmInputStream"*, %"class.std::__1::basic_string"*)* @_ZN5media18AlsaPcmInputStream21SetOutputDeviceForAecERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE to i8*)] }, align 8
+@.str = private unnamed_addr constant [10 x i8] c"AlsaInput\00", align 1
+@_ZN5media19AlsaPcmOutputStream17kMinLatencyMicrosE = external local_unnamed_addr constant i32, align 4
+@_ZN5mediaL15kDefaultDevice1E = internal constant [8 x i8] c"default\00", align 1
+@_ZN5mediaL15kDefaultDevice2E = internal constant [13 x i8] c"plug:default\00", align 1
+@.str.1 = private unnamed_addr constant [11 x i8] c"PcmPrepare\00", align 1
+@.str.2 = private unnamed_addr constant [9 x i8] c"PcmStart\00", align 1
+@.str.3 = private unnamed_addr constant [37 x i8] c"../../media/audio/alsa/alsa_input.cc\00", align 1
+@.str.4 = private unnamed_addr constant [53 x i8] c"capture_thread_.StartWithOptions(std::move(options))\00", align 1
+@.str.5 = private unnamed_addr constant [6 x i8] c"Start\00", align 1
+@.str.6 = private unnamed_addr constant [25 x i8] c"Unable to recover from \22\00", align 1
+@.str.7 = private unnamed_addr constant [4 x i8] c"\22: \00", align 1
+@.str.8 = private unnamed_addr constant [27 x i8] c"StopRunningOnCaptureThread\00", align 1
+@.str.9 = private unnamed_addr constant [19 x i8] c"PcmAvailUpdate(): \00", align 1
+@.str.10 = private unnamed_addr constant [10 x i8] c"ReadAudio\00", align 1
+@.str.11 = private unnamed_addr constant [28 x i8] c"PcmReadi failed with error \00", align 1
+@.str.12 = private unnamed_addr constant [3 x i8] c". \00", align 1
+@.str.13 = private unnamed_addr constant [13 x i8] c"Successfully\00", align 1
+@.str.14 = private unnamed_addr constant [15 x i8] c"Unsuccessfully\00", align 1
+@.str.15 = private unnamed_addr constant [12 x i8] c" recovered.\00", align 1
+@.str.16 = private unnamed_addr constant [47 x i8] c"PcmReadi returning less than expected frames: \00", align 1
+@.str.17 = private unnamed_addr constant [6 x i8] c" vs. \00", align 1
+@.str.18 = private unnamed_addr constant [24 x i8] c". Dropping this buffer.\00", align 1
+@.str.19 = private unnamed_addr constant [8 x i8] c"PcmDrop\00", align 1
+@.str.20 = private unnamed_addr constant [9 x i8] c"PcmClose\00", align 1
+@.str.21 = private unnamed_addr constant [3 x i8] c": \00", align 1
+@.str.22 = private unnamed_addr constant [23 x i8] c"../../base/time/time.h\00", align 1
+@.str.23 = private unnamed_addr constant [38 x i8] c"!is_inf() || (delta_ == other.delta_)\00", align 1
+@.str.24 = private unnamed_addr constant [23 x i8] c"delta_ != other.delta_\00", align 1
+@_ZNSt3__15ctypeIcE2idE = external global %"class.std::__1::locale::id", align 8
+@_ZTVN5media14AgcAudioStreamINS_16AudioInputStreamEEE = linkonce_odr hidden unnamed_addr constant { [15 x i8*] } { [15 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.media::AgcAudioStream"*)* @_ZN5media14AgcAudioStreamINS_16AudioInputStreamEED2Ev to i8*), i8* bitcast (void (%"class.media::AgcAudioStream"*)* @_ZN5media14AgcAudioStreamINS_16AudioInputStreamEED0Ev to i8*), i8* bitcast (void ()* @__cxa_pure_virtual to i8*), i8* bitcast (void ()* @__cxa_pure_virtual to i8*), i8* bitcast (void ()* @__cxa_pure_virtual to i8*), i8* bitcast (void ()* @__cxa_pure_virtual to i8*), i8* bitcast (void ()* @__cxa_pure_virtual to i8*), i8* bitcast (void ()* @__cxa_pure_virtual to i8*), i8* bitcast (void ()* @__cxa_pure_virtual to i8*), i8* bitcast (i1 (%"class.media::AgcAudioStream"*, i1)* @_ZN5media14AgcAudioStreamINS_16AudioInputStreamEE23SetAutomaticGainControlEb to i8*), i8* bitcast (i1 (%"class.media::AgcAudioStream"*)* @_ZN5media14AgcAudioStreamINS_16AudioInputStreamEE23GetAutomaticGainControlEv to i8*), i8* bitcast (void ()* @__cxa_pure_virtual to i8*), i8* bitcast (void ()* @__cxa_pure_virtual to i8*)] }, comdat, align 8
+@.str.26 = private unnamed_addr constant [9 x i8] c"StartAgc\00", align 1
+@.str.27 = private unnamed_addr constant [37 x i8] c"../../media/audio/agc_audio_stream.h\00", align 1
+
+@_ZN5media18AlsaPcmInputStreamC1EPNS_16AudioManagerBaseERKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEERKNS_15AudioParametersEPNS_11AlsaWrapperE = hidden unnamed_addr alias void (%"class.media::AlsaPcmInputStream"*, %"class.media::AudioManagerBase"*, %"class.std::__1::basic_string"*, %"class.media::AudioParameters"*, %"class.media::AlsaWrapper"*), void (%"class.media::AlsaPcmInputStream"*, %"class.media::AudioManagerBase"*, %"class.std::__1::basic_string"*, %"class.media::AudioParameters"*, %"class.media::AlsaWrapper"*)* @_ZN5media18AlsaPcmInputStreamC2EPNS_16AudioManagerBaseERKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEERKNS_15AudioParametersEPNS_11AlsaWrapperE
+@_ZN5media18AlsaPcmInputStreamD1Ev = hidden unnamed_addr alias void (%"class.media::AlsaPcmInputStream"*), void (%"class.media::AlsaPcmInputStream"*)* @_ZN5media18AlsaPcmInputStreamD2Ev
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media18AlsaPcmInputStreamC2EPNS_16AudioManagerBaseERKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEERKNS_15AudioParametersEPNS_11AlsaWrapperE(%"class.media::AlsaPcmInputStream"*, %"class.media::AudioManagerBase"*, %"class.std::__1::basic_string"* nocapture readonly dereferenceable(24), %"class.media::AudioParameters"* dereferenceable(64), %"class.media::AlsaWrapper"*) unnamed_addr #0 align 2 {
+  %6 = alloca %"class.std::__1::basic_string", align 8
+  %7 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [15 x i8*] }, { [15 x i8*] }* @_ZTVN5media14AgcAudioStreamINS_16AudioInputStreamEEE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %7, align 8
+  %8 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 0, i32 2
+  tail call void @_ZN4base14RepeatingTimerC1Ev(%"class.base::RepeatingTimer"* %8) #11
+  %9 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 0, i32 3
+  store i8 0, i8* %9, align 8
+  %10 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 0, i32 4
+  %11 = bitcast double* %10 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %11, i8 0, i64 16, i1 false) #11
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [15 x i8*] }, { [15 x i8*] }* @_ZTVN5media18AlsaPcmInputStreamE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %7, align 8
+  %12 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 1
+  store %"class.media::AudioManagerBase"* %1, %"class.media::AudioManagerBase"** %12, align 8
+  %13 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 2
+  %14 = bitcast %"class.std::__1::basic_string"* %2 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %15 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %14, i64 0, i32 1, i32 0
+  %16 = load i8, i8* %15, align 1
+  %17 = icmp slt i8 %16, 0
+  br i1 %17, label %21, label %18
+
+18:                                               ; preds = %5
+  %19 = bitcast %"class.std::__1::basic_string"* %13 to i8*
+  %20 = bitcast %"class.std::__1::basic_string"* %2 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %19, i8* align 8 %20, i64 24, i1 false) #11
+  br label %26
+
+21:                                               ; preds = %5
+  %22 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %2, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %23 = load i8*, i8** %22, align 8
+  %24 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %2, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %25 = load i64, i64* %24, align 8
+  tail call void @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE25__init_copy_ctor_externalEPKcm(%"class.std::__1::basic_string"* %13, i8* %23, i64 %25) #11
+  br label %26
+
+26:                                               ; preds = %18, %21
+  %27 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 3
+  tail call void @_ZN5media15AudioParametersC1ERKS0_(%"class.media::AudioParameters"* %27, %"class.media::AudioParameters"* dereferenceable(64) %3) #11
+  %28 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 4
+  %29 = tail call i32 @_ZNK5media15AudioParameters17GetBytesPerBufferENS_12SampleFormatE(%"class.media::AudioParameters"* %3, i32 2) #11
+  store i32 %29, i32* %28, align 8
+  %30 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 6
+  store %"class.media::AlsaWrapper"* %4, %"class.media::AlsaWrapper"** %30, align 8
+  %31 = getelementptr inbounds %"class.media::AudioParameters", %"class.media::AudioParameters"* %3, i64 0, i32 4
+  %32 = load i32, i32* %31, align 8
+  %33 = sext i32 %32 to i64
+  %34 = mul nsw i64 %33, 1000000
+  %35 = sitofp i64 %34 to float
+  %36 = getelementptr inbounds %"class.media::AudioParameters", %"class.media::AudioParameters"* %3, i64 0, i32 3
+  %37 = load i32, i32* %36, align 4
+  %38 = sitofp i32 %37 to float
+  %39 = fdiv float %35, %38
+  %40 = fptosi float %39 to i64
+  %41 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 7, i32 0
+  store i64 %40, i64* %41, align 8
+  %42 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 8
+  %43 = bitcast %"class.media::AudioInputStream::AudioInputCallback"** %42 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %43, i8 0, i64 49, i1 false)
+  %44 = tail call %"class.media::AudioBus"* @_ZN5media8AudioBus6CreateERKNS_15AudioParametersE(%"class.media::AudioParameters"* dereferenceable(64) %3) #11
+  %45 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 16, i32 0, i32 0, i32 0
+  store %"class.media::AudioBus"* %44, %"class.media::AudioBus"** %45, align 8
+  %46 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 17
+  %47 = bitcast %"class.std::__1::basic_string"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %47) #11
+  %48 = bitcast %"class.std::__1::basic_string"* %6 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %49 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %48, i64 0, i32 1, i32 0
+  store i8 9, i8* %49, align 1
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %47, i8* align 1 getelementptr inbounds ([10 x i8], [10 x i8]* @.str, i64 0, i64 0), i64 9, i1 false) #11
+  %50 = getelementptr inbounds i8, i8* %47, i64 9
+  store i8 0, i8* %50, align 1
+  call void @_ZN4base6ThreadC1ERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE(%"class.base::Thread"* %46, %"class.std::__1::basic_string"* nonnull dereferenceable(24) %6) #11
+  %51 = load i8, i8* %49, align 1
+  %52 = icmp slt i8 %51, 0
+  br i1 %52, label %53, label %56
+
+53:                                               ; preds = %26
+  %54 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %6, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %55 = load i8*, i8** %54, align 8
+  call void @_ZdlPv(i8* %55) #12
+  br label %56
+
+56:                                               ; preds = %26, %53
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %47) #11
+  %57 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 18
+  store i8 0, i8* %57, align 8
+  ret void
+}
+
+declare void @_ZN5media15AudioParametersC1ERKS0_(%"class.media::AudioParameters"*, %"class.media::AudioParameters"* dereferenceable(64)) unnamed_addr #1
+
+declare i32 @_ZNK5media15AudioParameters17GetBytesPerBufferENS_12SampleFormatE(%"class.media::AudioParameters"*, i32) local_unnamed_addr #1
+
+declare %"class.media::AudioBus"* @_ZN5media8AudioBus6CreateERKNS_15AudioParametersE(%"class.media::AudioParameters"* dereferenceable(64)) local_unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+declare void @_ZN4base6ThreadC1ERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE(%"class.base::Thread"*, %"class.std::__1::basic_string"* dereferenceable(24)) unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media18AlsaPcmInputStreamD2Ev(%"class.media::AlsaPcmInputStream"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [15 x i8*] }, { [15 x i8*] }* @_ZTVN5media18AlsaPcmInputStreamE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 17
+  tail call void @_ZN4base6ThreadD1Ev(%"class.base::Thread"* %3) #11
+  %4 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 16, i32 0, i32 0, i32 0
+  %5 = load %"class.media::AudioBus"*, %"class.media::AudioBus"** %4, align 8
+  store %"class.media::AudioBus"* null, %"class.media::AudioBus"** %4, align 8
+  %6 = icmp eq %"class.media::AudioBus"* %5, null
+  br i1 %6, label %12, label %7
+
+7:                                                ; preds = %1
+  %8 = bitcast %"class.media::AudioBus"* %5 to void (%"class.media::AudioBus"*)***
+  %9 = load void (%"class.media::AudioBus"*)**, void (%"class.media::AudioBus"*)*** %8, align 8
+  %10 = getelementptr inbounds void (%"class.media::AudioBus"*)*, void (%"class.media::AudioBus"*)** %9, i64 1
+  %11 = load void (%"class.media::AudioBus"*)*, void (%"class.media::AudioBus"*)** %10, align 8
+  tail call void %11(%"class.media::AudioBus"* nonnull %5) #11
+  br label %12
+
+12:                                               ; preds = %1, %7
+  %13 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 13, i32 0, i32 0, i32 0
+  %14 = load i8*, i8** %13, align 8
+  store i8* null, i8** %13, align 8
+  %15 = icmp eq i8* %14, null
+  br i1 %15, label %17, label %16
+
+16:                                               ; preds = %12
+  tail call void @_ZdaPv(i8* nonnull %14) #12
+  br label %17
+
+17:                                               ; preds = %12, %16
+  %18 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 3
+  tail call void @_ZN5media15AudioParametersD1Ev(%"class.media::AudioParameters"* %18) #11
+  %19 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 2
+  %20 = bitcast %"class.std::__1::basic_string"* %19 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %21 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %20, i64 0, i32 1, i32 0
+  %22 = load i8, i8* %21, align 1
+  %23 = icmp slt i8 %22, 0
+  br i1 %23, label %24, label %27
+
+24:                                               ; preds = %17
+  %25 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %19, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %26 = load i8*, i8** %25, align 8
+  tail call void @_ZdlPv(i8* %26) #12
+  br label %27
+
+27:                                               ; preds = %17, %24
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [15 x i8*] }, { [15 x i8*] }* @_ZTVN5media14AgcAudioStreamINS_16AudioInputStreamEEE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %28 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 0, i32 2
+  tail call void @_ZN4base14RepeatingTimerD1Ev(%"class.base::RepeatingTimer"* %28) #11
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @_ZN4base6ThreadD1Ev(%"class.base::Thread"*) unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN5media15AudioParametersD1Ev(%"class.media::AudioParameters"*) unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media18AlsaPcmInputStreamD0Ev(%"class.media::AlsaPcmInputStream"*) unnamed_addr #0 align 2 {
+  tail call void @_ZN5media18AlsaPcmInputStreamD2Ev(%"class.media::AlsaPcmInputStream"* %0) #11
+  %2 = bitcast %"class.media::AlsaPcmInputStream"* %0 to i8*
+  tail call void @_ZdlPv(i8* %2) #12
+  ret void
+}
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN5media18AlsaPcmInputStream4OpenEv(%"class.media::AlsaPcmInputStream"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 10
+  %3 = load %struct._snd_pcm*, %struct._snd_pcm** %2, align 8
+  %4 = icmp eq %struct._snd_pcm* %3, null
+  br i1 %4, label %5, label %114
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 7, i32 0
+  %7 = load i64, i64* %6, align 8
+  %8 = trunc i64 %7 to i32
+  %9 = mul i32 %8, 3
+  %10 = load i32, i32* @_ZN5media19AlsaPcmOutputStream17kMinLatencyMicrosE, align 4
+  %11 = icmp ult i32 %9, %10
+  %12 = select i1 %11, i32 %10, i32 %9
+  %13 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 2
+  %14 = bitcast %"class.std::__1::basic_string"* %13 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %15 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %14, i64 0, i32 1, i32 0
+  %16 = load i8, i8* %15, align 1
+  %17 = icmp slt i8 %16, 0
+  %18 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 2, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %19 = load i64, i64* %18, align 8
+  %20 = zext i8 %16 to i64
+  %21 = select i1 %17, i64 %19, i64 %20
+  %22 = icmp eq i64 %21, 0
+  br i1 %22, label %23, label %71
+
+23:                                               ; preds = %5
+  %24 = tail call i32 @_ZNKSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareEmmPKcm(%"class.std::__1::basic_string"* %13, i64 0, i64 -1, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @_ZN5media18AlsaPcmInputStream17kAutoSelectDeviceE, i64 0, i64 0), i64 0) #11
+  %25 = icmp eq i32 %24, 0
+  br i1 %25, label %28, label %26
+
+26:                                               ; preds = %23
+  %27 = load i8, i8* %15, align 1
+  br label %71
+
+28:                                               ; preds = %23
+  %29 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 6
+  %30 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 3, i32 2
+  %31 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 3, i32 3
+  %32 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %29, align 8
+  %33 = load i32, i32* %30, align 8
+  %34 = load i32, i32* %31, align 4
+  %35 = tail call %struct._snd_pcm* @_ZN9alsa_util17OpenCaptureDeviceEPN5media11AlsaWrapperEPKcii15_snd_pcm_formatii(%"class.media::AlsaWrapper"* %32, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @_ZN5mediaL15kDefaultDevice1E, i64 0, i64 0), i32 %33, i32 %34, i32 2, i32 %12, i32 %8) #11
+  store %struct._snd_pcm* %35, %struct._snd_pcm** %2, align 8
+  %36 = icmp eq %struct._snd_pcm* %35, null
+  br i1 %36, label %37, label %43
+
+37:                                               ; preds = %28
+  %38 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %29, align 8
+  %39 = load i32, i32* %30, align 8
+  %40 = load i32, i32* %31, align 4
+  %41 = tail call %struct._snd_pcm* @_ZN9alsa_util17OpenCaptureDeviceEPN5media11AlsaWrapperEPKcii15_snd_pcm_formatii(%"class.media::AlsaWrapper"* %38, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @_ZN5mediaL15kDefaultDevice2E, i64 0, i64 0), i32 %39, i32 %40, i32 2, i32 %12, i32 %8) #11
+  store %struct._snd_pcm* %41, %struct._snd_pcm** %2, align 8
+  %42 = icmp eq %struct._snd_pcm* %41, null
+  br i1 %42, label %69, label %43
+
+43:                                               ; preds = %37, %28
+  %44 = phi i8* [ getelementptr inbounds ([8 x i8], [8 x i8]* @_ZN5mediaL15kDefaultDevice1E, i64 0, i64 0), %28 ], [ getelementptr inbounds ([13 x i8], [13 x i8]* @_ZN5mediaL15kDefaultDevice2E, i64 0, i64 0), %37 ]
+  %45 = load i8, i8* %44, align 1
+  %46 = tail call i1 @llvm.is.constant.i8(i8 %45) #11
+  br i1 %46, label %47, label %67
+
+47:                                               ; preds = %43
+  %48 = tail call i64 @strlen(i8* %44) #11
+  %49 = icmp ult i64 %48, 23
+  br i1 %49, label %50, label %65
+
+50:                                               ; preds = %47
+  %51 = load i8, i8* %15, align 1
+  %52 = icmp slt i8 %51, 0
+  br i1 %52, label %53, label %56
+
+53:                                               ; preds = %50
+  store i64 %48, i64* %18, align 8
+  %54 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %13, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %55 = load i8*, i8** %54, align 8
+  br label %59
+
+56:                                               ; preds = %50
+  %57 = trunc i64 %48 to i8
+  store i8 %57, i8* %15, align 1
+  %58 = bitcast %"class.std::__1::basic_string"* %13 to i8*
+  br label %59
+
+59:                                               ; preds = %56, %53
+  %60 = phi i8* [ %55, %53 ], [ %58, %56 ]
+  %61 = icmp eq i64 %48, 0
+  br i1 %61, label %63, label %62
+
+62:                                               ; preds = %59
+  tail call void @llvm.memmove.p0i8.p0i8.i64(i8* align 1 %60, i8* align 1 %44, i64 %48, i1 false) #11
+  br label %63
+
+63:                                               ; preds = %62, %59
+  %64 = getelementptr inbounds i8, i8* %60, i64 %48
+  store i8 0, i8* %64, align 1
+  br label %69
+
+65:                                               ; preds = %47
+  %66 = tail call dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE17__assign_externalEPKcm(%"class.std::__1::basic_string"* %13, i8* %44, i64 %48) #11
+  br label %69
+
+67:                                               ; preds = %43
+  %68 = tail call dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE17__assign_externalEPKc(%"class.std::__1::basic_string"* %13, i8* %44) #11
+  br label %69
+
+69:                                               ; preds = %37, %67, %65, %63
+  %70 = load %struct._snd_pcm*, %struct._snd_pcm** %2, align 8
+  br label %88
+
+71:                                               ; preds = %26, %5
+  %72 = phi i8 [ %27, %26 ], [ %16, %5 ]
+  %73 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 6
+  %74 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %73, align 8
+  %75 = icmp slt i8 %72, 0
+  br i1 %75, label %76, label %79
+
+76:                                               ; preds = %71
+  %77 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %13, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %78 = load i8*, i8** %77, align 8
+  br label %81
+
+79:                                               ; preds = %71
+  %80 = bitcast %"class.std::__1::basic_string"* %13 to i8*
+  br label %81
+
+81:                                               ; preds = %76, %79
+  %82 = phi i8* [ %78, %76 ], [ %80, %79 ]
+  %83 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 3, i32 2
+  %84 = load i32, i32* %83, align 8
+  %85 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 3, i32 3
+  %86 = load i32, i32* %85, align 4
+  %87 = tail call %struct._snd_pcm* @_ZN9alsa_util17OpenCaptureDeviceEPN5media11AlsaWrapperEPKcii15_snd_pcm_formatii(%"class.media::AlsaWrapper"* %74, i8* %82, i32 %84, i32 %86, i32 2, i32 %12, i32 %8) #11
+  store %struct._snd_pcm* %87, %struct._snd_pcm** %2, align 8
+  br label %88
+
+88:                                               ; preds = %81, %69
+  %89 = phi %struct._snd_pcm* [ %87, %81 ], [ %70, %69 ]
+  %90 = icmp eq %struct._snd_pcm* %89, null
+  br i1 %90, label %110, label %91
+
+91:                                               ; preds = %88
+  %92 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 4
+  %93 = load i32, i32* %92, align 8
+  %94 = sext i32 %93 to i64
+  %95 = tail call i8* @_Znam(i64 %94) #12
+  %96 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 13, i32 0, i32 0, i32 0
+  %97 = load i8*, i8** %96, align 8
+  store i8* %95, i8** %96, align 8
+  %98 = icmp eq i8* %97, null
+  br i1 %98, label %100, label %99
+
+99:                                               ; preds = %91
+  tail call void @_ZdaPv(i8* nonnull %97) #12
+  br label %100
+
+100:                                              ; preds = %91, %99
+  %101 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 6
+  %102 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %101, align 8
+  %103 = tail call %struct._snd_mixer* @_ZN9alsa_util9OpenMixerEPN5media11AlsaWrapperERKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEE(%"class.media::AlsaWrapper"* %102, %"class.std::__1::basic_string"* dereferenceable(24) %13) #11
+  %104 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 11
+  store %struct._snd_mixer* %103, %struct._snd_mixer** %104, align 8
+  %105 = icmp eq %struct._snd_mixer* %103, null
+  br i1 %105, label %110, label %106
+
+106:                                              ; preds = %100
+  %107 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %101, align 8
+  %108 = tail call %struct._snd_mixer_elem* @_ZN9alsa_util23LoadCaptureMixerElementEPN5media11AlsaWrapperEP10_snd_mixer(%"class.media::AlsaWrapper"* %107, %struct._snd_mixer* nonnull %103) #11
+  %109 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 12
+  store %struct._snd_mixer_elem* %108, %struct._snd_mixer_elem** %109, align 8
+  br label %110
+
+110:                                              ; preds = %100, %88, %106
+  %111 = load %struct._snd_pcm*, %struct._snd_pcm** %2, align 8
+  %112 = icmp eq %struct._snd_pcm* %111, null
+  %113 = select i1 %112, i32 2, i32 0
+  br label %114
+
+114:                                              ; preds = %1, %110
+  %115 = phi i32 [ %113, %110 ], [ 1, %1 ]
+  ret i32 %115
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #2
+
+declare %struct._snd_pcm* @_ZN9alsa_util17OpenCaptureDeviceEPN5media11AlsaWrapperEPKcii15_snd_pcm_formatii(%"class.media::AlsaWrapper"*, i8*, i32, i32, i32, i32, i32) local_unnamed_addr #1
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znam(i64) local_unnamed_addr #5
+
+declare %struct._snd_mixer* @_ZN9alsa_util9OpenMixerEPN5media11AlsaWrapperERKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEE(%"class.media::AlsaWrapper"*, %"class.std::__1::basic_string"* dereferenceable(24)) local_unnamed_addr #1
+
+declare %struct._snd_mixer_elem* @_ZN9alsa_util23LoadCaptureMixerElementEPN5media11AlsaWrapperEP10_snd_mixer(%"class.media::AlsaWrapper"*, %struct._snd_mixer*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media18AlsaPcmInputStream5StartEPNS_16AudioInputStream18AudioInputCallbackE(%"class.media::AlsaPcmInputStream"*, %"class.media::AudioInputStream::AudioInputCallback"*) unnamed_addr #0 align 2 {
+  %3 = alloca %"class.logging::CheckError", align 8
+  %4 = alloca %"class.logging::CheckError", align 8
+  %5 = alloca %"struct.base::Thread::Options", align 8
+  %6 = alloca %"class.logging::CheckError", align 8
+  %7 = alloca %"class.base::Location", align 8
+  %8 = alloca %"class.base::OnceCallback", align 8
+  %9 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 8
+  store %"class.media::AudioInputStream::AudioInputCallback"* %1, %"class.media::AudioInputStream::AudioInputCallback"** %9, align 8
+  %10 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 0
+  tail call void @_ZN5media14AgcAudioStreamINS_16AudioInputStreamEE8StartAgcEv(%"class.media::AgcAudioStream"* %10)
+  %11 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 6
+  %12 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %11, align 8
+  %13 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 10
+  %14 = load %struct._snd_pcm*, %struct._snd_pcm** %13, align 8
+  %15 = bitcast %"class.media::AlsaWrapper"* %12 to i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)***
+  %16 = load i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)**, i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)*** %15, align 8
+  %17 = getelementptr inbounds i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)*, i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)** %16, i64 8
+  %18 = load i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)*, i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)** %17, align 8
+  %19 = tail call i32 %18(%"class.media::AlsaWrapper"* %12, %struct._snd_pcm* %14) #11
+  %20 = icmp slt i32 %19, 0
+  br i1 %20, label %21, label %22
+
+21:                                               ; preds = %2
+  tail call void @_ZN5media18AlsaPcmInputStream11HandleErrorEPKci(%"class.media::AlsaPcmInputStream"* %0, i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str.1, i64 0, i64 0), i32 %19)
+  br label %32
+
+22:                                               ; preds = %2
+  %23 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %11, align 8
+  %24 = load %struct._snd_pcm*, %struct._snd_pcm** %13, align 8
+  %25 = bitcast %"class.media::AlsaWrapper"* %23 to i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)***
+  %26 = load i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)**, i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)*** %25, align 8
+  %27 = getelementptr inbounds i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)*, i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)** %26, i64 43
+  %28 = load i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)*, i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)** %27, align 8
+  %29 = tail call i32 %28(%"class.media::AlsaWrapper"* %23, %struct._snd_pcm* %24) #11
+  %30 = icmp slt i32 %29, 0
+  br i1 %30, label %31, label %33
+
+31:                                               ; preds = %22
+  tail call void @_ZN5media18AlsaPcmInputStream11HandleErrorEPKci(%"class.media::AlsaPcmInputStream"* %0, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.2, i64 0, i64 0), i32 %29)
+  br label %32
+
+32:                                               ; preds = %21, %31
+  store %"class.media::AudioInputStream::AudioInputCallback"* null, %"class.media::AudioInputStream::AudioInputCallback"** %9, align 8
+  br label %123
+
+33:                                               ; preds = %22
+  %34 = bitcast %"struct.base::Thread::Options"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 56, i8* nonnull %34) #11
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %34, i8 -86, i64 56, i1 false)
+  call void @_ZN4base6Thread7OptionsC1Ev(%"struct.base::Thread::Options"* nonnull %5) #11
+  %35 = getelementptr inbounds %"struct.base::Thread::Options", %"struct.base::Thread::Options"* %5, i64 0, i32 8
+  store i32 3, i32* %35, align 8
+  %36 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 17
+  %37 = call zeroext i1 @_ZN4base6Thread16StartWithOptionsERKNS0_7OptionsE(%"class.base::Thread"* %36, %"struct.base::Thread::Options"* nonnull dereferenceable(56) %5) #11
+  br i1 %37, label %41, label %38
+
+38:                                               ; preds = %33
+  %39 = bitcast %"class.logging::CheckError"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %39) #11
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %6, i8* getelementptr inbounds ([37 x i8], [37 x i8]* @.str.3, i64 0, i64 0), i32 116, i8* getelementptr inbounds ([53 x i8], [53 x i8]* @.str.4, i64 0, i64 0)) #11
+  %40 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %6) #11
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %6) #11
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %39) #11
+  br label %41
+
+41:                                               ; preds = %33, %38
+  %42 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 7, i32 0
+  %43 = load i64, i64* %42, align 8
+  %44 = sdiv i64 %43, 2
+  %45 = add i64 %44, -9223372036854775807
+  %46 = icmp ult i64 %45, 2
+  br i1 %46, label %55, label %47
+
+47:                                               ; preds = %41
+  %48 = icmp slt i64 %43, -1
+  %49 = select i1 %48, i64 -9223372036854775808, i64 9223372036854775807
+  %50 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %43, i64 %44) #11
+  %51 = extractvalue { i64, i1 } %50, 1
+  %52 = extractvalue { i64, i1 } %50, 0
+  %53 = select i1 %51, i64 %49, i64 %52, !prof !2
+  %54 = add i64 %53, -9223372036854775807
+  br label %63
+
+55:                                               ; preds = %41
+  %56 = add i64 %43, -9223372036854775807
+  %57 = icmp ugt i64 %56, 1
+  %58 = icmp eq i64 %43, %44
+  %59 = or i1 %58, %57
+  br i1 %59, label %63, label %60
+
+60:                                               ; preds = %55
+  %61 = bitcast %"class.logging::CheckError"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %61) #11
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %4, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.22, i64 0, i64 0), i32 378, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.23, i64 0, i64 0)) #11
+  %62 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %4) #11
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %4) #11
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %61) #11
+  br label %63
+
+63:                                               ; preds = %47, %55, %60
+  %64 = phi i64 [ %54, %47 ], [ %45, %55 ], [ %45, %60 ]
+  %65 = phi i64 [ %53, %47 ], [ %44, %55 ], [ %44, %60 ]
+  %66 = call i64 @_ZN4base9TimeTicks3NowEv() #11
+  %67 = icmp ult i64 %64, 2
+  br i1 %67, label %75, label %68
+
+68:                                               ; preds = %63
+  %69 = icmp slt i64 %65, 0
+  %70 = select i1 %69, i64 -9223372036854775808, i64 9223372036854775807
+  %71 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %66, i64 %65) #11
+  %72 = extractvalue { i64, i1 } %71, 1
+  %73 = extractvalue { i64, i1 } %71, 0
+  %74 = select i1 %72, i64 %70, i64 %73, !prof !2
+  br label %83
+
+75:                                               ; preds = %63
+  %76 = add i64 %66, -9223372036854775807
+  %77 = icmp ugt i64 %76, 1
+  %78 = icmp eq i64 %66, %65
+  %79 = or i1 %78, %77
+  br i1 %79, label %83, label %80
+
+80:                                               ; preds = %75
+  %81 = bitcast %"class.logging::CheckError"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %81) #11
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %3, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.22, i64 0, i64 0), i32 378, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.23, i64 0, i64 0)) #11
+  %82 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %3) #11
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %3) #11
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %81) #11
+  br label %83
+
+83:                                               ; preds = %68, %75, %80
+  %84 = phi i64 [ %74, %68 ], [ %65, %75 ], [ %65, %80 ]
+  %85 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 9, i32 0, i32 0
+  store i64 %84, i64* %85, align 8
+  %86 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 18
+  store i8 1, i8* %86, align 8
+  %87 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 17, i32 11, i32 0, i32 0, i32 0
+  %88 = load %"class.base::Thread::Delegate"*, %"class.base::Thread::Delegate"** %87, align 8
+  %89 = icmp eq %"class.base::Thread::Delegate"* %88, null
+  br i1 %89, label %96, label %90
+
+90:                                               ; preds = %83
+  %91 = bitcast %"class.base::Thread::Delegate"* %88 to %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)***
+  %92 = load %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)**, %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)*** %91, align 8
+  %93 = getelementptr inbounds %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)*, %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)** %92, i64 2
+  %94 = load %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)*, %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)** %93, align 8
+  %95 = call %"class.base::SingleThreadTaskRunner"* %94(%"class.base::Thread::Delegate"* nonnull %88) #11
+  br label %96
+
+96:                                               ; preds = %83, %90
+  %97 = phi %"class.base::SingleThreadTaskRunner"* [ %95, %90 ], [ null, %83 ]
+  %98 = bitcast %"class.base::SingleThreadTaskRunner"* %97 to %"class.base::TaskRunner"*
+  %99 = bitcast %"class.base::Location"* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %99) #11
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %7, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @.str.5, i64 0, i64 0), i8* getelementptr inbounds ([37 x i8], [37 x i8]* @.str.3, i64 0, i64 0), i32 125) #11
+  %100 = ptrtoint %"class.media::AlsaPcmInputStream"* %0 to i64
+  %101 = call i8* @_Znwm(i64 56) #12, !noalias !3
+  %102 = bitcast i8* %101 to %"class.base::internal::BindStateBase"*
+  call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"* nonnull %102, void ()* bitcast (void (%"class.base::internal::BindStateBase"*)* @_ZN4base8internal7InvokerINS0_9BindStateIMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS4_EEEEEFvvEE7RunOnceEPNS0_13BindStateBaseE to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @_ZN4base8internal9BindStateIMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS3_EEEE7DestroyEPKNS0_13BindStateBaseE) #11, !noalias !3
+  %103 = getelementptr inbounds i8, i8* %101, i64 32
+  %104 = bitcast i8* %103 to <2 x i64>*
+  store <2 x i64> <i64 ptrtoint (void (%"class.media::AlsaPcmInputStream"*)* @_ZN5media18AlsaPcmInputStream9ReadAudioEv to i64), i64 0>, <2 x i64>* %104, align 8, !noalias !3
+  %105 = getelementptr inbounds i8, i8* %101, i64 48
+  %106 = bitcast i8* %105 to i64*
+  store i64 %100, i64* %106, align 8, !noalias !3
+  %107 = bitcast %"class.base::OnceCallback"* %8 to i8**
+  store i8* %101, i8** %107, align 8, !alias.scope !3
+  %108 = bitcast %"class.base::SingleThreadTaskRunner"* %97 to i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)***
+  %109 = load i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)**, i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)*** %108, align 8
+  %110 = load i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)*, i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)** %109, align 8
+  %111 = call zeroext i1 %110(%"class.base::TaskRunner"* %98, %"class.base::Location"* nonnull dereferenceable(32) %7, %"class.base::OnceCallback"* nonnull %8, i64 %65) #11
+  %112 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %8, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %112) #11
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %99) #11
+  %113 = icmp eq %"class.base::SingleThreadTaskRunner"* %97, null
+  br i1 %113, label %122, label %114
+
+114:                                              ; preds = %96
+  %115 = getelementptr inbounds %"class.base::SingleThreadTaskRunner", %"class.base::SingleThreadTaskRunner"* %97, i64 0, i32 0, i32 0, i32 1
+  %116 = getelementptr inbounds %"class.base::RefCountedThreadSafe", %"class.base::RefCountedThreadSafe"* %115, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %117 = atomicrmw sub i32* %116, i32 1 acq_rel
+  %118 = icmp eq i32 %117, 1
+  br i1 %118, label %119, label %122
+
+119:                                              ; preds = %114
+  %120 = getelementptr inbounds %"class.base::RefCountedThreadSafe", %"class.base::RefCountedThreadSafe"* %115, i64 -2
+  %121 = bitcast %"class.base::RefCountedThreadSafe"* %120 to %"class.base::TaskRunner"*
+  call void @_ZN4base16TaskRunnerTraits8DestructEPKNS_10TaskRunnerE(%"class.base::TaskRunner"* %121) #11
+  br label %122
+
+122:                                              ; preds = %96, %114, %119
+  call void @_ZN4base6Thread7OptionsD1Ev(%"struct.base::Thread::Options"* nonnull %5) #11
+  call void @llvm.lifetime.end.p0i8(i64 56, i8* nonnull %34) #11
+  br label %123
+
+123:                                              ; preds = %122, %32
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN5media14AgcAudioStreamINS_16AudioInputStreamEE8StartAgcEv(%"class.media::AgcAudioStream"*) local_unnamed_addr #0 comdat align 2 {
+  %2 = alloca %"class.base::RepeatingCallback", align 8
+  %3 = alloca %"class.base::Location", align 8
+  %4 = getelementptr inbounds %"class.media::AgcAudioStream", %"class.media::AgcAudioStream"* %0, i64 0, i32 3
+  %5 = load i8, i8* %4, align 8, !range !8
+  %6 = icmp eq i8 %5, 0
+  br i1 %6, label %45, label %7
+
+7:                                                ; preds = %1
+  %8 = getelementptr inbounds %"class.media::AgcAudioStream", %"class.media::AgcAudioStream"* %0, i64 0, i32 2
+  %9 = getelementptr inbounds %"class.base::RepeatingTimer", %"class.base::RepeatingTimer"* %8, i64 0, i32 0
+  %10 = tail call zeroext i1 @_ZNK4base8internal9TimerBase9IsRunningEv(%"class.base::internal::TimerBase"* %9) #11
+  br i1 %10, label %45, label %11
+
+11:                                               ; preds = %7
+  %12 = getelementptr inbounds %"class.media::AgcAudioStream", %"class.media::AgcAudioStream"* %0, i64 0, i32 0
+  %13 = bitcast %"class.media::AgcAudioStream"* %0 to double (%"class.media::AudioInputStream"*)***
+  %14 = load double (%"class.media::AudioInputStream"*)**, double (%"class.media::AudioInputStream"*)*** %13, align 8
+  %15 = getelementptr inbounds double (%"class.media::AudioInputStream"*)*, double (%"class.media::AudioInputStream"*)** %14, i64 6
+  %16 = load double (%"class.media::AudioInputStream"*)*, double (%"class.media::AudioInputStream"*)** %15, align 8
+  %17 = tail call double %16(%"class.media::AudioInputStream"* %12) #11
+  %18 = getelementptr inbounds %"class.media::AgcAudioStream", %"class.media::AgcAudioStream"* %0, i64 0, i32 4
+  store double %17, double* %18, align 8
+  %19 = fcmp ugt double %17, 0.000000e+00
+  br i1 %19, label %20, label %45
+
+20:                                               ; preds = %11
+  %21 = load double (%"class.media::AudioInputStream"*)**, double (%"class.media::AudioInputStream"*)*** %13, align 8
+  %22 = getelementptr inbounds double (%"class.media::AudioInputStream"*)*, double (%"class.media::AudioInputStream"*)** %21, i64 8
+  %23 = load double (%"class.media::AudioInputStream"*)*, double (%"class.media::AudioInputStream"*)** %22, align 8
+  %24 = tail call double %23(%"class.media::AudioInputStream"* %12) #11
+  %25 = load double, double* %18, align 8
+  %26 = fdiv double %24, %25
+  %27 = getelementptr inbounds %"class.media::AgcAudioStream", %"class.media::AgcAudioStream"* %0, i64 0, i32 5, i32 0
+  %28 = bitcast double %26 to i64
+  %29 = bitcast %"struct.std::__1::__atomic_base.11"* %27 to i64*
+  store atomic i64 %28, i64* %29 monotonic, align 8
+  %30 = bitcast %"class.base::Location"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %30) #11
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %3, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.26, i64 0, i64 0), i8* getelementptr inbounds ([37 x i8], [37 x i8]* @.str.27, i64 0, i64 0), i32 104) #11
+  %31 = bitcast %"class.base::RepeatingCallback"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %31)
+  %32 = ptrtoint %"class.media::AgcAudioStream"* %0 to i64
+  %33 = call i8* @_Znwm(i64 56) #12, !noalias !9
+  %34 = bitcast i8* %33 to %"class.base::internal::BindStateBase"*
+  call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"* nonnull %34, void ()* bitcast (void (%"class.base::internal::BindStateBase"*)* @_ZN4base8internal7InvokerINS0_9BindStateIMN5media14AgcAudioStreamINS3_16AudioInputStreamEEEFvvEJNS0_17UnretainedWrapperIS6_EEEEEFvvEE3RunEPNS0_13BindStateBaseE to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @_ZN4base8internal9BindStateIMN5media14AgcAudioStreamINS2_16AudioInputStreamEEEFvvEJNS0_17UnretainedWrapperIS5_EEEE7DestroyEPKNS0_13BindStateBaseE) #11, !noalias !9
+  %35 = getelementptr inbounds i8, i8* %33, i64 32
+  %36 = bitcast i8* %35 to <2 x i64>*
+  store <2 x i64> <i64 ptrtoint (void (%"class.media::AgcAudioStream"*)* @_ZN5media14AgcAudioStreamINS_16AudioInputStreamEE32QueryAndStoreNewMicrophoneVolumeEv to i64), i64 0>, <2 x i64>* %36, align 8, !noalias !9
+  %37 = getelementptr inbounds i8, i8* %33, i64 48
+  %38 = bitcast i8* %37 to i64*
+  store i64 %32, i64* %38, align 8, !noalias !9
+  %39 = bitcast %"class.base::RepeatingCallback"* %2 to i8**
+  store i8* %33, i8** %39, align 8, !alias.scope !9
+  %40 = bitcast %"class.base::RepeatingTimer"* %8 to void (%"class.base::RepeatingTimer"*, %"class.base::Location"*, i64, %"class.base::RepeatingCallback"*)***
+  %41 = load void (%"class.base::RepeatingTimer"*, %"class.base::Location"*, i64, %"class.base::RepeatingCallback"*)**, void (%"class.base::RepeatingTimer"*, %"class.base::Location"*, i64, %"class.base::RepeatingCallback"*)*** %40, align 8
+  %42 = getelementptr inbounds void (%"class.base::RepeatingTimer"*, %"class.base::Location"*, i64, %"class.base::RepeatingCallback"*)*, void (%"class.base::RepeatingTimer"*, %"class.base::Location"*, i64, %"class.base::RepeatingCallback"*)** %41, i64 7
+  %43 = load void (%"class.base::RepeatingTimer"*, %"class.base::Location"*, i64, %"class.base::RepeatingCallback"*)*, void (%"class.base::RepeatingTimer"*, %"class.base::Location"*, i64, %"class.base::RepeatingCallback"*)** %42, align 8
+  call void %43(%"class.base::RepeatingTimer"* %8, %"class.base::Location"* nonnull dereferenceable(32) %3, i64 1000000, %"class.base::RepeatingCallback"* nonnull %2) #11
+  %44 = getelementptr inbounds %"class.base::RepeatingCallback", %"class.base::RepeatingCallback"* %2, i64 0, i32 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %44) #11
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %31)
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %30) #11
+  br label %45
+
+45:                                               ; preds = %11, %1, %7, %20
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media18AlsaPcmInputStream11HandleErrorEPKci(%"class.media::AlsaPcmInputStream"* nocapture readonly, i8*, i32) local_unnamed_addr #0 align 2 {
+  %4 = alloca %"class.logging::LogMessage", align 8
+  %5 = tail call zeroext i1 @_ZN7logging22ShouldCreateLogMessageEi(i32 1) #11
+  br i1 %5, label %6, label %22
+
+6:                                                ; preds = %3
+  %7 = bitcast %"class.logging::LogMessage"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 304, i8* nonnull %7) #11
+  call void @_ZN7logging10LogMessageC1EPKcii(%"class.logging::LogMessage"* nonnull %4, i8* getelementptr inbounds ([37 x i8], [37 x i8]* @.str.3, i64 0, i64 0), i32 367, i32 1) #11
+  %8 = getelementptr inbounds %"class.logging::LogMessage", %"class.logging::LogMessage"* %4, i64 0, i32 2
+  %9 = bitcast %"class.std::__1::basic_ostringstream"* %8 to %"class.std::__1::basic_ostream"*
+  %10 = call i64 @strlen(i8* %1) #11
+  %11 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %9, i8* %1, i64 %10) #11
+  %12 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %11, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str.21, i64 0, i64 0), i64 2) #11
+  %13 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 6
+  %14 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %13, align 8
+  %15 = bitcast %"class.media::AlsaWrapper"* %14 to i8* (%"class.media::AlsaWrapper"*, i32)***
+  %16 = load i8* (%"class.media::AlsaWrapper"*, i32)**, i8* (%"class.media::AlsaWrapper"*, i32)*** %15, align 8
+  %17 = getelementptr inbounds i8* (%"class.media::AlsaWrapper"*, i32)*, i8* (%"class.media::AlsaWrapper"*, i32)** %16, i64 76
+  %18 = load i8* (%"class.media::AlsaWrapper"*, i32)*, i8* (%"class.media::AlsaWrapper"*, i32)** %17, align 8
+  %19 = call i8* %18(%"class.media::AlsaWrapper"* %14, i32 %2) #11
+  %20 = call i64 @strlen(i8* %19) #11
+  %21 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %12, i8* %19, i64 %20) #11
+  call void @_ZN7logging10LogMessageD1Ev(%"class.logging::LogMessage"* nonnull %4) #11
+  call void @llvm.lifetime.end.p0i8(i64 304, i8* nonnull %7) #11
+  br label %22
+
+22:                                               ; preds = %3, %6
+  %23 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 8
+  %24 = load %"class.media::AudioInputStream::AudioInputCallback"*, %"class.media::AudioInputStream::AudioInputCallback"** %23, align 8
+  %25 = icmp eq %"class.media::AudioInputStream::AudioInputCallback"* %24, null
+  br i1 %25, label %31, label %26
+
+26:                                               ; preds = %22
+  %27 = bitcast %"class.media::AudioInputStream::AudioInputCallback"* %24 to void (%"class.media::AudioInputStream::AudioInputCallback"*)***
+  %28 = load void (%"class.media::AudioInputStream::AudioInputCallback"*)**, void (%"class.media::AudioInputStream::AudioInputCallback"*)*** %27, align 8
+  %29 = getelementptr inbounds void (%"class.media::AudioInputStream::AudioInputCallback"*)*, void (%"class.media::AudioInputStream::AudioInputCallback"*)** %28, i64 1
+  %30 = load void (%"class.media::AudioInputStream::AudioInputCallback"*)*, void (%"class.media::AudioInputStream::AudioInputCallback"*)** %29, align 8
+  call void %30(%"class.media::AudioInputStream::AudioInputCallback"* nonnull %24) #11
+  br label %31
+
+31:                                               ; preds = %22, %26
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+declare void @_ZN4base6Thread7OptionsC1Ev(%"struct.base::Thread::Options"*) unnamed_addr #1
+
+declare zeroext i1 @_ZN4base6Thread16StartWithOptionsERKNS0_7OptionsE(%"class.base::Thread"*, %"struct.base::Thread::Options"* dereferenceable(56)) local_unnamed_addr #1
+
+declare void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* sret, i8*, i32, i8*) local_unnamed_addr #1
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"*) unnamed_addr #3
+
+declare i64 @_ZN4base9TimeTicks3NowEv() local_unnamed_addr #1
+
+declare void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* sret, i8*, i8*, i32) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media18AlsaPcmInputStream9ReadAudioEv(%"class.media::AlsaPcmInputStream"*) #0 align 2 {
+  %2 = alloca %"class.base::TimeDelta", align 8
+  %3 = alloca %"class.logging::CheckError", align 8
+  %4 = alloca %"class.logging::LogMessage", align 8
+  %5 = alloca %"class.base::Location", align 8
+  %6 = alloca %"class.base::OnceCallback", align 8
+  %7 = alloca %"class.logging::LogMessage", align 8
+  %8 = alloca %"class.logging::LogMessage", align 8
+  %9 = alloca %"class.logging::LogMessage", align 8
+  %10 = alloca %"class.base::Location", align 8
+  %11 = alloca %"class.base::OnceCallback", align 8
+  %12 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 18
+  %13 = load i8, i8* %12, align 8, !range !8
+  %14 = icmp eq i8 %13, 0
+  br i1 %14, label %404, label %15
+
+15:                                               ; preds = %1
+  %16 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 6
+  %17 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %16, align 8
+  %18 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 10
+  %19 = load %struct._snd_pcm*, %struct._snd_pcm** %18, align 8
+  %20 = bitcast %"class.media::AlsaWrapper"* %17 to i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)***
+  %21 = load i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)**, i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)*** %20, align 8
+  %22 = getelementptr inbounds i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)*, i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)** %21, i64 41
+  %23 = load i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)*, i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)** %22, align 8
+  %24 = tail call i64 %23(%"class.media::AlsaWrapper"* %17, %struct._snd_pcm* %19) #11
+  %25 = icmp slt i64 %24, 0
+  br i1 %25, label %26, label %47
+
+26:                                               ; preds = %15
+  %27 = tail call zeroext i1 @_ZN7logging22ShouldCreateLogMessageEi(i32 1) #11
+  br i1 %27, label %30, label %28
+
+28:                                               ; preds = %26
+  %29 = trunc i64 %24 to i32
+  br label %44
+
+30:                                               ; preds = %26
+  %31 = bitcast %"class.logging::LogMessage"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 304, i8* nonnull %31) #11
+  call void @_ZN7logging10LogMessageC1EPKcii(%"class.logging::LogMessage"* nonnull %4, i8* getelementptr inbounds ([37 x i8], [37 x i8]* @.str.3, i64 0, i64 0), i32 177, i32 1) #11
+  %32 = getelementptr inbounds %"class.logging::LogMessage", %"class.logging::LogMessage"* %4, i64 0, i32 2
+  %33 = bitcast %"class.std::__1::basic_ostringstream"* %32 to %"class.std::__1::basic_ostream"*
+  %34 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %33, i8* getelementptr inbounds ([19 x i8], [19 x i8]* @.str.9, i64 0, i64 0), i64 18) #11
+  %35 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %16, align 8
+  %36 = trunc i64 %24 to i32
+  %37 = bitcast %"class.media::AlsaWrapper"* %35 to i8* (%"class.media::AlsaWrapper"*, i32)***
+  %38 = load i8* (%"class.media::AlsaWrapper"*, i32)**, i8* (%"class.media::AlsaWrapper"*, i32)*** %37, align 8
+  %39 = getelementptr inbounds i8* (%"class.media::AlsaWrapper"*, i32)*, i8* (%"class.media::AlsaWrapper"*, i32)** %38, i64 76
+  %40 = load i8* (%"class.media::AlsaWrapper"*, i32)*, i8* (%"class.media::AlsaWrapper"*, i32)** %39, align 8
+  %41 = call i8* %40(%"class.media::AlsaWrapper"* %35, i32 %36) #11
+  %42 = call i64 @strlen(i8* %41) #11
+  %43 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %34, i8* %41, i64 %42) #11
+  call void @_ZN7logging10LogMessageD1Ev(%"class.logging::LogMessage"* nonnull %4) #11
+  call void @llvm.lifetime.end.p0i8(i64 304, i8* nonnull %31) #11
+  br label %44
+
+44:                                               ; preds = %28, %30
+  %45 = phi i32 [ %29, %28 ], [ %36, %30 ]
+  %46 = call zeroext i1 @_ZN5media18AlsaPcmInputStream7RecoverEi(%"class.media::AlsaPcmInputStream"* %0, i32 %45)
+  br label %47
+
+47:                                               ; preds = %44, %15
+  %48 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 3, i32 4
+  %49 = load i32, i32* %48, align 8
+  %50 = sext i32 %49 to i64
+  %51 = icmp slt i64 %24, %50
+  br i1 %51, label %52, label %98
+
+52:                                               ; preds = %47
+  %53 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 14
+  %54 = load i8, i8* %53, align 8, !range !8
+  %55 = icmp eq i8 %54, 0
+  br i1 %55, label %59, label %56
+
+56:                                               ; preds = %52
+  %57 = call i64 @_ZN4base9TimeTicks3NowEv() #11
+  %58 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 9, i32 0, i32 0
+  store i64 %57, i64* %58, align 8
+  store i8 0, i8* %53, align 8
+  br label %59
+
+59:                                               ; preds = %52, %56
+  %60 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 7, i32 0
+  %61 = load i64, i64* %60, align 8
+  %62 = sdiv i64 %61, 2
+  %63 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 17, i32 11, i32 0, i32 0, i32 0
+  %64 = load %"class.base::Thread::Delegate"*, %"class.base::Thread::Delegate"** %63, align 8
+  %65 = icmp eq %"class.base::Thread::Delegate"* %64, null
+  br i1 %65, label %72, label %66
+
+66:                                               ; preds = %59
+  %67 = bitcast %"class.base::Thread::Delegate"* %64 to %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)***
+  %68 = load %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)**, %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)*** %67, align 8
+  %69 = getelementptr inbounds %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)*, %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)** %68, i64 2
+  %70 = load %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)*, %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)** %69, align 8
+  %71 = call %"class.base::SingleThreadTaskRunner"* %70(%"class.base::Thread::Delegate"* nonnull %64) #11
+  br label %72
+
+72:                                               ; preds = %59, %66
+  %73 = phi %"class.base::SingleThreadTaskRunner"* [ %71, %66 ], [ null, %59 ]
+  %74 = bitcast %"class.base::SingleThreadTaskRunner"* %73 to %"class.base::TaskRunner"*
+  %75 = bitcast %"class.base::Location"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %75) #11
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %5, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @.str.10, i64 0, i64 0), i8* getelementptr inbounds ([37 x i8], [37 x i8]* @.str.3, i64 0, i64 0), i32 193) #11
+  %76 = ptrtoint %"class.media::AlsaPcmInputStream"* %0 to i64
+  %77 = call i8* @_Znwm(i64 56) #12, !noalias !14
+  %78 = bitcast i8* %77 to %"class.base::internal::BindStateBase"*
+  call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"* nonnull %78, void ()* bitcast (void (%"class.base::internal::BindStateBase"*)* @_ZN4base8internal7InvokerINS0_9BindStateIMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS4_EEEEEFvvEE7RunOnceEPNS0_13BindStateBaseE to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @_ZN4base8internal9BindStateIMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS3_EEEE7DestroyEPKNS0_13BindStateBaseE) #11, !noalias !14
+  %79 = getelementptr inbounds i8, i8* %77, i64 32
+  %80 = bitcast i8* %79 to <2 x i64>*
+  store <2 x i64> <i64 ptrtoint (void (%"class.media::AlsaPcmInputStream"*)* @_ZN5media18AlsaPcmInputStream9ReadAudioEv to i64), i64 0>, <2 x i64>* %80, align 8, !noalias !14
+  %81 = getelementptr inbounds i8, i8* %77, i64 48
+  %82 = bitcast i8* %81 to i64*
+  store i64 %76, i64* %82, align 8, !noalias !14
+  %83 = bitcast %"class.base::OnceCallback"* %6 to i8**
+  store i8* %77, i8** %83, align 8, !alias.scope !14
+  %84 = bitcast %"class.base::SingleThreadTaskRunner"* %73 to i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)***
+  %85 = load i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)**, i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)*** %84, align 8
+  %86 = load i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)*, i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)** %85, align 8
+  %87 = call zeroext i1 %86(%"class.base::TaskRunner"* %74, %"class.base::Location"* nonnull dereferenceable(32) %5, %"class.base::OnceCallback"* nonnull %6, i64 %62) #11
+  %88 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %6, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %88) #11
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %75) #11
+  %89 = icmp eq %"class.base::SingleThreadTaskRunner"* %73, null
+  br i1 %89, label %404, label %90
+
+90:                                               ; preds = %72
+  %91 = getelementptr inbounds %"class.base::SingleThreadTaskRunner", %"class.base::SingleThreadTaskRunner"* %73, i64 0, i32 0, i32 0, i32 1
+  %92 = getelementptr inbounds %"class.base::RefCountedThreadSafe", %"class.base::RefCountedThreadSafe"* %91, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %93 = atomicrmw sub i32* %92, i32 1 acq_rel
+  %94 = icmp eq i32 %93, 1
+  br i1 %94, label %95, label %404
+
+95:                                               ; preds = %90
+  %96 = getelementptr inbounds %"class.base::RefCountedThreadSafe", %"class.base::RefCountedThreadSafe"* %91, i64 -2
+  %97 = bitcast %"class.base::RefCountedThreadSafe"* %96 to %"class.base::TaskRunner"*
+  call void @_ZN4base16TaskRunnerTraits8DestructEPKNS_10TaskRunnerE(%"class.base::TaskRunner"* %97) #11
+  br label %404
+
+98:                                               ; preds = %47
+  %99 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 0, i32 5, i32 0
+  %100 = bitcast %"struct.std::__1::__atomic_base.11"* %99 to i64*
+  %101 = load atomic i64, i64* %100 monotonic, align 8
+  %102 = sdiv i64 %24, %50
+  %103 = trunc i64 %102 to i32
+  %104 = icmp eq i32 %103, 0
+  br i1 %104, label %337, label %105
+
+105:                                              ; preds = %98
+  %106 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 13, i32 0, i32 0, i32 0
+  %107 = bitcast %"class.logging::LogMessage"* %9 to i8*
+  %108 = getelementptr inbounds %"class.logging::LogMessage", %"class.logging::LogMessage"* %9, i64 0, i32 2
+  %109 = bitcast %"class.std::__1::basic_ostringstream"* %108 to %"class.std::__1::basic_ostream"*
+  %110 = bitcast %"class.logging::LogMessage"* %8 to i8*
+  %111 = getelementptr inbounds %"class.logging::LogMessage", %"class.logging::LogMessage"* %8, i64 0, i32 2
+  %112 = bitcast %"class.std::__1::basic_ostringstream"* %111 to %"class.std::__1::basic_ostream"*
+  %113 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 16, i32 0, i32 0, i32 0
+  %114 = bitcast i8** %106 to i16**
+  %115 = bitcast %"class.logging::LogMessage"* %7 to i8*
+  %116 = getelementptr inbounds %"class.logging::LogMessage", %"class.logging::LogMessage"* %7, i64 0, i32 2
+  %117 = bitcast %"class.std::__1::basic_ostringstream"* %116 to %"class.std::__1::basic_ostream"*
+  %118 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 3, i32 3
+  %119 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 8
+  %120 = bitcast %"class.base::TimeDelta"* %2 to i8*
+  %121 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %2, i64 0, i32 0
+  %122 = bitcast i64 %101 to double
+  br label %123
+
+123:                                              ; preds = %335, %105
+  %124 = phi i32 [ %49, %105 ], [ %336, %335 ]
+  %125 = phi i32 [ %103, %105 ], [ %126, %335 ]
+  %126 = add nsw i32 %125, -1
+  %127 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %16, align 8
+  %128 = load %struct._snd_pcm*, %struct._snd_pcm** %18, align 8
+  %129 = load i8*, i8** %106, align 8
+  %130 = sext i32 %124 to i64
+  %131 = bitcast %"class.media::AlsaWrapper"* %127 to i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*, i8*, i64)***
+  %132 = load i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*, i8*, i64)**, i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*, i8*, i64)*** %131, align 8
+  %133 = getelementptr inbounds i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*, i8*, i64)*, i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*, i8*, i64)** %132, i64 14
+  %134 = load i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*, i8*, i64)*, i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*, i8*, i64)** %133, align 8
+  %135 = call i64 %134(%"class.media::AlsaWrapper"* %127, %struct._snd_pcm* %128, i8* %129, i64 %130) #11
+  %136 = trunc i64 %135 to i32
+  %137 = load i32, i32* %48, align 8
+  %138 = icmp eq i32 %137, %136
+  br i1 %138, label %139, label %304
+
+139:                                              ; preds = %123
+  %140 = load %"class.media::AudioBus"*, %"class.media::AudioBus"** %113, align 8
+  %141 = load i16*, i16** %114, align 8
+  %142 = getelementptr inbounds %"class.media::AudioBus", %"class.media::AudioBus"* %140, i64 0, i32 6
+  %143 = load i32, i32* %142, align 8
+  call void @_ZN5media8AudioBus13CheckOverflowEiii(i32 0, i32 %143, i32 %143) #11
+  %144 = getelementptr inbounds %"class.media::AudioBus", %"class.media::AudioBus"* %140, i64 0, i32 5
+  %145 = getelementptr inbounds %"class.media::AudioBus", %"class.media::AudioBus"* %140, i64 0, i32 5, i32 0, i32 1
+  %146 = bitcast float*** %145 to i64*
+  %147 = load i64, i64* %146, align 8
+  %148 = bitcast %"class.std::__1::vector.90"* %144 to i64*
+  %149 = load i64, i64* %148, align 8
+  %150 = sub i64 %147, %149
+  %151 = lshr exact i64 %150, 3
+  %152 = trunc i64 %151 to i32
+  %153 = icmp sgt i32 %152, 0
+  br i1 %153, label %154, label %259
+
+154:                                              ; preds = %139
+  %155 = inttoptr i64 %149 to float**
+  %156 = getelementptr inbounds %"class.media::AudioBus", %"class.media::AudioBus"* %140, i64 0, i32 5, i32 0, i32 0
+  %157 = icmp sgt i32 %143, 0
+  %158 = shl i64 %150, 29
+  %159 = ashr exact i64 %158, 32
+  %160 = sext i32 %143 to i64
+  %161 = and i64 %151, 4294967295
+  %162 = icmp ugt i32 %143, 7
+  %163 = icmp eq i64 %158, 4294967296
+  %164 = and i1 %162, %163
+  %165 = and i64 %160, -8
+  %166 = mul nsw i64 %165, %159
+  %167 = icmp eq i64 %165, %160
+  %168 = and i64 %160, 1
+  %169 = icmp eq i64 %168, 0
+  %170 = sub nsw i64 0, %160
+  br label %171
+
+171:                                              ; preds = %235, %154
+  %172 = phi float** [ %155, %154 ], [ %236, %235 ]
+  %173 = phi i64 [ 0, %154 ], [ %233, %235 ]
+  %174 = getelementptr i16, i16* %141, i64 %173
+  %175 = add i64 %173, %160
+  %176 = getelementptr i16, i16* %141, i64 %175
+  %177 = getelementptr inbounds float*, float** %172, i64 %173
+  %178 = load float*, float** %177, align 8
+  br i1 %157, label %179, label %232
+
+179:                                              ; preds = %171
+  br i1 %164, label %180, label %187
+
+180:                                              ; preds = %179
+  %181 = getelementptr float, float* %178, i64 %160
+  %182 = bitcast i16* %176 to float*
+  %183 = icmp ult float* %178, %182
+  %184 = bitcast float* %181 to i16*
+  %185 = icmp ult i16* %174, %184
+  %186 = and i1 %183, %185
+  br i1 %186, label %187, label %205
+
+187:                                              ; preds = %179, %231, %180
+  %188 = phi i64 [ 0, %180 ], [ 0, %179 ], [ %165, %231 ]
+  %189 = phi i64 [ %173, %180 ], [ %173, %179 ], [ %206, %231 ]
+  %190 = xor i64 %188, -1
+  br i1 %169, label %201, label %191
+
+191:                                              ; preds = %187
+  %192 = getelementptr inbounds i16, i16* %141, i64 %189
+  %193 = load i16, i16* %192, align 2
+  %194 = sitofp i16 %193 to float
+  %195 = icmp slt i16 %193, 0
+  %196 = select i1 %195, float 0x3F00000000000000, float 0x3F00002000000000
+  %197 = fmul float %196, %194
+  %198 = getelementptr inbounds float, float* %178, i64 %188
+  store float %197, float* %198, align 4
+  %199 = or i64 %188, 1
+  %200 = add i64 %189, %159
+  br label %201
+
+201:                                              ; preds = %191, %187
+  %202 = phi i64 [ %199, %191 ], [ %188, %187 ]
+  %203 = phi i64 [ %200, %191 ], [ %189, %187 ]
+  %204 = icmp eq i64 %190, %170
+  br i1 %204, label %232, label %237
+
+205:                                              ; preds = %180
+  %206 = add i64 %173, %166
+  br label %207
+
+207:                                              ; preds = %207, %205
+  %208 = phi i64 [ 0, %205 ], [ %229, %207 ]
+  %209 = mul i64 %208, %159
+  %210 = add i64 %173, %209
+  %211 = getelementptr inbounds i16, i16* %141, i64 %210
+  %212 = bitcast i16* %211 to <4 x i16>*
+  %213 = load <4 x i16>, <4 x i16>* %212, align 2, !alias.scope !19
+  %214 = getelementptr inbounds i16, i16* %211, i64 4
+  %215 = bitcast i16* %214 to <4 x i16>*
+  %216 = load <4 x i16>, <4 x i16>* %215, align 2, !alias.scope !19
+  %217 = sitofp <4 x i16> %213 to <4 x float>
+  %218 = sitofp <4 x i16> %216 to <4 x float>
+  %219 = icmp slt <4 x i16> %213, zeroinitializer
+  %220 = icmp slt <4 x i16> %216, zeroinitializer
+  %221 = select <4 x i1> %219, <4 x float> <float 0x3F00000000000000, float 0x3F00000000000000, float 0x3F00000000000000, float 0x3F00000000000000>, <4 x float> <float 0x3F00002000000000, float 0x3F00002000000000, float 0x3F00002000000000, float 0x3F00002000000000>
+  %222 = select <4 x i1> %220, <4 x float> <float 0x3F00000000000000, float 0x3F00000000000000, float 0x3F00000000000000, float 0x3F00000000000000>, <4 x float> <float 0x3F00002000000000, float 0x3F00002000000000, float 0x3F00002000000000, float 0x3F00002000000000>
+  %223 = fmul <4 x float> %221, %217
+  %224 = fmul <4 x float> %222, %218
+  %225 = getelementptr inbounds float, float* %178, i64 %208
+  %226 = bitcast float* %225 to <4 x float>*
+  store <4 x float> %223, <4 x float>* %226, align 4, !alias.scope !22, !noalias !19
+  %227 = getelementptr inbounds float, float* %225, i64 4
+  %228 = bitcast float* %227 to <4 x float>*
+  store <4 x float> %224, <4 x float>* %228, align 4, !alias.scope !22, !noalias !19
+  %229 = add i64 %208, 8
+  %230 = icmp eq i64 %229, %165
+  br i1 %230, label %231, label %207, !llvm.loop !24
+
+231:                                              ; preds = %207
+  br i1 %167, label %232, label %187
+
+232:                                              ; preds = %201, %237, %231, %171
+  %233 = add nuw nsw i64 %173, 1
+  %234 = icmp eq i64 %233, %161
+  br i1 %234, label %259, label %235
+
+235:                                              ; preds = %232
+  %236 = load float**, float*** %156, align 8
+  br label %171
+
+237:                                              ; preds = %201, %237
+  %238 = phi i64 [ %256, %237 ], [ %202, %201 ]
+  %239 = phi i64 [ %257, %237 ], [ %203, %201 ]
+  %240 = getelementptr inbounds i16, i16* %141, i64 %239
+  %241 = load i16, i16* %240, align 2
+  %242 = sitofp i16 %241 to float
+  %243 = icmp slt i16 %241, 0
+  %244 = select i1 %243, float 0x3F00000000000000, float 0x3F00002000000000
+  %245 = fmul float %244, %242
+  %246 = getelementptr inbounds float, float* %178, i64 %238
+  store float %245, float* %246, align 4
+  %247 = add nuw nsw i64 %238, 1
+  %248 = add i64 %239, %159
+  %249 = getelementptr inbounds i16, i16* %141, i64 %248
+  %250 = load i16, i16* %249, align 2
+  %251 = sitofp i16 %250 to float
+  %252 = icmp slt i16 %250, 0
+  %253 = select i1 %252, float 0x3F00000000000000, float 0x3F00002000000000
+  %254 = fmul float %253, %251
+  %255 = getelementptr inbounds float, float* %178, i64 %247
+  store float %254, float* %255, align 4
+  %256 = add nuw nsw i64 %238, 2
+  %257 = add i64 %248, %159
+  %258 = icmp eq i64 %256, %160
+  br i1 %258, label %232, label %237, !llvm.loop !26
+
+259:                                              ; preds = %232, %139
+  %260 = load i32, i32* %142, align 8
+  %261 = sub nsw i32 %260, %143
+  call void @_ZN5media8AudioBus17ZeroFramesPartialEii(%"class.media::AudioBus"* %140, i32 %143, i32 %261) #11
+  %262 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %16, align 8
+  %263 = load %struct._snd_pcm*, %struct._snd_pcm** %18, align 8
+  %264 = bitcast %"class.media::AlsaWrapper"* %262 to i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)***
+  %265 = load i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)**, i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)*** %264, align 8
+  %266 = getelementptr inbounds i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)*, i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)** %265, i64 41
+  %267 = load i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)*, i64 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)** %266, align 8
+  %268 = call i64 %267(%"class.media::AlsaWrapper"* %262, %struct._snd_pcm* %263) #11
+  %269 = icmp slt i64 %268, 0
+  br i1 %269, label %270, label %283
+
+270:                                              ; preds = %259
+  %271 = call zeroext i1 @_ZN7logging22ShouldCreateLogMessageEi(i32 1) #11
+  br i1 %271, label %272, label %283
+
+272:                                              ; preds = %270
+  call void @llvm.lifetime.start.p0i8(i64 304, i8* nonnull %115) #11
+  call void @_ZN7logging10LogMessageC1EPKcii(%"class.logging::LogMessage"* nonnull %7, i8* getelementptr inbounds ([37 x i8], [37 x i8]* @.str.3, i64 0, i64 0), i32 219, i32 1) #11
+  %273 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %117, i8* getelementptr inbounds ([19 x i8], [19 x i8]* @.str.9, i64 0, i64 0), i64 18) #11
+  %274 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %16, align 8
+  %275 = trunc i64 %268 to i32
+  %276 = bitcast %"class.media::AlsaWrapper"* %274 to i8* (%"class.media::AlsaWrapper"*, i32)***
+  %277 = load i8* (%"class.media::AlsaWrapper"*, i32)**, i8* (%"class.media::AlsaWrapper"*, i32)*** %276, align 8
+  %278 = getelementptr inbounds i8* (%"class.media::AlsaWrapper"*, i32)*, i8* (%"class.media::AlsaWrapper"*, i32)** %277, i64 76
+  %279 = load i8* (%"class.media::AlsaWrapper"*, i32)*, i8* (%"class.media::AlsaWrapper"*, i32)** %278, align 8
+  %280 = call i8* %279(%"class.media::AlsaWrapper"* %274, i32 %275) #11
+  %281 = call i64 @strlen(i8* %280) #11
+  %282 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %273, i8* %280, i64 %281) #11
+  call void @_ZN7logging10LogMessageD1Ev(%"class.logging::LogMessage"* nonnull %7) #11
+  call void @llvm.lifetime.end.p0i8(i64 304, i8* nonnull %115) #11
+  br label %283
+
+283:                                              ; preds = %272, %270, %259
+  %284 = phi i64 [ %268, %259 ], [ 0, %270 ], [ 0, %272 ]
+  %285 = sitofp i64 %284 to double
+  %286 = load i32, i32* %118, align 4
+  %287 = sitofp i32 %286 to double
+  %288 = fdiv double %285, %287
+  %289 = fmul double %288, 1.000000e+06
+  %290 = fcmp ult double %289, 0xC3E0000000000000
+  %291 = fcmp ugt double %289, 0x43DFFFFFFFFFFFFF
+  %292 = fcmp ogt double %289, 0xC3E0000000000000
+  %293 = select i1 %292, double %289, double 0xC3E0000000000000
+  %294 = fptosi double %293 to i64
+  %295 = select i1 %290, i64 0, i64 9223372036854775807
+  %296 = select i1 %291, i64 %295, i64 %294
+  %297 = load %"class.media::AudioInputStream::AudioInputCallback"*, %"class.media::AudioInputStream::AudioInputCallback"** %119, align 8
+  %298 = load %"class.media::AudioBus"*, %"class.media::AudioBus"** %113, align 8
+  %299 = call i64 @_ZN4base9TimeTicks3NowEv() #11
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %120) #11
+  store i64 %299, i64* %121, align 8
+  %300 = call i64 @_ZNK4base9TimeDeltamiES0_(%"class.base::TimeDelta"* nonnull %2, i64 %296) #11
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %120) #11
+  %301 = bitcast %"class.media::AudioInputStream::AudioInputCallback"* %297 to void (%"class.media::AudioInputStream::AudioInputCallback"*, %"class.media::AudioBus"*, i64, double)***
+  %302 = load void (%"class.media::AudioInputStream::AudioInputCallback"*, %"class.media::AudioBus"*, i64, double)**, void (%"class.media::AudioInputStream::AudioInputCallback"*, %"class.media::AudioBus"*, i64, double)*** %301, align 8
+  %303 = load void (%"class.media::AudioInputStream::AudioInputCallback"*, %"class.media::AudioBus"*, i64, double)*, void (%"class.media::AudioInputStream::AudioInputCallback"*, %"class.media::AudioBus"*, i64, double)** %302, align 8
+  call void %303(%"class.media::AudioInputStream::AudioInputCallback"* %297, %"class.media::AudioBus"* %298, i64 %300, double %122) #11
+  br label %333
+
+304:                                              ; preds = %123
+  %305 = icmp slt i32 %136, 0
+  br i1 %305, label %306, label %324
+
+306:                                              ; preds = %304
+  %307 = call zeroext i1 @_ZN5media18AlsaPcmInputStream7RecoverEi(%"class.media::AlsaPcmInputStream"* %0, i32 %136)
+  %308 = call zeroext i1 @_ZN7logging22ShouldCreateLogMessageEi(i32 1) #11
+  br i1 %308, label %309, label %333
+
+309:                                              ; preds = %306
+  call void @llvm.lifetime.start.p0i8(i64 304, i8* nonnull %110) #11
+  call void @_ZN7logging10LogMessageC1EPKcii(%"class.logging::LogMessage"* nonnull %8, i8* getelementptr inbounds ([37 x i8], [37 x i8]* @.str.3, i64 0, i64 0), i32 231, i32 1) #11
+  %310 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %112, i8* getelementptr inbounds ([28 x i8], [28 x i8]* @.str.11, i64 0, i64 0), i64 27) #11
+  %311 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %16, align 8
+  %312 = bitcast %"class.media::AlsaWrapper"* %311 to i8* (%"class.media::AlsaWrapper"*, i32)***
+  %313 = load i8* (%"class.media::AlsaWrapper"*, i32)**, i8* (%"class.media::AlsaWrapper"*, i32)*** %312, align 8
+  %314 = getelementptr inbounds i8* (%"class.media::AlsaWrapper"*, i32)*, i8* (%"class.media::AlsaWrapper"*, i32)** %313, i64 76
+  %315 = load i8* (%"class.media::AlsaWrapper"*, i32)*, i8* (%"class.media::AlsaWrapper"*, i32)** %314, align 8
+  %316 = call i8* %315(%"class.media::AlsaWrapper"* %311, i32 %136) #11
+  %317 = call i64 @strlen(i8* %316) #11
+  %318 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %310, i8* %316, i64 %317) #11
+  %319 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %318, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str.12, i64 0, i64 0), i64 2) #11
+  %320 = select i1 %307, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @.str.13, i64 0, i64 0), i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.14, i64 0, i64 0)
+  %321 = select i1 %307, i64 12, i64 14
+  %322 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %319, i8* %320, i64 %321) #11
+  %323 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %322, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @.str.15, i64 0, i64 0), i64 11) #11
+  call void @_ZN7logging10LogMessageD1Ev(%"class.logging::LogMessage"* nonnull %8) #11
+  call void @llvm.lifetime.end.p0i8(i64 304, i8* nonnull %110) #11
+  br label %333
+
+324:                                              ; preds = %304
+  %325 = call zeroext i1 @_ZN7logging22ShouldCreateLogMessageEi(i32 1) #11
+  br i1 %325, label %326, label %333
+
+326:                                              ; preds = %324
+  call void @llvm.lifetime.start.p0i8(i64 304, i8* nonnull %107) #11
+  call void @_ZN7logging10LogMessageC1EPKcii(%"class.logging::LogMessage"* nonnull %9, i8* getelementptr inbounds ([37 x i8], [37 x i8]* @.str.3, i64 0, i64 0), i32 236, i32 1) #11
+  %327 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %109, i8* getelementptr inbounds ([47 x i8], [47 x i8]* @.str.16, i64 0, i64 0), i64 46) #11
+  %328 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEi(%"class.std::__1::basic_ostream"* %327, i32 %136) #11
+  %329 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %328, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @.str.17, i64 0, i64 0), i64 5) #11
+  %330 = load i32, i32* %48, align 8
+  %331 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEi(%"class.std::__1::basic_ostream"* %329, i32 %330) #11
+  %332 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %331, i8* getelementptr inbounds ([24 x i8], [24 x i8]* @.str.18, i64 0, i64 0), i64 23) #11
+  call void @_ZN7logging10LogMessageD1Ev(%"class.logging::LogMessage"* nonnull %9) #11
+  call void @llvm.lifetime.end.p0i8(i64 304, i8* nonnull %107) #11
+  br label %333
+
+333:                                              ; preds = %326, %324, %309, %306, %283
+  %334 = icmp eq i32 %126, 0
+  br i1 %334, label %337, label %335
+
+335:                                              ; preds = %333
+  %336 = load i32, i32* %48, align 8
+  br label %123
+
+337:                                              ; preds = %333, %98
+  %338 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 7, i32 0
+  %339 = load i64, i64* %338, align 8
+  %340 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 9, i32 0, i32 0
+  %341 = load i64, i64* %340, align 8
+  %342 = add i64 %339, -9223372036854775807
+  %343 = icmp ult i64 %342, 2
+  br i1 %343, label %351, label %344
+
+344:                                              ; preds = %337
+  %345 = icmp slt i64 %339, 0
+  %346 = select i1 %345, i64 -9223372036854775808, i64 9223372036854775807
+  %347 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %341, i64 %339) #11
+  %348 = extractvalue { i64, i1 } %347, 1
+  %349 = extractvalue { i64, i1 } %347, 0
+  %350 = select i1 %348, i64 %346, i64 %349, !prof !2
+  br label %359
+
+351:                                              ; preds = %337
+  %352 = add i64 %341, -9223372036854775807
+  %353 = icmp ugt i64 %352, 1
+  %354 = icmp eq i64 %341, %339
+  %355 = or i1 %354, %353
+  br i1 %355, label %359, label %356
+
+356:                                              ; preds = %351
+  %357 = bitcast %"class.logging::CheckError"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %357) #11
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %3, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.22, i64 0, i64 0), i32 378, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.23, i64 0, i64 0)) #11
+  %358 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %3) #11
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %3) #11
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %357) #11
+  br label %359
+
+359:                                              ; preds = %344, %351, %356
+  %360 = phi i64 [ %350, %344 ], [ %339, %351 ], [ %339, %356 ]
+  store i64 %360, i64* %340, align 8
+  %361 = call i64 @_ZN4base9TimeTicks3NowEv() #11
+  %362 = load i64, i64* %340, align 8
+  %363 = sub nsw i64 %362, %361
+  %364 = icmp slt i64 %363, 0
+  br i1 %364, label %365, label %367
+
+365:                                              ; preds = %359
+  %366 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 14
+  store i8 1, i8* %366, align 8
+  br label %367
+
+367:                                              ; preds = %365, %359
+  %368 = phi i64 [ 0, %365 ], [ %363, %359 ]
+  %369 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 17, i32 11, i32 0, i32 0, i32 0
+  %370 = load %"class.base::Thread::Delegate"*, %"class.base::Thread::Delegate"** %369, align 8
+  %371 = icmp eq %"class.base::Thread::Delegate"* %370, null
+  br i1 %371, label %378, label %372
+
+372:                                              ; preds = %367
+  %373 = bitcast %"class.base::Thread::Delegate"* %370 to %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)***
+  %374 = load %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)**, %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)*** %373, align 8
+  %375 = getelementptr inbounds %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)*, %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)** %374, i64 2
+  %376 = load %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)*, %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)** %375, align 8
+  %377 = call %"class.base::SingleThreadTaskRunner"* %376(%"class.base::Thread::Delegate"* nonnull %370) #11
+  br label %378
+
+378:                                              ; preds = %367, %372
+  %379 = phi %"class.base::SingleThreadTaskRunner"* [ %377, %372 ], [ null, %367 ]
+  %380 = bitcast %"class.base::SingleThreadTaskRunner"* %379 to %"class.base::TaskRunner"*
+  %381 = bitcast %"class.base::Location"* %10 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %381) #11
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %10, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @.str.10, i64 0, i64 0), i8* getelementptr inbounds ([37 x i8], [37 x i8]* @.str.3, i64 0, i64 0), i32 255) #11
+  %382 = ptrtoint %"class.media::AlsaPcmInputStream"* %0 to i64
+  %383 = call i8* @_Znwm(i64 56) #12, !noalias !27
+  %384 = bitcast i8* %383 to %"class.base::internal::BindStateBase"*
+  call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"* nonnull %384, void ()* bitcast (void (%"class.base::internal::BindStateBase"*)* @_ZN4base8internal7InvokerINS0_9BindStateIMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS4_EEEEEFvvEE7RunOnceEPNS0_13BindStateBaseE to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @_ZN4base8internal9BindStateIMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS3_EEEE7DestroyEPKNS0_13BindStateBaseE) #11, !noalias !27
+  %385 = getelementptr inbounds i8, i8* %383, i64 32
+  %386 = bitcast i8* %385 to <2 x i64>*
+  store <2 x i64> <i64 ptrtoint (void (%"class.media::AlsaPcmInputStream"*)* @_ZN5media18AlsaPcmInputStream9ReadAudioEv to i64), i64 0>, <2 x i64>* %386, align 8, !noalias !27
+  %387 = getelementptr inbounds i8, i8* %383, i64 48
+  %388 = bitcast i8* %387 to i64*
+  store i64 %382, i64* %388, align 8, !noalias !27
+  %389 = bitcast %"class.base::OnceCallback"* %11 to i8**
+  store i8* %383, i8** %389, align 8, !alias.scope !27
+  %390 = bitcast %"class.base::SingleThreadTaskRunner"* %379 to i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)***
+  %391 = load i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)**, i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)*** %390, align 8
+  %392 = load i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)*, i1 (%"class.base::TaskRunner"*, %"class.base::Location"*, %"class.base::OnceCallback"*, i64)** %391, align 8
+  %393 = call zeroext i1 %392(%"class.base::TaskRunner"* %380, %"class.base::Location"* nonnull dereferenceable(32) %10, %"class.base::OnceCallback"* nonnull %11, i64 %368) #11
+  %394 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %11, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %394) #11
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %381) #11
+  %395 = icmp eq %"class.base::SingleThreadTaskRunner"* %379, null
+  br i1 %395, label %404, label %396
+
+396:                                              ; preds = %378
+  %397 = getelementptr inbounds %"class.base::SingleThreadTaskRunner", %"class.base::SingleThreadTaskRunner"* %379, i64 0, i32 0, i32 0, i32 1
+  %398 = getelementptr inbounds %"class.base::RefCountedThreadSafe", %"class.base::RefCountedThreadSafe"* %397, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %399 = atomicrmw sub i32* %398, i32 1 acq_rel
+  %400 = icmp eq i32 %399, 1
+  br i1 %400, label %401, label %404
+
+401:                                              ; preds = %396
+  %402 = getelementptr inbounds %"class.base::RefCountedThreadSafe", %"class.base::RefCountedThreadSafe"* %397, i64 -2
+  %403 = bitcast %"class.base::RefCountedThreadSafe"* %402 to %"class.base::TaskRunner"*
+  call void @_ZN4base16TaskRunnerTraits8DestructEPKNS_10TaskRunnerE(%"class.base::TaskRunner"* %403) #11
+  br label %404
+
+404:                                              ; preds = %401, %396, %378, %95, %90, %72, %1
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @_ZN4base6Thread7OptionsD1Ev(%"struct.base::Thread::Options"*) unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN5media18AlsaPcmInputStream7RecoverEi(%"class.media::AlsaPcmInputStream"* nocapture readonly, i32) local_unnamed_addr #0 align 2 {
+  %3 = alloca %"class.logging::LogMessage", align 8
+  %4 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 6
+  %5 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %4, align 8
+  %6 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 10
+  %7 = load %struct._snd_pcm*, %struct._snd_pcm** %6, align 8
+  %8 = bitcast %"class.media::AlsaWrapper"* %5 to i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*, i32, i32)***
+  %9 = load i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*, i32, i32)**, i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*, i32, i32)*** %8, align 8
+  %10 = getelementptr inbounds i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*, i32, i32)*, i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*, i32, i32)** %9, i64 15
+  %11 = load i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*, i32, i32)*, i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*, i32, i32)** %10, align 8
+  %12 = tail call i32 %11(%"class.media::AlsaWrapper"* %5, %struct._snd_pcm* %7, i32 %1, i32 1) #11
+  %13 = icmp slt i32 %12, 0
+  br i1 %13, label %14, label %38
+
+14:                                               ; preds = %2
+  %15 = tail call zeroext i1 @_ZN7logging22ShouldCreateLogMessageEi(i32 1) #11
+  br i1 %15, label %16, label %50
+
+16:                                               ; preds = %14
+  %17 = bitcast %"class.logging::LogMessage"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 304, i8* nonnull %17) #11
+  call void @_ZN7logging10LogMessageC1EPKcii(%"class.logging::LogMessage"* nonnull %3, i8* getelementptr inbounds ([37 x i8], [37 x i8]* @.str.3, i64 0, i64 0), i32 138, i32 1) #11
+  %18 = getelementptr inbounds %"class.logging::LogMessage", %"class.logging::LogMessage"* %3, i64 0, i32 2
+  %19 = bitcast %"class.std::__1::basic_ostringstream"* %18 to %"class.std::__1::basic_ostream"*
+  %20 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %19, i8* getelementptr inbounds ([25 x i8], [25 x i8]* @.str.6, i64 0, i64 0), i64 24) #11
+  %21 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %4, align 8
+  %22 = bitcast %"class.media::AlsaWrapper"* %21 to i8* (%"class.media::AlsaWrapper"*, i32)***
+  %23 = load i8* (%"class.media::AlsaWrapper"*, i32)**, i8* (%"class.media::AlsaWrapper"*, i32)*** %22, align 8
+  %24 = getelementptr inbounds i8* (%"class.media::AlsaWrapper"*, i32)*, i8* (%"class.media::AlsaWrapper"*, i32)** %23, i64 76
+  %25 = load i8* (%"class.media::AlsaWrapper"*, i32)*, i8* (%"class.media::AlsaWrapper"*, i32)** %24, align 8
+  %26 = call i8* %25(%"class.media::AlsaWrapper"* %21, i32 %1) #11
+  %27 = call i64 @strlen(i8* %26) #11
+  %28 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %20, i8* %26, i64 %27) #11
+  %29 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %28, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.7, i64 0, i64 0), i64 3) #11
+  %30 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %4, align 8
+  %31 = bitcast %"class.media::AlsaWrapper"* %30 to i8* (%"class.media::AlsaWrapper"*, i32)***
+  %32 = load i8* (%"class.media::AlsaWrapper"*, i32)**, i8* (%"class.media::AlsaWrapper"*, i32)*** %31, align 8
+  %33 = getelementptr inbounds i8* (%"class.media::AlsaWrapper"*, i32)*, i8* (%"class.media::AlsaWrapper"*, i32)** %32, i64 76
+  %34 = load i8* (%"class.media::AlsaWrapper"*, i32)*, i8* (%"class.media::AlsaWrapper"*, i32)** %33, align 8
+  %35 = call i8* %34(%"class.media::AlsaWrapper"* %30, i32 %12) #11
+  %36 = call i64 @strlen(i8* %35) #11
+  %37 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %29, i8* %35, i64 %36) #11
+  call void @_ZN7logging10LogMessageD1Ev(%"class.logging::LogMessage"* nonnull %3) #11
+  call void @llvm.lifetime.end.p0i8(i64 304, i8* nonnull %17) #11
+  br label %50
+
+38:                                               ; preds = %2
+  %39 = icmp eq i32 %1, -32
+  br i1 %39, label %40, label %50
+
+40:                                               ; preds = %38
+  %41 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %4, align 8
+  %42 = load %struct._snd_pcm*, %struct._snd_pcm** %6, align 8
+  %43 = bitcast %"class.media::AlsaWrapper"* %41 to i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)***
+  %44 = load i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)**, i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)*** %43, align 8
+  %45 = getelementptr inbounds i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)*, i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)** %44, i64 43
+  %46 = load i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)*, i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)** %45, align 8
+  %47 = tail call i32 %46(%"class.media::AlsaWrapper"* %41, %struct._snd_pcm* %42) #11
+  %48 = icmp slt i32 %47, 0
+  br i1 %48, label %49, label %50
+
+49:                                               ; preds = %40
+  tail call void @_ZN5media18AlsaPcmInputStream11HandleErrorEPKci(%"class.media::AlsaPcmInputStream"* %0, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.2, i64 0, i64 0), i32 %47)
+  br label %50
+
+50:                                               ; preds = %16, %14, %38, %40, %49
+  %51 = phi i1 [ false, %49 ], [ true, %40 ], [ true, %38 ], [ false, %14 ], [ false, %16 ]
+  ret i1 %51
+}
+
+declare zeroext i1 @_ZN7logging22ShouldCreateLogMessageEi(i32) local_unnamed_addr #1
+
+declare void @_ZN7logging10LogMessageC1EPKcii(%"class.logging::LogMessage"*, i8*, i32, i32) unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN7logging10LogMessageD1Ev(%"class.logging::LogMessage"*) unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media18AlsaPcmInputStream26StopRunningOnCaptureThreadEv(%"class.media::AlsaPcmInputStream"*) #0 align 2 {
+  %2 = alloca %"class.base::Location", align 8
+  %3 = alloca %"class.base::OnceCallback", align 8
+  %4 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 17, i32 11, i32 0, i32 0, i32 0
+  %5 = load %"class.base::Thread::Delegate"*, %"class.base::Thread::Delegate"** %4, align 8
+  %6 = icmp eq %"class.base::Thread::Delegate"* %5, null
+  br i1 %6, label %13, label %7
+
+7:                                                ; preds = %1
+  %8 = bitcast %"class.base::Thread::Delegate"* %5 to %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)***
+  %9 = load %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)**, %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)*** %8, align 8
+  %10 = getelementptr inbounds %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)*, %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)** %9, i64 2
+  %11 = load %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)*, %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)** %10, align 8
+  %12 = tail call %"class.base::SingleThreadTaskRunner"* %11(%"class.base::Thread::Delegate"* nonnull %5) #11
+  br label %13
+
+13:                                               ; preds = %1, %7
+  %14 = phi %"class.base::SingleThreadTaskRunner"* [ %12, %7 ], [ null, %1 ]
+  %15 = bitcast %"class.base::SingleThreadTaskRunner"* %14 to %"class.base::SequencedTaskRunner"*
+  %16 = bitcast %"class.base::SingleThreadTaskRunner"* %14 to i1 (%"class.base::SequencedTaskRunner"*)***
+  %17 = load i1 (%"class.base::SequencedTaskRunner"*)**, i1 (%"class.base::SequencedTaskRunner"*)*** %16, align 8
+  %18 = getelementptr inbounds i1 (%"class.base::SequencedTaskRunner"*)*, i1 (%"class.base::SequencedTaskRunner"*)** %17, i64 5
+  %19 = load i1 (%"class.base::SequencedTaskRunner"*)*, i1 (%"class.base::SequencedTaskRunner"*)** %18, align 8
+  %20 = tail call zeroext i1 %19(%"class.base::SequencedTaskRunner"* %15) #11
+  %21 = icmp eq %"class.base::SingleThreadTaskRunner"* %14, null
+  br i1 %21, label %30, label %22
+
+22:                                               ; preds = %13
+  %23 = getelementptr inbounds %"class.base::SingleThreadTaskRunner", %"class.base::SingleThreadTaskRunner"* %14, i64 0, i32 0, i32 0, i32 1
+  %24 = getelementptr inbounds %"class.base::RefCountedThreadSafe", %"class.base::RefCountedThreadSafe"* %23, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %25 = atomicrmw sub i32* %24, i32 1 acq_rel
+  %26 = icmp eq i32 %25, 1
+  br i1 %26, label %27, label %30
+
+27:                                               ; preds = %22
+  %28 = getelementptr inbounds %"class.base::RefCountedThreadSafe", %"class.base::RefCountedThreadSafe"* %23, i64 -2
+  %29 = bitcast %"class.base::RefCountedThreadSafe"* %28 to %"class.base::TaskRunner"*
+  tail call void @_ZN4base16TaskRunnerTraits8DestructEPKNS_10TaskRunnerE(%"class.base::TaskRunner"* %29) #11
+  br label %30
+
+30:                                               ; preds = %13, %22, %27
+  br i1 %20, label %63, label %31
+
+31:                                               ; preds = %30
+  %32 = load %"class.base::Thread::Delegate"*, %"class.base::Thread::Delegate"** %4, align 8
+  %33 = icmp eq %"class.base::Thread::Delegate"* %32, null
+  br i1 %33, label %40, label %34
+
+34:                                               ; preds = %31
+  %35 = bitcast %"class.base::Thread::Delegate"* %32 to %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)***
+  %36 = load %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)**, %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)*** %35, align 8
+  %37 = getelementptr inbounds %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)*, %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)** %36, i64 2
+  %38 = load %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)*, %"class.base::SingleThreadTaskRunner"* (%"class.base::Thread::Delegate"*)** %37, align 8
+  %39 = tail call %"class.base::SingleThreadTaskRunner"* %38(%"class.base::Thread::Delegate"* nonnull %32) #11
+  br label %40
+
+40:                                               ; preds = %31, %34
+  %41 = phi %"class.base::SingleThreadTaskRunner"* [ %39, %34 ], [ null, %31 ]
+  %42 = bitcast %"class.base::SingleThreadTaskRunner"* %41 to %"class.base::TaskRunner"*
+  %43 = bitcast %"class.base::Location"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %43) #11
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %2, i8* getelementptr inbounds ([27 x i8], [27 x i8]* @.str.8, i64 0, i64 0), i8* getelementptr inbounds ([37 x i8], [37 x i8]* @.str.3, i64 0, i64 0), i32 161) #11
+  %44 = ptrtoint %"class.media::AlsaPcmInputStream"* %0 to i64
+  %45 = call i8* @_Znwm(i64 56) #12, !noalias !32
+  %46 = bitcast i8* %45 to %"class.base::internal::BindStateBase"*
+  call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"* nonnull %46, void ()* bitcast (void (%"class.base::internal::BindStateBase"*)* @_ZN4base8internal7InvokerINS0_9BindStateIMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS4_EEEEEFvvEE7RunOnceEPNS0_13BindStateBaseE to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @_ZN4base8internal9BindStateIMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS3_EEEE7DestroyEPKNS0_13BindStateBaseE) #11, !noalias !32
+  %47 = getelementptr inbounds i8, i8* %45, i64 32
+  %48 = bitcast i8* %47 to <2 x i64>*
+  store <2 x i64> <i64 ptrtoint (void (%"class.media::AlsaPcmInputStream"*)* @_ZN5media18AlsaPcmInputStream26StopRunningOnCaptureThreadEv to i64), i64 0>, <2 x i64>* %48, align 8, !noalias !32
+  %49 = getelementptr inbounds i8, i8* %45, i64 48
+  %50 = bitcast i8* %49 to i64*
+  store i64 %44, i64* %50, align 8, !noalias !32
+  %51 = bitcast %"class.base::OnceCallback"* %3 to i8**
+  store i8* %45, i8** %51, align 8, !alias.scope !32
+  %52 = call zeroext i1 @_ZN4base10TaskRunner8PostTaskERKNS_8LocationENS_12OnceCallbackIFvvEEE(%"class.base::TaskRunner"* %42, %"class.base::Location"* nonnull dereferenceable(32) %2, %"class.base::OnceCallback"* nonnull %3) #11
+  %53 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %3, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %53) #11
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %43) #11
+  %54 = icmp eq %"class.base::SingleThreadTaskRunner"* %41, null
+  br i1 %54, label %65, label %55
+
+55:                                               ; preds = %40
+  %56 = getelementptr inbounds %"class.base::SingleThreadTaskRunner", %"class.base::SingleThreadTaskRunner"* %41, i64 0, i32 0, i32 0, i32 1
+  %57 = getelementptr inbounds %"class.base::RefCountedThreadSafe", %"class.base::RefCountedThreadSafe"* %56, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %58 = atomicrmw sub i32* %57, i32 1 acq_rel
+  %59 = icmp eq i32 %58, 1
+  br i1 %59, label %60, label %65
+
+60:                                               ; preds = %55
+  %61 = getelementptr inbounds %"class.base::RefCountedThreadSafe", %"class.base::RefCountedThreadSafe"* %56, i64 -2
+  %62 = bitcast %"class.base::RefCountedThreadSafe"* %61 to %"class.base::TaskRunner"*
+  call void @_ZN4base16TaskRunnerTraits8DestructEPKNS_10TaskRunnerE(%"class.base::TaskRunner"* %62) #11
+  br label %65
+
+63:                                               ; preds = %30
+  %64 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 18
+  store i8 0, i8* %64, align 8
+  br label %65
+
+65:                                               ; preds = %60, %55, %40, %63
+  ret void
+}
+
+declare zeroext i1 @_ZN4base10TaskRunner8PostTaskERKNS_8LocationENS_12OnceCallbackIFvvEEE(%"class.base::TaskRunner"*, %"class.base::Location"* dereferenceable(32), %"class.base::OnceCallback"*) local_unnamed_addr #1
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEi(%"class.std::__1::basic_ostream"*, i32) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media18AlsaPcmInputStream4StopEv(%"class.media::AlsaPcmInputStream"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 10
+  %3 = load %struct._snd_pcm*, %struct._snd_pcm** %2, align 8
+  %4 = icmp eq %struct._snd_pcm* %3, null
+  br i1 %4, label %26, label %5
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 8
+  %7 = load %"class.media::AudioInputStream::AudioInputCallback"*, %"class.media::AudioInputStream::AudioInputCallback"** %6, align 8
+  %8 = icmp eq %"class.media::AudioInputStream::AudioInputCallback"* %7, null
+  br i1 %8, label %26, label %9
+
+9:                                                ; preds = %5
+  %10 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 0, i32 2, i32 0
+  %11 = tail call zeroext i1 @_ZNK4base8internal9TimerBase9IsRunningEv(%"class.base::internal::TimerBase"* %10) #11
+  br i1 %11, label %12, label %13
+
+12:                                               ; preds = %9
+  tail call void @_ZN4base8internal9TimerBase4StopEv(%"class.base::internal::TimerBase"* %10) #11
+  br label %13
+
+13:                                               ; preds = %9, %12
+  tail call void @_ZN5media18AlsaPcmInputStream26StopRunningOnCaptureThreadEv(%"class.media::AlsaPcmInputStream"* %0)
+  %14 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 17
+  tail call void @_ZN4base6Thread4StopEv(%"class.base::Thread"* %14) #11
+  %15 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 6
+  %16 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %15, align 8
+  %17 = load %struct._snd_pcm*, %struct._snd_pcm** %2, align 8
+  %18 = bitcast %"class.media::AlsaWrapper"* %16 to i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)***
+  %19 = load i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)**, i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)*** %18, align 8
+  %20 = getelementptr inbounds i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)*, i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)** %19, i64 10
+  %21 = load i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)*, i32 (%"class.media::AlsaWrapper"*, %struct._snd_pcm*)** %20, align 8
+  %22 = tail call i32 %21(%"class.media::AlsaWrapper"* %16, %struct._snd_pcm* %17) #11
+  %23 = icmp slt i32 %22, 0
+  br i1 %23, label %24, label %25
+
+24:                                               ; preds = %13
+  tail call void @_ZN5media18AlsaPcmInputStream11HandleErrorEPKci(%"class.media::AlsaPcmInputStream"* %0, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str.19, i64 0, i64 0), i32 %22)
+  br label %25
+
+25:                                               ; preds = %24, %13
+  store %"class.media::AudioInputStream::AudioInputCallback"* null, %"class.media::AudioInputStream::AudioInputCallback"** %6, align 8
+  br label %26
+
+26:                                               ; preds = %5, %1, %25
+  ret void
+}
+
+declare void @_ZN4base6Thread4StopEv(%"class.base::Thread"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media18AlsaPcmInputStream5CloseEv(%"class.media::AlsaPcmInputStream"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 10
+  %3 = load %struct._snd_pcm*, %struct._snd_pcm** %2, align 8
+  %4 = icmp eq %struct._snd_pcm* %3, null
+  br i1 %4, label %30, label %5
+
+5:                                                ; preds = %1
+  %6 = bitcast %"class.media::AlsaPcmInputStream"* %0 to void (%"class.media::AlsaPcmInputStream"*)***
+  %7 = load void (%"class.media::AlsaPcmInputStream"*)**, void (%"class.media::AlsaPcmInputStream"*)*** %6, align 8
+  %8 = getelementptr inbounds void (%"class.media::AlsaPcmInputStream"*)*, void (%"class.media::AlsaPcmInputStream"*)** %7, i64 4
+  %9 = load void (%"class.media::AlsaPcmInputStream"*)*, void (%"class.media::AlsaPcmInputStream"*)** %8, align 8
+  tail call void %9(%"class.media::AlsaPcmInputStream"* %0) #11
+  %10 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 6
+  %11 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %10, align 8
+  %12 = load %struct._snd_pcm*, %struct._snd_pcm** %2, align 8
+  %13 = tail call i32 @_ZN9alsa_util11CloseDeviceEPN5media11AlsaWrapperEP8_snd_pcm(%"class.media::AlsaWrapper"* %11, %struct._snd_pcm* %12) #11
+  %14 = icmp slt i32 %13, 0
+  br i1 %14, label %15, label %16
+
+15:                                               ; preds = %5
+  tail call void @_ZN5media18AlsaPcmInputStream11HandleErrorEPKci(%"class.media::AlsaPcmInputStream"* %0, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.20, i64 0, i64 0), i32 %13)
+  br label %16
+
+16:                                               ; preds = %15, %5
+  %17 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 11
+  %18 = load %struct._snd_mixer*, %struct._snd_mixer** %17, align 8
+  %19 = icmp eq %struct._snd_mixer* %18, null
+  br i1 %19, label %23, label %20
+
+20:                                               ; preds = %16
+  %21 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %10, align 8
+  %22 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 2
+  tail call void @_ZN9alsa_util10CloseMixerEPN5media11AlsaWrapperEP10_snd_mixerRKNSt3__112basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEE(%"class.media::AlsaWrapper"* %21, %struct._snd_mixer* nonnull %18, %"class.std::__1::basic_string"* dereferenceable(24) %22) #11
+  br label %23
+
+23:                                               ; preds = %16, %20
+  %24 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 13, i32 0, i32 0, i32 0
+  %25 = load i8*, i8** %24, align 8
+  store i8* null, i8** %24, align 8
+  %26 = icmp eq i8* %25, null
+  br i1 %26, label %28, label %27
+
+27:                                               ; preds = %23
+  tail call void @_ZdaPv(i8* nonnull %25) #12
+  br label %28
+
+28:                                               ; preds = %23, %27
+  %29 = bitcast %struct._snd_pcm** %2 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %29, i8 0, i64 24, i1 false)
+  br label %30
+
+30:                                               ; preds = %1, %28
+  %31 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 1
+  %32 = load %"class.media::AudioManagerBase"*, %"class.media::AudioManagerBase"** %31, align 8
+  %33 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 0, i32 0
+  %34 = bitcast %"class.media::AudioManagerBase"* %32 to void (%"class.media::AudioManagerBase"*, %"class.media::AudioInputStream"*)***
+  %35 = load void (%"class.media::AudioManagerBase"*, %"class.media::AudioInputStream"*)**, void (%"class.media::AudioManagerBase"*, %"class.media::AudioInputStream"*)*** %34, align 8
+  %36 = getelementptr inbounds void (%"class.media::AudioManagerBase"*, %"class.media::AudioInputStream"*)*, void (%"class.media::AudioManagerBase"*, %"class.media::AudioInputStream"*)** %35, i64 30
+  %37 = load void (%"class.media::AudioManagerBase"*, %"class.media::AudioInputStream"*)*, void (%"class.media::AudioManagerBase"*, %"class.media::AudioInputStream"*)** %36, align 8
+  tail call void %37(%"class.media::AudioManagerBase"* %32, %"class.media::AudioInputStream"* %33) #11
+  ret void
+}
+
+declare i32 @_ZN9alsa_util11CloseDeviceEPN5media11AlsaWrapperEP8_snd_pcm(%"class.media::AlsaWrapper"*, %struct._snd_pcm*) local_unnamed_addr #1
+
+declare void @_ZN9alsa_util10CloseMixerEPN5media11AlsaWrapperEP10_snd_mixerRKNSt3__112basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEE(%"class.media::AlsaWrapper"*, %struct._snd_mixer*, %"class.std::__1::basic_string"* dereferenceable(24)) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden double @_ZN5media18AlsaPcmInputStream12GetMaxVolumeEv(%"class.media::AlsaPcmInputStream"* nocapture readonly) unnamed_addr #0 align 2 {
+  %2 = alloca i64, align 8
+  %3 = alloca i64, align 8
+  %4 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 11
+  %5 = load %struct._snd_mixer*, %struct._snd_mixer** %4, align 8
+  %6 = icmp eq %struct._snd_mixer* %5, null
+  br i1 %6, label %34, label %7
+
+7:                                                ; preds = %1
+  %8 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 12
+  %9 = load %struct._snd_mixer_elem*, %struct._snd_mixer_elem** %8, align 8
+  %10 = icmp eq %struct._snd_mixer_elem* %9, null
+  br i1 %10, label %34, label %11
+
+11:                                               ; preds = %7
+  %12 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 6
+  %13 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %12, align 8
+  %14 = bitcast %"class.media::AlsaWrapper"* %13 to i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*)***
+  %15 = load i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*)**, i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*)*** %14, align 8
+  %16 = getelementptr inbounds i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*)*, i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*)** %15, i64 57
+  %17 = load i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*)*, i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*)** %16, align 8
+  %18 = tail call i32 %17(%"class.media::AlsaWrapper"* %13, %struct._snd_mixer_elem* nonnull %9) #11
+  %19 = icmp eq i32 %18, 0
+  br i1 %19, label %34, label %20
+
+20:                                               ; preds = %11
+  %21 = bitcast i64* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %21) #11
+  store i64 0, i64* %2, align 8
+  %22 = bitcast i64* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %22) #11
+  store i64 0, i64* %3, align 8
+  %23 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %12, align 8
+  %24 = load %struct._snd_mixer_elem*, %struct._snd_mixer_elem** %8, align 8
+  %25 = bitcast %"class.media::AlsaWrapper"* %23 to i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i64*, i64*)***
+  %26 = load i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i64*, i64*)**, i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i64*, i64*)*** %25, align 8
+  %27 = getelementptr inbounds i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i64*, i64*)*, i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i64*, i64*)** %26, i64 58
+  %28 = load i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i64*, i64*)*, i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i64*, i64*)** %27, align 8
+  %29 = call i32 %28(%"class.media::AlsaWrapper"* %23, %struct._snd_mixer_elem* %24, i64* nonnull %2, i64* nonnull %3) #11
+  %30 = icmp eq i32 %29, 0
+  %31 = load i64, i64* %3, align 8
+  %32 = sitofp i64 %31 to double
+  %33 = select i1 %30, double %32, double 0.000000e+00
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %22) #11
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %21) #11
+  br label %34
+
+34:                                               ; preds = %11, %1, %7, %20
+  %35 = phi double [ %33, %20 ], [ 0.000000e+00, %7 ], [ 0.000000e+00, %1 ], [ 0.000000e+00, %11 ]
+  ret double %35
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5media18AlsaPcmInputStream9SetVolumeEd(%"class.media::AlsaPcmInputStream"*, double) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 11
+  %4 = load %struct._snd_mixer*, %struct._snd_mixer** %3, align 8
+  %5 = icmp eq %struct._snd_mixer* %4, null
+  br i1 %5, label %34, label %6
+
+6:                                                ; preds = %2
+  %7 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 12
+  %8 = load %struct._snd_mixer_elem*, %struct._snd_mixer_elem** %7, align 8
+  %9 = icmp eq %struct._snd_mixer_elem* %8, null
+  br i1 %9, label %34, label %10
+
+10:                                               ; preds = %6
+  %11 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 6
+  %12 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %11, align 8
+  %13 = fptosi double %1 to i64
+  %14 = bitcast %"class.media::AlsaWrapper"* %12 to i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i64)***
+  %15 = load i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i64)**, i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i64)*** %14, align 8
+  %16 = getelementptr inbounds i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i64)*, i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i64)** %15, i64 55
+  %17 = load i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i64)*, i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i64)** %16, align 8
+  %18 = tail call i32 %17(%"class.media::AlsaWrapper"* %12, %struct._snd_mixer_elem* nonnull %8, i64 %13) #11
+  %19 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 0, i32 2, i32 0
+  %20 = tail call zeroext i1 @_ZNK4base8internal9TimerBase9IsRunningEv(%"class.base::internal::TimerBase"* %19) #11
+  br i1 %20, label %21, label %34
+
+21:                                               ; preds = %10
+  %22 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 0, i32 0
+  %23 = bitcast %"class.media::AlsaPcmInputStream"* %0 to double (%"class.media::AudioInputStream"*)***
+  %24 = load double (%"class.media::AudioInputStream"*)**, double (%"class.media::AudioInputStream"*)*** %23, align 8
+  %25 = getelementptr inbounds double (%"class.media::AudioInputStream"*)*, double (%"class.media::AudioInputStream"*)** %24, i64 8
+  %26 = load double (%"class.media::AudioInputStream"*)*, double (%"class.media::AudioInputStream"*)** %25, align 8
+  %27 = tail call double %26(%"class.media::AudioInputStream"* %22) #11
+  %28 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 0, i32 4
+  %29 = load double, double* %28, align 8
+  %30 = fdiv double %27, %29
+  %31 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 0, i32 5, i32 0
+  %32 = bitcast double %30 to i64
+  %33 = bitcast %"struct.std::__1::__atomic_base.11"* %31 to i64*
+  store atomic i64 %32, i64* %33 monotonic, align 8
+  br label %34
+
+34:                                               ; preds = %21, %10, %6, %2
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden double @_ZN5media18AlsaPcmInputStream9GetVolumeEv(%"class.media::AlsaPcmInputStream"* nocapture readonly) unnamed_addr #0 align 2 {
+  %2 = alloca i64, align 8
+  %3 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 11
+  %4 = load %struct._snd_mixer*, %struct._snd_mixer** %3, align 8
+  %5 = icmp eq %struct._snd_mixer* %4, null
+  br i1 %5, label %23, label %6
+
+6:                                                ; preds = %1
+  %7 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 12
+  %8 = load %struct._snd_mixer_elem*, %struct._snd_mixer_elem** %7, align 8
+  %9 = icmp eq %struct._snd_mixer_elem* %8, null
+  br i1 %9, label %23, label %10
+
+10:                                               ; preds = %6
+  %11 = bitcast i64* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %11) #11
+  store i64 0, i64* %2, align 8
+  %12 = getelementptr inbounds %"class.media::AlsaPcmInputStream", %"class.media::AlsaPcmInputStream"* %0, i64 0, i32 6
+  %13 = load %"class.media::AlsaWrapper"*, %"class.media::AlsaWrapper"** %12, align 8
+  %14 = bitcast %"class.media::AlsaWrapper"* %13 to i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i32, i64*)***
+  %15 = load i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i32, i64*)**, i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i32, i64*)*** %14, align 8
+  %16 = getelementptr inbounds i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i32, i64*)*, i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i32, i64*)** %15, i64 56
+  %17 = load i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i32, i64*)*, i32 (%"class.media::AlsaWrapper"*, %struct._snd_mixer_elem*, i32, i64*)** %16, align 8
+  %18 = call i32 %17(%"class.media::AlsaWrapper"* %13, %struct._snd_mixer_elem* nonnull %8, i32 0, i64* nonnull %2) #11
+  %19 = icmp slt i32 %18, 0
+  %20 = load i64, i64* %2, align 8
+  %21 = sitofp i64 %20 to double
+  %22 = select i1 %19, double 0.000000e+00, double %21
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %11) #11
+  br label %23
+
+23:                                               ; preds = %1, %6, %10
+  %24 = phi double [ %22, %10 ], [ 0.000000e+00, %6 ], [ 0.000000e+00, %1 ]
+  ret double %24
+}
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden zeroext i1 @_ZN5media18AlsaPcmInputStream7IsMutedEv(%"class.media::AlsaPcmInputStream"* nocapture readnone) unnamed_addr #6 align 2 {
+  ret i1 false
+}
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden void @_ZN5media18AlsaPcmInputStream21SetOutputDeviceForAecERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE(%"class.media::AlsaPcmInputStream"* nocapture, %"class.std::__1::basic_string"* nocapture dereferenceable(24)) unnamed_addr #6 align 2 {
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden zeroext i1 @_ZN5media14AgcAudioStreamINS_16AudioInputStreamEE23SetAutomaticGainControlEb(%"class.media::AgcAudioStream"*, i1 zeroext) unnamed_addr #0 comdat align 2 {
+  %3 = zext i1 %1 to i8
+  %4 = getelementptr inbounds %"class.media::AgcAudioStream", %"class.media::AgcAudioStream"* %0, i64 0, i32 3
+  store i8 %3, i8* %4, align 8
+  ret i1 true
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden zeroext i1 @_ZN5media14AgcAudioStreamINS_16AudioInputStreamEE23GetAutomaticGainControlEv(%"class.media::AgcAudioStream"*) unnamed_addr #0 comdat align 2 {
+  %2 = getelementptr inbounds %"class.media::AgcAudioStream", %"class.media::AgcAudioStream"* %0, i64 0, i32 3
+  %3 = load i8, i8* %2, align 8, !range !8
+  %4 = icmp ne i8 %3, 0
+  ret i1 %4
+}
+
+; Function Attrs: nounwind readnone speculatable
+declare { i64, i1 } @llvm.sadd.with.overflow.i64(i64, i64) #7
+
+; Function Attrs: cold noreturn nounwind
+declare void @llvm.trap() #8
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden i64 @_ZNK4base9TimeDeltamiES0_(%"class.base::TimeDelta"*, i64) local_unnamed_addr #0 comdat align 2 {
+  %3 = alloca %"class.logging::CheckOpResult", align 8
+  %4 = alloca %"class.logging::CheckOpResult", align 8
+  %5 = alloca %"class.logging::CheckError", align 8
+  %6 = add i64 %1, -9223372036854775807
+  %7 = icmp ult i64 %6, 2
+  br i1 %7, label %17, label %8
+
+8:                                                ; preds = %2
+  %9 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %0, i64 0, i32 0
+  %10 = load i64, i64* %9, align 8
+  %11 = icmp sgt i64 %1, -1
+  %12 = select i1 %11, i64 -9223372036854775808, i64 9223372036854775807
+  %13 = tail call { i64, i1 } @llvm.ssub.with.overflow.i64(i64 %10, i64 %1) #11
+  %14 = extractvalue { i64, i1 } %13, 1
+  %15 = extractvalue { i64, i1 } %13, 0
+  %16 = select i1 %14, i64 %12, i64 %15, !prof !2
+  ret i64 %16
+
+17:                                               ; preds = %2
+  %18 = bitcast %"class.logging::CheckOpResult"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %18) #11
+  %19 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %4, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %19, align 8
+  %20 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %0, i64 0, i32 0
+  %21 = load i64, i64* %20, align 8
+  %22 = bitcast %"class.logging::CheckOpResult"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %22)
+  %23 = icmp eq i64 %21, %1
+  br i1 %23, label %25, label %24
+
+24:                                               ; preds = %17
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %22)
+  store i8* null, i8** %19, align 8
+  br label %34
+
+25:                                               ; preds = %17
+  %26 = tail call i8* @_ZN7logging15CheckOpValueStrEl(i64 %1) #11
+  %27 = tail call i8* @_ZN7logging15CheckOpValueStrEl(i64 %1) #11
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %3, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.24, i64 0, i64 0), i8* %26, i8* %27) #11
+  %28 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %3, i64 0, i32 0
+  %29 = load i8*, i8** %28, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %22)
+  store i8* %29, i8** %19, align 8
+  %30 = icmp eq i8* %29, null
+  br i1 %30, label %34, label %31
+
+31:                                               ; preds = %25
+  %32 = bitcast %"class.logging::CheckError"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %32) #11
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %5, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.22, i64 0, i64 0), i32 387, %"class.logging::CheckOpResult"* nonnull %4) #11
+  %33 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %5) #11
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %5) #11
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %32) #11
+  br label %34
+
+34:                                               ; preds = %24, %25, %31
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %18) #11
+  %35 = icmp slt i64 %1, 0
+  %36 = select i1 %35, i64 9223372036854775807, i64 -9223372036854775808
+  ret i64 %36
+}
+
+declare void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* sret, i8*, i32, %"class.logging::CheckOpResult"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind readnone speculatable
+declare { i64, i1 } @llvm.ssub.with.overflow.i64(i64, i64) #7
+
+declare i8* @_ZN7logging15CheckOpValueStrEl(i64) local_unnamed_addr #1
+
+declare void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"*, i8*, i8*, i8*) unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160), i8*, i64) local_unnamed_addr #0 comdat {
+  %4 = alloca %"class.std::__1::locale", align 8
+  %5 = alloca %"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry", align 8
+  %6 = getelementptr inbounds %"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry", %"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry"* %5, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %6) #11
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %6, i8 -86, i64 16, i1 false)
+  call void @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryC1ERS3_(%"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry"* nonnull %5, %"class.std::__1::basic_ostream"* dereferenceable(160) %0) #11
+  %7 = load i8, i8* %6, align 8, !range !8
+  %8 = icmp eq i8 %7, 0
+  br i1 %8, label %58, label %9
+
+9:                                                ; preds = %3
+  %10 = bitcast %"class.std::__1::basic_ostream"* %0 to i8**
+  %11 = load i8*, i8** %10, align 8
+  %12 = getelementptr i8, i8* %11, i64 -24
+  %13 = bitcast i8* %12 to i64*
+  %14 = load i64, i64* %13, align 8
+  %15 = bitcast %"class.std::__1::basic_ostream"* %0 to i8*
+  %16 = getelementptr inbounds i8, i8* %15, i64 %14
+  %17 = getelementptr inbounds i8, i8* %16, i64 40
+  %18 = bitcast i8* %17 to %"class.std::__1::basic_streambuf"**
+  %19 = load %"class.std::__1::basic_streambuf"*, %"class.std::__1::basic_streambuf"** %18, align 8
+  %20 = bitcast i8* %16 to %"class.std::__1::ios_base"*
+  %21 = getelementptr inbounds i8, i8* %16, i64 8
+  %22 = bitcast i8* %21 to i32*
+  %23 = load i32, i32* %22, align 8
+  %24 = and i32 %23, 176
+  %25 = icmp eq i32 %24, 32
+  %26 = getelementptr inbounds i8, i8* %1, i64 %2
+  %27 = select i1 %25, i8* %26, i8* %1
+  %28 = getelementptr inbounds i8, i8* %16, i64 144
+  %29 = bitcast i8* %28 to i32*
+  %30 = load i32, i32* %29, align 8
+  %31 = icmp eq i32 %30, -1
+  br i1 %31, label %32, label %42
+
+32:                                               ; preds = %9
+  %33 = bitcast %"class.std::__1::locale"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %33) #11
+  call void @_ZNKSt3__18ios_base6getlocEv(%"class.std::__1::locale"* nonnull sret %4, %"class.std::__1::ios_base"* %20) #11
+  %34 = call %"class.std::__1::locale::facet"* @_ZNKSt3__16locale9use_facetERNS0_2idE(%"class.std::__1::locale"* nonnull %4, %"class.std::__1::locale::id"* nonnull dereferenceable(16) @_ZNSt3__15ctypeIcE2idE) #11
+  %35 = bitcast %"class.std::__1::locale::facet"* %34 to %"class.std::__1::ctype"*
+  %36 = bitcast %"class.std::__1::locale::facet"* %34 to i8 (%"class.std::__1::ctype"*, i8)***
+  %37 = load i8 (%"class.std::__1::ctype"*, i8)**, i8 (%"class.std::__1::ctype"*, i8)*** %36, align 8
+  %38 = getelementptr inbounds i8 (%"class.std::__1::ctype"*, i8)*, i8 (%"class.std::__1::ctype"*, i8)** %37, i64 7
+  %39 = load i8 (%"class.std::__1::ctype"*, i8)*, i8 (%"class.std::__1::ctype"*, i8)** %38, align 8
+  %40 = call signext i8 %39(%"class.std::__1::ctype"* %35, i8 signext 32) #11
+  call void @_ZNSt3__16localeD1Ev(%"class.std::__1::locale"* nonnull %4) #11
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %33) #11
+  %41 = sext i8 %40 to i32
+  store i32 %41, i32* %29, align 8
+  br label %42
+
+42:                                               ; preds = %9, %32
+  %43 = phi i32 [ %41, %32 ], [ %30, %9 ]
+  %44 = trunc i32 %43 to i8
+  %45 = call %"class.std::__1::basic_streambuf"* @_ZNSt3__116__pad_and_outputIcNS_11char_traitsIcEEEENS_19ostreambuf_iteratorIT_T0_EES6_PKS4_S8_S8_RNS_8ios_baseES4_(%"class.std::__1::basic_streambuf"* %19, i8* %1, i8* %27, i8* %26, %"class.std::__1::ios_base"* dereferenceable(136) %20, i8 signext %44)
+  %46 = icmp eq %"class.std::__1::basic_streambuf"* %45, null
+  br i1 %46, label %47, label %58
+
+47:                                               ; preds = %42
+  %48 = load i8*, i8** %10, align 8
+  %49 = getelementptr i8, i8* %48, i64 -24
+  %50 = bitcast i8* %49 to i64*
+  %51 = load i64, i64* %50, align 8
+  %52 = getelementptr inbounds i8, i8* %15, i64 %51
+  %53 = bitcast i8* %52 to %"class.std::__1::ios_base"*
+  %54 = getelementptr inbounds i8, i8* %52, i64 32
+  %55 = bitcast i8* %54 to i32*
+  %56 = load i32, i32* %55, align 8
+  %57 = or i32 %56, 5
+  call void @_ZNSt3__18ios_base5clearEj(%"class.std::__1::ios_base"* %53, i32 %57) #11
+  br label %58
+
+58:                                               ; preds = %3, %42, %47
+  call void @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryD1Ev(%"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry"* nonnull %5) #11
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %6) #11
+  ret %"class.std::__1::basic_ostream"* %0
+}
+
+declare void @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryC1ERS3_(%"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry"*, %"class.std::__1::basic_ostream"* dereferenceable(160)) unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden %"class.std::__1::basic_streambuf"* @_ZNSt3__116__pad_and_outputIcNS_11char_traitsIcEEEENS_19ostreambuf_iteratorIT_T0_EES6_PKS4_S8_S8_RNS_8ios_baseES4_(%"class.std::__1::basic_streambuf"*, i8*, i8*, i8*, %"class.std::__1::ios_base"* dereferenceable(136), i8 signext) local_unnamed_addr #0 comdat {
+  %7 = alloca %"class.std::__1::basic_string", align 8
+  %8 = icmp eq %"class.std::__1::basic_streambuf"* %0, null
+  br i1 %8, label %78, label %9
+
+9:                                                ; preds = %6
+  %10 = ptrtoint i8* %3 to i64
+  %11 = ptrtoint i8* %1 to i64
+  %12 = sub i64 %10, %11
+  %13 = getelementptr inbounds %"class.std::__1::ios_base", %"class.std::__1::ios_base"* %4, i64 0, i32 3
+  %14 = load i64, i64* %13, align 8
+  %15 = icmp sgt i64 %14, %12
+  %16 = sub nsw i64 %14, %12
+  %17 = select i1 %15, i64 %16, i64 0
+  %18 = ptrtoint i8* %2 to i64
+  %19 = sub i64 %18, %11
+  %20 = icmp sgt i64 %19, 0
+  br i1 %20, label %21, label %28
+
+21:                                               ; preds = %9
+  %22 = bitcast %"class.std::__1::basic_streambuf"* %0 to i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)***
+  %23 = load i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)**, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*** %22, align 8
+  %24 = getelementptr inbounds i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)** %23, i64 12
+  %25 = load i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)** %24, align 8
+  %26 = tail call i64 %25(%"class.std::__1::basic_streambuf"* nonnull %0, i8* %1, i64 %19) #11
+  %27 = icmp eq i64 %26, %19
+  br i1 %27, label %28, label %78
+
+28:                                               ; preds = %21, %9
+  %29 = icmp sgt i64 %17, 0
+  br i1 %29, label %30, label %67
+
+30:                                               ; preds = %28
+  %31 = bitcast %"class.std::__1::basic_string"* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %31) #11
+  %32 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %7, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %33 = icmp ult i64 %17, 23
+  %34 = bitcast %"class.std::__1::basic_string"* %7 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %34, i8 -86, i64 24, i1 false)
+  br i1 %33, label %43, label %35
+
+35:                                               ; preds = %30
+  %36 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %7, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 2
+  %37 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %7, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %38 = add nuw i64 %17, 16
+  %39 = and i64 %38, -16
+  %40 = tail call i8* @_Znwm(i64 %39) #12
+  store i8* %40, i8** %32, align 8
+  %41 = or i64 %39, -9223372036854775808
+  store i64 %41, i64* %36, align 8
+  store i64 %17, i64* %37, align 8
+  %42 = bitcast %"class.std::__1::basic_string"* %7 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  br label %47
+
+43:                                               ; preds = %30
+  %44 = trunc i64 %17 to i8
+  %45 = bitcast %"class.std::__1::basic_string"* %7 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %46 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %45, i64 0, i32 1, i32 0
+  store i8 %44, i8* %46, align 1
+  br label %47
+
+47:                                               ; preds = %35, %43
+  %48 = phi %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* [ %42, %35 ], [ %45, %43 ]
+  %49 = phi i8* [ %40, %35 ], [ %31, %43 ]
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 1 %49, i8 %5, i64 %17, i1 false) #11
+  %50 = getelementptr inbounds i8, i8* %49, i64 %17
+  store i8 0, i8* %50, align 1
+  %51 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %48, i64 0, i32 1, i32 0
+  %52 = load i8, i8* %51, align 1
+  %53 = icmp slt i8 %52, 0
+  %54 = load i8*, i8** %32, align 8
+  %55 = select i1 %53, i8* %54, i8* %31
+  %56 = bitcast %"class.std::__1::basic_streambuf"* %0 to i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)***
+  %57 = load i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)**, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*** %56, align 8
+  %58 = getelementptr inbounds i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)** %57, i64 12
+  %59 = load i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)** %58, align 8
+  %60 = call i64 %59(%"class.std::__1::basic_streambuf"* nonnull %0, i8* %55, i64 %17) #11
+  %61 = icmp eq i64 %60, %17
+  %62 = load i8, i8* %51, align 1
+  %63 = icmp slt i8 %62, 0
+  br i1 %63, label %64, label %66
+
+64:                                               ; preds = %47
+  %65 = load i8*, i8** %32, align 8
+  call void @_ZdlPv(i8* %65) #12
+  br label %66
+
+66:                                               ; preds = %47, %64
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %31) #11
+  br i1 %61, label %67, label %78
+
+67:                                               ; preds = %66, %28
+  %68 = sub i64 %10, %18
+  %69 = icmp sgt i64 %68, 0
+  br i1 %69, label %70, label %77
+
+70:                                               ; preds = %67
+  %71 = bitcast %"class.std::__1::basic_streambuf"* %0 to i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)***
+  %72 = load i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)**, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*** %71, align 8
+  %73 = getelementptr inbounds i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)** %72, i64 12
+  %74 = load i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)** %73, align 8
+  %75 = call i64 %74(%"class.std::__1::basic_streambuf"* nonnull %0, i8* %2, i64 %68) #11
+  %76 = icmp eq i64 %75, %68
+  br i1 %76, label %77, label %78
+
+77:                                               ; preds = %70, %67
+  store i64 0, i64* %13, align 8
+  br label %78
+
+78:                                               ; preds = %77, %66, %21, %70, %6
+  %79 = phi %"class.std::__1::basic_streambuf"* [ null, %6 ], [ %0, %77 ], [ null, %66 ], [ null, %21 ], [ null, %70 ]
+  ret %"class.std::__1::basic_streambuf"* %79
+}
+
+; Function Attrs: nounwind
+declare void @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryD1Ev(%"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry"*) unnamed_addr #3
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #5
+
+declare void @_ZNKSt3__18ios_base6getlocEv(%"class.std::__1::locale"* sret, %"class.std::__1::ios_base"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZNSt3__16localeD1Ev(%"class.std::__1::locale"*) unnamed_addr #3
+
+declare %"class.std::__1::locale::facet"* @_ZNKSt3__16locale9use_facetERNS0_2idE(%"class.std::__1::locale"*, %"class.std::__1::locale::id"* dereferenceable(16)) local_unnamed_addr #1
+
+declare void @_ZNSt3__18ios_base5clearEj(%"class.std::__1::ios_base"*, i32) local_unnamed_addr #1
+
+; Function Attrs: argmemonly nofree nounwind readonly
+declare i64 @strlen(i8* nocapture) local_unnamed_addr #9
+
+declare void @_ZN4base16TaskRunnerTraits8DestructEPKNS_10TaskRunnerE(%"class.base::TaskRunner"*) local_unnamed_addr #1
+
+declare void @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE25__init_copy_ctor_externalEPKcm(%"class.std::__1::basic_string"*, i8*, i64) local_unnamed_addr #1
+
+declare void @_ZN4base14RepeatingTimerC1Ev(%"class.base::RepeatingTimer"*) unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN5media14AgcAudioStreamINS_16AudioInputStreamEED2Ev(%"class.media::AgcAudioStream"*) unnamed_addr #0 comdat align 2 {
+  %2 = getelementptr inbounds %"class.media::AgcAudioStream", %"class.media::AgcAudioStream"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [15 x i8*] }, { [15 x i8*] }* @_ZTVN5media14AgcAudioStreamINS_16AudioInputStreamEEE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.media::AgcAudioStream", %"class.media::AgcAudioStream"* %0, i64 0, i32 2
+  tail call void @_ZN4base14RepeatingTimerD1Ev(%"class.base::RepeatingTimer"* %3) #11
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN5media14AgcAudioStreamINS_16AudioInputStreamEED0Ev(%"class.media::AgcAudioStream"*) unnamed_addr #0 comdat align 2 {
+  tail call void @llvm.trap() #13
+  unreachable
+}
+
+declare void @__cxa_pure_virtual() unnamed_addr
+
+; Function Attrs: nounwind
+declare void @_ZN4base14RepeatingTimerD1Ev(%"class.base::RepeatingTimer"*) unnamed_addr #3
+
+declare i32 @_ZNKSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareEmmPKcm(%"class.std::__1::basic_string"*, i64, i64, i8*, i64) local_unnamed_addr #1
+
+; Function Attrs: nounwind readnone
+declare i1 @llvm.is.constant.i8(i8) #10
+
+declare dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE17__assign_externalEPKcm(%"class.std::__1::basic_string"*, i8*, i64) local_unnamed_addr #1
+
+declare dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE17__assign_externalEPKc(%"class.std::__1::basic_string"*, i8*) local_unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memmove.p0i8.p0i8.i64(i8* nocapture, i8* nocapture readonly, i64, i1 immarg) #2
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdaPv(i8*) local_unnamed_addr #4
+
+declare zeroext i1 @_ZNK4base8internal9TimerBase9IsRunningEv(%"class.base::internal::TimerBase"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN5media14AgcAudioStreamINS_16AudioInputStreamEE32QueryAndStoreNewMicrophoneVolumeEv(%"class.media::AgcAudioStream"*) #0 comdat align 2 {
+  %2 = getelementptr inbounds %"class.media::AgcAudioStream", %"class.media::AgcAudioStream"* %0, i64 0, i32 0
+  %3 = bitcast %"class.media::AgcAudioStream"* %0 to double (%"class.media::AudioInputStream"*)***
+  %4 = load double (%"class.media::AudioInputStream"*)**, double (%"class.media::AudioInputStream"*)*** %3, align 8
+  %5 = getelementptr inbounds double (%"class.media::AudioInputStream"*)*, double (%"class.media::AudioInputStream"*)** %4, i64 8
+  %6 = load double (%"class.media::AudioInputStream"*)*, double (%"class.media::AudioInputStream"*)** %5, align 8
+  %7 = tail call double %6(%"class.media::AudioInputStream"* %2) #11
+  %8 = getelementptr inbounds %"class.media::AgcAudioStream", %"class.media::AgcAudioStream"* %0, i64 0, i32 4
+  %9 = load double, double* %8, align 8
+  %10 = fdiv double %7, %9
+  %11 = getelementptr inbounds %"class.media::AgcAudioStream", %"class.media::AgcAudioStream"* %0, i64 0, i32 5, i32 0
+  %12 = bitcast double %10 to i64
+  %13 = bitcast %"struct.std::__1::__atomic_base.11"* %11 to i64*
+  store atomic i64 %12, i64* %13 monotonic, align 8
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"*) unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal7InvokerINS0_9BindStateIMN5media14AgcAudioStreamINS3_16AudioInputStreamEEEFvvEJNS0_17UnretainedWrapperIS6_EEEEEFvvEE3RunEPNS0_13BindStateBaseE(%"class.base::internal::BindStateBase"*) #0 comdat align 2 {
+  %2 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1
+  %3 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  %4 = bitcast void (%"class.base::internal::BindStateBase"*)** %3 to i8**
+  %5 = load i8*, i8** %4, align 8
+  %6 = bitcast %"class.base::internal::BindStateBase"* %2 to i64*
+  %7 = load i64, i64* %6, align 8
+  %8 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 1
+  %9 = bitcast void ()** %8 to i64*
+  %10 = load i64, i64* %9, align 8
+  %11 = getelementptr inbounds i8, i8* %5, i64 %10
+  %12 = bitcast i8* %11 to %"class.media::AgcAudioStream"*
+  %13 = and i64 %7, 1
+  %14 = icmp eq i64 %13, 0
+  br i1 %14, label %22, label %15
+
+15:                                               ; preds = %1
+  %16 = bitcast i8* %11 to i8**
+  %17 = load i8*, i8** %16, align 8
+  %18 = add i64 %7, -1
+  %19 = getelementptr i8, i8* %17, i64 %18
+  %20 = bitcast i8* %19 to void (%"class.media::AgcAudioStream"*)**
+  %21 = load void (%"class.media::AgcAudioStream"*)*, void (%"class.media::AgcAudioStream"*)** %20, align 8
+  br label %24
+
+22:                                               ; preds = %1
+  %23 = inttoptr i64 %7 to void (%"class.media::AgcAudioStream"*)*
+  br label %24
+
+24:                                               ; preds = %15, %22
+  %25 = phi void (%"class.media::AgcAudioStream"*)* [ %21, %15 ], [ %23, %22 ]
+  tail call void %25(%"class.media::AgcAudioStream"* %12) #11
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal9BindStateIMN5media14AgcAudioStreamINS2_16AudioInputStreamEEEFvvEJNS0_17UnretainedWrapperIS5_EEEE7DestroyEPKNS0_13BindStateBaseE(%"class.base::internal::BindStateBase"*) #0 comdat align 2 {
+  %2 = icmp eq %"class.base::internal::BindStateBase"* %0, null
+  br i1 %2, label %5, label %3
+
+3:                                                ; preds = %1
+  %4 = bitcast %"class.base::internal::BindStateBase"* %0 to i8*
+  tail call void @_ZdlPv(i8* %4) #12
+  br label %5
+
+5:                                                ; preds = %3, %1
+  ret void
+}
+
+declare void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_E(%"class.base::internal::BindStateBase"*, void ()*, void (%"class.base::internal::BindStateBase"*)*) unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal7InvokerINS0_9BindStateIMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS4_EEEEEFvvEE7RunOnceEPNS0_13BindStateBaseE(%"class.base::internal::BindStateBase"*) #0 comdat align 2 {
+  %2 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1
+  %3 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  %4 = bitcast void (%"class.base::internal::BindStateBase"*)** %3 to i8**
+  %5 = load i8*, i8** %4, align 8
+  %6 = bitcast %"class.base::internal::BindStateBase"* %2 to i64*
+  %7 = load i64, i64* %6, align 8
+  %8 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 1
+  %9 = bitcast void ()** %8 to i64*
+  %10 = load i64, i64* %9, align 8
+  %11 = getelementptr inbounds i8, i8* %5, i64 %10
+  %12 = bitcast i8* %11 to %"class.media::AlsaPcmInputStream"*
+  %13 = and i64 %7, 1
+  %14 = icmp eq i64 %13, 0
+  br i1 %14, label %22, label %15
+
+15:                                               ; preds = %1
+  %16 = bitcast i8* %11 to i8**
+  %17 = load i8*, i8** %16, align 8
+  %18 = add i64 %7, -1
+  %19 = getelementptr i8, i8* %17, i64 %18
+  %20 = bitcast i8* %19 to void (%"class.media::AlsaPcmInputStream"*)**
+  %21 = load void (%"class.media::AlsaPcmInputStream"*)*, void (%"class.media::AlsaPcmInputStream"*)** %20, align 8
+  br label %24
+
+22:                                               ; preds = %1
+  %23 = inttoptr i64 %7 to void (%"class.media::AlsaPcmInputStream"*)*
+  br label %24
+
+24:                                               ; preds = %15, %22
+  %25 = phi void (%"class.media::AlsaPcmInputStream"*)* [ %21, %15 ], [ %23, %22 ]
+  tail call void %25(%"class.media::AlsaPcmInputStream"* %12) #11
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal9BindStateIMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS3_EEEE7DestroyEPKNS0_13BindStateBaseE(%"class.base::internal::BindStateBase"*) #0 comdat align 2 {
+  %2 = icmp eq %"class.base::internal::BindStateBase"* %0, null
+  br i1 %2, label %5, label %3
+
+3:                                                ; preds = %1
+  %4 = bitcast %"class.base::internal::BindStateBase"* %0 to i8*
+  tail call void @_ZdlPv(i8* %4) #12
+  br label %5
+
+5:                                                ; preds = %3, %1
+  ret void
+}
+
+declare void @_ZN5media8AudioBus17ZeroFramesPartialEii(%"class.media::AudioBus"*, i32, i32) local_unnamed_addr #1
+
+declare void @_ZN5media8AudioBus13CheckOverflowEiii(i32, i32, i32) local_unnamed_addr #1
+
+declare void @_ZN4base8internal9TimerBase4StopEv(%"class.base::internal::TimerBase"*) unnamed_addr #1
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { norecurse nounwind readnone ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { nounwind readnone speculatable }
+attributes #8 = { cold noreturn nounwind }
+attributes #9 = { argmemonly nofree nounwind readonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #10 = { nounwind readnone }
+attributes #11 = { nounwind }
+attributes #12 = { builtin nounwind }
+attributes #13 = { noreturn nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{!"branch_weights", i32 1, i32 2000}
+!3 = !{!4, !6}
+!4 = distinct !{!4, !5, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS4_EEEEEDcOT0_DpOT1_: argument 0"}
+!5 = distinct !{!5, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS4_EEEEEDcOT0_DpOT1_"}
+!6 = distinct !{!6, !7, !"_ZN4base8BindOnceIMN5media18AlsaPcmInputStreamEFvvEJNS_8internal17UnretainedWrapperIS2_EEEEENS_12OnceCallbackINS5_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSA_DpOSB_: argument 0"}
+!7 = distinct !{!7, !"_ZN4base8BindOnceIMN5media18AlsaPcmInputStreamEFvvEJNS_8internal17UnretainedWrapperIS2_EEEEENS_12OnceCallbackINS5_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSA_DpOSB_"}
+!8 = !{i8 0, i8 2}
+!9 = !{!10, !12}
+!10 = distinct !{!10, !11, !"_ZN4base8internal8BindImplINS_17RepeatingCallbackERMN5media14AgcAudioStreamINS3_16AudioInputStreamEEEFvvEJNS0_17UnretainedWrapperIS6_EEEEEDcOT0_DpOT1_: argument 0"}
+!11 = distinct !{!11, !"_ZN4base8internal8BindImplINS_17RepeatingCallbackERMN5media14AgcAudioStreamINS3_16AudioInputStreamEEEFvvEJNS0_17UnretainedWrapperIS6_EEEEEDcOT0_DpOT1_"}
+!12 = distinct !{!12, !13, !"_ZN4base13BindRepeatingIRMN5media14AgcAudioStreamINS1_16AudioInputStreamEEEFvvEJNS_8internal17UnretainedWrapperIS4_EEEEENS_17RepeatingCallbackINS8_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSD_DpOSE_: argument 0"}
+!13 = distinct !{!13, !"_ZN4base13BindRepeatingIRMN5media14AgcAudioStreamINS1_16AudioInputStreamEEEFvvEJNS_8internal17UnretainedWrapperIS4_EEEEENS_17RepeatingCallbackINS8_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSD_DpOSE_"}
+!14 = !{!15, !17}
+!15 = distinct !{!15, !16, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS4_EEEEEDcOT0_DpOT1_: argument 0"}
+!16 = distinct !{!16, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS4_EEEEEDcOT0_DpOT1_"}
+!17 = distinct !{!17, !18, !"_ZN4base8BindOnceIMN5media18AlsaPcmInputStreamEFvvEJNS_8internal17UnretainedWrapperIS2_EEEEENS_12OnceCallbackINS5_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSA_DpOSB_: argument 0"}
+!18 = distinct !{!18, !"_ZN4base8BindOnceIMN5media18AlsaPcmInputStreamEFvvEJNS_8internal17UnretainedWrapperIS2_EEEEENS_12OnceCallbackINS5_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSA_DpOSB_"}
+!19 = !{!20}
+!20 = distinct !{!20, !21}
+!21 = distinct !{!21, !"LVerDomain"}
+!22 = !{!23}
+!23 = distinct !{!23, !21}
+!24 = distinct !{!24, !25}
+!25 = !{!"llvm.loop.isvectorized", i32 1}
+!26 = distinct !{!26, !25}
+!27 = !{!28, !30}
+!28 = distinct !{!28, !29, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS4_EEEEEDcOT0_DpOT1_: argument 0"}
+!29 = distinct !{!29, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS4_EEEEEDcOT0_DpOT1_"}
+!30 = distinct !{!30, !31, !"_ZN4base8BindOnceIMN5media18AlsaPcmInputStreamEFvvEJNS_8internal17UnretainedWrapperIS2_EEEEENS_12OnceCallbackINS5_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSA_DpOSB_: argument 0"}
+!31 = distinct !{!31, !"_ZN4base8BindOnceIMN5media18AlsaPcmInputStreamEFvvEJNS_8internal17UnretainedWrapperIS2_EEEEENS_12OnceCallbackINS5_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSA_DpOSB_"}
+!32 = !{!33, !35}
+!33 = distinct !{!33, !34, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS4_EEEEEDcOT0_DpOT1_: argument 0"}
+!34 = distinct !{!34, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN5media18AlsaPcmInputStreamEFvvEJNS0_17UnretainedWrapperIS4_EEEEEDcOT0_DpOT1_"}
+!35 = distinct !{!35, !36, !"_ZN4base8BindOnceIMN5media18AlsaPcmInputStreamEFvvEJNS_8internal17UnretainedWrapperIS2_EEEEENS_12OnceCallbackINS5_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSA_DpOSB_: argument 0"}
+!36 = distinct !{!36, !"_ZN4base8BindOnceIMN5media18AlsaPcmInputStreamEFvvEJNS_8internal17UnretainedWrapperIS2_EEEEENS_12OnceCallbackINS5_14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSA_DpOSB_"}

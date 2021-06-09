@@ -1,0 +1,1378 @@
+; ModuleID = '../../v8/src/heap/cppgc/write-barrier.cc'
+source_filename = "../../v8/src/heap/cppgc/write-barrier.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.cppgc::internal::HeapObjectHeader" = type { i32, i16, i16 }
+%"class.cppgc::internal::BasePage" = type <{ %"class.cppgc::internal::HeapBase"*, %"class.cppgc::internal::BaseSpace"*, i8, [7 x i8] }>
+%"class.cppgc::internal::HeapBase" = type <{ i32 (...)**, %"class.cppgc::internal::RawHeap", %"class.std::__1::shared_ptr", %"class.cppgc::internal::CagedHeap", %"class.std::__1::unique_ptr.30", %"class.cppgc::internal::HeapRegistry::Subscription", %"class.std::__1::unique_ptr.36", %"class.std::__1::unique_ptr.55", %"class.std::__1::unique_ptr.61", %"class.std::__1::unique_ptr.67", %"class.cppgc::internal::Compactor", %"class.cppgc::internal::ObjectAllocator", %"class.cppgc::internal::Sweeper", %"class.cppgc::internal::PersistentRegion", %"class.cppgc::internal::PersistentRegion", %"class.cppgc::internal::CrossThreadPersistentRegion", %"class.cppgc::internal::CrossThreadPersistentRegion", %"class.cppgc::internal::ProcessHeapStatisticsUpdater::AllocationObserverImpl", i64, i64, i8, [3 x i8], i32, %"class.std::__1::unique_ptr.156", i64, i8, [7 x i8] }>
+%"class.cppgc::internal::RawHeap" = type { %"class.cppgc::internal::HeapBase"*, %"class.std::__1::vector" }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"class.std::__1::unique_ptr"*, %"class.std::__1::unique_ptr"*, %"class.std::__1::__compressed_pair.7" }
+%"class.std::__1::unique_ptr" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"class.cppgc::internal::BaseSpace"* }
+%"class.std::__1::__compressed_pair.7" = type { %"struct.std::__1::__compressed_pair_elem.8" }
+%"struct.std::__1::__compressed_pair_elem.8" = type { %"class.std::__1::unique_ptr"* }
+%"class.std::__1::shared_ptr" = type { %"class.cppgc::Platform"*, %"class.std::__1::__shared_weak_count"* }
+%"class.cppgc::Platform" = type { i32 (...)** }
+%"class.std::__1::__shared_weak_count" = type { %"class.std::__1::__shared_count", i64 }
+%"class.std::__1::__shared_count" = type { i32 (...)**, i64 }
+%"class.cppgc::internal::CagedHeap" = type { %"class.cppgc::internal::VirtualMemory", %"class.std::__1::unique_ptr.12" }
+%"class.cppgc::internal::VirtualMemory" = type { %"class.v8::PageAllocator"*, i8*, i64 }
+%"class.v8::PageAllocator" = type { i32 (...)** }
+%"class.std::__1::unique_ptr.12" = type { %"class.std::__1::__compressed_pair.13" }
+%"class.std::__1::__compressed_pair.13" = type { %"struct.std::__1::__compressed_pair_elem.14" }
+%"struct.std::__1::__compressed_pair_elem.14" = type { %"class.v8::base::BoundedPageAllocator"* }
+%"class.v8::base::BoundedPageAllocator" = type { %"class.v8::PageAllocator", %"class.v8::base::Mutex", i64, i64, %"class.v8::PageAllocator"*, %"class.v8::base::RegionAllocator" }
+%"class.v8::base::Mutex" = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%"class.v8::base::RegionAllocator" = type { %"class.v8::base::RegionAllocator::Region", i64, i64, i64, i64, %"class.std::__1::set", %"class.std::__1::set.23" }
+%"class.v8::base::RegionAllocator::Region" = type <{ %"class.v8::base::AddressRegion", i32, [4 x i8] }>
+%"class.v8::base::AddressRegion" = type { i64, i64 }
+%"class.std::__1::set" = type { %"class.std::__1::__tree" }
+%"class.std::__1::__tree" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.15", %"class.std::__1::__compressed_pair.20" }
+%"class.std::__1::__tree_end_node" = type { %"class.std::__1::__tree_node_base"* }
+%"class.std::__1::__tree_node_base" = type opaque
+%"class.std::__1::__compressed_pair.15" = type { %"struct.std::__1::__compressed_pair_elem.16" }
+%"struct.std::__1::__compressed_pair_elem.16" = type { %"class.std::__1::__tree_end_node" }
+%"class.std::__1::__compressed_pair.20" = type { %"struct.std::__1::__compressed_pair_elem.21" }
+%"struct.std::__1::__compressed_pair_elem.21" = type { i64 }
+%"class.std::__1::set.23" = type { %"class.std::__1::__tree.24" }
+%"class.std::__1::__tree.24" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.15", %"class.std::__1::__compressed_pair.25" }
+%"class.std::__1::__compressed_pair.25" = type { %"struct.std::__1::__compressed_pair_elem.21" }
+%"class.std::__1::unique_ptr.30" = type { %"class.std::__1::__compressed_pair.31" }
+%"class.std::__1::__compressed_pair.31" = type { %"struct.std::__1::__compressed_pair_elem.32" }
+%"struct.std::__1::__compressed_pair_elem.32" = type { %"class.cppgc::internal::PageBackend"* }
+%"class.cppgc::internal::PageBackend" = type opaque
+%"class.cppgc::internal::HeapRegistry::Subscription" = type { %"class.cppgc::internal::HeapBase"* }
+%"class.std::__1::unique_ptr.36" = type { %"class.std::__1::__compressed_pair.37" }
+%"class.std::__1::__compressed_pair.37" = type { %"struct.std::__1::__compressed_pair_elem.38" }
+%"struct.std::__1::__compressed_pair_elem.38" = type { %"class.cppgc::internal::StatsCollector"* }
+%"class.cppgc::internal::StatsCollector" = type { i64, %"class.v8::base::TimeTicks", i64, i64, i64, i64, %"class.std::__1::vector.39", i8, %"struct.cppgc::internal::StatsCollector::Event", %"struct.cppgc::internal::StatsCollector::Event", %"class.std::__1::unique_ptr.46", %"class.cppgc::Platform"* }
+%"class.v8::base::TimeTicks" = type { %"class.v8::base::time_internal::TimeBase" }
+%"class.v8::base::time_internal::TimeBase" = type { i64 }
+%"class.std::__1::vector.39" = type { %"class.std::__1::__vector_base.40" }
+%"class.std::__1::__vector_base.40" = type { %"class.cppgc::internal::StatsCollector::AllocationObserver"**, %"class.cppgc::internal::StatsCollector::AllocationObserver"**, %"class.std::__1::__compressed_pair.41" }
+%"class.cppgc::internal::StatsCollector::AllocationObserver" = type { i32 (...)** }
+%"class.std::__1::__compressed_pair.41" = type { %"struct.std::__1::__compressed_pair_elem.42" }
+%"struct.std::__1::__compressed_pair_elem.42" = type { %"class.cppgc::internal::StatsCollector::AllocationObserver"** }
+%"struct.cppgc::internal::StatsCollector::Event" = type { [6 x %"class.v8::base::TimeDelta"], [2 x i32], i64, i8, i8, i64, i64, i64 }
+%"class.v8::base::TimeDelta" = type { i64 }
+%"class.std::__1::unique_ptr.46" = type { %"class.std::__1::__compressed_pair.47" }
+%"class.std::__1::__compressed_pair.47" = type { %"struct.std::__1::__compressed_pair_elem.48" }
+%"struct.std::__1::__compressed_pair_elem.48" = type { %"class.cppgc::internal::MetricRecorder"* }
+%"class.cppgc::internal::MetricRecorder" = type { i32 (...)** }
+%"class.std::__1::unique_ptr.55" = type { %"class.std::__1::__compressed_pair.56" }
+%"class.std::__1::__compressed_pair.56" = type { %"struct.std::__1::__compressed_pair_elem.57" }
+%"struct.std::__1::__compressed_pair_elem.57" = type { %"class.heap::base::Stack"* }
+%"class.heap::base::Stack" = type { i8* }
+%"class.std::__1::unique_ptr.61" = type { %"class.std::__1::__compressed_pair.62" }
+%"class.std::__1::__compressed_pair.62" = type { %"struct.std::__1::__compressed_pair_elem.63" }
+%"struct.std::__1::__compressed_pair_elem.63" = type { %"class.cppgc::internal::PreFinalizerHandler"* }
+%"class.cppgc::internal::PreFinalizerHandler" = type opaque
+%"class.std::__1::unique_ptr.67" = type { %"class.std::__1::__compressed_pair.68" }
+%"class.std::__1::__compressed_pair.68" = type { %"struct.std::__1::__compressed_pair_elem.69" }
+%"struct.std::__1::__compressed_pair_elem.69" = type { %"class.cppgc::internal::MarkerBase"* }
+%"class.cppgc::internal::MarkerBase" = type <{ i32 (...)**, %"class.cppgc::internal::HeapBase"*, %"struct.cppgc::internal::MarkerBase::MarkingConfig", [4 x i8], %"class.cppgc::Platform"*, %"class.std::__1::shared_ptr.70", %"struct.cppgc::internal::SingleThreadedHandle", %"class.cppgc::internal::MarkingWorklists", %"class.cppgc::internal::MutatorMarkingState", i8, [7 x i8], %"class.cppgc::internal::IncrementalMarkingSchedule", %"class.std::__1::unique_ptr.114", i8, [7 x i8] }>
+%"struct.cppgc::internal::MarkerBase::MarkingConfig" = type <{ i8, [3 x i8], i32, i8, i8, [2 x i8] }>
+%"class.std::__1::shared_ptr.70" = type { %"class.v8::TaskRunner"*, %"class.std::__1::__shared_weak_count"* }
+%"class.v8::TaskRunner" = type { i32 (...)** }
+%"struct.cppgc::internal::SingleThreadedHandle" = type { %"class.std::__1::shared_ptr.71" }
+%"class.std::__1::shared_ptr.71" = type { i8*, %"class.std::__1::__shared_weak_count"* }
+%"class.cppgc::internal::MarkingWorklists" = type { %"class.heap::base::Worklist", %"class.cppgc::internal::MarkingWorklists::ExternalMarkingWorklist", %"class.heap::base::Worklist.95", %"class.heap::base::Worklist.96", %"class.heap::base::Worklist.97", %"class.heap::base::Worklist.98", %"class.heap::base::Worklist.99", %"class.heap::base::Worklist.99", %"class.cppgc::internal::MarkingWorklists::ExternalMarkingWorklist", %"class.heap::base::Worklist.95" }
+%"class.heap::base::Worklist" = type { %"class.v8::base::Mutex", %"class.heap::base::Worklist<cppgc::TraceDescriptor, 512>::Segment"*, %"struct.std::__1::atomic.72" }
+%"class.heap::base::Worklist<cppgc::TraceDescriptor, 512>::Segment" = type { %"class.heap::base::internal::SegmentBase", %"class.heap::base::Worklist<cppgc::TraceDescriptor, 512>::Segment"*, [512 x %"struct.cppgc::TraceDescriptor"] }
+%"class.heap::base::internal::SegmentBase" = type { i16, i16 }
+%"struct.cppgc::TraceDescriptor" = type { i8*, void (%"class.cppgc::Visitor"*, i8*)* }
+%"class.cppgc::Visitor" = type { i32 (...)** }
+%"struct.std::__1::atomic.72" = type { %"struct.std::__1::__atomic_base.73" }
+%"struct.std::__1::__atomic_base.73" = type { %"struct.std::__1::__atomic_base.74" }
+%"struct.std::__1::__atomic_base.74" = type { %"struct.std::__1::__cxx_atomic_impl.75" }
+%"struct.std::__1::__cxx_atomic_impl.75" = type { %"struct.std::__1::__cxx_atomic_base_impl.76" }
+%"struct.std::__1::__cxx_atomic_base_impl.76" = type { i64 }
+%"class.heap::base::Worklist.96" = type { %"class.v8::base::Mutex", %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment"*, %"struct.std::__1::atomic.72" }
+%"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment" = type { %"class.heap::base::internal::SegmentBase", %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment"*, [64 x %"class.cppgc::internal::HeapObjectHeader"*] }
+%"class.heap::base::Worklist.97" = type { %"class.v8::base::Mutex", %"class.heap::base::Worklist<cppgc::internal::MarkingWorklists::WeakCallbackItem, 64>::Segment"*, %"struct.std::__1::atomic.72" }
+%"class.heap::base::Worklist<cppgc::internal::MarkingWorklists::WeakCallbackItem, 64>::Segment" = type { %"class.heap::base::internal::SegmentBase", %"class.heap::base::Worklist<cppgc::internal::MarkingWorklists::WeakCallbackItem, 64>::Segment"*, [64 x %"struct.cppgc::internal::MarkingWorklists::WeakCallbackItem"] }
+%"struct.cppgc::internal::MarkingWorklists::WeakCallbackItem" = type { void (%"class.cppgc::LivenessBroker"*, i8*)*, i8* }
+%"class.cppgc::LivenessBroker" = type { i8 }
+%"class.heap::base::Worklist.98" = type { %"class.v8::base::Mutex", %"class.heap::base::Worklist<cppgc::internal::MarkingWorklists::ConcurrentMarkingBailoutItem, 64>::Segment"*, %"struct.std::__1::atomic.72" }
+%"class.heap::base::Worklist<cppgc::internal::MarkingWorklists::ConcurrentMarkingBailoutItem, 64>::Segment" = type { %"class.heap::base::internal::SegmentBase", %"class.heap::base::Worklist<cppgc::internal::MarkingWorklists::ConcurrentMarkingBailoutItem, 64>::Segment"*, [64 x %"struct.cppgc::internal::MarkingWorklists::ConcurrentMarkingBailoutItem"] }
+%"struct.cppgc::internal::MarkingWorklists::ConcurrentMarkingBailoutItem" = type { i8*, void (%"class.cppgc::Visitor"*, i8*)*, i64 }
+%"class.heap::base::Worklist.99" = type { %"class.v8::base::Mutex", %"class.heap::base::Worklist<cppgc::internal::MarkingWorklists::EphemeronPairItem, 64>::Segment"*, %"struct.std::__1::atomic.72" }
+%"class.heap::base::Worklist<cppgc::internal::MarkingWorklists::EphemeronPairItem, 64>::Segment" = type { %"class.heap::base::internal::SegmentBase", %"class.heap::base::Worklist<cppgc::internal::MarkingWorklists::EphemeronPairItem, 64>::Segment"*, [64 x %"struct.cppgc::internal::MarkingWorklists::EphemeronPairItem"] }
+%"struct.cppgc::internal::MarkingWorklists::EphemeronPairItem" = type { i8*, i8*, %"struct.cppgc::TraceDescriptor" }
+%"class.cppgc::internal::MarkingWorklists::ExternalMarkingWorklist" = type { %"class.v8::base::Mutex", %"class.std::__1::unordered_set" }
+%"class.std::__1::unordered_set" = type { %"class.std::__1::__hash_table" }
+%"class.std::__1::__hash_table" = type <{ %"class.std::__1::unique_ptr.77", %"class.std::__1::__compressed_pair.85", %"class.std::__1::__compressed_pair.90", %"class.std::__1::__compressed_pair.92", [4 x i8] }>
+%"class.std::__1::unique_ptr.77" = type { %"class.std::__1::__compressed_pair.78" }
+%"class.std::__1::__compressed_pair.78" = type { %"struct.std::__1::__compressed_pair_elem.79", %"struct.std::__1::__compressed_pair_elem.80" }
+%"struct.std::__1::__compressed_pair_elem.79" = type { %"struct.std::__1::__hash_node_base"** }
+%"struct.std::__1::__hash_node_base" = type { %"struct.std::__1::__hash_node_base"* }
+%"struct.std::__1::__compressed_pair_elem.80" = type { %"class.std::__1::__bucket_list_deallocator" }
+%"class.std::__1::__bucket_list_deallocator" = type { %"class.std::__1::__compressed_pair.81" }
+%"class.std::__1::__compressed_pair.81" = type { %"struct.std::__1::__compressed_pair_elem.21" }
+%"class.std::__1::__compressed_pair.85" = type { %"struct.std::__1::__compressed_pair_elem.86" }
+%"struct.std::__1::__compressed_pair_elem.86" = type { %"struct.std::__1::__hash_node_base" }
+%"class.std::__1::__compressed_pair.90" = type { %"struct.std::__1::__compressed_pair_elem.21" }
+%"class.std::__1::__compressed_pair.92" = type { %"struct.std::__1::__compressed_pair_elem.93" }
+%"struct.std::__1::__compressed_pair_elem.93" = type { float }
+%"class.heap::base::Worklist.95" = type { %"class.v8::base::Mutex", %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment"*, %"struct.std::__1::atomic.72" }
+%"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment" = type { %"class.heap::base::internal::SegmentBase", %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment"*, [16 x %"class.cppgc::internal::HeapObjectHeader"*] }
+%"class.cppgc::internal::MutatorMarkingState" = type { %"class.cppgc::internal::MarkingStateBase", %"class.cppgc::internal::MutatorMarkingState::RecentlyRetracedWeakContainers" }
+%"class.cppgc::internal::MarkingStateBase" = type { %"class.cppgc::internal::HeapBase"*, %"class.heap::base::Worklist<cppgc::TraceDescriptor, 512>::Local", %"class.cppgc::internal::MarkingWorklists::ExternalMarkingWorklist"*, %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Local", %"class.heap::base::Worklist<cppgc::internal::MarkingWorklists::WeakCallbackItem, 64>::Local", %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Local", %"class.heap::base::Worklist<cppgc::internal::MarkingWorklists::ConcurrentMarkingBailoutItem, 64>::Local", %"class.heap::base::Worklist<cppgc::internal::MarkingWorklists::EphemeronPairItem, 64>::Local", %"class.heap::base::Worklist<cppgc::internal::MarkingWorklists::EphemeronPairItem, 64>::Local", %"class.cppgc::internal::MarkingWorklists::ExternalMarkingWorklist"*, %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Local", %"class.std::__1::unique_ptr.100", i64 }
+%"class.heap::base::Worklist<cppgc::TraceDescriptor, 512>::Local" = type { %"class.heap::base::Worklist"*, %"class.heap::base::internal::SegmentBase"*, %"class.heap::base::internal::SegmentBase"* }
+%"class.heap::base::Worklist<cppgc::internal::MarkingWorklists::WeakCallbackItem, 64>::Local" = type { %"class.heap::base::Worklist.97"*, %"class.heap::base::internal::SegmentBase"*, %"class.heap::base::internal::SegmentBase"* }
+%"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Local" = type { %"class.heap::base::Worklist.96"*, %"class.heap::base::internal::SegmentBase"*, %"class.heap::base::internal::SegmentBase"* }
+%"class.heap::base::Worklist<cppgc::internal::MarkingWorklists::ConcurrentMarkingBailoutItem, 64>::Local" = type { %"class.heap::base::Worklist.98"*, %"class.heap::base::internal::SegmentBase"*, %"class.heap::base::internal::SegmentBase"* }
+%"class.heap::base::Worklist<cppgc::internal::MarkingWorklists::EphemeronPairItem, 64>::Local" = type { %"class.heap::base::Worklist.99"*, %"class.heap::base::internal::SegmentBase"*, %"class.heap::base::internal::SegmentBase"* }
+%"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Local" = type { %"class.heap::base::Worklist.95"*, %"class.heap::base::internal::SegmentBase"*, %"class.heap::base::internal::SegmentBase"* }
+%"class.std::__1::unique_ptr.100" = type { %"class.std::__1::__compressed_pair.101" }
+%"class.std::__1::__compressed_pair.101" = type { %"struct.std::__1::__compressed_pair_elem.102" }
+%"struct.std::__1::__compressed_pair_elem.102" = type { %"class.heap::base::Worklist<const void **, 256>::Local"* }
+%"class.heap::base::Worklist<const void **, 256>::Local" = type { %"class.heap::base::Worklist.103"*, %"class.heap::base::internal::SegmentBase"*, %"class.heap::base::internal::SegmentBase"* }
+%"class.heap::base::Worklist.103" = type { %"class.v8::base::Mutex", %"class.heap::base::Worklist<const void **, 256>::Segment"*, %"struct.std::__1::atomic.72" }
+%"class.heap::base::Worklist<const void **, 256>::Segment" = type { %"class.heap::base::internal::SegmentBase", %"class.heap::base::Worklist<const void **, 256>::Segment"*, [256 x i8**] }
+%"class.cppgc::internal::MutatorMarkingState::RecentlyRetracedWeakContainers" = type { %"class.std::__1::vector.107", i64 }
+%"class.std::__1::vector.107" = type { %"class.std::__1::__vector_base.108" }
+%"class.std::__1::__vector_base.108" = type { %"class.cppgc::internal::HeapObjectHeader"**, %"class.cppgc::internal::HeapObjectHeader"**, %"class.std::__1::__compressed_pair.109" }
+%"class.std::__1::__compressed_pair.109" = type { %"struct.std::__1::__compressed_pair_elem.110" }
+%"struct.std::__1::__compressed_pair_elem.110" = type { %"class.cppgc::internal::HeapObjectHeader"** }
+%"class.cppgc::internal::IncrementalMarkingSchedule" = type { %"class.v8::base::TimeTicks", i64, %"struct.std::__1::atomic.72", double, i64, double }
+%"class.std::__1::unique_ptr.114" = type { %"class.std::__1::__compressed_pair.115" }
+%"class.std::__1::__compressed_pair.115" = type { %"struct.std::__1::__compressed_pair_elem.116" }
+%"struct.std::__1::__compressed_pair_elem.116" = type { %"class.cppgc::internal::ConcurrentMarkerBase"* }
+%"class.cppgc::internal::ConcurrentMarkerBase" = type <{ i32 (...)**, %"class.cppgc::internal::HeapBase"*, %"class.cppgc::internal::MarkingWorklists"*, %"class.cppgc::internal::IncrementalMarkingSchedule"*, %"class.cppgc::Platform"*, %"class.std::__1::unique_ptr.117", i64, %"class.v8::base::TimeTicks", i8, [7 x i8] }>
+%"class.std::__1::unique_ptr.117" = type { %"class.std::__1::__compressed_pair.118" }
+%"class.std::__1::__compressed_pair.118" = type { %"struct.std::__1::__compressed_pair_elem.119" }
+%"struct.std::__1::__compressed_pair_elem.119" = type { %"class.v8::JobHandle"* }
+%"class.v8::JobHandle" = type { i32 (...)** }
+%"class.cppgc::internal::Compactor" = type <{ %"class.cppgc::internal::RawHeap"*, %"class.std::__1::vector.129", %"class.std::__1::unique_ptr.136", i8, i8, [6 x i8] }>
+%"class.std::__1::vector.129" = type { %"class.std::__1::__vector_base.130" }
+%"class.std::__1::__vector_base.130" = type { %"class.cppgc::internal::NormalPageSpace"**, %"class.cppgc::internal::NormalPageSpace"**, %"class.std::__1::__compressed_pair.131" }
+%"class.cppgc::internal::NormalPageSpace" = type { %"class.cppgc::internal::BaseSpace.base", %"class.cppgc::internal::NormalPageSpace::LinearAllocationBuffer", %"class.cppgc::internal::FreeList" }
+%"class.cppgc::internal::BaseSpace.base" = type <{ %"class.cppgc::internal::RawHeap"*, %"class.std::__1::vector.1", %"class.v8::base::Mutex", i64, i32, i8 }>
+%"class.std::__1::vector.1" = type { %"class.std::__1::__vector_base.2" }
+%"class.std::__1::__vector_base.2" = type { %"class.cppgc::internal::BasePage"**, %"class.cppgc::internal::BasePage"**, %"class.std::__1::__compressed_pair.3" }
+%"class.std::__1::__compressed_pair.3" = type { %"struct.std::__1::__compressed_pair_elem.4" }
+%"struct.std::__1::__compressed_pair_elem.4" = type { %"class.cppgc::internal::BasePage"** }
+%"class.cppgc::internal::NormalPageSpace::LinearAllocationBuffer" = type { i8*, i64 }
+%"class.cppgc::internal::FreeList" = type { %"struct.std::__1::array", %"struct.std::__1::array", i64 }
+%"struct.std::__1::array" = type { [17 x %"class.cppgc::internal::FreeList::Entry"*] }
+%"class.cppgc::internal::FreeList::Entry" = type opaque
+%"class.std::__1::__compressed_pair.131" = type { %"struct.std::__1::__compressed_pair_elem.132" }
+%"struct.std::__1::__compressed_pair_elem.132" = type { %"class.cppgc::internal::NormalPageSpace"** }
+%"class.std::__1::unique_ptr.136" = type { %"class.std::__1::__compressed_pair.137" }
+%"class.std::__1::__compressed_pair.137" = type { %"struct.std::__1::__compressed_pair_elem.138" }
+%"struct.std::__1::__compressed_pair_elem.138" = type { %"class.cppgc::internal::CompactionWorklists"* }
+%"class.cppgc::internal::CompactionWorklists" = type { %"class.heap::base::Worklist.103" }
+%"class.cppgc::internal::ObjectAllocator" = type { %"class.cppgc::internal::RawHeap"*, %"class.cppgc::internal::PageBackend"*, %"class.cppgc::internal::StatsCollector"* }
+%"class.cppgc::internal::Sweeper" = type { %"class.cppgc::internal::HeapBase"*, %"class.std::__1::unique_ptr.142" }
+%"class.std::__1::unique_ptr.142" = type { %"class.std::__1::__compressed_pair.143" }
+%"class.std::__1::__compressed_pair.143" = type { %"struct.std::__1::__compressed_pair_elem.144" }
+%"struct.std::__1::__compressed_pair_elem.144" = type { %"class.cppgc::internal::Sweeper::SweeperImpl"* }
+%"class.cppgc::internal::Sweeper::SweeperImpl" = type opaque
+%"class.cppgc::internal::PersistentRegion" = type { %"class.std::__1::vector.148", %"class.cppgc::internal::PersistentNode"*, i64 }
+%"class.std::__1::vector.148" = type { %"class.std::__1::__vector_base.149" }
+%"class.std::__1::__vector_base.149" = type { %"class.std::__1::unique_ptr.150"*, %"class.std::__1::unique_ptr.150"*, %"class.std::__1::__compressed_pair.151" }
+%"class.std::__1::unique_ptr.150" = type opaque
+%"class.std::__1::__compressed_pair.151" = type { %"struct.std::__1::__compressed_pair_elem.152" }
+%"struct.std::__1::__compressed_pair_elem.152" = type { %"class.std::__1::unique_ptr.150"* }
+%"class.cppgc::internal::PersistentNode" = type { %union.anon, void (%"class.cppgc::Visitor"*, i8*)* }
+%union.anon = type { i8* }
+%"class.cppgc::internal::CrossThreadPersistentRegion" = type { %"class.cppgc::internal::PersistentRegion" }
+%"class.cppgc::internal::ProcessHeapStatisticsUpdater::AllocationObserverImpl" = type { %"class.cppgc::internal::StatsCollector::AllocationObserver", i64 }
+%"class.std::__1::unique_ptr.156" = type { %"class.std::__1::__compressed_pair.157" }
+%"class.std::__1::__compressed_pair.157" = type { %"struct.std::__1::__compressed_pair_elem.158" }
+%"struct.std::__1::__compressed_pair_elem.158" = type { i32* }
+%"class.cppgc::internal::BaseSpace" = type <{ %"class.cppgc::internal::RawHeap"*, %"class.std::__1::vector.1", %"class.v8::base::Mutex", i64, i32, i8, [3 x i8] }>
+%"class.cppgc::internal::LargePage" = type { %"class.cppgc::internal::BasePage.base", i64 }
+%"class.cppgc::internal::BasePage.base" = type <{ %"class.cppgc::internal::HeapBase"*, %"class.cppgc::internal::BaseSpace"*, i8 }>
+%"class.cppgc::internal::ObjectStartBitmap" = type { i8*, %"struct.std::__1::array.167" }
+%"struct.std::__1::array.167" = type { [2048 x i8] }
+%"class.cppgc::HeapHandle" = type { i8 }
+%"class.cppgc::subtle::DisallowGarbageCollectionScope" = type { %"class.cppgc::HeapHandle"* }
+%"struct.cppgc::internal::WriteBarrier::Params" = type { %"class.cppgc::HeapHandle"*, i64, i64, i64 }
+
+$_ZNSt3__112__hash_tableIPN5cppgc8internal16HeapObjectHeaderENS_4hashIS4_EENS_8equal_toIS4_EENS_9allocatorIS4_EEE25__emplace_unique_key_argsIS4_JRKS4_EEENS_4pairINS_15__hash_iteratorIPNS_11__hash_nodeIS4_PvEEEEbEERKT_DpOT0_ = comdat any
+
+$_ZNSt3__112__hash_tableIPN5cppgc8internal16HeapObjectHeaderENS_4hashIS4_EENS_8equal_toIS4_EENS_9allocatorIS4_EEE6rehashEm = comdat any
+
+$_ZNSt3__112__hash_tableIPN5cppgc8internal16HeapObjectHeaderENS_4hashIS4_EENS_8equal_toIS4_EENS_9allocatorIS4_EEE8__rehashEm = comdat any
+
+@_ZN5cppgc8internal12WriteBarrier39incremental_or_concurrent_marking_flag_E = hidden local_unnamed_addr global { { { i32 } } } zeroinitializer, align 4
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5cppgc8internal12WriteBarrier43DijkstraMarkingBarrierSlowWithSentinelCheckEPKv(i8*) local_unnamed_addr #0 align 2 {
+  %2 = icmp ult i8* %0, inttoptr (i64 2 to i8*)
+  br i1 %2, label %4, label %3
+
+3:                                                ; preds = %1
+  tail call void @_ZN5cppgc8internal12WriteBarrier26DijkstraMarkingBarrierSlowEPKv(i8* nonnull %0)
+  br label %4
+
+4:                                                ; preds = %1, %3
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5cppgc8internal12WriteBarrier26DijkstraMarkingBarrierSlowEPKv(i8*) local_unnamed_addr #0 align 2 {
+  %2 = alloca %"class.cppgc::internal::HeapObjectHeader"*, align 8
+  %3 = ptrtoint i8* %0 to i64
+  %4 = and i64 %3, -131072
+  %5 = or i64 %4, 4096
+  %6 = inttoptr i64 %5 to %"class.cppgc::internal::BasePage"*
+  %7 = getelementptr inbounds %"class.cppgc::internal::BasePage", %"class.cppgc::internal::BasePage"* %6, i64 0, i32 0
+  %8 = load %"class.cppgc::internal::HeapBase"*, %"class.cppgc::internal::HeapBase"** %7, align 4096
+  %9 = getelementptr inbounds %"class.cppgc::internal::BasePage", %"class.cppgc::internal::BasePage"* %6, i64 0, i32 2
+  %10 = load i8, i8* %9, align 16
+  %11 = icmp eq i8 %10, 1
+  br i1 %11, label %12, label %15
+
+12:                                               ; preds = %1
+  %13 = inttoptr i64 %5 to %"class.cppgc::internal::LargePage"*
+  %14 = tail call %"class.cppgc::internal::HeapObjectHeader"* @_ZNK5cppgc8internal9LargePage12ObjectHeaderEv(%"class.cppgc::internal::LargePage"* nonnull %13) #10
+  br label %60
+
+15:                                               ; preds = %1
+  %16 = getelementptr inbounds %"class.cppgc::internal::BasePage", %"class.cppgc::internal::BasePage"* %6, i64 1, i32 1
+  %17 = bitcast %"class.cppgc::internal::BaseSpace"** %16 to %"class.cppgc::internal::ObjectStartBitmap"*
+  %18 = bitcast %"class.cppgc::internal::BaseSpace"** %16 to i64*
+  %19 = load i64, i64* %18, align 8
+  %20 = sub i64 %3, %19
+  %21 = lshr i64 %20, 3
+  %22 = lshr i64 %20, 6
+  %23 = getelementptr inbounds %"class.cppgc::internal::ObjectStartBitmap", %"class.cppgc::internal::ObjectStartBitmap"* %17, i64 0, i32 1, i32 0, i64 %22
+  %24 = load i8, i8* %23, align 1
+  %25 = trunc i64 %21 to i32
+  %26 = and i32 %25, 7
+  %27 = shl i32 2, %26
+  %28 = trunc i32 %27 to i8
+  %29 = add i8 %28, -1
+  %30 = and i8 %29, %24
+  %31 = icmp eq i8 %30, 0
+  %32 = icmp ne i64 %22, 0
+  %33 = and i1 %32, %31
+  %34 = inttoptr i64 %19 to i8*
+  br i1 %33, label %35, label %43
+
+35:                                               ; preds = %15, %35
+  %36 = phi i64 [ %37, %35 ], [ %22, %15 ]
+  %37 = add nsw i64 %36, -1
+  %38 = getelementptr inbounds %"class.cppgc::internal::ObjectStartBitmap", %"class.cppgc::internal::ObjectStartBitmap"* %17, i64 0, i32 1, i32 0, i64 %37
+  %39 = load i8, i8* %38, align 1
+  %40 = icmp eq i8 %39, 0
+  %41 = icmp ne i64 %37, 0
+  %42 = and i1 %41, %40
+  br i1 %42, label %35, label %43
+
+43:                                               ; preds = %35, %15
+  %44 = phi i64 [ %22, %15 ], [ %37, %35 ]
+  %45 = phi i8 [ %30, %15 ], [ %39, %35 ]
+  %46 = phi i1 [ %31, %15 ], [ %40, %35 ]
+  br i1 %46, label %52, label %47
+
+47:                                               ; preds = %43
+  %48 = zext i8 %45 to i32
+  %49 = tail call i32 @llvm.ctlz.i32(i32 %48, i1 true) #10, !range !2
+  %50 = add nsw i32 %49, -24
+  %51 = sext i32 %50 to i64
+  br label %52
+
+52:                                               ; preds = %47, %43
+  %53 = phi i64 [ %51, %47 ], [ 8, %43 ]
+  %54 = shl i64 %44, 3
+  %55 = or i64 %54, 7
+  %56 = sub i64 %55, %53
+  %57 = shl i64 %56, 3
+  %58 = getelementptr inbounds i8, i8* %34, i64 %57
+  %59 = bitcast i8* %58 to %"class.cppgc::internal::HeapObjectHeader"*
+  br label %60
+
+60:                                               ; preds = %12, %52
+  %61 = phi %"class.cppgc::internal::HeapObjectHeader"* [ %14, %12 ], [ %59, %52 ]
+  %62 = getelementptr inbounds %"class.cppgc::internal::HeapObjectHeader", %"class.cppgc::internal::HeapObjectHeader"* %61, i64 0, i32 2
+  %63 = load atomic i16, i16* %62 monotonic, align 2
+  %64 = or i16 %63, 1
+  %65 = icmp eq i16 %64, %63
+  br i1 %65, label %127, label %66
+
+66:                                               ; preds = %60
+  %67 = cmpxchg i16* %62, i16 %63, i16 %64 monotonic monotonic
+  %68 = extractvalue { i16, i1 } %67, 1
+  br i1 %68, label %69, label %127
+
+69:                                               ; preds = %66
+  %70 = getelementptr inbounds %"class.cppgc::internal::HeapBase", %"class.cppgc::internal::HeapBase"* %8, i64 0, i32 9, i32 0, i32 0, i32 0
+  %71 = load %"class.cppgc::internal::MarkerBase"*, %"class.cppgc::internal::MarkerBase"** %70, align 8
+  %72 = getelementptr inbounds %"class.cppgc::internal::HeapObjectHeader", %"class.cppgc::internal::HeapObjectHeader"* %61, i64 0, i32 1
+  %73 = load i16, i16* %72, align 2
+  %74 = and i16 %73, 1
+  %75 = icmp eq i16 %74, 0
+  br i1 %75, label %76, label %85, !prof !3
+
+76:                                               ; preds = %69
+  %77 = load atomic i16, i16* %62 monotonic, align 2
+  %78 = and i16 %77, -2
+  store atomic i16 %78, i16* %62 monotonic, align 2
+  %79 = getelementptr inbounds %"class.cppgc::internal::MarkerBase", %"class.cppgc::internal::MarkerBase"* %71, i64 0, i32 8, i32 0, i32 2
+  %80 = load %"class.cppgc::internal::MarkingWorklists::ExternalMarkingWorklist"*, %"class.cppgc::internal::MarkingWorklists::ExternalMarkingWorklist"** %79, align 8
+  %81 = bitcast %"class.cppgc::internal::HeapObjectHeader"** %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %81) #10
+  store %"class.cppgc::internal::HeapObjectHeader"* %61, %"class.cppgc::internal::HeapObjectHeader"** %2, align 8
+  %82 = getelementptr inbounds %"class.cppgc::internal::MarkingWorklists::ExternalMarkingWorklist", %"class.cppgc::internal::MarkingWorklists::ExternalMarkingWorklist"* %80, i64 0, i32 0
+  tail call void @_ZN2v84base5Mutex4LockEv(%"class.v8::base::Mutex"* %82) #10
+  %83 = getelementptr inbounds %"class.cppgc::internal::MarkingWorklists::ExternalMarkingWorklist", %"class.cppgc::internal::MarkingWorklists::ExternalMarkingWorklist"* %80, i64 0, i32 1, i32 0
+  %84 = call { %"struct.std::__1::__hash_node_base"*, i8 } @_ZNSt3__112__hash_tableIPN5cppgc8internal16HeapObjectHeaderENS_4hashIS4_EENS_8equal_toIS4_EENS_9allocatorIS4_EEE25__emplace_unique_key_argsIS4_JRKS4_EEENS_4pairINS_15__hash_iteratorIPNS_11__hash_nodeIS4_PvEEEEbEERKT_DpOT0_(%"class.std::__1::__hash_table"* %83, %"class.cppgc::internal::HeapObjectHeader"** nonnull dereferenceable(8) %2, %"class.cppgc::internal::HeapObjectHeader"** nonnull dereferenceable(8) %2) #10
+  call void @_ZN2v84base5Mutex6UnlockEv(%"class.v8::base::Mutex"* %82) #10
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %81) #10
+  br label %127
+
+85:                                               ; preds = %69
+  %86 = getelementptr inbounds %"class.cppgc::internal::MarkerBase", %"class.cppgc::internal::MarkerBase"* %71, i64 0, i32 8, i32 0, i32 5, i32 1
+  %87 = load %"class.heap::base::internal::SegmentBase"*, %"class.heap::base::internal::SegmentBase"** %86, align 8
+  %88 = getelementptr inbounds %"class.heap::base::internal::SegmentBase", %"class.heap::base::internal::SegmentBase"* %87, i64 0, i32 1
+  %89 = load i16, i16* %88, align 2
+  %90 = getelementptr inbounds %"class.heap::base::internal::SegmentBase", %"class.heap::base::internal::SegmentBase"* %87, i64 0, i32 0
+  %91 = load i16, i16* %90, align 2
+  %92 = icmp eq i16 %89, %91
+  %93 = bitcast %"class.heap::base::internal::SegmentBase"* %87 to %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment"*
+  br i1 %92, label %94, label %120, !prof !3
+
+94:                                               ; preds = %85
+  %95 = tail call %"class.heap::base::internal::SegmentBase"* @_ZN4heap4base8internal11SegmentBase25GetSentinelSegmentAddressEv() #10
+  %96 = icmp eq %"class.heap::base::internal::SegmentBase"* %87, %95
+  br i1 %96, label %111, label %97
+
+97:                                               ; preds = %94
+  %98 = getelementptr inbounds %"class.cppgc::internal::MarkerBase", %"class.cppgc::internal::MarkerBase"* %71, i64 0, i32 8, i32 0, i32 5, i32 0
+  %99 = load %"class.heap::base::Worklist.96"*, %"class.heap::base::Worklist.96"** %98, align 8
+  %100 = bitcast %"class.heap::base::internal::SegmentBase"** %86 to %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment"**
+  %101 = load %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment"*, %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment"** %100, align 8
+  %102 = getelementptr inbounds %"class.heap::base::Worklist.96", %"class.heap::base::Worklist.96"* %99, i64 0, i32 0
+  tail call void @_ZN2v84base5Mutex4LockEv(%"class.v8::base::Mutex"* %102) #10
+  %103 = getelementptr inbounds %"class.heap::base::Worklist.96", %"class.heap::base::Worklist.96"* %99, i64 0, i32 1
+  %104 = bitcast %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment"** %103 to i64*
+  %105 = load i64, i64* %104, align 8
+  %106 = getelementptr inbounds %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment", %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment"* %101, i64 0, i32 1
+  %107 = bitcast %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment"** %106 to i64*
+  store i64 %105, i64* %107, align 8
+  %108 = ptrtoint %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment"* %101 to i64
+  store atomic i64 %108, i64* %104 monotonic, align 8
+  %109 = getelementptr inbounds %"class.heap::base::Worklist.96", %"class.heap::base::Worklist.96"* %99, i64 0, i32 2, i32 0, i32 0, i32 0, i32 0, i32 0
+  %110 = atomicrmw add i64* %109, i64 1 monotonic
+  tail call void @_ZN2v84base5Mutex6UnlockEv(%"class.v8::base::Mutex"* %102) #10
+  br label %111
+
+111:                                              ; preds = %97, %94
+  %112 = tail call i8* @_Znwm(i64 528) #11
+  %113 = bitcast i8* %112 to i16*
+  store i16 64, i16* %113, align 2
+  %114 = getelementptr inbounds i8, i8* %112, i64 2
+  %115 = bitcast i8* %114 to i16*
+  store i16 0, i16* %115, align 2
+  %116 = getelementptr inbounds i8, i8* %112, i64 8
+  %117 = bitcast i8* %116 to %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment"**
+  store %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment"* null, %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment"** %117, align 8
+  %118 = bitcast %"class.heap::base::internal::SegmentBase"** %86 to i8**
+  store i8* %112, i8** %118, align 8
+  %119 = bitcast i8* %112 to %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment"*
+  br label %120
+
+120:                                              ; preds = %111, %85
+  %121 = phi %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment"* [ %119, %111 ], [ %93, %85 ]
+  %122 = getelementptr inbounds %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment", %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment"* %121, i64 0, i32 0, i32 1
+  %123 = load i16, i16* %122, align 2
+  %124 = add i16 %123, 1
+  store i16 %124, i16* %122, align 2
+  %125 = zext i16 %123 to i64
+  %126 = getelementptr inbounds %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment", %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 64>::Segment"* %121, i64 0, i32 2, i64 %125
+  store %"class.cppgc::internal::HeapObjectHeader"* %61, %"class.cppgc::internal::HeapObjectHeader"** %126, align 8
+  br label %127
+
+127:                                              ; preds = %60, %120, %76, %66
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5cppgc8internal12WriteBarrier31DijkstraMarkingBarrierRangeSlowERNS_10HeapHandleEPKvmmPFvPNS_7VisitorES5_E(%"class.cppgc::HeapHandle"* dereferenceable(1), i8*, i64, i64, void (%"class.cppgc::Visitor"*, i8*)* nocapture) local_unnamed_addr #0 align 2 {
+  %6 = alloca %"class.cppgc::subtle::DisallowGarbageCollectionScope", align 8
+  %7 = bitcast %"class.cppgc::subtle::DisallowGarbageCollectionScope"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %7) #10
+  call void @_ZN5cppgc6subtle30DisallowGarbageCollectionScopeC1ERNS_10HeapHandleE(%"class.cppgc::subtle::DisallowGarbageCollectionScope"* nonnull %6, %"class.cppgc::HeapHandle"* dereferenceable(1) %0) #10
+  %8 = icmp eq i64 %3, 0
+  br i1 %8, label %24, label %9
+
+9:                                                ; preds = %5
+  %10 = getelementptr inbounds %"class.cppgc::HeapHandle", %"class.cppgc::HeapHandle"* %0, i64 128
+  %11 = bitcast %"class.cppgc::HeapHandle"* %10 to %"class.cppgc::internal::MarkerBase"**
+  br label %12
+
+12:                                               ; preds = %9, %12
+  %13 = phi i8* [ %1, %9 ], [ %22, %12 ]
+  %14 = phi i64 [ %3, %9 ], [ %15, %12 ]
+  %15 = add i64 %14, -1
+  %16 = load %"class.cppgc::internal::MarkerBase"*, %"class.cppgc::internal::MarkerBase"** %11, align 8
+  %17 = bitcast %"class.cppgc::internal::MarkerBase"* %16 to %"class.cppgc::Visitor"* (%"class.cppgc::internal::MarkerBase"*)***
+  %18 = load %"class.cppgc::Visitor"* (%"class.cppgc::internal::MarkerBase"*)**, %"class.cppgc::Visitor"* (%"class.cppgc::internal::MarkerBase"*)*** %17, align 8
+  %19 = getelementptr inbounds %"class.cppgc::Visitor"* (%"class.cppgc::internal::MarkerBase"*)*, %"class.cppgc::Visitor"* (%"class.cppgc::internal::MarkerBase"*)** %18, i64 2
+  %20 = load %"class.cppgc::Visitor"* (%"class.cppgc::internal::MarkerBase"*)*, %"class.cppgc::Visitor"* (%"class.cppgc::internal::MarkerBase"*)** %19, align 8
+  %21 = call dereferenceable(8) %"class.cppgc::Visitor"* %20(%"class.cppgc::internal::MarkerBase"* %16) #10
+  call void %4(%"class.cppgc::Visitor"* %21, i8* %13) #10
+  %22 = getelementptr inbounds i8, i8* %13, i64 %2
+  %23 = icmp eq i64 %15, 0
+  br i1 %23, label %24, label %12
+
+24:                                               ; preds = %12, %5
+  call void @_ZN5cppgc6subtle30DisallowGarbageCollectionScopeD1Ev(%"class.cppgc::subtle::DisallowGarbageCollectionScope"* nonnull %6) #10
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %7) #10
+  ret void
+}
+
+declare void @_ZN5cppgc6subtle30DisallowGarbageCollectionScopeC1ERNS_10HeapHandleE(%"class.cppgc::subtle::DisallowGarbageCollectionScope"*, %"class.cppgc::HeapHandle"* dereferenceable(1)) unnamed_addr #2
+
+; Function Attrs: nounwind
+declare void @_ZN5cppgc6subtle30DisallowGarbageCollectionScopeD1Ev(%"class.cppgc::subtle::DisallowGarbageCollectionScope"*) unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5cppgc8internal12WriteBarrier41SteeleMarkingBarrierSlowWithSentinelCheckEPKv(i8*) local_unnamed_addr #0 align 2 {
+  %2 = icmp ult i8* %0, inttoptr (i64 2 to i8*)
+  br i1 %2, label %4, label %3
+
+3:                                                ; preds = %1
+  tail call void @_ZN5cppgc8internal12WriteBarrier24SteeleMarkingBarrierSlowEPKv(i8* nonnull %0)
+  br label %4
+
+4:                                                ; preds = %1, %3
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN5cppgc8internal12WriteBarrier24SteeleMarkingBarrierSlowEPKv(i8*) local_unnamed_addr #0 align 2 {
+  %2 = alloca %"class.cppgc::internal::HeapObjectHeader"*, align 8
+  %3 = ptrtoint i8* %0 to i64
+  %4 = and i64 %3, -131072
+  %5 = or i64 %4, 4096
+  %6 = inttoptr i64 %5 to %"class.cppgc::internal::BasePage"*
+  %7 = getelementptr inbounds %"class.cppgc::internal::BasePage", %"class.cppgc::internal::BasePage"* %6, i64 0, i32 0
+  %8 = load %"class.cppgc::internal::HeapBase"*, %"class.cppgc::internal::HeapBase"** %7, align 4096
+  %9 = getelementptr inbounds %"class.cppgc::internal::BasePage", %"class.cppgc::internal::BasePage"* %6, i64 0, i32 2
+  %10 = load i8, i8* %9, align 16
+  %11 = icmp eq i8 %10, 1
+  br i1 %11, label %12, label %15
+
+12:                                               ; preds = %1
+  %13 = inttoptr i64 %5 to %"class.cppgc::internal::LargePage"*
+  %14 = tail call %"class.cppgc::internal::HeapObjectHeader"* @_ZNK5cppgc8internal9LargePage12ObjectHeaderEv(%"class.cppgc::internal::LargePage"* nonnull %13) #10
+  br label %60
+
+15:                                               ; preds = %1
+  %16 = getelementptr inbounds %"class.cppgc::internal::BasePage", %"class.cppgc::internal::BasePage"* %6, i64 1, i32 1
+  %17 = bitcast %"class.cppgc::internal::BaseSpace"** %16 to %"class.cppgc::internal::ObjectStartBitmap"*
+  %18 = bitcast %"class.cppgc::internal::BaseSpace"** %16 to i64*
+  %19 = load i64, i64* %18, align 8
+  %20 = sub i64 %3, %19
+  %21 = lshr i64 %20, 3
+  %22 = lshr i64 %20, 6
+  %23 = getelementptr inbounds %"class.cppgc::internal::ObjectStartBitmap", %"class.cppgc::internal::ObjectStartBitmap"* %17, i64 0, i32 1, i32 0, i64 %22
+  %24 = load i8, i8* %23, align 1
+  %25 = trunc i64 %21 to i32
+  %26 = and i32 %25, 7
+  %27 = shl i32 2, %26
+  %28 = trunc i32 %27 to i8
+  %29 = add i8 %28, -1
+  %30 = and i8 %29, %24
+  %31 = icmp eq i8 %30, 0
+  %32 = icmp ne i64 %22, 0
+  %33 = and i1 %32, %31
+  %34 = inttoptr i64 %19 to i8*
+  br i1 %33, label %35, label %43
+
+35:                                               ; preds = %15, %35
+  %36 = phi i64 [ %37, %35 ], [ %22, %15 ]
+  %37 = add nsw i64 %36, -1
+  %38 = getelementptr inbounds %"class.cppgc::internal::ObjectStartBitmap", %"class.cppgc::internal::ObjectStartBitmap"* %17, i64 0, i32 1, i32 0, i64 %37
+  %39 = load i8, i8* %38, align 1
+  %40 = icmp eq i8 %39, 0
+  %41 = icmp ne i64 %37, 0
+  %42 = and i1 %41, %40
+  br i1 %42, label %35, label %43
+
+43:                                               ; preds = %35, %15
+  %44 = phi i64 [ %22, %15 ], [ %37, %35 ]
+  %45 = phi i8 [ %30, %15 ], [ %39, %35 ]
+  %46 = phi i1 [ %31, %15 ], [ %40, %35 ]
+  br i1 %46, label %52, label %47
+
+47:                                               ; preds = %43
+  %48 = zext i8 %45 to i32
+  %49 = tail call i32 @llvm.ctlz.i32(i32 %48, i1 true) #10, !range !2
+  %50 = add nsw i32 %49, -24
+  %51 = sext i32 %50 to i64
+  br label %52
+
+52:                                               ; preds = %47, %43
+  %53 = phi i64 [ %51, %47 ], [ 8, %43 ]
+  %54 = shl i64 %44, 3
+  %55 = or i64 %54, 7
+  %56 = sub i64 %55, %53
+  %57 = shl i64 %56, 3
+  %58 = getelementptr inbounds i8, i8* %34, i64 %57
+  %59 = bitcast i8* %58 to %"class.cppgc::internal::HeapObjectHeader"*
+  br label %60
+
+60:                                               ; preds = %12, %52
+  %61 = phi %"class.cppgc::internal::HeapObjectHeader"* [ %14, %12 ], [ %59, %52 ]
+  %62 = getelementptr inbounds %"class.cppgc::internal::HeapObjectHeader", %"class.cppgc::internal::HeapObjectHeader"* %61, i64 0, i32 2
+  %63 = load atomic i16, i16* %62 monotonic, align 2
+  %64 = and i16 %63, 1
+  %65 = icmp eq i16 %64, 0
+  br i1 %65, label %124, label %66
+
+66:                                               ; preds = %60
+  %67 = getelementptr inbounds %"class.cppgc::internal::HeapBase", %"class.cppgc::internal::HeapBase"* %8, i64 0, i32 9, i32 0, i32 0, i32 0
+  %68 = load %"class.cppgc::internal::MarkerBase"*, %"class.cppgc::internal::MarkerBase"** %67, align 8
+  %69 = getelementptr inbounds %"class.cppgc::internal::HeapObjectHeader", %"class.cppgc::internal::HeapObjectHeader"* %61, i64 0, i32 1
+  %70 = load i16, i16* %69, align 2
+  %71 = and i16 %70, 1
+  %72 = icmp eq i16 %71, 0
+  br i1 %72, label %73, label %82, !prof !3
+
+73:                                               ; preds = %66
+  %74 = load atomic i16, i16* %62 monotonic, align 2
+  %75 = and i16 %74, -2
+  store atomic i16 %75, i16* %62 monotonic, align 2
+  %76 = getelementptr inbounds %"class.cppgc::internal::MarkerBase", %"class.cppgc::internal::MarkerBase"* %68, i64 0, i32 8, i32 0, i32 2
+  %77 = load %"class.cppgc::internal::MarkingWorklists::ExternalMarkingWorklist"*, %"class.cppgc::internal::MarkingWorklists::ExternalMarkingWorklist"** %76, align 8
+  %78 = bitcast %"class.cppgc::internal::HeapObjectHeader"** %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %78) #10
+  store %"class.cppgc::internal::HeapObjectHeader"* %61, %"class.cppgc::internal::HeapObjectHeader"** %2, align 8
+  %79 = getelementptr inbounds %"class.cppgc::internal::MarkingWorklists::ExternalMarkingWorklist", %"class.cppgc::internal::MarkingWorklists::ExternalMarkingWorklist"* %77, i64 0, i32 0
+  tail call void @_ZN2v84base5Mutex4LockEv(%"class.v8::base::Mutex"* %79) #10
+  %80 = getelementptr inbounds %"class.cppgc::internal::MarkingWorklists::ExternalMarkingWorklist", %"class.cppgc::internal::MarkingWorklists::ExternalMarkingWorklist"* %77, i64 0, i32 1, i32 0
+  %81 = call { %"struct.std::__1::__hash_node_base"*, i8 } @_ZNSt3__112__hash_tableIPN5cppgc8internal16HeapObjectHeaderENS_4hashIS4_EENS_8equal_toIS4_EENS_9allocatorIS4_EEE25__emplace_unique_key_argsIS4_JRKS4_EEENS_4pairINS_15__hash_iteratorIPNS_11__hash_nodeIS4_PvEEEEbEERKT_DpOT0_(%"class.std::__1::__hash_table"* %80, %"class.cppgc::internal::HeapObjectHeader"** nonnull dereferenceable(8) %2, %"class.cppgc::internal::HeapObjectHeader"** nonnull dereferenceable(8) %2) #10
+  call void @_ZN2v84base5Mutex6UnlockEv(%"class.v8::base::Mutex"* %79) #10
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %78) #10
+  br label %124
+
+82:                                               ; preds = %66
+  %83 = getelementptr inbounds %"class.cppgc::internal::MarkerBase", %"class.cppgc::internal::MarkerBase"* %68, i64 0, i32 8, i32 0, i32 10, i32 1
+  %84 = load %"class.heap::base::internal::SegmentBase"*, %"class.heap::base::internal::SegmentBase"** %83, align 8
+  %85 = getelementptr inbounds %"class.heap::base::internal::SegmentBase", %"class.heap::base::internal::SegmentBase"* %84, i64 0, i32 1
+  %86 = load i16, i16* %85, align 2
+  %87 = getelementptr inbounds %"class.heap::base::internal::SegmentBase", %"class.heap::base::internal::SegmentBase"* %84, i64 0, i32 0
+  %88 = load i16, i16* %87, align 2
+  %89 = icmp eq i16 %86, %88
+  %90 = bitcast %"class.heap::base::internal::SegmentBase"* %84 to %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment"*
+  br i1 %89, label %91, label %117, !prof !3
+
+91:                                               ; preds = %82
+  %92 = tail call %"class.heap::base::internal::SegmentBase"* @_ZN4heap4base8internal11SegmentBase25GetSentinelSegmentAddressEv() #10
+  %93 = icmp eq %"class.heap::base::internal::SegmentBase"* %84, %92
+  br i1 %93, label %108, label %94
+
+94:                                               ; preds = %91
+  %95 = getelementptr inbounds %"class.cppgc::internal::MarkerBase", %"class.cppgc::internal::MarkerBase"* %68, i64 0, i32 8, i32 0, i32 10, i32 0
+  %96 = load %"class.heap::base::Worklist.95"*, %"class.heap::base::Worklist.95"** %95, align 8
+  %97 = bitcast %"class.heap::base::internal::SegmentBase"** %83 to %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment"**
+  %98 = load %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment"*, %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment"** %97, align 8
+  %99 = getelementptr inbounds %"class.heap::base::Worklist.95", %"class.heap::base::Worklist.95"* %96, i64 0, i32 0
+  tail call void @_ZN2v84base5Mutex4LockEv(%"class.v8::base::Mutex"* %99) #10
+  %100 = getelementptr inbounds %"class.heap::base::Worklist.95", %"class.heap::base::Worklist.95"* %96, i64 0, i32 1
+  %101 = bitcast %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment"** %100 to i64*
+  %102 = load i64, i64* %101, align 8
+  %103 = getelementptr inbounds %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment", %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment"* %98, i64 0, i32 1
+  %104 = bitcast %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment"** %103 to i64*
+  store i64 %102, i64* %104, align 8
+  %105 = ptrtoint %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment"* %98 to i64
+  store atomic i64 %105, i64* %101 monotonic, align 8
+  %106 = getelementptr inbounds %"class.heap::base::Worklist.95", %"class.heap::base::Worklist.95"* %96, i64 0, i32 2, i32 0, i32 0, i32 0, i32 0, i32 0
+  %107 = atomicrmw add i64* %106, i64 1 monotonic
+  tail call void @_ZN2v84base5Mutex6UnlockEv(%"class.v8::base::Mutex"* %99) #10
+  br label %108
+
+108:                                              ; preds = %94, %91
+  %109 = tail call i8* @_Znwm(i64 144) #11
+  %110 = bitcast i8* %109 to i16*
+  store i16 16, i16* %110, align 2
+  %111 = getelementptr inbounds i8, i8* %109, i64 2
+  %112 = bitcast i8* %111 to i16*
+  store i16 0, i16* %112, align 2
+  %113 = getelementptr inbounds i8, i8* %109, i64 8
+  %114 = bitcast i8* %113 to %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment"**
+  store %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment"* null, %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment"** %114, align 8
+  %115 = bitcast %"class.heap::base::internal::SegmentBase"** %83 to i8**
+  store i8* %109, i8** %115, align 8
+  %116 = bitcast i8* %109 to %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment"*
+  br label %117
+
+117:                                              ; preds = %108, %82
+  %118 = phi %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment"* [ %116, %108 ], [ %90, %82 ]
+  %119 = getelementptr inbounds %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment", %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment"* %118, i64 0, i32 0, i32 1
+  %120 = load i16, i16* %119, align 2
+  %121 = add i16 %120, 1
+  store i16 %121, i16* %119, align 2
+  %122 = zext i16 %120 to i64
+  %123 = getelementptr inbounds %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment", %"class.heap::base::Worklist<cppgc::internal::HeapObjectHeader *, 16>::Segment"* %118, i64 0, i32 2, i64 %122
+  store %"class.cppgc::internal::HeapObjectHeader"* %61, %"class.cppgc::internal::HeapObjectHeader"** %123, align 8
+  br label %124
+
+124:                                              ; preds = %60, %117, %73
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden zeroext i1 @_ZN5cppgc8internal37WriteBarrierTypeForNonCagedHeapPolicy9IsMarkingEPKvPPNS_10HeapHandleE(i8*, %"class.cppgc::HeapHandle"** nocapture) local_unnamed_addr #4 align 2 {
+  %3 = ptrtoint i8* %0 to i64
+  %4 = and i64 %3, -131072
+  %5 = or i64 %4, 4096
+  %6 = inttoptr i64 %5 to %"class.cppgc::internal::BasePage"*
+  %7 = getelementptr inbounds %"class.cppgc::internal::BasePage", %"class.cppgc::internal::BasePage"* %6, i64 0, i32 0
+  %8 = inttoptr i64 %5 to i64*
+  %9 = load i64, i64* %8, align 4096
+  %10 = bitcast %"class.cppgc::HeapHandle"** %1 to i64*
+  store i64 %9, i64* %10, align 8
+  %11 = load %"class.cppgc::internal::HeapBase"*, %"class.cppgc::internal::HeapBase"** %7, align 4096
+  %12 = getelementptr inbounds %"class.cppgc::internal::HeapBase", %"class.cppgc::internal::HeapBase"* %11, i64 0, i32 9, i32 0, i32 0, i32 0
+  %13 = load %"class.cppgc::internal::MarkerBase"*, %"class.cppgc::internal::MarkerBase"** %12, align 8
+  %14 = icmp eq %"class.cppgc::internal::MarkerBase"* %13, null
+  br i1 %14, label %19, label %15
+
+15:                                               ; preds = %2
+  %16 = getelementptr inbounds %"class.cppgc::internal::MarkerBase", %"class.cppgc::internal::MarkerBase"* %13, i64 0, i32 9
+  %17 = load i8, i8* %16, align 8, !range !4
+  %18 = icmp ne i8 %17, 0
+  br label %19
+
+19:                                               ; preds = %2, %15
+  %20 = phi i1 [ false, %2 ], [ %18, %15 ]
+  ret i1 %20
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden zeroext i1 @_ZN5cppgc8internal37WriteBarrierTypeForNonCagedHeapPolicy9IsMarkingERNS_10HeapHandleE(%"class.cppgc::HeapHandle"* nocapture readonly dereferenceable(1)) local_unnamed_addr #5 align 2 {
+  %2 = getelementptr inbounds %"class.cppgc::HeapHandle", %"class.cppgc::HeapHandle"* %0, i64 128
+  %3 = bitcast %"class.cppgc::HeapHandle"* %2 to %"class.cppgc::internal::MarkerBase"**
+  %4 = load %"class.cppgc::internal::MarkerBase"*, %"class.cppgc::internal::MarkerBase"** %3, align 8
+  %5 = icmp eq %"class.cppgc::internal::MarkerBase"* %4, null
+  br i1 %5, label %10, label %6
+
+6:                                                ; preds = %1
+  %7 = getelementptr inbounds %"class.cppgc::internal::MarkerBase", %"class.cppgc::internal::MarkerBase"* %4, i64 0, i32 9
+  %8 = load i8, i8* %7, align 8, !range !4
+  %9 = icmp ne i8 %8, 0
+  br label %10
+
+10:                                               ; preds = %1, %6
+  %11 = phi i1 [ false, %1 ], [ %9, %6 ]
+  ret i1 %11
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden zeroext i1 @_ZN5cppgc8internal34WriteBarrierTypeForCagedHeapPolicy9IsMarkingERKNS_10HeapHandleERNS0_12WriteBarrier6ParamsE(%"class.cppgc::HeapHandle"* nocapture readonly dereferenceable(1), %"struct.cppgc::internal::WriteBarrier::Params"* nocapture readnone dereferenceable(32)) local_unnamed_addr #5 align 2 {
+  %3 = getelementptr inbounds %"class.cppgc::HeapHandle", %"class.cppgc::HeapHandle"* %0, i64 128
+  %4 = bitcast %"class.cppgc::HeapHandle"* %3 to %"class.cppgc::internal::MarkerBase"**
+  %5 = load %"class.cppgc::internal::MarkerBase"*, %"class.cppgc::internal::MarkerBase"** %4, align 8
+  %6 = icmp eq %"class.cppgc::internal::MarkerBase"* %5, null
+  br i1 %6, label %11, label %7
+
+7:                                                ; preds = %2
+  %8 = getelementptr inbounds %"class.cppgc::internal::MarkerBase", %"class.cppgc::internal::MarkerBase"* %5, i64 0, i32 9
+  %9 = load i8, i8* %8, align 8, !range !4
+  %10 = icmp ne i8 %9, 0
+  br label %11
+
+11:                                               ; preds = %2, %7
+  %12 = phi i1 [ %10, %7 ], [ false, %2 ]
+  ret i1 %12
+}
+
+declare %"class.cppgc::internal::HeapObjectHeader"* @_ZNK5cppgc8internal9LargePage12ObjectHeaderEv(%"class.cppgc::internal::LargePage"*) local_unnamed_addr #2
+
+; Function Attrs: nounwind readnone speculatable
+declare i32 @llvm.ctlz.i32(i32, i1 immarg) #6
+
+declare void @_ZN2v84base5Mutex4LockEv(%"class.v8::base::Mutex"*) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden { %"struct.std::__1::__hash_node_base"*, i8 } @_ZNSt3__112__hash_tableIPN5cppgc8internal16HeapObjectHeaderENS_4hashIS4_EENS_8equal_toIS4_EENS_9allocatorIS4_EEE25__emplace_unique_key_argsIS4_JRKS4_EEENS_4pairINS_15__hash_iteratorIPNS_11__hash_nodeIS4_PvEEEEbEERKT_DpOT0_(%"class.std::__1::__hash_table"*, %"class.cppgc::internal::HeapObjectHeader"** dereferenceable(8), %"class.cppgc::internal::HeapObjectHeader"** dereferenceable(8)) local_unnamed_addr #0 comdat align 2 {
+  %4 = load %"class.cppgc::internal::HeapObjectHeader"*, %"class.cppgc::internal::HeapObjectHeader"** %1, align 8
+  %5 = ptrtoint %"class.cppgc::internal::HeapObjectHeader"* %4 to i64
+  %6 = lshr i64 %5, 32
+  %7 = shl i64 %5, 3
+  %8 = and i64 %7, 4294967288
+  %9 = add nuw nsw i64 %8, 8
+  %10 = xor i64 %9, %6
+  %11 = mul i64 %10, -7070675565921424023
+  %12 = lshr i64 %11, 47
+  %13 = xor i64 %11, %6
+  %14 = xor i64 %13, %12
+  %15 = mul i64 %14, -7070675565921424023
+  %16 = lshr i64 %15, 47
+  %17 = xor i64 %16, %15
+  %18 = mul i64 %17, -7070675565921424023
+  %19 = getelementptr inbounds %"class.std::__1::__hash_table", %"class.std::__1::__hash_table"* %0, i64 0, i32 0, i32 0, i32 1, i32 0, i32 0, i32 0, i32 0
+  %20 = load i64, i64* %19, align 8
+  %21 = icmp eq i64 %20, 0
+  br i1 %21, label %81, label %22
+
+22:                                               ; preds = %3
+  %23 = tail call i64 @llvm.ctpop.i64(i64 %20) #10, !range !5
+  %24 = icmp ugt i64 %23, 1
+  br i1 %24, label %28, label %25
+
+25:                                               ; preds = %22
+  %26 = add i64 %20, -1
+  %27 = and i64 %18, %26
+  br label %32
+
+28:                                               ; preds = %22
+  %29 = icmp ult i64 %18, %20
+  br i1 %29, label %32, label %30
+
+30:                                               ; preds = %28
+  %31 = urem i64 %18, %20
+  br label %32
+
+32:                                               ; preds = %25, %28, %30
+  %33 = phi i64 [ %27, %25 ], [ %31, %30 ], [ %18, %28 ]
+  %34 = getelementptr inbounds %"class.std::__1::__hash_table", %"class.std::__1::__hash_table"* %0, i64 0, i32 0, i32 0, i32 0, i32 0
+  %35 = load %"struct.std::__1::__hash_node_base"**, %"struct.std::__1::__hash_node_base"*** %34, align 8
+  %36 = getelementptr inbounds %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %35, i64 %33
+  %37 = load %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %36, align 8
+  %38 = icmp eq %"struct.std::__1::__hash_node_base"* %37, null
+  br i1 %38, label %81, label %39
+
+39:                                               ; preds = %32
+  %40 = add i64 %20, -1
+  br i1 %24, label %41, label %63
+
+41:                                               ; preds = %39, %58
+  %42 = phi %"struct.std::__1::__hash_node_base"* [ %44, %58 ], [ %37, %39 ]
+  %43 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %42, i64 0, i32 0
+  %44 = load %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %43, align 8
+  %45 = icmp eq %"struct.std::__1::__hash_node_base"* %44, null
+  br i1 %45, label %81, label %46
+
+46:                                               ; preds = %41
+  %47 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %44, i64 1
+  %48 = bitcast %"struct.std::__1::__hash_node_base"* %47 to i64*
+  %49 = load i64, i64* %48, align 8
+  %50 = icmp eq i64 %49, %18
+  br i1 %50, label %58, label %51
+
+51:                                               ; preds = %46
+  %52 = icmp ult i64 %49, %20
+  br i1 %52, label %55, label %53
+
+53:                                               ; preds = %51
+  %54 = urem i64 %49, %20
+  br label %55
+
+55:                                               ; preds = %53, %51
+  %56 = phi i64 [ %54, %53 ], [ %49, %51 ]
+  %57 = icmp eq i64 %56, %33
+  br i1 %57, label %58, label %81
+
+58:                                               ; preds = %55, %46
+  %59 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %44, i64 2
+  %60 = bitcast %"struct.std::__1::__hash_node_base"* %59 to %"class.cppgc::internal::HeapObjectHeader"**
+  %61 = load %"class.cppgc::internal::HeapObjectHeader"*, %"class.cppgc::internal::HeapObjectHeader"** %60, align 8
+  %62 = icmp eq %"class.cppgc::internal::HeapObjectHeader"* %61, %4
+  br i1 %62, label %169, label %41
+
+63:                                               ; preds = %39, %76
+  %64 = phi %"struct.std::__1::__hash_node_base"* [ %66, %76 ], [ %37, %39 ]
+  %65 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %64, i64 0, i32 0
+  %66 = load %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %65, align 8
+  %67 = icmp eq %"struct.std::__1::__hash_node_base"* %66, null
+  br i1 %67, label %81, label %68
+
+68:                                               ; preds = %63
+  %69 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %66, i64 1
+  %70 = bitcast %"struct.std::__1::__hash_node_base"* %69 to i64*
+  %71 = load i64, i64* %70, align 8
+  %72 = icmp eq i64 %71, %18
+  %73 = and i64 %71, %40
+  %74 = icmp eq i64 %73, %33
+  %75 = or i1 %72, %74
+  br i1 %75, label %76, label %81
+
+76:                                               ; preds = %68
+  %77 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %66, i64 2
+  %78 = bitcast %"struct.std::__1::__hash_node_base"* %77 to %"class.cppgc::internal::HeapObjectHeader"**
+  %79 = load %"class.cppgc::internal::HeapObjectHeader"*, %"class.cppgc::internal::HeapObjectHeader"** %78, align 8
+  %80 = icmp eq %"class.cppgc::internal::HeapObjectHeader"* %79, %4
+  br i1 %80, label %169, label %63
+
+81:                                               ; preds = %68, %63, %55, %41, %32, %3
+  %82 = phi i64 [ %33, %32 ], [ undef, %3 ], [ %33, %41 ], [ %33, %55 ], [ %33, %63 ], [ %33, %68 ]
+  %83 = tail call i8* @_Znwm(i64 24) #11, !noalias !6
+  %84 = getelementptr inbounds i8, i8* %83, i64 16
+  %85 = bitcast %"class.cppgc::internal::HeapObjectHeader"** %2 to i64*
+  %86 = load i64, i64* %85, align 8, !noalias !6
+  %87 = bitcast i8* %84 to i64*
+  store i64 %86, i64* %87, align 8, !noalias !6
+  %88 = getelementptr inbounds i8, i8* %83, i64 8
+  %89 = bitcast i8* %88 to i64*
+  store i64 %18, i64* %89, align 8, !noalias !6
+  %90 = bitcast i8* %83 to %"struct.std::__1::__hash_node_base"**
+  store %"struct.std::__1::__hash_node_base"* null, %"struct.std::__1::__hash_node_base"** %90, align 8, !noalias !6
+  %91 = getelementptr inbounds %"class.std::__1::__hash_table", %"class.std::__1::__hash_table"* %0, i64 0, i32 2, i32 0, i32 0
+  %92 = load i64, i64* %91, align 8
+  %93 = add i64 %92, 1
+  %94 = uitofp i64 %93 to float
+  %95 = uitofp i64 %20 to float
+  %96 = getelementptr inbounds %"class.std::__1::__hash_table", %"class.std::__1::__hash_table"* %0, i64 0, i32 3, i32 0, i32 0
+  %97 = load float, float* %96, align 4
+  %98 = fmul float %97, %95
+  %99 = fcmp olt float %98, %94
+  %100 = or i1 %21, %99
+  br i1 %100, label %101, label %124
+
+101:                                              ; preds = %81
+  %102 = shl i64 %20, 1
+  %103 = icmp ult i64 %20, 3
+  %104 = tail call i64 @llvm.ctpop.i64(i64 %20) #10, !range !5
+  %105 = icmp ugt i64 %104, 1
+  %106 = or i1 %103, %105
+  %107 = zext i1 %106 to i64
+  %108 = or i64 %102, %107
+  %109 = fdiv float %94, %97
+  %110 = tail call float @llvm.ceil.f32(float %109) #10
+  %111 = fptoui float %110 to i64
+  %112 = icmp ult i64 %108, %111
+  %113 = select i1 %112, i64 %111, i64 %108
+  tail call void @_ZNSt3__112__hash_tableIPN5cppgc8internal16HeapObjectHeaderENS_4hashIS4_EENS_8equal_toIS4_EENS_9allocatorIS4_EEE6rehashEm(%"class.std::__1::__hash_table"* %0, i64 %113)
+  %114 = load i64, i64* %19, align 8
+  %115 = tail call i64 @llvm.ctpop.i64(i64 %114) #10, !range !5
+  %116 = icmp ugt i64 %115, 1
+  br i1 %116, label %120, label %117
+
+117:                                              ; preds = %101
+  %118 = add i64 %114, -1
+  %119 = and i64 %118, %18
+  br label %124
+
+120:                                              ; preds = %101
+  %121 = icmp ult i64 %18, %114
+  br i1 %121, label %124, label %122
+
+122:                                              ; preds = %120
+  %123 = urem i64 %18, %114
+  br label %124
+
+124:                                              ; preds = %122, %120, %117, %81
+  %125 = phi i64 [ %20, %81 ], [ %114, %117 ], [ %114, %120 ], [ %114, %122 ]
+  %126 = phi i64 [ %82, %81 ], [ %119, %117 ], [ %18, %120 ], [ %123, %122 ]
+  %127 = getelementptr inbounds %"class.std::__1::__hash_table", %"class.std::__1::__hash_table"* %0, i64 0, i32 0, i32 0, i32 0, i32 0
+  %128 = load %"struct.std::__1::__hash_node_base"**, %"struct.std::__1::__hash_node_base"*** %127, align 8
+  %129 = getelementptr inbounds %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %128, i64 %126
+  %130 = load %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %129, align 8
+  %131 = icmp eq %"struct.std::__1::__hash_node_base"* %130, null
+  br i1 %131, label %132, label %158
+
+132:                                              ; preds = %124
+  %133 = getelementptr inbounds %"class.std::__1::__hash_table", %"class.std::__1::__hash_table"* %0, i64 0, i32 1, i32 0, i32 0
+  %134 = bitcast %"struct.std::__1::__hash_node_base"* %133 to i64*
+  %135 = load i64, i64* %134, align 8
+  %136 = bitcast i8* %83 to i64*
+  store i64 %135, i64* %136, align 8
+  %137 = bitcast %"struct.std::__1::__hash_node_base"* %133 to i8**
+  store i8* %83, i8** %137, align 8
+  store %"struct.std::__1::__hash_node_base"* %133, %"struct.std::__1::__hash_node_base"** %129, align 8
+  %138 = load %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %90, align 8
+  %139 = icmp eq %"struct.std::__1::__hash_node_base"* %138, null
+  br i1 %139, label %165, label %140
+
+140:                                              ; preds = %132
+  %141 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %138, i64 1
+  %142 = bitcast %"struct.std::__1::__hash_node_base"* %141 to i64*
+  %143 = load i64, i64* %142, align 8
+  %144 = tail call i64 @llvm.ctpop.i64(i64 %125) #10, !range !5
+  %145 = icmp ugt i64 %144, 1
+  br i1 %145, label %149, label %146
+
+146:                                              ; preds = %140
+  %147 = add i64 %125, -1
+  %148 = and i64 %143, %147
+  br label %153
+
+149:                                              ; preds = %140
+  %150 = icmp ult i64 %143, %125
+  br i1 %150, label %153, label %151
+
+151:                                              ; preds = %149
+  %152 = urem i64 %143, %125
+  br label %153
+
+153:                                              ; preds = %146, %149, %151
+  %154 = phi i64 [ %148, %146 ], [ %152, %151 ], [ %143, %149 ]
+  %155 = load %"struct.std::__1::__hash_node_base"**, %"struct.std::__1::__hash_node_base"*** %127, align 8
+  %156 = getelementptr inbounds %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %155, i64 %154
+  %157 = bitcast %"struct.std::__1::__hash_node_base"** %156 to i8**
+  br label %163
+
+158:                                              ; preds = %124
+  %159 = bitcast %"struct.std::__1::__hash_node_base"* %130 to i64*
+  %160 = load i64, i64* %159, align 8
+  %161 = bitcast i8* %83 to i64*
+  store i64 %160, i64* %161, align 8
+  %162 = bitcast %"struct.std::__1::__hash_node_base"* %130 to i8**
+  br label %163
+
+163:                                              ; preds = %153, %158
+  %164 = phi i8** [ %162, %158 ], [ %157, %153 ]
+  store i8* %83, i8** %164, align 8
+  br label %165
+
+165:                                              ; preds = %163, %132
+  %166 = bitcast i8* %83 to %"struct.std::__1::__hash_node_base"*
+  %167 = load i64, i64* %91, align 8
+  %168 = add i64 %167, 1
+  store i64 %168, i64* %91, align 8
+  br label %169
+
+169:                                              ; preds = %76, %58, %165
+  %170 = phi i8 [ 1, %165 ], [ 0, %58 ], [ 0, %76 ]
+  %171 = phi %"struct.std::__1::__hash_node_base"* [ %166, %165 ], [ %44, %58 ], [ %66, %76 ]
+  %172 = insertvalue { %"struct.std::__1::__hash_node_base"*, i8 } undef, %"struct.std::__1::__hash_node_base"* %171, 0
+  %173 = insertvalue { %"struct.std::__1::__hash_node_base"*, i8 } %172, i8 %170, 1
+  ret { %"struct.std::__1::__hash_node_base"*, i8 } %173
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZNSt3__112__hash_tableIPN5cppgc8internal16HeapObjectHeaderENS_4hashIS4_EENS_8equal_toIS4_EENS_9allocatorIS4_EEE6rehashEm(%"class.std::__1::__hash_table"*, i64) local_unnamed_addr #0 comdat align 2 {
+  %3 = icmp eq i64 %1, 1
+  br i1 %3, label %9, label %4
+
+4:                                                ; preds = %2
+  %5 = tail call i64 @llvm.ctpop.i64(i64 %1), !range !5
+  %6 = icmp ugt i64 %5, 1
+  br i1 %6, label %7, label %9
+
+7:                                                ; preds = %4
+  %8 = tail call i64 @_ZNSt3__112__next_primeEm(i64 %1) #10
+  br label %9
+
+9:                                                ; preds = %2, %4, %7
+  %10 = phi i64 [ %8, %7 ], [ %1, %4 ], [ 2, %2 ]
+  %11 = getelementptr inbounds %"class.std::__1::__hash_table", %"class.std::__1::__hash_table"* %0, i64 0, i32 0, i32 0, i32 1, i32 0, i32 0, i32 0, i32 0
+  %12 = load i64, i64* %11, align 8
+  %13 = icmp ugt i64 %10, %12
+  br i1 %13, label %14, label %15
+
+14:                                               ; preds = %9
+  tail call void @_ZNSt3__112__hash_tableIPN5cppgc8internal16HeapObjectHeaderENS_4hashIS4_EENS_8equal_toIS4_EENS_9allocatorIS4_EEE8__rehashEm(%"class.std::__1::__hash_table"* %0, i64 %10)
+  br label %45
+
+15:                                               ; preds = %9
+  %16 = icmp ult i64 %10, %12
+  br i1 %16, label %17, label %45
+
+17:                                               ; preds = %15
+  %18 = icmp ugt i64 %12, 2
+  %19 = tail call i64 @llvm.ctpop.i64(i64 %12) #10, !range !5
+  %20 = icmp ult i64 %19, 2
+  %21 = and i1 %18, %20
+  %22 = getelementptr inbounds %"class.std::__1::__hash_table", %"class.std::__1::__hash_table"* %0, i64 0, i32 2, i32 0, i32 0
+  %23 = load i64, i64* %22, align 8
+  %24 = uitofp i64 %23 to float
+  %25 = getelementptr inbounds %"class.std::__1::__hash_table", %"class.std::__1::__hash_table"* %0, i64 0, i32 3, i32 0, i32 0
+  %26 = load float, float* %25, align 4
+  %27 = fdiv float %24, %26
+  %28 = tail call float @llvm.ceil.f32(float %27) #10
+  %29 = fptoui float %28 to i64
+  br i1 %21, label %30, label %37
+
+30:                                               ; preds = %17
+  %31 = icmp ult i64 %29, 2
+  br i1 %31, label %39, label %32
+
+32:                                               ; preds = %30
+  %33 = add i64 %29, -1
+  %34 = tail call i64 @llvm.ctlz.i64(i64 %33, i1 true) #10, !range !5
+  %35 = sub nuw nsw i64 64, %34
+  %36 = shl i64 1, %35
+  br label %39
+
+37:                                               ; preds = %17
+  %38 = tail call i64 @_ZNSt3__112__next_primeEm(i64 %29) #10
+  br label %39
+
+39:                                               ; preds = %32, %30, %37
+  %40 = phi i64 [ %38, %37 ], [ %36, %32 ], [ %29, %30 ]
+  %41 = icmp ult i64 %10, %40
+  %42 = select i1 %41, i64 %40, i64 %10
+  %43 = icmp ult i64 %42, %12
+  br i1 %43, label %44, label %45
+
+44:                                               ; preds = %39
+  tail call void @_ZNSt3__112__hash_tableIPN5cppgc8internal16HeapObjectHeaderENS_4hashIS4_EENS_8equal_toIS4_EENS_9allocatorIS4_EEE8__rehashEm(%"class.std::__1::__hash_table"* %0, i64 %42)
+  br label %45
+
+45:                                               ; preds = %15, %44, %39, %14
+  ret void
+}
+
+; Function Attrs: noreturn nounwind
+declare void @abort() local_unnamed_addr #7
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #8
+
+declare i64 @_ZNSt3__112__next_primeEm(i64) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZNSt3__112__hash_tableIPN5cppgc8internal16HeapObjectHeaderENS_4hashIS4_EENS_8equal_toIS4_EENS_9allocatorIS4_EEE8__rehashEm(%"class.std::__1::__hash_table"*, i64) local_unnamed_addr #0 comdat align 2 {
+  %3 = getelementptr inbounds %"class.std::__1::__hash_table", %"class.std::__1::__hash_table"* %0, i64 0, i32 0, i32 0, i32 1, i32 0
+  %4 = icmp eq i64 %1, 0
+  br i1 %4, label %179, label %5
+
+5:                                                ; preds = %2
+  %6 = icmp ugt i64 %1, 2305843009213693951
+  br i1 %6, label %7, label %8
+
+7:                                                ; preds = %5
+  tail call void @abort() #12
+  unreachable
+
+8:                                                ; preds = %5
+  %9 = shl i64 %1, 3
+  %10 = tail call i8* @_Znwm(i64 %9) #11
+  %11 = getelementptr inbounds %"class.std::__1::__hash_table", %"class.std::__1::__hash_table"* %0, i64 0, i32 0, i32 0, i32 0, i32 0
+  %12 = load %"struct.std::__1::__hash_node_base"**, %"struct.std::__1::__hash_node_base"*** %11, align 8
+  %13 = bitcast %"class.std::__1::__hash_table"* %0 to i8**
+  store i8* %10, i8** %13, align 8
+  %14 = icmp eq %"struct.std::__1::__hash_node_base"** %12, null
+  br i1 %14, label %17, label %15
+
+15:                                               ; preds = %8
+  %16 = bitcast %"struct.std::__1::__hash_node_base"** %12 to i8*
+  tail call void @_ZdlPv(i8* %16) #11
+  br label %17
+
+17:                                               ; preds = %15, %8
+  %18 = getelementptr inbounds %"class.std::__1::__bucket_list_deallocator", %"class.std::__1::__bucket_list_deallocator"* %3, i64 0, i32 0, i32 0, i32 0
+  store i64 %1, i64* %18, align 8
+  %19 = add i64 %1, -1
+  %20 = and i64 %1, 3
+  %21 = icmp ult i64 %19, 3
+  br i1 %21, label %24, label %22
+
+22:                                               ; preds = %17
+  %23 = sub i64 %1, %20
+  br label %40
+
+24:                                               ; preds = %40, %17
+  %25 = phi i64 [ 0, %17 ], [ %54, %40 ]
+  %26 = icmp eq i64 %20, 0
+  br i1 %26, label %35, label %27
+
+27:                                               ; preds = %24, %27
+  %28 = phi i64 [ %32, %27 ], [ %25, %24 ]
+  %29 = phi i64 [ %33, %27 ], [ %20, %24 ]
+  %30 = load %"struct.std::__1::__hash_node_base"**, %"struct.std::__1::__hash_node_base"*** %11, align 8
+  %31 = getelementptr inbounds %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %30, i64 %28
+  store %"struct.std::__1::__hash_node_base"* null, %"struct.std::__1::__hash_node_base"** %31, align 8
+  %32 = add nuw i64 %28, 1
+  %33 = add i64 %29, -1
+  %34 = icmp eq i64 %33, 0
+  br i1 %34, label %35, label %27, !llvm.loop !9
+
+35:                                               ; preds = %27, %24
+  %36 = getelementptr inbounds %"class.std::__1::__hash_table", %"class.std::__1::__hash_table"* %0, i64 0, i32 1, i32 0, i32 0
+  %37 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %36, i64 0, i32 0
+  %38 = load %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %37, align 8
+  %39 = icmp eq %"struct.std::__1::__hash_node_base"* %38, null
+  br i1 %39, label %187, label %57
+
+40:                                               ; preds = %40, %22
+  %41 = phi i64 [ 0, %22 ], [ %54, %40 ]
+  %42 = phi i64 [ %23, %22 ], [ %55, %40 ]
+  %43 = load %"struct.std::__1::__hash_node_base"**, %"struct.std::__1::__hash_node_base"*** %11, align 8
+  %44 = getelementptr inbounds %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %43, i64 %41
+  store %"struct.std::__1::__hash_node_base"* null, %"struct.std::__1::__hash_node_base"** %44, align 8
+  %45 = or i64 %41, 1
+  %46 = load %"struct.std::__1::__hash_node_base"**, %"struct.std::__1::__hash_node_base"*** %11, align 8
+  %47 = getelementptr inbounds %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %46, i64 %45
+  store %"struct.std::__1::__hash_node_base"* null, %"struct.std::__1::__hash_node_base"** %47, align 8
+  %48 = or i64 %41, 2
+  %49 = load %"struct.std::__1::__hash_node_base"**, %"struct.std::__1::__hash_node_base"*** %11, align 8
+  %50 = getelementptr inbounds %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %49, i64 %48
+  store %"struct.std::__1::__hash_node_base"* null, %"struct.std::__1::__hash_node_base"** %50, align 8
+  %51 = or i64 %41, 3
+  %52 = load %"struct.std::__1::__hash_node_base"**, %"struct.std::__1::__hash_node_base"*** %11, align 8
+  %53 = getelementptr inbounds %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %52, i64 %51
+  store %"struct.std::__1::__hash_node_base"* null, %"struct.std::__1::__hash_node_base"** %53, align 8
+  %54 = add nuw i64 %41, 4
+  %55 = add i64 %42, -4
+  %56 = icmp eq i64 %55, 0
+  br i1 %56, label %24, label %40
+
+57:                                               ; preds = %35
+  %58 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %38, i64 1
+  %59 = bitcast %"struct.std::__1::__hash_node_base"* %58 to i64*
+  %60 = load i64, i64* %59, align 8
+  %61 = tail call i64 @llvm.ctpop.i64(i64 %1) #10, !range !5
+  %62 = icmp ugt i64 %61, 1
+  br i1 %62, label %66, label %63
+
+63:                                               ; preds = %57
+  %64 = add i64 %1, -1
+  %65 = and i64 %60, %64
+  br label %70
+
+66:                                               ; preds = %57
+  %67 = icmp ult i64 %60, %1
+  br i1 %67, label %70, label %68
+
+68:                                               ; preds = %66
+  %69 = urem i64 %60, %1
+  br label %70
+
+70:                                               ; preds = %63, %66, %68
+  %71 = phi i64 [ %65, %63 ], [ %69, %68 ], [ %60, %66 ]
+  %72 = load %"struct.std::__1::__hash_node_base"**, %"struct.std::__1::__hash_node_base"*** %11, align 8
+  %73 = getelementptr inbounds %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %72, i64 %71
+  store %"struct.std::__1::__hash_node_base"* %36, %"struct.std::__1::__hash_node_base"** %73, align 8
+  %74 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %38, i64 0, i32 0
+  %75 = load %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %74, align 8
+  %76 = icmp eq %"struct.std::__1::__hash_node_base"* %75, null
+  br i1 %76, label %187, label %77
+
+77:                                               ; preds = %70
+  %78 = add i64 %1, -1
+  br i1 %62, label %79, label %131
+
+79:                                               ; preds = %77, %122
+  %80 = phi %"struct.std::__1::__hash_node_base"* [ %126, %122 ], [ %75, %77 ]
+  %81 = phi i64 [ %124, %122 ], [ %71, %77 ]
+  %82 = phi %"struct.std::__1::__hash_node_base"* [ %123, %122 ], [ %38, %77 ]
+  %83 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %80, i64 1
+  %84 = bitcast %"struct.std::__1::__hash_node_base"* %83 to i64*
+  %85 = load i64, i64* %84, align 8
+  %86 = icmp ult i64 %85, %1
+  br i1 %86, label %89, label %87
+
+87:                                               ; preds = %79
+  %88 = urem i64 %85, %1
+  br label %89
+
+89:                                               ; preds = %87, %79
+  %90 = phi i64 [ %88, %87 ], [ %85, %79 ]
+  %91 = icmp eq i64 %90, %81
+  br i1 %91, label %122, label %92
+
+92:                                               ; preds = %89
+  %93 = load %"struct.std::__1::__hash_node_base"**, %"struct.std::__1::__hash_node_base"*** %11, align 8
+  %94 = getelementptr inbounds %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %93, i64 %90
+  %95 = load %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %94, align 8
+  %96 = icmp eq %"struct.std::__1::__hash_node_base"* %95, null
+  br i1 %96, label %121, label %128
+
+97:                                               ; preds = %128, %102
+  %98 = phi %"struct.std::__1::__hash_node_base"* [ %100, %102 ], [ %80, %128 ]
+  %99 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %98, i64 0, i32 0
+  %100 = load %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %99, align 8
+  %101 = icmp eq %"struct.std::__1::__hash_node_base"* %100, null
+  br i1 %101, label %108, label %102
+
+102:                                              ; preds = %97
+  %103 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %100, i64 2
+  %104 = bitcast %"struct.std::__1::__hash_node_base"* %103 to %"class.cppgc::internal::HeapObjectHeader"**
+  %105 = load %"class.cppgc::internal::HeapObjectHeader"*, %"class.cppgc::internal::HeapObjectHeader"** %130, align 8
+  %106 = load %"class.cppgc::internal::HeapObjectHeader"*, %"class.cppgc::internal::HeapObjectHeader"** %104, align 8
+  %107 = icmp eq %"class.cppgc::internal::HeapObjectHeader"* %105, %106
+  br i1 %107, label %97, label %108
+
+108:                                              ; preds = %102, %97
+  %109 = ptrtoint %"struct.std::__1::__hash_node_base"* %100 to i64
+  %110 = bitcast %"struct.std::__1::__hash_node_base"* %98 to i64*
+  %111 = bitcast %"struct.std::__1::__hash_node_base"* %82 to i64*
+  store i64 %109, i64* %111, align 8
+  %112 = load %"struct.std::__1::__hash_node_base"**, %"struct.std::__1::__hash_node_base"*** %11, align 8
+  %113 = getelementptr inbounds %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %112, i64 %90
+  %114 = bitcast %"struct.std::__1::__hash_node_base"** %113 to i64**
+  %115 = load i64*, i64** %114, align 8
+  %116 = load i64, i64* %115, align 8
+  store i64 %116, i64* %110, align 8
+  %117 = load %"struct.std::__1::__hash_node_base"**, %"struct.std::__1::__hash_node_base"*** %11, align 8
+  %118 = getelementptr inbounds %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %117, i64 %90
+  %119 = load %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %118, align 8
+  %120 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %119, i64 0, i32 0
+  store %"struct.std::__1::__hash_node_base"* %80, %"struct.std::__1::__hash_node_base"** %120, align 8
+  br label %122
+
+121:                                              ; preds = %92
+  store %"struct.std::__1::__hash_node_base"* %82, %"struct.std::__1::__hash_node_base"** %94, align 8
+  br label %122
+
+122:                                              ; preds = %121, %108, %89
+  %123 = phi %"struct.std::__1::__hash_node_base"* [ %80, %121 ], [ %82, %108 ], [ %80, %89 ]
+  %124 = phi i64 [ %90, %121 ], [ %81, %108 ], [ %81, %89 ]
+  %125 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %123, i64 0, i32 0
+  %126 = load %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %125, align 8
+  %127 = icmp eq %"struct.std::__1::__hash_node_base"* %126, null
+  br i1 %127, label %187, label %79
+
+128:                                              ; preds = %92
+  %129 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %80, i64 2
+  %130 = bitcast %"struct.std::__1::__hash_node_base"* %129 to %"class.cppgc::internal::HeapObjectHeader"**
+  br label %97
+
+131:                                              ; preds = %77, %173
+  %132 = phi %"struct.std::__1::__hash_node_base"* [ %177, %173 ], [ %75, %77 ]
+  %133 = phi i64 [ %175, %173 ], [ %71, %77 ]
+  %134 = phi %"struct.std::__1::__hash_node_base"* [ %174, %173 ], [ %38, %77 ]
+  %135 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %132, i64 1
+  %136 = bitcast %"struct.std::__1::__hash_node_base"* %135 to i64*
+  %137 = load i64, i64* %136, align 8
+  %138 = and i64 %137, %78
+  %139 = icmp eq i64 %138, %133
+  br i1 %139, label %173, label %140
+
+140:                                              ; preds = %131
+  %141 = load %"struct.std::__1::__hash_node_base"**, %"struct.std::__1::__hash_node_base"*** %11, align 8
+  %142 = getelementptr inbounds %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %141, i64 %138
+  %143 = load %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %142, align 8
+  %144 = icmp eq %"struct.std::__1::__hash_node_base"* %143, null
+  br i1 %144, label %148, label %145
+
+145:                                              ; preds = %140
+  %146 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %132, i64 2
+  %147 = bitcast %"struct.std::__1::__hash_node_base"* %146 to %"class.cppgc::internal::HeapObjectHeader"**
+  br label %149
+
+148:                                              ; preds = %140
+  store %"struct.std::__1::__hash_node_base"* %134, %"struct.std::__1::__hash_node_base"** %142, align 8
+  br label %173
+
+149:                                              ; preds = %145, %154
+  %150 = phi %"struct.std::__1::__hash_node_base"* [ %152, %154 ], [ %132, %145 ]
+  %151 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %150, i64 0, i32 0
+  %152 = load %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %151, align 8
+  %153 = icmp eq %"struct.std::__1::__hash_node_base"* %152, null
+  br i1 %153, label %160, label %154
+
+154:                                              ; preds = %149
+  %155 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %152, i64 2
+  %156 = bitcast %"struct.std::__1::__hash_node_base"* %155 to %"class.cppgc::internal::HeapObjectHeader"**
+  %157 = load %"class.cppgc::internal::HeapObjectHeader"*, %"class.cppgc::internal::HeapObjectHeader"** %147, align 8
+  %158 = load %"class.cppgc::internal::HeapObjectHeader"*, %"class.cppgc::internal::HeapObjectHeader"** %156, align 8
+  %159 = icmp eq %"class.cppgc::internal::HeapObjectHeader"* %157, %158
+  br i1 %159, label %149, label %160
+
+160:                                              ; preds = %149, %154
+  %161 = ptrtoint %"struct.std::__1::__hash_node_base"* %152 to i64
+  %162 = bitcast %"struct.std::__1::__hash_node_base"* %150 to i64*
+  %163 = bitcast %"struct.std::__1::__hash_node_base"* %134 to i64*
+  store i64 %161, i64* %163, align 8
+  %164 = load %"struct.std::__1::__hash_node_base"**, %"struct.std::__1::__hash_node_base"*** %11, align 8
+  %165 = getelementptr inbounds %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %164, i64 %138
+  %166 = bitcast %"struct.std::__1::__hash_node_base"** %165 to i64**
+  %167 = load i64*, i64** %166, align 8
+  %168 = load i64, i64* %167, align 8
+  store i64 %168, i64* %162, align 8
+  %169 = load %"struct.std::__1::__hash_node_base"**, %"struct.std::__1::__hash_node_base"*** %11, align 8
+  %170 = getelementptr inbounds %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %169, i64 %138
+  %171 = load %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %170, align 8
+  %172 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %171, i64 0, i32 0
+  store %"struct.std::__1::__hash_node_base"* %132, %"struct.std::__1::__hash_node_base"** %172, align 8
+  br label %173
+
+173:                                              ; preds = %131, %160, %148
+  %174 = phi %"struct.std::__1::__hash_node_base"* [ %132, %148 ], [ %134, %160 ], [ %132, %131 ]
+  %175 = phi i64 [ %138, %148 ], [ %133, %160 ], [ %133, %131 ]
+  %176 = getelementptr inbounds %"struct.std::__1::__hash_node_base", %"struct.std::__1::__hash_node_base"* %174, i64 0, i32 0
+  %177 = load %"struct.std::__1::__hash_node_base"*, %"struct.std::__1::__hash_node_base"** %176, align 8
+  %178 = icmp eq %"struct.std::__1::__hash_node_base"* %177, null
+  br i1 %178, label %187, label %131
+
+179:                                              ; preds = %2
+  %180 = getelementptr inbounds %"class.std::__1::__hash_table", %"class.std::__1::__hash_table"* %0, i64 0, i32 0, i32 0, i32 0, i32 0
+  %181 = load %"struct.std::__1::__hash_node_base"**, %"struct.std::__1::__hash_node_base"*** %180, align 8
+  store %"struct.std::__1::__hash_node_base"** null, %"struct.std::__1::__hash_node_base"*** %180, align 8
+  %182 = icmp eq %"struct.std::__1::__hash_node_base"** %181, null
+  br i1 %182, label %185, label %183
+
+183:                                              ; preds = %179
+  %184 = bitcast %"struct.std::__1::__hash_node_base"** %181 to i8*
+  tail call void @_ZdlPv(i8* %184) #11
+  br label %185
+
+185:                                              ; preds = %179, %183
+  %186 = getelementptr inbounds %"class.std::__1::__bucket_list_deallocator", %"class.std::__1::__bucket_list_deallocator"* %3, i64 0, i32 0, i32 0, i32 0
+  store i64 0, i64* %186, align 8
+  br label %187
+
+187:                                              ; preds = %173, %122, %70, %35, %185
+  ret void
+}
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #9
+
+; Function Attrs: nounwind readnone speculatable
+declare i64 @llvm.ctlz.i64(i64, i1 immarg) #6
+
+; Function Attrs: nounwind readnone speculatable
+declare float @llvm.ceil.f32(float) #6
+
+declare void @_ZN2v84base5Mutex6UnlockEv(%"class.v8::base::Mutex"*) local_unnamed_addr #2
+
+declare %"class.heap::base::internal::SegmentBase"* @_ZN4heap4base8internal11SegmentBase25GetSentinelSegmentAddressEv() local_unnamed_addr #2
+
+; Function Attrs: nounwind readnone speculatable
+declare i64 @llvm.ctpop.i64(i64) #6
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { argmemonly nounwind }
+attributes #2 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nofree norecurse nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { norecurse nounwind readonly ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nounwind readnone speculatable }
+attributes #7 = { noreturn nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #9 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #10 = { nounwind }
+attributes #11 = { builtin nounwind }
+attributes #12 = { noreturn nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{i32 24, i32 33}
+!3 = !{!"branch_weights", i32 1, i32 2000}
+!4 = !{i8 0, i8 2}
+!5 = !{i64 0, i64 65}
+!6 = !{!7}
+!7 = distinct !{!7, !8, !"_ZNSt3__112__hash_tableIPN5cppgc8internal16HeapObjectHeaderENS_4hashIS4_EENS_8equal_toIS4_EENS_9allocatorIS4_EEE21__construct_node_hashIRKS4_JEEENS_10unique_ptrINS_11__hash_nodeIS4_PvEENS_22__hash_node_destructorINS9_ISI_EEEEEEmOT_DpOT0_: argument 0"}
+!8 = distinct !{!8, !"_ZNSt3__112__hash_tableIPN5cppgc8internal16HeapObjectHeaderENS_4hashIS4_EENS_8equal_toIS4_EENS_9allocatorIS4_EEE21__construct_node_hashIRKS4_JEEENS_10unique_ptrINS_11__hash_nodeIS4_PvEENS_22__hash_node_destructorINS9_ISI_EEEEEEmOT_DpOT0_"}
+!9 = distinct !{!9, !10}
+!10 = !{!"llvm.loop.unroll.disable"}

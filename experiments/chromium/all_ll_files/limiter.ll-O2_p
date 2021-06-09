@@ -1,0 +1,532 @@
+; ModuleID = '../../third_party/webrtc/modules/audio_processing/agc2/limiter.cc'
+source_filename = "../../third_party/webrtc/modules/audio_processing/agc2/limiter.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.webrtc::Limiter" = type { %"class.webrtc::InterpolatedGainCurve", %"class.webrtc::FixedDigitalLevelEstimator", %"class.webrtc::ApmDataDumper"*, %"struct.std::__1::array", %"struct.std::__1::array.0", float }
+%"class.webrtc::InterpolatedGainCurve" = type { %"struct.webrtc::InterpolatedGainCurve::RegionLogger", %"class.webrtc::ApmDataDumper"*, %"struct.webrtc::InterpolatedGainCurve::Stats" }
+%"struct.webrtc::InterpolatedGainCurve::RegionLogger" = type { %"class.webrtc::metrics::Histogram"*, %"class.webrtc::metrics::Histogram"*, %"class.webrtc::metrics::Histogram"*, %"class.webrtc::metrics::Histogram"* }
+%"class.webrtc::metrics::Histogram" = type opaque
+%"struct.webrtc::InterpolatedGainCurve::Stats" = type { i64, i64, i64, i64, i8, i32, i64 }
+%"class.webrtc::FixedDigitalLevelEstimator" = type <{ %"class.webrtc::ApmDataDumper"*, float, i32, i32, [4 x i8] }>
+%"struct.std::__1::array" = type { [21 x float] }
+%"struct.std::__1::array.0" = type { [480 x float] }
+%"class.webrtc::ApmDataDumper" = type { i8 }
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon }
+%union.anon = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.webrtc::AudioFrameView" = type { float**, i64, i64 }
+%"struct.std::__1::array.2" = type { [20 x float] }
+%"class.webrtc::AudioFrameView.3" = type { float**, i64, i64 }
+
+$_ZZN3rtc18webrtc_checks_impl11LogStreamerIJEE11CallCheckOpIJNS0_3ValILNS0_12CheckArgTypeE5EmEENS4_ILS5_1EiEES6_NS4_ILS5_9EPKcEES6_EEEvS9_iS9_DpRKT_E1t = comdat any
+
+@.str.2 = private unnamed_addr constant [43 x i8] c"../../third_party/webrtc/rtc_base/checks.h\00", align 1
+@.str.3 = private unnamed_addr constant [11 x i8] c"a % b == 0\00", align 1
+@.str.4 = private unnamed_addr constant [29 x i8] c" is not evenly divisible by \00", align 1
+@_ZZN3rtc18webrtc_checks_impl11LogStreamerIJEE11CallCheckOpIJNS0_3ValILNS0_12CheckArgTypeE5EmEENS4_ILS5_1EiEES6_NS4_ILS5_9EPKcEES6_EEEvS9_iS9_DpRKT_E1t = linkonce_odr hidden constant [7 x i8] c"\0D\05\01\05\09\05\00", comdat, align 1
+
+@_ZN6webrtc7LimiterC1EmPNS_13ApmDataDumperERKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEE = hidden unnamed_addr alias void (%"class.webrtc::Limiter"*, i64, %"class.webrtc::ApmDataDumper"*, %"class.std::__1::basic_string"*), void (%"class.webrtc::Limiter"*, i64, %"class.webrtc::ApmDataDumper"*, %"class.std::__1::basic_string"*)* @_ZN6webrtc7LimiterC2EmPNS_13ApmDataDumperERKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEE
+@_ZN6webrtc7LimiterD1Ev = hidden unnamed_addr alias void (%"class.webrtc::Limiter"*), void (%"class.webrtc::Limiter"*)* @_ZN6webrtc7LimiterD2Ev
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN6webrtc7LimiterC2EmPNS_13ApmDataDumperERKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEE(%"class.webrtc::Limiter"*, i64, %"class.webrtc::ApmDataDumper"*, %"class.std::__1::basic_string"* dereferenceable(24)) unnamed_addr #0 align 2 {
+  %5 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 0
+  tail call void @_ZN6webrtc21InterpolatedGainCurveC1EPNS_13ApmDataDumperERKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEE(%"class.webrtc::InterpolatedGainCurve"* %5, %"class.webrtc::ApmDataDumper"* %2, %"class.std::__1::basic_string"* dereferenceable(24) %3) #7
+  %6 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 1
+  %7 = trunc i64 %1 to i32
+  tail call void @_ZN6webrtc26FixedDigitalLevelEstimatorC1EiPNS_13ApmDataDumperE(%"class.webrtc::FixedDigitalLevelEstimator"* %6, i32 %7, %"class.webrtc::ApmDataDumper"* %2) #7
+  %8 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 2
+  store %"class.webrtc::ApmDataDumper"* %2, %"class.webrtc::ApmDataDumper"** %8, align 8
+  %9 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0
+  %10 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 5
+  %11 = bitcast [21 x float]* %9 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %11, i8 0, i64 2004, i1 false)
+  store float 1.000000e+00, float* %10, align 4
+  ret void
+}
+
+declare void @_ZN6webrtc21InterpolatedGainCurveC1EPNS_13ApmDataDumperERKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEE(%"class.webrtc::InterpolatedGainCurve"*, %"class.webrtc::ApmDataDumper"*, %"class.std::__1::basic_string"* dereferenceable(24)) unnamed_addr #1
+
+declare void @_ZN6webrtc26FixedDigitalLevelEstimatorC1EiPNS_13ApmDataDumperE(%"class.webrtc::FixedDigitalLevelEstimator"*, i32, %"class.webrtc::ApmDataDumper"*) unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN6webrtc7LimiterD2Ev(%"class.webrtc::Limiter"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 0
+  tail call void @_ZN6webrtc21InterpolatedGainCurveD1Ev(%"class.webrtc::InterpolatedGainCurve"* %2) #7
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @_ZN6webrtc21InterpolatedGainCurveD1Ev(%"class.webrtc::InterpolatedGainCurve"*) unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN6webrtc7Limiter7ProcessENS_14AudioFrameViewIfEE(%"class.webrtc::Limiter"*, %"class.webrtc::AudioFrameView"* nocapture readonly byval(%"class.webrtc::AudioFrameView") align 8) local_unnamed_addr #0 align 2 {
+  %3 = alloca %"struct.std::__1::array.2", align 4
+  %4 = alloca %"class.webrtc::AudioFrameView.3", align 16
+  %5 = bitcast %"struct.std::__1::array.2"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 80, i8* nonnull %5) #7
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 4 %5, i8 -1, i64 80, i1 false)
+  %6 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 1
+  %7 = bitcast %"class.webrtc::AudioFrameView.3"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %7) #7
+  %8 = getelementptr inbounds %"class.webrtc::AudioFrameView", %"class.webrtc::AudioFrameView"* %1, i64 0, i32 1
+  %9 = bitcast %"class.webrtc::AudioFrameView"* %1 to <2 x i64>*
+  %10 = load <2 x i64>, <2 x i64>* %9, align 8
+  %11 = getelementptr inbounds %"class.webrtc::AudioFrameView", %"class.webrtc::AudioFrameView"* %1, i64 0, i32 2
+  %12 = load i64, i64* %11, align 8
+  %13 = bitcast %"class.webrtc::AudioFrameView.3"* %4 to <2 x i64>*
+  store <2 x i64> %10, <2 x i64>* %13, align 16
+  %14 = getelementptr inbounds %"class.webrtc::AudioFrameView.3", %"class.webrtc::AudioFrameView.3"* %4, i64 0, i32 2
+  store i64 %12, i64* %14, align 16
+  call void @_ZN6webrtc26FixedDigitalLevelEstimator12ComputeLevelERKNS_14AudioFrameViewIKfEE(%"struct.std::__1::array.2"* nonnull sret %3, %"class.webrtc::FixedDigitalLevelEstimator"* %6, %"class.webrtc::AudioFrameView.3"* nonnull dereferenceable(24) %4) #7
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %7) #7
+  %15 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 5
+  %16 = bitcast float* %15 to i32*
+  %17 = load i32, i32* %16, align 4
+  %18 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3
+  %19 = bitcast %"struct.std::__1::array"* %18 to i32*
+  store i32 %17, i32* %19, align 4
+  %20 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 0
+  %21 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 1
+  %22 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 0
+  %23 = load float, float* %20, align 4
+  %24 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %23) #7
+  store float %24, float* %21, align 4
+  %25 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 1
+  %26 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 2
+  %27 = load float, float* %25, align 4
+  %28 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %27) #7
+  store float %28, float* %26, align 4
+  %29 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 2
+  %30 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 3
+  %31 = load float, float* %29, align 4
+  %32 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %31) #7
+  store float %32, float* %30, align 4
+  %33 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 3
+  %34 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 4
+  %35 = load float, float* %33, align 4
+  %36 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %35) #7
+  store float %36, float* %34, align 4
+  %37 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 4
+  %38 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 5
+  %39 = load float, float* %37, align 4
+  %40 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %39) #7
+  store float %40, float* %38, align 4
+  %41 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 5
+  %42 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 6
+  %43 = load float, float* %41, align 4
+  %44 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %43) #7
+  store float %44, float* %42, align 4
+  %45 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 6
+  %46 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 7
+  %47 = load float, float* %45, align 4
+  %48 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %47) #7
+  store float %48, float* %46, align 4
+  %49 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 7
+  %50 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 8
+  %51 = load float, float* %49, align 4
+  %52 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %51) #7
+  store float %52, float* %50, align 4
+  %53 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 8
+  %54 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 9
+  %55 = load float, float* %53, align 4
+  %56 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %55) #7
+  store float %56, float* %54, align 4
+  %57 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 9
+  %58 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 10
+  %59 = load float, float* %57, align 4
+  %60 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %59) #7
+  store float %60, float* %58, align 4
+  %61 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 10
+  %62 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 11
+  %63 = load float, float* %61, align 4
+  %64 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %63) #7
+  store float %64, float* %62, align 4
+  %65 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 11
+  %66 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 12
+  %67 = load float, float* %65, align 4
+  %68 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %67) #7
+  store float %68, float* %66, align 4
+  %69 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 12
+  %70 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 13
+  %71 = load float, float* %69, align 4
+  %72 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %71) #7
+  store float %72, float* %70, align 4
+  %73 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 13
+  %74 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 14
+  %75 = load float, float* %73, align 4
+  %76 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %75) #7
+  store float %76, float* %74, align 4
+  %77 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 14
+  %78 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 15
+  %79 = load float, float* %77, align 4
+  %80 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %79) #7
+  store float %80, float* %78, align 4
+  %81 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 15
+  %82 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 16
+  %83 = load float, float* %81, align 4
+  %84 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %83) #7
+  store float %84, float* %82, align 4
+  %85 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 16
+  %86 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 17
+  %87 = load float, float* %85, align 4
+  %88 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %87) #7
+  store float %88, float* %86, align 4
+  %89 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 17
+  %90 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 18
+  %91 = load float, float* %89, align 4
+  %92 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %91) #7
+  store float %92, float* %90, align 4
+  %93 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 18
+  %94 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 19
+  %95 = load float, float* %93, align 4
+  %96 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %95) #7
+  store float %96, float* %94, align 4
+  %97 = getelementptr inbounds %"struct.std::__1::array.2", %"struct.std::__1::array.2"* %3, i64 0, i32 0, i64 19
+  %98 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 20
+  %99 = load float, float* %97, align 4
+  %100 = call float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"* %22, float %99) #7
+  store float %100, float* %98, align 4
+  %101 = load i64, i64* %11, align 8
+  %102 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 4, i32 0, i64 0
+  %103 = icmp eq i64 %101, 0
+  %104 = select i1 %103, float* null, float* %102
+  %105 = urem i64 %101, 20
+  %106 = udiv i64 %101, 20
+  %107 = icmp eq i64 %105, 0
+  br i1 %107, label %109, label %108
+
+108:                                              ; preds = %2
+  call void (i8*, i32, i8*, i8*, ...) @_ZN3rtc18webrtc_checks_impl8FatalLogEPKciS2_PKNS0_12CheckArgTypeEz(i8* getelementptr inbounds ([43 x i8], [43 x i8]* @.str.2, i64 0, i64 0), i32 466, i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str.3, i64 0, i64 0), i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_ZZN3rtc18webrtc_checks_impl11LogStreamerIJEE11CallCheckOpIJNS0_3ValILNS0_12CheckArgTypeE5EmEENS4_ILS5_1EiEES6_NS4_ILS5_9EPKcEES6_EEEvS9_iS9_DpRKT_E1t, i64 0, i64 0), i64 %105, i32 0, i64 %101, i8* getelementptr inbounds ([29 x i8], [29 x i8]* @.str.4, i64 0, i64 0), i64 20) #8
+  unreachable
+
+109:                                              ; preds = %2
+  %110 = getelementptr inbounds %"struct.std::__1::array", %"struct.std::__1::array"* %18, i64 0, i32 0, i64 0
+  %111 = load float, float* %110, align 4
+  %112 = load float, float* %21, align 4
+  %113 = fcmp ogt float %111, %112
+  %114 = icmp ne i64 %101, 0
+  %115 = and i1 %114, %113
+  br i1 %115, label %116, label %158
+
+116:                                              ; preds = %109
+  %117 = icmp ult i64 %101, 20
+  %118 = select i1 %117, float* null, float* %104
+  br i1 %117, label %158, label %119
+
+119:                                              ; preds = %116
+  %120 = fsub float %111, %112
+  %121 = and i64 %106, 1
+  %122 = add i64 %101, -20
+  %123 = icmp ult i64 %122, 20
+  br i1 %123, label %147, label %124
+
+124:                                              ; preds = %119
+  %125 = sub nsw i64 %106, %121
+  br label %126
+
+126:                                              ; preds = %126, %124
+  %127 = phi i64 [ 0, %124 ], [ %144, %126 ]
+  %128 = phi i64 [ %125, %124 ], [ %145, %126 ]
+  %129 = udiv i64 %127, %106
+  %130 = uitofp i64 %129 to float
+  %131 = fsub float 1.000000e+00, %130
+  %132 = call float @powf(float %131, float 8.000000e+00) #7
+  %133 = fmul float %120, %132
+  %134 = fadd float %112, %133
+  %135 = getelementptr inbounds float, float* %118, i64 %127
+  store float %134, float* %135, align 4
+  %136 = or i64 %127, 1
+  %137 = udiv i64 %136, %106
+  %138 = uitofp i64 %137 to float
+  %139 = fsub float 1.000000e+00, %138
+  %140 = call float @powf(float %139, float 8.000000e+00) #7
+  %141 = fmul float %120, %140
+  %142 = fadd float %112, %141
+  %143 = getelementptr inbounds float, float* %118, i64 %136
+  store float %142, float* %143, align 4
+  %144 = add nuw i64 %127, 2
+  %145 = add i64 %128, -2
+  %146 = icmp eq i64 %145, 0
+  br i1 %146, label %147, label %126
+
+147:                                              ; preds = %126, %119
+  %148 = phi i64 [ 0, %119 ], [ %144, %126 ]
+  %149 = icmp eq i64 %121, 0
+  br i1 %149, label %158, label %150
+
+150:                                              ; preds = %147
+  %151 = udiv i64 %148, %106
+  %152 = uitofp i64 %151 to float
+  %153 = fsub float 1.000000e+00, %152
+  %154 = call float @powf(float %153, float 8.000000e+00) #7
+  %155 = fmul float %120, %154
+  %156 = fadd float %112, %155
+  %157 = getelementptr inbounds float, float* %118, i64 %148
+  store float %156, float* %157, align 4
+  br label %158
+
+158:                                              ; preds = %150, %147, %116, %109
+  %159 = zext i1 %113 to i64
+  %160 = uitofp i64 %106 to float
+  %161 = icmp ugt i64 %101, 19
+  br label %164
+
+162:                                              ; preds = %174, %164
+  %163 = icmp eq i64 %169, 20
+  br i1 %163, label %183, label %164
+
+164:                                              ; preds = %162, %158
+  %165 = phi i64 [ %159, %158 ], [ %169, %162 ]
+  %166 = mul i64 %165, %106
+  %167 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 %165
+  %168 = load float, float* %167, align 4
+  %169 = add nuw nsw i64 %165, 1
+  %170 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 %169
+  %171 = load float, float* %170, align 4
+  %172 = fsub float %171, %168
+  %173 = fdiv float %172, %160
+  br i1 %161, label %174, label %162
+
+174:                                              ; preds = %164, %174
+  %175 = phi i64 [ %181, %174 ], [ 0, %164 ]
+  %176 = uitofp i64 %175 to float
+  %177 = fmul float %173, %176
+  %178 = fadd float %168, %177
+  %179 = add i64 %175, %166
+  %180 = getelementptr inbounds float, float* %104, i64 %179
+  store float %178, float* %180, align 4
+  %181 = add nuw nsw i64 %175, 1
+  %182 = icmp ult i64 %181, %106
+  br i1 %182, label %174, label %162
+
+183:                                              ; preds = %162
+  %184 = getelementptr inbounds %"class.webrtc::AudioFrameView", %"class.webrtc::AudioFrameView"* %1, i64 0, i32 0
+  %185 = load float**, float*** %184, align 8
+  %186 = load i64, i64* %8, align 8
+  %187 = icmp eq i64 %186, 0
+  br i1 %187, label %278, label %188
+
+188:                                              ; preds = %183
+  %189 = getelementptr float, float* %104, i64 %101
+  %190 = icmp ult i64 %101, 8
+  %191 = and i64 %101, -8
+  %192 = icmp eq i64 %101, %191
+  %193 = and i64 %101, 1
+  %194 = icmp eq i64 %193, 0
+  br label %195
+
+195:                                              ; preds = %188, %252
+  %196 = phi i64 [ %253, %252 ], [ 0, %188 ]
+  %197 = getelementptr inbounds float*, float** %185, i64 %196
+  %198 = load float*, float** %197, align 8
+  %199 = select i1 %103, float* null, float* %198
+  br i1 %103, label %252, label %200
+
+200:                                              ; preds = %195
+  br i1 %190, label %201, label %218
+
+201:                                              ; preds = %251, %218, %200
+  %202 = phi i64 [ 0, %218 ], [ 0, %200 ], [ %191, %251 ]
+  br i1 %194, label %214, label %203
+
+203:                                              ; preds = %201
+  %204 = getelementptr inbounds float, float* %199, i64 %202
+  %205 = load float, float* %204, align 4
+  %206 = getelementptr inbounds float, float* %104, i64 %202
+  %207 = load float, float* %206, align 4
+  %208 = fmul float %205, %207
+  %209 = fcmp ole float %208, -3.276800e+04
+  %210 = fcmp oge float %208, 3.276700e+04
+  %211 = select i1 %210, float 3.276700e+04, float %208
+  %212 = select i1 %209, float -3.276800e+04, float %211
+  store float %212, float* %204, align 4
+  %213 = or i64 %202, 1
+  br label %214
+
+214:                                              ; preds = %203, %201
+  %215 = phi i64 [ %213, %203 ], [ %202, %201 ]
+  %216 = or i64 %202, 1
+  %217 = icmp eq i64 %101, %216
+  br i1 %217, label %252, label %255
+
+218:                                              ; preds = %200
+  %219 = getelementptr float, float* %199, i64 %101
+  %220 = icmp ult float* %199, %189
+  %221 = icmp ult float* %104, %219
+  %222 = and i1 %220, %221
+  br i1 %222, label %201, label %223
+
+223:                                              ; preds = %218, %223
+  %224 = phi i64 [ %249, %223 ], [ 0, %218 ]
+  %225 = getelementptr inbounds float, float* %199, i64 %224
+  %226 = bitcast float* %225 to <4 x float>*
+  %227 = load <4 x float>, <4 x float>* %226, align 4, !alias.scope !2, !noalias !5
+  %228 = getelementptr inbounds float, float* %225, i64 4
+  %229 = bitcast float* %228 to <4 x float>*
+  %230 = load <4 x float>, <4 x float>* %229, align 4, !alias.scope !2, !noalias !5
+  %231 = getelementptr inbounds float, float* %104, i64 %224
+  %232 = bitcast float* %231 to <4 x float>*
+  %233 = load <4 x float>, <4 x float>* %232, align 4, !alias.scope !5
+  %234 = getelementptr inbounds float, float* %231, i64 4
+  %235 = bitcast float* %234 to <4 x float>*
+  %236 = load <4 x float>, <4 x float>* %235, align 4, !alias.scope !5
+  %237 = fmul <4 x float> %227, %233
+  %238 = fmul <4 x float> %230, %236
+  %239 = fcmp ole <4 x float> %237, <float -3.276800e+04, float -3.276800e+04, float -3.276800e+04, float -3.276800e+04>
+  %240 = fcmp ole <4 x float> %238, <float -3.276800e+04, float -3.276800e+04, float -3.276800e+04, float -3.276800e+04>
+  %241 = fcmp oge <4 x float> %237, <float 3.276700e+04, float 3.276700e+04, float 3.276700e+04, float 3.276700e+04>
+  %242 = fcmp oge <4 x float> %238, <float 3.276700e+04, float 3.276700e+04, float 3.276700e+04, float 3.276700e+04>
+  %243 = select <4 x i1> %241, <4 x float> <float 3.276700e+04, float 3.276700e+04, float 3.276700e+04, float 3.276700e+04>, <4 x float> %237
+  %244 = select <4 x i1> %242, <4 x float> <float 3.276700e+04, float 3.276700e+04, float 3.276700e+04, float 3.276700e+04>, <4 x float> %238
+  %245 = select <4 x i1> %239, <4 x float> <float -3.276800e+04, float -3.276800e+04, float -3.276800e+04, float -3.276800e+04>, <4 x float> %243
+  %246 = select <4 x i1> %240, <4 x float> <float -3.276800e+04, float -3.276800e+04, float -3.276800e+04, float -3.276800e+04>, <4 x float> %244
+  %247 = bitcast float* %225 to <4 x float>*
+  store <4 x float> %245, <4 x float>* %247, align 4, !alias.scope !2, !noalias !5
+  %248 = bitcast float* %228 to <4 x float>*
+  store <4 x float> %246, <4 x float>* %248, align 4, !alias.scope !2, !noalias !5
+  %249 = add i64 %224, 8
+  %250 = icmp eq i64 %249, %191
+  br i1 %250, label %251, label %223, !llvm.loop !7
+
+251:                                              ; preds = %223
+  br i1 %192, label %252, label %201
+
+252:                                              ; preds = %214, %255, %251, %195
+  %253 = add nuw i64 %196, 1
+  %254 = icmp eq i64 %253, %186
+  br i1 %254, label %278, label %195
+
+255:                                              ; preds = %214, %255
+  %256 = phi i64 [ %276, %255 ], [ %215, %214 ]
+  %257 = getelementptr inbounds float, float* %199, i64 %256
+  %258 = load float, float* %257, align 4
+  %259 = getelementptr inbounds float, float* %104, i64 %256
+  %260 = load float, float* %259, align 4
+  %261 = fmul float %258, %260
+  %262 = fcmp ole float %261, -3.276800e+04
+  %263 = fcmp oge float %261, 3.276700e+04
+  %264 = select i1 %263, float 3.276700e+04, float %261
+  %265 = select i1 %262, float -3.276800e+04, float %264
+  store float %265, float* %257, align 4
+  %266 = add nuw i64 %256, 1
+  %267 = getelementptr inbounds float, float* %199, i64 %266
+  %268 = load float, float* %267, align 4
+  %269 = getelementptr inbounds float, float* %104, i64 %266
+  %270 = load float, float* %269, align 4
+  %271 = fmul float %268, %270
+  %272 = fcmp ole float %271, -3.276800e+04
+  %273 = fcmp oge float %271, 3.276700e+04
+  %274 = select i1 %273, float 3.276700e+04, float %271
+  %275 = select i1 %272, float -3.276800e+04, float %274
+  store float %275, float* %267, align 4
+  %276 = add nuw i64 %256, 2
+  %277 = icmp eq i64 %276, %101
+  br i1 %277, label %252, label %255, !llvm.loop !9
+
+278:                                              ; preds = %252, %183
+  %279 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 3, i32 0, i64 20
+  %280 = bitcast float* %279 to i32*
+  %281 = load i32, i32* %280, align 4
+  store i32 %281, i32* %16, align 4
+  call void @llvm.lifetime.end.p0i8(i64 80, i8* nonnull %5) #7
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+declare void @_ZN6webrtc26FixedDigitalLevelEstimator12ComputeLevelERKNS_14AudioFrameViewIKfEE(%"struct.std::__1::array.2"* sret, %"class.webrtc::FixedDigitalLevelEstimator"*, %"class.webrtc::AudioFrameView.3"* dereferenceable(24)) local_unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZNK6webrtc7Limiter17GetGainCurveStatsEv(%"struct.webrtc::InterpolatedGainCurve::Stats"* noalias nocapture sret, %"class.webrtc::Limiter"* nocapture readonly) local_unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %1, i64 0, i32 0, i32 2
+  %4 = bitcast %"struct.webrtc::InterpolatedGainCurve::Stats"* %0 to i8*
+  %5 = bitcast %"struct.webrtc::InterpolatedGainCurve::Stats"* %3 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %4, i8* align 8 %5, i64 48, i1 false) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN6webrtc7Limiter13SetSampleRateEm(%"class.webrtc::Limiter"*, i64) local_unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 1
+  %4 = trunc i64 %1 to i32
+  tail call void @_ZN6webrtc26FixedDigitalLevelEstimator13SetSampleRateEi(%"class.webrtc::FixedDigitalLevelEstimator"* %3, i32 %4) #7
+  ret void
+}
+
+declare void @_ZN6webrtc26FixedDigitalLevelEstimator13SetSampleRateEi(%"class.webrtc::FixedDigitalLevelEstimator"*, i32) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN6webrtc7Limiter5ResetEv(%"class.webrtc::Limiter"*) local_unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 1
+  tail call void @_ZN6webrtc26FixedDigitalLevelEstimator5ResetEv(%"class.webrtc::FixedDigitalLevelEstimator"* %2) #7
+  ret void
+}
+
+declare void @_ZN6webrtc26FixedDigitalLevelEstimator5ResetEv(%"class.webrtc::FixedDigitalLevelEstimator"*) local_unnamed_addr #1
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden float @_ZNK6webrtc7Limiter14LastAudioLevelEv(%"class.webrtc::Limiter"* nocapture readonly) local_unnamed_addr #4 align 2 {
+  %2 = getelementptr inbounds %"class.webrtc::Limiter", %"class.webrtc::Limiter"* %0, i64 0, i32 1, i32 1
+  %3 = load float, float* %2, align 8
+  ret float %3
+}
+
+; Function Attrs: noreturn
+declare void @_ZN3rtc18webrtc_checks_impl8FatalLogEPKciS2_PKNS0_12CheckArgTypeEz(i8*, i32, i8*, i8*, ...) local_unnamed_addr #5
+
+; Function Attrs: nofree nounwind
+declare float @powf(float, float) local_unnamed_addr #6
+
+declare float @_ZNK6webrtc21InterpolatedGainCurve17LookUpGainToApplyEf(%"class.webrtc::InterpolatedGainCurve"*, float) local_unnamed_addr #1
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { norecurse nounwind readonly ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { noreturn "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nofree nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { nounwind }
+attributes #8 = { noreturn nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{!3}
+!3 = distinct !{!3, !4}
+!4 = distinct !{!4, !"LVerDomain"}
+!5 = !{!6}
+!6 = distinct !{!6, !4}
+!7 = distinct !{!7, !8}
+!8 = !{!"llvm.loop.isvectorized", i32 1}
+!9 = distinct !{!9, !8}

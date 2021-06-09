@@ -1,0 +1,1739 @@
+; ModuleID = '../../gpu/command_buffer/client/mapped_memory.cc'
+source_filename = "../../gpu/command_buffer/client/mapped_memory.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"struct.base::trace_event::TraceCategory" = type { i8, i32, i8* }
+%"class.gpu::MemoryChunk" = type { i32, %class.scoped_refptr, %"class.gpu::FencedAllocatorWrapper" }
+%class.scoped_refptr = type { %"class.gpu::Buffer"* }
+%"class.gpu::FencedAllocatorWrapper" = type { %"class.gpu::FencedAllocator", i8* }
+%"class.gpu::FencedAllocator" = type <{ %"class.gpu::CommandBufferHelper"*, %"class.std::__1::vector", i32, [4 x i8] }>
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"struct.gpu::FencedAllocator::Block"*, %"struct.gpu::FencedAllocator::Block"*, %"class.std::__1::__compressed_pair.2" }
+%"struct.gpu::FencedAllocator::Block" = type { i32, i32, i32, i32 }
+%"class.std::__1::__compressed_pair.2" = type { %"struct.std::__1::__compressed_pair_elem.3" }
+%"struct.std::__1::__compressed_pair_elem.3" = type { %"struct.gpu::FencedAllocator::Block"* }
+%"class.gpu::Buffer" = type <{ %"class.base::RefCountedThreadSafe", [4 x i8], %"class.std::__1::unique_ptr", i8*, i32, [4 x i8] }>
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.0" }
+%"struct.std::__1::__atomic_base.0" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"class.std::__1::unique_ptr" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"class.gpu::BufferBacking"* }
+%"class.gpu::BufferBacking" = type { i32 (...)** }
+%"class.gpu::CommandBufferHelper" = type <{ i32 (...)**, %"class.gpu::CommandBuffer"*, i32, i32, %class.scoped_refptr, %"union.gpu::CommandBufferEntry"*, i32, i32, i32, i32, i32, i32, i32, i8, [3 x i8], i32, i8, i8, i8, i8, i32, i32, %"class.base::TimeTicks", i32, [4 x i8] }>
+%"class.gpu::CommandBuffer" = type { i32 (...)** }
+%"union.gpu::CommandBufferEntry" = type { %"struct.gpu::CommandHeader" }
+%"struct.gpu::CommandHeader" = type { i32 }
+%"class.base::TimeTicks" = type { %"class.base::time_internal::TimeBase" }
+%"class.base::time_internal::TimeBase" = type { i64 }
+%"class.gpu::MappedMemoryManager" = type <{ i32, [4 x i8], %"class.gpu::CommandBufferHelper"*, %"class.std::__1::vector.5", i64, i64, i64, i32, [4 x i8] }>
+%"class.std::__1::vector.5" = type { %"class.std::__1::__vector_base.6" }
+%"class.std::__1::__vector_base.6" = type { %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"*, %"class.std::__1::__compressed_pair.13" }
+%"class.std::__1::unique_ptr.7" = type { %"class.std::__1::__compressed_pair.8" }
+%"class.std::__1::__compressed_pair.8" = type { %"struct.std::__1::__compressed_pair_elem.9" }
+%"struct.std::__1::__compressed_pair_elem.9" = type { %"class.gpu::MemoryChunk"* }
+%"class.std::__1::__compressed_pair.13" = type { %"struct.std::__1::__compressed_pair_elem.14" }
+%"struct.std::__1::__compressed_pair_elem.14" = type { %"class.std::__1::unique_ptr.7"* }
+%"class.base::trace_event::TraceArguments" = type { i8, [2 x i8], [2 x i8*], [2 x %"union.base::trace_event::TraceValue"] }
+%"union.base::trace_event::TraceValue" = type { i64 }
+%"struct.base::trace_event::MemoryDumpArgs" = type { i32, i32, i64 }
+%"class.base::trace_event::ProcessMemoryDump" = type { %"class.base::UnguessableToken", %"class.std::__1::map", %"class.std::__1::map.27", %"struct.base::trace_event::MemoryDumpArgs", %"class.std::__1::unique_ptr.38" }
+%"class.base::UnguessableToken" = type { %"class.base::Token" }
+%"class.base::Token" = type { i64, i64 }
+%"class.std::__1::map" = type { %"class.std::__1::__tree" }
+%"class.std::__1::__tree" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.19", %"class.std::__1::__compressed_pair.24" }
+%"class.std::__1::__tree_end_node" = type { %"class.std::__1::__tree_node_base"* }
+%"class.std::__1::__tree_node_base" = type opaque
+%"class.std::__1::__compressed_pair.19" = type { %"struct.std::__1::__compressed_pair_elem.20" }
+%"struct.std::__1::__compressed_pair_elem.20" = type { %"class.std::__1::__tree_end_node" }
+%"class.std::__1::__compressed_pair.24" = type { %"struct.std::__1::__compressed_pair_elem.25" }
+%"struct.std::__1::__compressed_pair_elem.25" = type { i64 }
+%"class.std::__1::map.27" = type { %"class.std::__1::__tree.28" }
+%"class.std::__1::__tree.28" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.29", %"class.std::__1::__compressed_pair.33" }
+%"class.std::__1::__compressed_pair.29" = type { %"struct.std::__1::__compressed_pair_elem.20" }
+%"class.std::__1::__compressed_pair.33" = type { %"struct.std::__1::__compressed_pair_elem.25" }
+%"class.std::__1::unique_ptr.38" = type { %"class.std::__1::__compressed_pair.39" }
+%"class.std::__1::__compressed_pair.39" = type { %"struct.std::__1::__compressed_pair_elem.40" }
+%"struct.std::__1::__compressed_pair_elem.40" = type { %"class.base::trace_event::MemoryAllocatorDump"* }
+%"class.base::trace_event::MemoryAllocatorDump" = type { %"class.std::__1::basic_string", %"class.base::trace_event::MemoryAllocatorDumpGuid", i32, i32, %"class.absl::optional", %"class.std::__1::vector.47" }
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.41" }
+%"class.std::__1::__compressed_pair.41" = type { %"struct.std::__1::__compressed_pair_elem.42" }
+%"struct.std::__1::__compressed_pair_elem.42" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon }
+%union.anon = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.base::trace_event::MemoryAllocatorDumpGuid" = type { i64 }
+%"class.absl::optional" = type { %"class.absl::optional_internal::optional_data" }
+%"class.absl::optional_internal::optional_data" = type { %"class.absl::optional_internal::optional_data_base" }
+%"class.absl::optional_internal::optional_data_base" = type { %"class.absl::optional_internal::optional_data_dtor_base" }
+%"class.absl::optional_internal::optional_data_dtor_base" = type { i8, %union.anon.46 }
+%union.anon.46 = type { i64 }
+%"class.std::__1::vector.47" = type { %"class.std::__1::__vector_base.48" }
+%"class.std::__1::__vector_base.48" = type { %"struct.base::trace_event::MemoryAllocatorDump::Entry"*, %"struct.base::trace_event::MemoryAllocatorDump::Entry"*, %"class.std::__1::__compressed_pair.49" }
+%"struct.base::trace_event::MemoryAllocatorDump::Entry" = type { %"class.std::__1::basic_string", %"class.std::__1::basic_string", i32, i64, %"class.std::__1::basic_string" }
+%"class.std::__1::__compressed_pair.49" = type { %"struct.std::__1::__compressed_pair_elem.50" }
+%"struct.std::__1::__compressed_pair_elem.50" = type { %"struct.base::trace_event::MemoryAllocatorDump::Entry"* }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short" = type { [23 x i8], %struct.anon }
+%struct.anon = type { i8 }
+%"class.base::trace_event::MemoryDumpManager" = type <{ i32 (...)**, %"class.std::__1::set", %"class.base::RepeatingCallback", i8, [7 x i8], %"class.base::Lock", %"class.std::__1::unique_ptr.66", i64, i8, [7 x i8] }>
+%"class.std::__1::set" = type { %"class.std::__1::__tree.57" }
+%"class.std::__1::__tree.57" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.58", %"class.std::__1::__compressed_pair.62" }
+%"class.std::__1::__compressed_pair.58" = type { %"struct.std::__1::__compressed_pair_elem.20" }
+%"class.std::__1::__compressed_pair.62" = type { %"struct.std::__1::__compressed_pair_elem.25" }
+%"class.base::RepeatingCallback" = type { %"class.base::internal::CallbackBaseCopyable" }
+%"class.base::internal::CallbackBaseCopyable" = type { %"class.base::internal::CallbackBase" }
+%"class.base::internal::CallbackBase" = type { %class.scoped_refptr.64 }
+%class.scoped_refptr.64 = type { %"class.base::internal::BindStateBase"* }
+%"class.base::internal::BindStateBase" = type { %"class.base::RefCountedThreadSafe.65", void ()*, void (%"class.base::internal::BindStateBase"*)*, i1 (%"class.base::internal::BindStateBase"*, i32)* }
+%"class.base::RefCountedThreadSafe.65" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::Lock" = type { %"class.base::internal::LockImpl" }
+%"class.base::internal::LockImpl" = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%"class.std::__1::unique_ptr.66" = type { %"class.std::__1::__compressed_pair.67" }
+%"class.std::__1::__compressed_pair.67" = type { %"struct.std::__1::__compressed_pair_elem.68" }
+%"struct.std::__1::__compressed_pair_elem.68" = type { %"class.base::Thread"* }
+%"class.base::Thread" = type opaque
+%"class.gpu::ScopedMappedMemoryPtr" = type { i8*, i32, i32, i32, i8, %"class.gpu::CommandBufferHelper"*, %"class.gpu::MappedMemoryManager"* }
+%"class.std::__1::__vector_base_common" = type { i8 }
+
+$_ZNSt3__16vectorINS_10unique_ptrIN3gpu11MemoryChunkENS_14default_deleteIS3_EEEENS_9allocatorIS6_EEE5eraseENS_11__wrap_iterIPKS6_EE = comdat any
+
+$_ZNSt3__16vectorINS_10unique_ptrIN3gpu11MemoryChunkENS_14default_deleteIS3_EEEENS_9allocatorIS6_EEE21__push_back_slow_pathIS6_EEvOT_ = comdat any
+
+@_ZN4base11trace_event16CategoryRegistry11categories_E = external global [300 x %"struct.base::trace_event::TraceCategory"], align 16
+@.str = private unnamed_addr constant [33 x i8] c"MappedMemoryManager::Alloc::wait\00", align 1
+@.str.1 = private unnamed_addr constant [29 x i8] c"gpu/mapped_memory/manager_%d\00", align 1
+@_ZN4base11trace_event19MemoryAllocatorDump9kNameSizeE = external constant [0 x i8], align 1
+@_ZN4base11trace_event19MemoryAllocatorDump11kUnitsBytesE = external constant [0 x i8], align 1
+@.str.2 = private unnamed_addr constant [38 x i8] c"gpu/mapped_memory/manager_%d/chunk_%d\00", align 1
+@.str.3 = private unnamed_addr constant [10 x i8] c"free_size\00", align 1
+@_ZN3gpu12_GLOBAL__N_139g_next_mapped_memory_manager_tracing_idE = internal global { { { i32 } } } zeroinitializer, align 4
+
+@_ZN3gpu11MemoryChunkC1Ei13scoped_refptrINS_6BufferEEPNS_19CommandBufferHelperE = hidden unnamed_addr alias void (%"class.gpu::MemoryChunk"*, i32, %"class.gpu::Buffer"*, %"class.gpu::CommandBufferHelper"*), void (%"class.gpu::MemoryChunk"*, i32, %"class.gpu::Buffer"*, %"class.gpu::CommandBufferHelper"*)* @_ZN3gpu11MemoryChunkC2Ei13scoped_refptrINS_6BufferEEPNS_19CommandBufferHelperE
+@_ZN3gpu11MemoryChunkD1Ev = hidden unnamed_addr alias void (%"class.gpu::MemoryChunk"*), void (%"class.gpu::MemoryChunk"*)* @_ZN3gpu11MemoryChunkD2Ev
+@_ZN3gpu19MappedMemoryManagerC1EPNS_19CommandBufferHelperEm = hidden unnamed_addr alias void (%"class.gpu::MappedMemoryManager"*, %"class.gpu::CommandBufferHelper"*, i64), void (%"class.gpu::MappedMemoryManager"*, %"class.gpu::CommandBufferHelper"*, i64)* @_ZN3gpu19MappedMemoryManagerC2EPNS_19CommandBufferHelperEm
+@_ZN3gpu19MappedMemoryManagerD1Ev = hidden unnamed_addr alias void (%"class.gpu::MappedMemoryManager"*), void (%"class.gpu::MappedMemoryManager"*)* @_ZN3gpu19MappedMemoryManagerD2Ev
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu11MemoryChunkC2Ei13scoped_refptrINS_6BufferEEPNS_19CommandBufferHelperE(%"class.gpu::MemoryChunk"*, i32, %"class.gpu::Buffer"*, %"class.gpu::CommandBufferHelper"*) unnamed_addr #0 align 2 {
+  %5 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %0, i64 0, i32 0
+  store i32 %1, i32* %5, align 8
+  %6 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %0, i64 0, i32 1, i32 0
+  store %"class.gpu::Buffer"* %2, %"class.gpu::Buffer"** %6, align 8
+  %7 = icmp eq %"class.gpu::Buffer"* %2, null
+  br i1 %7, label %23, label %8
+
+8:                                                ; preds = %4
+  %9 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %2, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %10 = atomicrmw add i32* %9, i32 1 monotonic
+  %11 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %2, i64 0, i32 4
+  %12 = load i32, i32* %11, align 8
+  %13 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %2, i64 0, i32 3
+  %14 = bitcast i8** %13 to i64*
+  %15 = load i64, i64* %14, align 8
+  %16 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %0, i64 0, i32 2, i32 0
+  tail call void @_ZN3gpu15FencedAllocatorC1EjPNS_19CommandBufferHelperE(%"class.gpu::FencedAllocator"* %16, i32 %12, %"class.gpu::CommandBufferHelper"* %3) #9
+  %17 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %0, i64 0, i32 2, i32 1
+  %18 = bitcast i8** %17 to i64*
+  store i64 %15, i64* %18, align 8
+  %19 = atomicrmw sub i32* %9, i32 1 acq_rel
+  %20 = icmp eq i32 %19, 1
+  br i1 %20, label %21, label %29
+
+21:                                               ; preds = %8
+  tail call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %2) #9
+  %22 = bitcast %"class.gpu::Buffer"* %2 to i8*
+  tail call void @_ZdlPv(i8* %22) #10
+  br label %29
+
+23:                                               ; preds = %4
+  %24 = load i32, i32* inttoptr (i64 24 to i32*), align 8
+  %25 = load i64, i64* inttoptr (i64 16 to i64*), align 16
+  %26 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %0, i64 0, i32 2, i32 0
+  tail call void @_ZN3gpu15FencedAllocatorC1EjPNS_19CommandBufferHelperE(%"class.gpu::FencedAllocator"* %26, i32 %24, %"class.gpu::CommandBufferHelper"* %3) #9
+  %27 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %0, i64 0, i32 2, i32 1
+  %28 = bitcast i8** %27 to i64*
+  store i64 %25, i64* %28, align 8
+  br label %29
+
+29:                                               ; preds = %23, %8, %21
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu11MemoryChunkD2Ev(%"class.gpu::MemoryChunk"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %0, i64 0, i32 2, i32 0
+  tail call void @_ZN3gpu15FencedAllocatorD1Ev(%"class.gpu::FencedAllocator"* %2) #9
+  %3 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %0, i64 0, i32 1, i32 0
+  %4 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %3, align 8
+  %5 = icmp eq %"class.gpu::Buffer"* %4, null
+  br i1 %5, label %12, label %6
+
+6:                                                ; preds = %1
+  %7 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %4, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %8 = atomicrmw sub i32* %7, i32 1 acq_rel
+  %9 = icmp eq i32 %8, 1
+  br i1 %9, label %10, label %12
+
+10:                                               ; preds = %6
+  tail call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %4) #9
+  %11 = bitcast %"class.gpu::Buffer"* %4 to i8*
+  tail call void @_ZdlPv(i8* %11) #10
+  br label %12
+
+12:                                               ; preds = %1, %6, %10
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu19MappedMemoryManagerC2EPNS_19CommandBufferHelperEm(%"class.gpu::MappedMemoryManager"* nocapture, %"class.gpu::CommandBufferHelper"*, i64) unnamed_addr #0 align 2 {
+  %4 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 0
+  store i32 16, i32* %4, align 8
+  %5 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 2
+  store %"class.gpu::CommandBufferHelper"* %1, %"class.gpu::CommandBufferHelper"** %5, align 8
+  %6 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 3
+  %7 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 5
+  %8 = bitcast %"class.std::__1::vector.5"* %6 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %8, i8 0, i64 32, i1 false)
+  store i64 %2, i64* %7, align 8
+  %9 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 6
+  store i64 0, i64* %9, align 8
+  %10 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 7
+  %11 = atomicrmw add i32* getelementptr inbounds ({ { { i32 } } }, { { { i32 } } }* @_ZN3gpu12_GLOBAL__N_139g_next_mapped_memory_manager_tracing_idE, i64 0, i32 0, i32 0, i32 0), i32 1 monotonic
+  store i32 %11, i32* %10, align 8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu19MappedMemoryManagerD2Ev(%"class.gpu::MappedMemoryManager"* nocapture) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 2
+  %3 = load %"class.gpu::CommandBufferHelper"*, %"class.gpu::CommandBufferHelper"** %2, align 8
+  tail call void @_ZN3gpu19CommandBufferHelper15OrderingBarrierEv(%"class.gpu::CommandBufferHelper"* %3) #9
+  %4 = load %"class.gpu::CommandBufferHelper"*, %"class.gpu::CommandBufferHelper"** %2, align 8
+  %5 = getelementptr inbounds %"class.gpu::CommandBufferHelper", %"class.gpu::CommandBufferHelper"* %4, i64 0, i32 1
+  %6 = load %"class.gpu::CommandBuffer"*, %"class.gpu::CommandBuffer"** %5, align 8
+  %7 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 3
+  %8 = getelementptr inbounds %"class.std::__1::vector.5", %"class.std::__1::vector.5"* %7, i64 0, i32 0, i32 0
+  %9 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %8, align 8
+  %10 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 3, i32 0, i32 1
+  %11 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %10, align 8
+  %12 = icmp eq %"class.std::__1::unique_ptr.7"* %9, %11
+  br i1 %12, label %17, label %13
+
+13:                                               ; preds = %1
+  %14 = bitcast %"class.gpu::CommandBuffer"* %6 to void (%"class.gpu::CommandBuffer"*, i32)***
+  br label %51
+
+15:                                               ; preds = %51
+  %16 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %8, align 8
+  br label %17
+
+17:                                               ; preds = %15, %1
+  %18 = phi %"class.std::__1::unique_ptr.7"* [ %16, %15 ], [ %9, %1 ]
+  %19 = icmp eq %"class.std::__1::unique_ptr.7"* %18, null
+  br i1 %19, label %50, label %20
+
+20:                                               ; preds = %17
+  %21 = bitcast %"class.std::__1::unique_ptr.7"* %18 to i8*
+  %22 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %10, align 8
+  %23 = icmp eq %"class.std::__1::unique_ptr.7"* %22, %18
+  br i1 %23, label %48, label %24
+
+24:                                               ; preds = %20, %43
+  %25 = phi %"class.std::__1::unique_ptr.7"* [ %26, %43 ], [ %22, %20 ]
+  %26 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %25, i64 -1
+  %27 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %26, i64 0, i32 0, i32 0, i32 0
+  %28 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %27, align 8
+  store %"class.gpu::MemoryChunk"* null, %"class.gpu::MemoryChunk"** %27, align 8
+  %29 = icmp eq %"class.gpu::MemoryChunk"* %28, null
+  br i1 %29, label %43, label %30
+
+30:                                               ; preds = %24
+  %31 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %28, i64 0, i32 2, i32 0
+  tail call void @_ZN3gpu15FencedAllocatorD1Ev(%"class.gpu::FencedAllocator"* %31) #9
+  %32 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %28, i64 0, i32 1, i32 0
+  %33 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %32, align 8
+  %34 = icmp eq %"class.gpu::Buffer"* %33, null
+  br i1 %34, label %41, label %35
+
+35:                                               ; preds = %30
+  %36 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %33, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %37 = atomicrmw sub i32* %36, i32 1 acq_rel
+  %38 = icmp eq i32 %37, 1
+  br i1 %38, label %39, label %41
+
+39:                                               ; preds = %35
+  tail call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %33) #9
+  %40 = bitcast %"class.gpu::Buffer"* %33 to i8*
+  tail call void @_ZdlPv(i8* %40) #10
+  br label %41
+
+41:                                               ; preds = %39, %35, %30
+  %42 = bitcast %"class.gpu::MemoryChunk"* %28 to i8*
+  tail call void @_ZdlPv(i8* %42) #10
+  br label %43
+
+43:                                               ; preds = %41, %24
+  %44 = icmp eq %"class.std::__1::unique_ptr.7"* %26, %18
+  br i1 %44, label %45, label %24
+
+45:                                               ; preds = %43
+  %46 = bitcast %"class.std::__1::vector.5"* %7 to i8**
+  %47 = load i8*, i8** %46, align 8
+  br label %48
+
+48:                                               ; preds = %20, %45
+  %49 = phi i8* [ %47, %45 ], [ %21, %20 ]
+  store %"class.std::__1::unique_ptr.7"* %18, %"class.std::__1::unique_ptr.7"** %10, align 8
+  tail call void @_ZdlPv(i8* %49) #10
+  br label %50
+
+50:                                               ; preds = %17, %48
+  ret void
+
+51:                                               ; preds = %13, %51
+  %52 = phi %"class.std::__1::unique_ptr.7"* [ %9, %13 ], [ %60, %51 ]
+  %53 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %52, i64 0, i32 0, i32 0, i32 0
+  %54 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %53, align 8
+  %55 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %54, i64 0, i32 0
+  %56 = load i32, i32* %55, align 8
+  %57 = load void (%"class.gpu::CommandBuffer"*, i32)**, void (%"class.gpu::CommandBuffer"*, i32)*** %14, align 8
+  %58 = getelementptr inbounds void (%"class.gpu::CommandBuffer"*, i32)*, void (%"class.gpu::CommandBuffer"*, i32)** %57, i64 9
+  %59 = load void (%"class.gpu::CommandBuffer"*, i32)*, void (%"class.gpu::CommandBuffer"*, i32)** %58, align 8
+  tail call void %59(%"class.gpu::CommandBuffer"* %6, i32 %56) #9
+  %60 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %52, i64 1
+  %61 = icmp eq %"class.std::__1::unique_ptr.7"* %60, %11
+  br i1 %61, label %15, label %51
+}
+
+declare void @_ZN3gpu19CommandBufferHelper15OrderingBarrierEv(%"class.gpu::CommandBufferHelper"*) local_unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i8* @_ZN3gpu19MappedMemoryManager5AllocEjPiPjNS_30TransferBufferAllocationOptionE(%"class.gpu::MappedMemoryManager"*, i32, i32* nocapture, i32* nocapture, i8 signext) local_unnamed_addr #0 align 2 {
+  %6 = alloca %"class.base::TimeTicks", align 8
+  %7 = alloca i32, align 4
+  %8 = alloca %"class.std::__1::unique_ptr.7", align 8
+  %9 = zext i32 %1 to i64
+  %10 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 4
+  %11 = load i64, i64* %10, align 8
+  %12 = icmp ult i64 %11, %9
+  br i1 %12, label %142, label %13
+
+13:                                               ; preds = %5
+  %14 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 3, i32 0, i32 0
+  %15 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %14, align 8
+  %16 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 3, i32 0, i32 1
+  %17 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %16, align 8
+  %18 = icmp eq %"class.std::__1::unique_ptr.7"* %15, %17
+  br i1 %18, label %66, label %19
+
+19:                                               ; preds = %13, %58
+  %20 = phi i64 [ %60, %58 ], [ 0, %13 ]
+  %21 = phi %"class.std::__1::unique_ptr.7"* [ %61, %58 ], [ %15, %13 ]
+  %22 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %21, i64 0, i32 0, i32 0, i32 0
+  %23 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %22, align 8
+  %24 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %23, i64 0, i32 2, i32 0
+  tail call void @_ZN3gpu15FencedAllocator10FreeUnusedEv(%"class.gpu::FencedAllocator"* %24) #9
+  %25 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %22, align 8
+  %26 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %25, i64 0, i32 2, i32 0, i32 2
+  %27 = load i32, i32* %26, align 8
+  %28 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %25, i64 0, i32 2, i32 0
+  %29 = tail call i32 @_ZN3gpu15FencedAllocator18GetLargestFreeSizeEv(%"class.gpu::FencedAllocator"* %28) #9
+  %30 = icmp ult i32 %29, %1
+  br i1 %30, label %58, label %31
+
+31:                                               ; preds = %19
+  %32 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %21, i64 0, i32 0, i32 0, i32 0
+  %33 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %32, align 8
+  %34 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %33, i64 0, i32 2, i32 0
+  %35 = tail call i32 @_ZN3gpu15FencedAllocator5AllocEj(%"class.gpu::FencedAllocator"* %34, i32 %1) #9
+  %36 = icmp eq i32 %35, -1
+  br i1 %36, label %37, label %41
+
+37:                                               ; preds = %31
+  %38 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %32, align 8
+  %39 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %38, i64 0, i32 0
+  %40 = load i32, i32* %39, align 8
+  store i32 %40, i32* %2, align 4
+  br label %63
+
+41:                                               ; preds = %31
+  %42 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %33, i64 0, i32 2, i32 1
+  %43 = load i8*, i8** %42, align 8
+  %44 = zext i32 %35 to i64
+  %45 = getelementptr inbounds i8, i8* %43, i64 %44
+  %46 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %32, align 8
+  %47 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %46, i64 0, i32 0
+  %48 = load i32, i32* %47, align 8
+  store i32 %48, i32* %2, align 4
+  %49 = icmp eq i8* %45, null
+  br i1 %49, label %63, label %50
+
+50:                                               ; preds = %41
+  %51 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %32, align 8
+  %52 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %51, i64 0, i32 2, i32 1
+  %53 = bitcast i8** %52 to i64*
+  %54 = load i64, i64* %53, align 8
+  %55 = ptrtoint i8* %45 to i64
+  %56 = sub i64 %55, %54
+  %57 = trunc i64 %56 to i32
+  br label %63
+
+58:                                               ; preds = %19
+  %59 = zext i32 %27 to i64
+  %60 = add i64 %20, %59
+  %61 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %21, i64 1
+  %62 = icmp eq %"class.std::__1::unique_ptr.7"* %61, %17
+  br i1 %62, label %66, label %19
+
+63:                                               ; preds = %37, %41, %50
+  %64 = phi i8* [ %45, %50 ], [ null, %41 ], [ null, %37 ]
+  %65 = phi i32 [ %57, %50 ], [ -1, %41 ], [ -1, %37 ]
+  store i32 %65, i32* %3, align 4
+  br label %274
+
+66:                                               ; preds = %58, %13
+  %67 = phi i64 [ 0, %13 ], [ %60, %58 ]
+  %68 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 5
+  %69 = load i64, i64* %68, align 8
+  %70 = icmp eq i64 %69, 0
+  br i1 %70, label %142, label %71
+
+71:                                               ; preds = %66
+  %72 = load i64, i64* %10, align 8
+  %73 = sub i64 %72, %67
+  %74 = icmp ult i64 %73, %69
+  br i1 %74, label %142, label %75
+
+75:                                               ; preds = %71
+  %76 = load i8, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 59, i32 0), align 16
+  %77 = and i8 %76, 25
+  %78 = icmp eq i8 %77, 0
+  br i1 %78, label %85, label %79, !prof !2
+
+79:                                               ; preds = %75
+  %80 = tail call i32 @_ZN4base14PlatformThread9CurrentIdEv() #9
+  %81 = bitcast %"class.base::TimeTicks"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %81) #9
+  %82 = getelementptr inbounds %"class.base::TimeTicks", %"class.base::TimeTicks"* %6, i64 0, i32 0, i32 0
+  %83 = tail call i64 @_ZN4base6subtle28TimeTicksNowIgnoringOverrideEv() #9
+  store i64 %83, i64* %82, align 8
+  %84 = call i64 @_ZN20trace_event_internal37AddTraceEventWithThreadIdAndTimestampEcPKhPKcS3_yyiRKN4base9TimeTicksEPNS4_11trace_event14TraceArgumentsEj(i8 signext 88, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 59, i32 0), i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str, i64 0, i64 0), i8* null, i64 0, i64 0, i32 %80, %"class.base::TimeTicks"* nonnull dereferenceable(8) %6, %"class.base::trace_event::TraceArguments"* null, i32 0) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %81) #9
+  br label %85
+
+85:                                               ; preds = %75, %79
+  %86 = phi i8* [ null, %75 ], [ getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 59, i32 0), %79 ]
+  %87 = phi i8* [ inttoptr (i64 -6148914691236517206 to i8*), %75 ], [ getelementptr inbounds ([33 x i8], [33 x i8]* @.str, i64 0, i64 0), %79 ]
+  %88 = phi i64 [ -6148914691236517206, %75 ], [ %84, %79 ]
+  %89 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %14, align 8
+  %90 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %16, align 8
+  %91 = icmp eq %"class.std::__1::unique_ptr.7"* %89, %90
+  br i1 %91, label %132, label %94
+
+92:                                               ; preds = %94
+  %93 = icmp eq %"class.std::__1::unique_ptr.7"* %101, %90
+  br i1 %93, label %132, label %94
+
+94:                                               ; preds = %85, %92
+  %95 = phi %"class.std::__1::unique_ptr.7"* [ %101, %92 ], [ %89, %85 ]
+  %96 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %95, i64 0, i32 0, i32 0, i32 0
+  %97 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %96, align 8
+  %98 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %97, i64 0, i32 2, i32 0
+  %99 = call i32 @_ZN3gpu15FencedAllocator27GetLargestFreeOrPendingSizeEv(%"class.gpu::FencedAllocator"* %98) #9
+  %100 = icmp ult i32 %99, %1
+  %101 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %95, i64 1
+  br i1 %100, label %92, label %102
+
+102:                                              ; preds = %94
+  %103 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %95, i64 0, i32 0, i32 0, i32 0
+  %104 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %103, align 8
+  %105 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %104, i64 0, i32 2, i32 0
+  %106 = call i32 @_ZN3gpu15FencedAllocator5AllocEj(%"class.gpu::FencedAllocator"* %105, i32 %1) #9
+  %107 = icmp eq i32 %106, -1
+  br i1 %107, label %108, label %112
+
+108:                                              ; preds = %102
+  %109 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %103, align 8
+  %110 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %109, i64 0, i32 0
+  %111 = load i32, i32* %110, align 8
+  store i32 %111, i32* %2, align 4
+  br label %129
+
+112:                                              ; preds = %102
+  %113 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %104, i64 0, i32 2, i32 1
+  %114 = load i8*, i8** %113, align 8
+  %115 = zext i32 %106 to i64
+  %116 = getelementptr inbounds i8, i8* %114, i64 %115
+  %117 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %103, align 8
+  %118 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %117, i64 0, i32 0
+  %119 = load i32, i32* %118, align 8
+  store i32 %119, i32* %2, align 4
+  %120 = icmp eq i8* %116, null
+  br i1 %120, label %129, label %121
+
+121:                                              ; preds = %112
+  %122 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %103, align 8
+  %123 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %122, i64 0, i32 2, i32 1
+  %124 = bitcast i8** %123 to i64*
+  %125 = load i64, i64* %124, align 8
+  %126 = ptrtoint i8* %116 to i64
+  %127 = sub i64 %126, %125
+  %128 = trunc i64 %127 to i32
+  br label %129
+
+129:                                              ; preds = %108, %112, %121
+  %130 = phi i8* [ %116, %121 ], [ null, %112 ], [ null, %108 ]
+  %131 = phi i32 [ %128, %121 ], [ -1, %112 ], [ -1, %108 ]
+  store i32 %131, i32* %3, align 4
+  br label %132
+
+132:                                              ; preds = %92, %85, %129
+  %133 = phi i8* [ %130, %129 ], [ undef, %85 ], [ undef, %92 ]
+  %134 = phi i32 [ 1, %129 ], [ 0, %85 ], [ 0, %92 ]
+  %135 = icmp eq i8* %86, null
+  br i1 %135, label %140, label %136
+
+136:                                              ; preds = %132
+  %137 = load i8, i8* %86, align 1
+  %138 = icmp eq i8 %137, 0
+  br i1 %138, label %140, label %139
+
+139:                                              ; preds = %136
+  call void @_ZN20trace_event_internal24UpdateTraceEventDurationEPKhPKcN4base11trace_event16TraceEventHandleE(i8* nonnull %86, i8* %87, i64 %88) #9
+  br label %140
+
+140:                                              ; preds = %132, %136, %139
+  %141 = icmp eq i32 %134, 0
+  br i1 %141, label %142, label %274
+
+142:                                              ; preds = %71, %66, %140, %5
+  %143 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 6
+  %144 = load i64, i64* %143, align 8
+  %145 = icmp eq i64 %144, 0
+  br i1 %145, label %150, label %146
+
+146:                                              ; preds = %142
+  %147 = load i64, i64* %10, align 8
+  %148 = add i64 %147, %9
+  %149 = icmp ugt i64 %148, %144
+  br i1 %149, label %274, label %150
+
+150:                                              ; preds = %146, %142
+  %151 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 2
+  %152 = load %"class.gpu::CommandBufferHelper"*, %"class.gpu::CommandBufferHelper"** %151, align 8
+  %153 = getelementptr inbounds %"class.gpu::CommandBufferHelper", %"class.gpu::CommandBufferHelper"* %152, i64 0, i32 1
+  %154 = load %"class.gpu::CommandBuffer"*, %"class.gpu::CommandBuffer"** %153, align 8
+  %155 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 0
+  %156 = load i32, i32* %155, align 8
+  %157 = add i32 %1, -1
+  %158 = add i32 %157, %156
+  %159 = sub i32 0, %156
+  %160 = and i32 %158, %159
+  %161 = bitcast i32* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %161) #9
+  store i32 -1, i32* %7, align 4
+  %162 = bitcast %"class.gpu::CommandBuffer"* %154 to %"class.gpu::Buffer"* (%"class.gpu::CommandBuffer"*, i32, i32*, i8)***
+  %163 = load %"class.gpu::Buffer"* (%"class.gpu::CommandBuffer"*, i32, i32*, i8)**, %"class.gpu::Buffer"* (%"class.gpu::CommandBuffer"*, i32, i32*, i8)*** %162, align 8
+  %164 = getelementptr inbounds %"class.gpu::Buffer"* (%"class.gpu::CommandBuffer"*, i32, i32*, i8)*, %"class.gpu::Buffer"* (%"class.gpu::CommandBuffer"*, i32, i32*, i8)** %163, i64 8
+  %165 = load %"class.gpu::Buffer"* (%"class.gpu::CommandBuffer"*, i32, i32*, i8)*, %"class.gpu::Buffer"* (%"class.gpu::CommandBuffer"*, i32, i32*, i8)** %164, align 8
+  %166 = call %"class.gpu::Buffer"* %165(%"class.gpu::CommandBuffer"* %154, i32 %160, i32* nonnull %7, i8 signext %4) #9
+  %167 = load i32, i32* %7, align 4
+  %168 = icmp slt i32 %167, 0
+  br i1 %168, label %264, label %169
+
+169:                                              ; preds = %150
+  %170 = call i8* @_Znwm(i64 64) #10
+  %171 = icmp eq %"class.gpu::Buffer"* %166, null
+  br i1 %171, label %193, label %172
+
+172:                                              ; preds = %169
+  %173 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %166, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %174 = atomicrmw add i32* %173, i32 1 monotonic
+  %175 = load %"class.gpu::CommandBufferHelper"*, %"class.gpu::CommandBufferHelper"** %151, align 8
+  %176 = bitcast i8* %170 to i32*
+  store i32 %167, i32* %176, align 8
+  %177 = getelementptr inbounds i8, i8* %170, i64 8
+  %178 = bitcast i8* %177 to %"class.gpu::Buffer"**
+  store %"class.gpu::Buffer"* %166, %"class.gpu::Buffer"** %178, align 8
+  %179 = atomicrmw add i32* %173, i32 1 monotonic
+  %180 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %166, i64 0, i32 4
+  %181 = load i32, i32* %180, align 8
+  %182 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %166, i64 0, i32 3
+  %183 = bitcast i8** %182 to i64*
+  %184 = load i64, i64* %183, align 8
+  %185 = getelementptr inbounds i8, i8* %170, i64 16
+  %186 = bitcast i8* %185 to %"class.gpu::FencedAllocator"*
+  call void @_ZN3gpu15FencedAllocatorC1EjPNS_19CommandBufferHelperE(%"class.gpu::FencedAllocator"* %186, i32 %181, %"class.gpu::CommandBufferHelper"* %175) #9
+  %187 = getelementptr inbounds i8, i8* %170, i64 56
+  %188 = bitcast i8* %187 to i64*
+  store i64 %184, i64* %188, align 8
+  %189 = atomicrmw sub i32* %173, i32 1 acq_rel
+  %190 = icmp eq i32 %189, 1
+  br i1 %190, label %191, label %204
+
+191:                                              ; preds = %172
+  call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %166) #9
+  %192 = bitcast %"class.gpu::Buffer"* %166 to i8*
+  call void @_ZdlPv(i8* %192) #10
+  br label %204
+
+193:                                              ; preds = %169
+  %194 = load %"class.gpu::CommandBufferHelper"*, %"class.gpu::CommandBufferHelper"** %151, align 8
+  %195 = bitcast i8* %170 to i32*
+  store i32 %167, i32* %195, align 8
+  %196 = getelementptr inbounds i8, i8* %170, i64 8
+  %197 = bitcast i8* %196 to %"class.gpu::Buffer"**
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %197, align 8
+  %198 = load i32, i32* inttoptr (i64 24 to i32*), align 8
+  %199 = load i64, i64* inttoptr (i64 16 to i64*), align 16
+  %200 = getelementptr inbounds i8, i8* %170, i64 16
+  %201 = bitcast i8* %200 to %"class.gpu::FencedAllocator"*
+  call void @_ZN3gpu15FencedAllocatorC1EjPNS_19CommandBufferHelperE(%"class.gpu::FencedAllocator"* %201, i32 %198, %"class.gpu::CommandBufferHelper"* %194) #9
+  %202 = getelementptr inbounds i8, i8* %170, i64 56
+  %203 = bitcast i8* %202 to i64*
+  store i64 %199, i64* %203, align 8
+  br label %204
+
+204:                                              ; preds = %172, %191, %193
+  %205 = phi %"class.gpu::Buffer"** [ %178, %172 ], [ %178, %191 ], [ %197, %193 ]
+  %206 = phi i32* [ %176, %172 ], [ %176, %191 ], [ %195, %193 ]
+  %207 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %205, align 8
+  %208 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %207, i64 0, i32 4
+  %209 = load i32, i32* %208, align 8
+  %210 = zext i32 %209 to i64
+  %211 = load i64, i64* %10, align 8
+  %212 = add i64 %211, %210
+  store i64 %212, i64* %10, align 8
+  %213 = bitcast %"class.std::__1::unique_ptr.7"* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %213) #9
+  %214 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %8, i64 0, i32 0, i32 0, i32 0
+  %215 = bitcast %"class.std::__1::unique_ptr.7"* %8 to i8**
+  store i8* %170, i8** %215, align 8
+  %216 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 3, i32 0, i32 1
+  %217 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %216, align 8
+  %218 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 3, i32 0, i32 2, i32 0, i32 0
+  %219 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %218, align 8
+  %220 = icmp ult %"class.std::__1::unique_ptr.7"* %217, %219
+  br i1 %220, label %221, label %227
+
+221:                                              ; preds = %204
+  %222 = ptrtoint i8* %170 to i64
+  store %"class.gpu::MemoryChunk"* null, %"class.gpu::MemoryChunk"** %214, align 8
+  %223 = bitcast %"class.std::__1::unique_ptr.7"* %217 to i64*
+  store i64 %222, i64* %223, align 8
+  %224 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %217, i64 1
+  %225 = ptrtoint %"class.std::__1::unique_ptr.7"* %224 to i64
+  %226 = bitcast %"class.std::__1::unique_ptr.7"** %216 to i64*
+  store i64 %225, i64* %226, align 8
+  br label %229
+
+227:                                              ; preds = %204
+  %228 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 3
+  call void @_ZNSt3__16vectorINS_10unique_ptrIN3gpu11MemoryChunkENS_14default_deleteIS3_EEEENS_9allocatorIS6_EEE21__push_back_slow_pathIS6_EEvOT_(%"class.std::__1::vector.5"* %228, %"class.std::__1::unique_ptr.7"* nonnull dereferenceable(8) %8) #9
+  br label %229
+
+229:                                              ; preds = %221, %227
+  %230 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %214, align 8
+  store %"class.gpu::MemoryChunk"* null, %"class.gpu::MemoryChunk"** %214, align 8
+  %231 = icmp eq %"class.gpu::MemoryChunk"* %230, null
+  br i1 %231, label %245, label %232
+
+232:                                              ; preds = %229
+  %233 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %230, i64 0, i32 2, i32 0
+  call void @_ZN3gpu15FencedAllocatorD1Ev(%"class.gpu::FencedAllocator"* %233) #9
+  %234 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %230, i64 0, i32 1, i32 0
+  %235 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %234, align 8
+  %236 = icmp eq %"class.gpu::Buffer"* %235, null
+  br i1 %236, label %243, label %237
+
+237:                                              ; preds = %232
+  %238 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %235, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %239 = atomicrmw sub i32* %238, i32 1 acq_rel
+  %240 = icmp eq i32 %239, 1
+  br i1 %240, label %241, label %243
+
+241:                                              ; preds = %237
+  call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %235) #9
+  %242 = bitcast %"class.gpu::Buffer"* %235 to i8*
+  call void @_ZdlPv(i8* %242) #10
+  br label %243
+
+243:                                              ; preds = %241, %237, %232
+  %244 = bitcast %"class.gpu::MemoryChunk"* %230 to i8*
+  call void @_ZdlPv(i8* %244) #10
+  br label %245
+
+245:                                              ; preds = %229, %243
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %213) #9
+  %246 = getelementptr inbounds i8, i8* %170, i64 16
+  %247 = bitcast i8* %246 to %"class.gpu::FencedAllocator"*
+  %248 = call i32 @_ZN3gpu15FencedAllocator5AllocEj(%"class.gpu::FencedAllocator"* %247, i32 %1) #9
+  %249 = icmp eq i32 %248, -1
+  br i1 %249, label %250, label %252
+
+250:                                              ; preds = %245
+  %251 = load i32, i32* %206, align 8
+  store i32 %251, i32* %2, align 4
+  br label %261
+
+252:                                              ; preds = %245
+  %253 = getelementptr inbounds i8, i8* %170, i64 56
+  %254 = bitcast i8* %253 to i8**
+  %255 = load i8*, i8** %254, align 8
+  %256 = zext i32 %248 to i64
+  %257 = getelementptr inbounds i8, i8* %255, i64 %256
+  %258 = load i32, i32* %206, align 8
+  store i32 %258, i32* %2, align 4
+  %259 = icmp eq i8* %257, null
+  %260 = select i1 %259, i32 -1, i32 %248
+  br label %261
+
+261:                                              ; preds = %252, %250
+  %262 = phi i8* [ null, %250 ], [ %257, %252 ]
+  %263 = phi i32 [ -1, %250 ], [ %260, %252 ]
+  store i32 %263, i32* %3, align 4
+  br label %264
+
+264:                                              ; preds = %150, %261
+  %265 = phi i8* [ %262, %261 ], [ null, %150 ]
+  %266 = icmp eq %"class.gpu::Buffer"* %166, null
+  br i1 %266, label %273, label %267
+
+267:                                              ; preds = %264
+  %268 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %166, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %269 = atomicrmw sub i32* %268, i32 1 acq_rel
+  %270 = icmp eq i32 %269, 1
+  br i1 %270, label %271, label %273
+
+271:                                              ; preds = %267
+  call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %166) #9
+  %272 = bitcast %"class.gpu::Buffer"* %166 to i8*
+  call void @_ZdlPv(i8* %272) #10
+  br label %273
+
+273:                                              ; preds = %271, %267, %264
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %161) #9
+  br label %274
+
+274:                                              ; preds = %63, %140, %146, %273
+  %275 = phi i8* [ %265, %273 ], [ null, %146 ], [ %64, %63 ], [ %133, %140 ]
+  ret i8* %275
+}
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu19MappedMemoryManager4FreeEPv(%"class.gpu::MappedMemoryManager"* nocapture readonly, i8*) local_unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 3, i32 0, i32 0
+  %4 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %3, align 8
+  %5 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 3, i32 0, i32 1
+  %6 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %5, align 8
+  %7 = icmp eq %"class.std::__1::unique_ptr.7"* %4, %6
+  br i1 %7, label %38, label %8
+
+8:                                                ; preds = %2, %35
+  %9 = phi %"class.std::__1::unique_ptr.7"* [ %36, %35 ], [ %4, %2 ]
+  %10 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %9, i64 0, i32 0, i32 0, i32 0
+  %11 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %10, align 8
+  %12 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %11, i64 0, i32 1, i32 0
+  %13 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %12, align 8
+  %14 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %13, i64 0, i32 3
+  %15 = load i8*, i8** %14, align 8
+  %16 = icmp ugt i8* %15, %1
+  br i1 %16, label %35, label %17
+
+17:                                               ; preds = %8
+  %18 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %13, i64 0, i32 4
+  %19 = load i32, i32* %18, align 8
+  %20 = zext i32 %19 to i64
+  %21 = getelementptr inbounds i8, i8* %15, i64 %20
+  %22 = icmp ugt i8* %21, %1
+  br i1 %22, label %23, label %35
+
+23:                                               ; preds = %17
+  %24 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %11, i64 0, i32 2, i32 0
+  %25 = icmp eq i8* %1, null
+  br i1 %25, label %33, label %26
+
+26:                                               ; preds = %23
+  %27 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %11, i64 0, i32 2, i32 1
+  %28 = bitcast i8** %27 to i64*
+  %29 = load i64, i64* %28, align 8
+  %30 = ptrtoint i8* %1 to i64
+  %31 = sub i64 %30, %29
+  %32 = trunc i64 %31 to i32
+  br label %33
+
+33:                                               ; preds = %23, %26
+  %34 = phi i32 [ %32, %26 ], [ -1, %23 ]
+  tail call void @_ZN3gpu15FencedAllocator4FreeEj(%"class.gpu::FencedAllocator"* %24, i32 %34) #9
+  br label %38
+
+35:                                               ; preds = %8, %17
+  %36 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %9, i64 1
+  %37 = icmp eq %"class.std::__1::unique_ptr.7"* %36, %6
+  br i1 %37, label %38, label %8
+
+38:                                               ; preds = %35, %2, %33
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu19MappedMemoryManager16FreePendingTokenEPvi(%"class.gpu::MappedMemoryManager"* nocapture readonly, i8*, i32) local_unnamed_addr #0 align 2 {
+  %4 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 3, i32 0, i32 0
+  %5 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %4, align 8
+  %6 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 3, i32 0, i32 1
+  %7 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %6, align 8
+  %8 = icmp eq %"class.std::__1::unique_ptr.7"* %5, %7
+  br i1 %8, label %39, label %9
+
+9:                                                ; preds = %3, %36
+  %10 = phi %"class.std::__1::unique_ptr.7"* [ %37, %36 ], [ %5, %3 ]
+  %11 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %10, i64 0, i32 0, i32 0, i32 0
+  %12 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %11, align 8
+  %13 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %12, i64 0, i32 1, i32 0
+  %14 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %13, align 8
+  %15 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %14, i64 0, i32 3
+  %16 = load i8*, i8** %15, align 8
+  %17 = icmp ugt i8* %16, %1
+  br i1 %17, label %36, label %18
+
+18:                                               ; preds = %9
+  %19 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %14, i64 0, i32 4
+  %20 = load i32, i32* %19, align 8
+  %21 = zext i32 %20 to i64
+  %22 = getelementptr inbounds i8, i8* %16, i64 %21
+  %23 = icmp ugt i8* %22, %1
+  br i1 %23, label %24, label %36
+
+24:                                               ; preds = %18
+  %25 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %12, i64 0, i32 2, i32 0
+  %26 = icmp eq i8* %1, null
+  br i1 %26, label %34, label %27
+
+27:                                               ; preds = %24
+  %28 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %12, i64 0, i32 2, i32 1
+  %29 = bitcast i8** %28 to i64*
+  %30 = load i64, i64* %29, align 8
+  %31 = ptrtoint i8* %1 to i64
+  %32 = sub i64 %31, %30
+  %33 = trunc i64 %32 to i32
+  br label %34
+
+34:                                               ; preds = %24, %27
+  %35 = phi i32 [ %33, %27 ], [ -1, %24 ]
+  tail call void @_ZN3gpu15FencedAllocator16FreePendingTokenEji(%"class.gpu::FencedAllocator"* %25, i32 %35, i32 %2) #9
+  br label %39
+
+36:                                               ; preds = %9, %18
+  %37 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %10, i64 1
+  %38 = icmp eq %"class.std::__1::unique_ptr.7"* %37, %7
+  br i1 %38, label %39, label %9
+
+39:                                               ; preds = %36, %3, %34
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu19MappedMemoryManager10FreeUnusedEv(%"class.gpu::MappedMemoryManager"*) local_unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 2
+  %3 = load %"class.gpu::CommandBufferHelper"*, %"class.gpu::CommandBufferHelper"** %2, align 8
+  %4 = getelementptr inbounds %"class.gpu::CommandBufferHelper", %"class.gpu::CommandBufferHelper"* %3, i64 0, i32 1
+  %5 = load %"class.gpu::CommandBuffer"*, %"class.gpu::CommandBuffer"** %4, align 8
+  %6 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 3
+  %7 = getelementptr inbounds %"class.std::__1::vector.5", %"class.std::__1::vector.5"* %6, i64 0, i32 0, i32 0
+  %8 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %7, align 8
+  %9 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 3, i32 0, i32 1
+  %10 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %9, align 8
+  %11 = icmp eq %"class.std::__1::unique_ptr.7"* %10, %8
+  br i1 %11, label %47, label %12
+
+12:                                               ; preds = %1
+  %13 = bitcast %"class.gpu::CommandBuffer"* %5 to void (%"class.gpu::CommandBuffer"*, i32)***
+  %14 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 4
+  br label %15
+
+15:                                               ; preds = %12, %43
+  %16 = phi %"class.std::__1::unique_ptr.7"* [ %8, %12 ], [ %44, %43 ]
+  %17 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %16, i64 0, i32 0, i32 0, i32 0
+  %18 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %17, align 8
+  %19 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %18, i64 0, i32 2, i32 0
+  tail call void @_ZN3gpu15FencedAllocator10FreeUnusedEv(%"class.gpu::FencedAllocator"* %19) #9
+  %20 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %18, i64 0, i32 2, i32 0, i32 2
+  %21 = load i32, i32* %20, align 8
+  %22 = icmp eq i32 %21, 0
+  br i1 %22, label %23, label %41
+
+23:                                               ; preds = %15
+  %24 = tail call zeroext i1 @_ZN3gpu15FencedAllocator18InUseOrFreePendingEv(%"class.gpu::FencedAllocator"* %19) #9
+  br i1 %24, label %25, label %27
+
+25:                                               ; preds = %23
+  %26 = load %"class.gpu::CommandBufferHelper"*, %"class.gpu::CommandBufferHelper"** %2, align 8
+  tail call void @_ZN3gpu19CommandBufferHelper15OrderingBarrierEv(%"class.gpu::CommandBufferHelper"* %26) #9
+  br label %27
+
+27:                                               ; preds = %25, %23
+  %28 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %18, i64 0, i32 0
+  %29 = load i32, i32* %28, align 8
+  %30 = load void (%"class.gpu::CommandBuffer"*, i32)**, void (%"class.gpu::CommandBuffer"*, i32)*** %13, align 8
+  %31 = getelementptr inbounds void (%"class.gpu::CommandBuffer"*, i32)*, void (%"class.gpu::CommandBuffer"*, i32)** %30, i64 9
+  %32 = load void (%"class.gpu::CommandBuffer"*, i32)*, void (%"class.gpu::CommandBuffer"*, i32)** %31, align 8
+  tail call void %32(%"class.gpu::CommandBuffer"* %5, i32 %29) #9
+  %33 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %18, i64 0, i32 1, i32 0
+  %34 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %33, align 8
+  %35 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %34, i64 0, i32 4
+  %36 = load i32, i32* %35, align 8
+  %37 = zext i32 %36 to i64
+  %38 = load i64, i64* %14, align 8
+  %39 = sub i64 %38, %37
+  store i64 %39, i64* %14, align 8
+  %40 = tail call %"class.std::__1::unique_ptr.7"* @_ZNSt3__16vectorINS_10unique_ptrIN3gpu11MemoryChunkENS_14default_deleteIS3_EEEENS_9allocatorIS6_EEE5eraseENS_11__wrap_iterIPKS6_EE(%"class.std::__1::vector.5"* %6, %"class.std::__1::unique_ptr.7"* %16)
+  br label %43
+
+41:                                               ; preds = %15
+  %42 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %16, i64 1
+  br label %43
+
+43:                                               ; preds = %41, %27
+  %44 = phi %"class.std::__1::unique_ptr.7"* [ %40, %27 ], [ %42, %41 ]
+  %45 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %9, align 8
+  %46 = icmp eq %"class.std::__1::unique_ptr.7"* %45, %44
+  br i1 %46, label %47, label %15
+
+47:                                               ; preds = %43, %1
+  ret void
+}
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden %"class.std::__1::unique_ptr.7"* @_ZNSt3__16vectorINS_10unique_ptrIN3gpu11MemoryChunkENS_14default_deleteIS3_EEEENS_9allocatorIS6_EEE5eraseENS_11__wrap_iterIPKS6_EE(%"class.std::__1::vector.5"*, %"class.std::__1::unique_ptr.7"*) local_unnamed_addr #4 comdat align 2 {
+  %3 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %1, i64 1
+  %4 = getelementptr inbounds %"class.std::__1::vector.5", %"class.std::__1::vector.5"* %0, i64 0, i32 0, i32 1
+  %5 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %4, align 8
+  %6 = icmp eq %"class.std::__1::unique_ptr.7"* %3, %5
+  br i1 %6, label %37, label %7
+
+7:                                                ; preds = %2, %30
+  %8 = phi %"class.std::__1::unique_ptr.7"* [ %32, %30 ], [ %1, %2 ]
+  %9 = phi %"class.std::__1::unique_ptr.7"* [ %31, %30 ], [ %3, %2 ]
+  %10 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %9, i64 0, i32 0, i32 0, i32 0
+  %11 = bitcast %"class.std::__1::unique_ptr.7"* %9 to i64*
+  %12 = load i64, i64* %11, align 8
+  store %"class.gpu::MemoryChunk"* null, %"class.gpu::MemoryChunk"** %10, align 8
+  %13 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %8, i64 0, i32 0, i32 0, i32 0
+  %14 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %13, align 8
+  %15 = bitcast %"class.std::__1::unique_ptr.7"* %8 to i64*
+  store i64 %12, i64* %15, align 8
+  %16 = icmp eq %"class.gpu::MemoryChunk"* %14, null
+  br i1 %16, label %30, label %17
+
+17:                                               ; preds = %7
+  %18 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %14, i64 0, i32 2, i32 0
+  tail call void @_ZN3gpu15FencedAllocatorD1Ev(%"class.gpu::FencedAllocator"* %18) #9
+  %19 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %14, i64 0, i32 1, i32 0
+  %20 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %19, align 8
+  %21 = icmp eq %"class.gpu::Buffer"* %20, null
+  br i1 %21, label %28, label %22
+
+22:                                               ; preds = %17
+  %23 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %20, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %24 = atomicrmw sub i32* %23, i32 1 acq_rel
+  %25 = icmp eq i32 %24, 1
+  br i1 %25, label %26, label %28
+
+26:                                               ; preds = %22
+  tail call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %20) #9
+  %27 = bitcast %"class.gpu::Buffer"* %20 to i8*
+  tail call void @_ZdlPv(i8* %27) #10
+  br label %28
+
+28:                                               ; preds = %26, %22, %17
+  %29 = bitcast %"class.gpu::MemoryChunk"* %14 to i8*
+  tail call void @_ZdlPv(i8* %29) #10
+  br label %30
+
+30:                                               ; preds = %28, %7
+  %31 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %9, i64 1
+  %32 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %8, i64 1
+  %33 = icmp eq %"class.std::__1::unique_ptr.7"* %31, %5
+  br i1 %33, label %34, label %7
+
+34:                                               ; preds = %30
+  %35 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %4, align 8
+  %36 = icmp eq %"class.std::__1::unique_ptr.7"* %35, %32
+  br i1 %36, label %61, label %37
+
+37:                                               ; preds = %2, %34
+  %38 = phi %"class.std::__1::unique_ptr.7"* [ %32, %34 ], [ %1, %2 ]
+  %39 = phi %"class.std::__1::unique_ptr.7"* [ %35, %34 ], [ %3, %2 ]
+  br label %40
+
+40:                                               ; preds = %37, %59
+  %41 = phi %"class.std::__1::unique_ptr.7"* [ %42, %59 ], [ %39, %37 ]
+  %42 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %41, i64 -1
+  %43 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %42, i64 0, i32 0, i32 0, i32 0
+  %44 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %43, align 8
+  store %"class.gpu::MemoryChunk"* null, %"class.gpu::MemoryChunk"** %43, align 8
+  %45 = icmp eq %"class.gpu::MemoryChunk"* %44, null
+  br i1 %45, label %59, label %46
+
+46:                                               ; preds = %40
+  %47 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %44, i64 0, i32 2, i32 0
+  tail call void @_ZN3gpu15FencedAllocatorD1Ev(%"class.gpu::FencedAllocator"* %47) #9
+  %48 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %44, i64 0, i32 1, i32 0
+  %49 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %48, align 8
+  %50 = icmp eq %"class.gpu::Buffer"* %49, null
+  br i1 %50, label %57, label %51
+
+51:                                               ; preds = %46
+  %52 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %49, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %53 = atomicrmw sub i32* %52, i32 1 acq_rel
+  %54 = icmp eq i32 %53, 1
+  br i1 %54, label %55, label %57
+
+55:                                               ; preds = %51
+  tail call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %49) #9
+  %56 = bitcast %"class.gpu::Buffer"* %49 to i8*
+  tail call void @_ZdlPv(i8* %56) #10
+  br label %57
+
+57:                                               ; preds = %55, %51, %46
+  %58 = bitcast %"class.gpu::MemoryChunk"* %44 to i8*
+  tail call void @_ZdlPv(i8* %58) #10
+  br label %59
+
+59:                                               ; preds = %57, %40
+  %60 = icmp eq %"class.std::__1::unique_ptr.7"* %42, %38
+  br i1 %60, label %61, label %40
+
+61:                                               ; preds = %59, %34
+  %62 = phi %"class.std::__1::unique_ptr.7"* [ %32, %34 ], [ %38, %59 ]
+  store %"class.std::__1::unique_ptr.7"* %62, %"class.std::__1::unique_ptr.7"** %4, align 8
+  ret %"class.std::__1::unique_ptr.7"* %1
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN3gpu19MappedMemoryManager12OnMemoryDumpERKN4base11trace_event14MemoryDumpArgsEPNS2_17ProcessMemoryDumpE(%"class.gpu::MappedMemoryManager"* nocapture readonly, %"struct.base::trace_event::MemoryDumpArgs"* nocapture readonly dereferenceable(16), %"class.base::trace_event::ProcessMemoryDump"*) local_unnamed_addr #0 align 2 {
+  %4 = alloca %"class.std::__1::basic_string", align 8
+  %5 = alloca %"class.std::__1::basic_string", align 8
+  %6 = alloca %"class.base::UnguessableToken", align 8
+  %7 = alloca %"class.base::trace_event::MemoryAllocatorDumpGuid", align 8
+  %8 = getelementptr inbounds %"struct.base::trace_event::MemoryDumpArgs", %"struct.base::trace_event::MemoryDumpArgs"* %1, i64 0, i32 0
+  %9 = load i32, i32* %8, align 8
+  %10 = icmp eq i32 %9, 0
+  br i1 %10, label %11, label %27
+
+11:                                               ; preds = %3
+  %12 = bitcast %"class.std::__1::basic_string"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %12) #9
+  %13 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 7
+  %14 = bitcast %"class.std::__1::basic_string"* %4 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %14, i8 -86, i64 24, i1 false)
+  %15 = load i32, i32* %13, align 8
+  call void (%"class.std::__1::basic_string"*, i8*, ...) @_ZN4base12StringPrintfEPKcz(%"class.std::__1::basic_string"* nonnull sret %4, i8* getelementptr inbounds ([29 x i8], [29 x i8]* @.str.1, i64 0, i64 0), i32 %15) #9
+  %16 = call %"class.base::trace_event::MemoryAllocatorDump"* @_ZN4base11trace_event17ProcessMemoryDump19CreateAllocatorDumpERKNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE(%"class.base::trace_event::ProcessMemoryDump"* %2, %"class.std::__1::basic_string"* nonnull dereferenceable(24) %4) #9
+  %17 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 4
+  %18 = load i64, i64* %17, align 8
+  call void @_ZN4base11trace_event19MemoryAllocatorDump9AddScalarEPKcS3_m(%"class.base::trace_event::MemoryAllocatorDump"* %16, i8* getelementptr inbounds ([0 x i8], [0 x i8]* @_ZN4base11trace_event19MemoryAllocatorDump9kNameSizeE, i64 0, i64 0), i8* getelementptr inbounds ([0 x i8], [0 x i8]* @_ZN4base11trace_event19MemoryAllocatorDump11kUnitsBytesE, i64 0, i64 0), i64 %18) #9
+  %19 = bitcast %"class.std::__1::basic_string"* %4 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %20 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %19, i64 0, i32 1, i32 0
+  %21 = load i8, i8* %20, align 1
+  %22 = icmp slt i8 %21, 0
+  br i1 %22, label %23, label %26
+
+23:                                               ; preds = %11
+  %24 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %4, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %25 = load i8*, i8** %24, align 8
+  call void @_ZdlPv(i8* %25) #10
+  br label %26
+
+26:                                               ; preds = %11, %23
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %12) #9
+  br label %98
+
+27:                                               ; preds = %3
+  %28 = tail call %"class.base::trace_event::MemoryDumpManager"* @_ZN4base11trace_event17MemoryDumpManager11GetInstanceEv() #9
+  %29 = getelementptr inbounds %"class.base::trace_event::MemoryDumpManager", %"class.base::trace_event::MemoryDumpManager"* %28, i64 0, i32 7
+  %30 = load i64, i64* %29, align 8
+  %31 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 3, i32 0, i32 0
+  %32 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %31, align 8
+  %33 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 3, i32 0, i32 1
+  %34 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %33, align 8
+  %35 = icmp eq %"class.std::__1::unique_ptr.7"* %32, %34
+  br i1 %35, label %98, label %36
+
+36:                                               ; preds = %27
+  %37 = bitcast %"class.std::__1::basic_string"* %5 to i8*
+  %38 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %5, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %39 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 7
+  %40 = bitcast %"class.base::UnguessableToken"* %6 to i8*
+  %41 = getelementptr inbounds %"class.base::UnguessableToken", %"class.base::UnguessableToken"* %6, i64 0, i32 0, i32 0
+  %42 = getelementptr inbounds %"class.base::UnguessableToken", %"class.base::UnguessableToken"* %6, i64 0, i32 0, i32 1
+  %43 = bitcast %"class.base::trace_event::MemoryAllocatorDumpGuid"* %7 to i8*
+  %44 = getelementptr inbounds %"class.base::trace_event::MemoryAllocatorDumpGuid", %"class.base::trace_event::MemoryAllocatorDumpGuid"* %7, i64 0, i32 0
+  %45 = bitcast %"class.std::__1::basic_string"* %5 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %46 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %45, i64 0, i32 1, i32 0
+  %47 = bitcast %"class.std::__1::basic_string"* %5 to i8*
+  %48 = bitcast %"class.base::UnguessableToken"* %6 to i8*
+  br label %49
+
+49:                                               ; preds = %36, %95
+  %50 = phi %"class.std::__1::unique_ptr.7"* [ %32, %36 ], [ %96, %95 ]
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %37) #9
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %47, i8 -86, i64 24, i1 false)
+  %51 = load i32, i32* %39, align 8
+  %52 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %50, i64 0, i32 0, i32 0, i32 0
+  %53 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %52, align 8
+  %54 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %53, i64 0, i32 0
+  %55 = load i32, i32* %54, align 8
+  call void (%"class.std::__1::basic_string"*, i8*, ...) @_ZN4base12StringPrintfEPKcz(%"class.std::__1::basic_string"* nonnull sret %5, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.2, i64 0, i64 0), i32 %51, i32 %55) #9
+  %56 = call %"class.base::trace_event::MemoryAllocatorDump"* @_ZN4base11trace_event17ProcessMemoryDump19CreateAllocatorDumpERKNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE(%"class.base::trace_event::ProcessMemoryDump"* %2, %"class.std::__1::basic_string"* nonnull dereferenceable(24) %5) #9
+  %57 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %52, align 8
+  %58 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %57, i64 0, i32 1, i32 0
+  %59 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %58, align 8
+  %60 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %59, i64 0, i32 4
+  %61 = load i32, i32* %60, align 8
+  %62 = zext i32 %61 to i64
+  call void @_ZN4base11trace_event19MemoryAllocatorDump9AddScalarEPKcS3_m(%"class.base::trace_event::MemoryAllocatorDump"* %56, i8* getelementptr inbounds ([0 x i8], [0 x i8]* @_ZN4base11trace_event19MemoryAllocatorDump9kNameSizeE, i64 0, i64 0), i8* getelementptr inbounds ([0 x i8], [0 x i8]* @_ZN4base11trace_event19MemoryAllocatorDump11kUnitsBytesE, i64 0, i64 0), i64 %62) #9
+  %63 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %52, align 8
+  %64 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %63, i64 0, i32 2, i32 0
+  %65 = call i32 @_ZN3gpu15FencedAllocator11GetFreeSizeEv(%"class.gpu::FencedAllocator"* %64) #9
+  %66 = zext i32 %65 to i64
+  call void @_ZN4base11trace_event19MemoryAllocatorDump9AddScalarEPKcS3_m(%"class.base::trace_event::MemoryAllocatorDump"* %56, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @.str.3, i64 0, i64 0), i8* getelementptr inbounds ([0 x i8], [0 x i8]* @_ZN4base11trace_event19MemoryAllocatorDump11kUnitsBytesE, i64 0, i64 0), i64 %66) #9
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %40) #9
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %48, i8 -86, i64 16, i1 false)
+  %67 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %52, align 8
+  %68 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %67, i64 0, i32 1, i32 0
+  %69 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %68, align 8
+  %70 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %69, i64 0, i32 2, i32 0, i32 0, i32 0
+  %71 = load %"class.gpu::BufferBacking"*, %"class.gpu::BufferBacking"** %70, align 8
+  %72 = bitcast %"class.gpu::BufferBacking"* %71 to { i64, i64 } (%"class.gpu::BufferBacking"*)***
+  %73 = load { i64, i64 } (%"class.gpu::BufferBacking"*)**, { i64, i64 } (%"class.gpu::BufferBacking"*)*** %72, align 8
+  %74 = getelementptr inbounds { i64, i64 } (%"class.gpu::BufferBacking"*)*, { i64, i64 } (%"class.gpu::BufferBacking"*)** %73, i64 3
+  %75 = load { i64, i64 } (%"class.gpu::BufferBacking"*)*, { i64, i64 } (%"class.gpu::BufferBacking"*)** %74, align 8
+  %76 = call { i64, i64 } %75(%"class.gpu::BufferBacking"* %71) #9
+  %77 = extractvalue { i64, i64 } %76, 0
+  store i64 %77, i64* %41, align 8
+  %78 = extractvalue { i64, i64 } %76, 1
+  store i64 %78, i64* %42, align 8
+  %79 = or i64 %77, %78
+  %80 = icmp eq i64 %79, 0
+  br i1 %80, label %83, label %81
+
+81:                                               ; preds = %49
+  %82 = getelementptr inbounds %"class.base::trace_event::MemoryAllocatorDump", %"class.base::trace_event::MemoryAllocatorDump"* %56, i64 0, i32 1
+  call void @_ZN4base11trace_event17ProcessMemoryDump31CreateSharedMemoryOwnershipEdgeERKNS0_23MemoryAllocatorDumpGuidERKNS_16UnguessableTokenEi(%"class.base::trace_event::ProcessMemoryDump"* %2, %"class.base::trace_event::MemoryAllocatorDumpGuid"* dereferenceable(8) %82, %"class.base::UnguessableToken"* nonnull dereferenceable(16) %6, i32 2) #9
+  br label %90
+
+83:                                               ; preds = %49
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %43) #9
+  store i64 -6148914691236517206, i64* %44, align 8
+  %84 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %52, align 8
+  %85 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %84, i64 0, i32 0
+  %86 = load i32, i32* %85, align 8
+  %87 = call i64 @_ZN3gpu23GetBufferGUIDForTracingEmi(i64 %30, i32 %86) #9
+  store i64 %87, i64* %44, align 8
+  %88 = call %"class.base::trace_event::MemoryAllocatorDump"* @_ZN4base11trace_event17ProcessMemoryDump31CreateSharedGlobalAllocatorDumpERKNS0_23MemoryAllocatorDumpGuidE(%"class.base::trace_event::ProcessMemoryDump"* %2, %"class.base::trace_event::MemoryAllocatorDumpGuid"* nonnull dereferenceable(8) %7) #9
+  %89 = getelementptr inbounds %"class.base::trace_event::MemoryAllocatorDump", %"class.base::trace_event::MemoryAllocatorDump"* %56, i64 0, i32 1
+  call void @_ZN4base11trace_event17ProcessMemoryDump16AddOwnershipEdgeERKNS0_23MemoryAllocatorDumpGuidES4_i(%"class.base::trace_event::ProcessMemoryDump"* %2, %"class.base::trace_event::MemoryAllocatorDumpGuid"* dereferenceable(8) %89, %"class.base::trace_event::MemoryAllocatorDumpGuid"* nonnull dereferenceable(8) %7, i32 2) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %43) #9
+  br label %90
+
+90:                                               ; preds = %83, %81
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %40) #9
+  %91 = load i8, i8* %46, align 1
+  %92 = icmp slt i8 %91, 0
+  br i1 %92, label %93, label %95
+
+93:                                               ; preds = %90
+  %94 = load i8*, i8** %38, align 8
+  call void @_ZdlPv(i8* %94) #10
+  br label %95
+
+95:                                               ; preds = %90, %93
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %37) #9
+  %96 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %50, i64 1
+  %97 = icmp eq %"class.std::__1::unique_ptr.7"* %96, %34
+  br i1 %97, label %98, label %49
+
+98:                                               ; preds = %95, %27, %26
+  ret i1 true
+}
+
+declare void @_ZN4base12StringPrintfEPKcz(%"class.std::__1::basic_string"* sret, i8*, ...) local_unnamed_addr #1
+
+declare %"class.base::trace_event::MemoryAllocatorDump"* @_ZN4base11trace_event17ProcessMemoryDump19CreateAllocatorDumpERKNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE(%"class.base::trace_event::ProcessMemoryDump"*, %"class.std::__1::basic_string"* dereferenceable(24)) local_unnamed_addr #1
+
+declare void @_ZN4base11trace_event19MemoryAllocatorDump9AddScalarEPKcS3_m(%"class.base::trace_event::MemoryAllocatorDump"*, i8*, i8*, i64) local_unnamed_addr #1
+
+declare %"class.base::trace_event::MemoryDumpManager"* @_ZN4base11trace_event17MemoryDumpManager11GetInstanceEv() local_unnamed_addr #1
+
+declare void @_ZN4base11trace_event17ProcessMemoryDump31CreateSharedMemoryOwnershipEdgeERKNS0_23MemoryAllocatorDumpGuidERKNS_16UnguessableTokenEi(%"class.base::trace_event::ProcessMemoryDump"*, %"class.base::trace_event::MemoryAllocatorDumpGuid"* dereferenceable(8), %"class.base::UnguessableToken"* dereferenceable(16), i32) local_unnamed_addr #1
+
+declare i64 @_ZN3gpu23GetBufferGUIDForTracingEmi(i64, i32) local_unnamed_addr #1
+
+declare %"class.base::trace_event::MemoryAllocatorDump"* @_ZN4base11trace_event17ProcessMemoryDump31CreateSharedGlobalAllocatorDumpERKNS0_23MemoryAllocatorDumpGuidE(%"class.base::trace_event::ProcessMemoryDump"*, %"class.base::trace_event::MemoryAllocatorDumpGuid"* dereferenceable(8)) local_unnamed_addr #1
+
+declare void @_ZN4base11trace_event17ProcessMemoryDump16AddOwnershipEdgeERKNS0_23MemoryAllocatorDumpGuidES4_i(%"class.base::trace_event::ProcessMemoryDump"*, %"class.base::trace_event::MemoryAllocatorDumpGuid"* dereferenceable(8), %"class.base::trace_event::MemoryAllocatorDumpGuid"* dereferenceable(8), i32) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @_ZN3gpu19MappedMemoryManager23GetPointerStatusForTestEPvPi(%"class.gpu::MappedMemoryManager"* nocapture readonly, i8*, i32*) local_unnamed_addr #0 align 2 {
+  %4 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 3, i32 0, i32 0
+  %5 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %4, align 8
+  %6 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %0, i64 0, i32 3, i32 0, i32 1
+  %7 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %6, align 8
+  %8 = icmp eq %"class.std::__1::unique_ptr.7"* %5, %7
+  br i1 %8, label %40, label %9
+
+9:                                                ; preds = %3, %34
+  %10 = phi %"class.std::__1::unique_ptr.7"* [ %35, %34 ], [ %5, %3 ]
+  %11 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %10, i64 0, i32 0, i32 0, i32 0
+  %12 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %11, align 8
+  %13 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %12, i64 0, i32 1, i32 0
+  %14 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %13, align 8
+  %15 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %14, i64 0, i32 3
+  %16 = load i8*, i8** %15, align 8
+  %17 = icmp ugt i8* %16, %1
+  br i1 %17, label %34, label %18
+
+18:                                               ; preds = %9
+  %19 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %14, i64 0, i32 4
+  %20 = load i32, i32* %19, align 8
+  %21 = zext i32 %20 to i64
+  %22 = getelementptr inbounds i8, i8* %16, i64 %21
+  %23 = icmp ugt i8* %22, %1
+  br i1 %23, label %24, label %34
+
+24:                                               ; preds = %18
+  %25 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %12, i64 0, i32 2, i32 0
+  %26 = icmp eq i8* %1, null
+  br i1 %26, label %37, label %27
+
+27:                                               ; preds = %24
+  %28 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %12, i64 0, i32 2, i32 1
+  %29 = bitcast i8** %28 to i64*
+  %30 = load i64, i64* %29, align 8
+  %31 = ptrtoint i8* %1 to i64
+  %32 = sub i64 %31, %30
+  %33 = trunc i64 %32 to i32
+  br label %37
+
+34:                                               ; preds = %9, %18
+  %35 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %10, i64 1
+  %36 = icmp eq %"class.std::__1::unique_ptr.7"* %35, %7
+  br i1 %36, label %40, label %9
+
+37:                                               ; preds = %24, %27
+  %38 = phi i32 [ %33, %27 ], [ -1, %24 ]
+  %39 = tail call i32 @_ZN3gpu15FencedAllocator21GetBlockStatusForTestEjPi(%"class.gpu::FencedAllocator"* %25, i32 %38, i32* %2) #9
+  br label %40
+
+40:                                               ; preds = %34, %3, %37
+  %41 = phi i32 [ %39, %37 ], [ 1, %3 ], [ 1, %34 ]
+  ret i32 %41
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu21ScopedMappedMemoryPtr7ReleaseEv(%"class.gpu::ScopedMappedMemoryPtr"* nocapture) local_unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.gpu::ScopedMappedMemoryPtr", %"class.gpu::ScopedMappedMemoryPtr"* %0, i64 0, i32 0
+  %3 = load i8*, i8** %2, align 8
+  %4 = icmp eq i8* %3, null
+  br i1 %4, label %49, label %5
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"class.gpu::ScopedMappedMemoryPtr", %"class.gpu::ScopedMappedMemoryPtr"* %0, i64 0, i32 6
+  %7 = load %"class.gpu::MappedMemoryManager"*, %"class.gpu::MappedMemoryManager"** %6, align 8
+  %8 = getelementptr inbounds %"class.gpu::ScopedMappedMemoryPtr", %"class.gpu::ScopedMappedMemoryPtr"* %0, i64 0, i32 5
+  %9 = load %"class.gpu::CommandBufferHelper"*, %"class.gpu::CommandBufferHelper"** %8, align 8
+  %10 = tail call i32 @_ZN3gpu19CommandBufferHelper11InsertTokenEv(%"class.gpu::CommandBufferHelper"* %9) #9
+  %11 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %7, i64 0, i32 3, i32 0, i32 0
+  %12 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %11, align 8
+  %13 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %7, i64 0, i32 3, i32 0, i32 1
+  %14 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %13, align 8
+  %15 = icmp eq %"class.std::__1::unique_ptr.7"* %12, %14
+  br i1 %15, label %42, label %16
+
+16:                                               ; preds = %5, %39
+  %17 = phi %"class.std::__1::unique_ptr.7"* [ %40, %39 ], [ %12, %5 ]
+  %18 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %17, i64 0, i32 0, i32 0, i32 0
+  %19 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %18, align 8
+  %20 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %19, i64 0, i32 1, i32 0
+  %21 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %20, align 8
+  %22 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %21, i64 0, i32 3
+  %23 = load i8*, i8** %22, align 8
+  %24 = icmp ugt i8* %23, %3
+  br i1 %24, label %39, label %25
+
+25:                                               ; preds = %16
+  %26 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %21, i64 0, i32 4
+  %27 = load i32, i32* %26, align 8
+  %28 = zext i32 %27 to i64
+  %29 = getelementptr inbounds i8, i8* %23, i64 %28
+  %30 = icmp ugt i8* %29, %3
+  br i1 %30, label %31, label %39
+
+31:                                               ; preds = %25
+  %32 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %19, i64 0, i32 2, i32 0
+  %33 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %19, i64 0, i32 2, i32 1
+  %34 = bitcast i8** %33 to i64*
+  %35 = load i64, i64* %34, align 8
+  %36 = ptrtoint i8* %3 to i64
+  %37 = sub i64 %36, %35
+  %38 = trunc i64 %37 to i32
+  tail call void @_ZN3gpu15FencedAllocator16FreePendingTokenEji(%"class.gpu::FencedAllocator"* %32, i32 %38, i32 %10) #9
+  br label %42
+
+39:                                               ; preds = %25, %16
+  %40 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %17, i64 1
+  %41 = icmp eq %"class.std::__1::unique_ptr.7"* %40, %14
+  br i1 %41, label %42, label %16
+
+42:                                               ; preds = %39, %5, %31
+  %43 = getelementptr inbounds %"class.gpu::ScopedMappedMemoryPtr", %"class.gpu::ScopedMappedMemoryPtr"* %0, i64 0, i32 4
+  %44 = bitcast %"class.gpu::ScopedMappedMemoryPtr"* %0 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %44, i8 0, i64 20, i1 false)
+  %45 = load i8, i8* %43, align 4, !range !3
+  %46 = icmp eq i8 %45, 0
+  br i1 %46, label %49, label %47
+
+47:                                               ; preds = %42
+  %48 = load %"class.gpu::CommandBufferHelper"*, %"class.gpu::CommandBufferHelper"** %8, align 8
+  tail call void @_ZN3gpu19CommandBufferHelper5FlushEv(%"class.gpu::CommandBufferHelper"* %48) #9
+  br label %49
+
+49:                                               ; preds = %42, %1, %47
+  ret void
+}
+
+declare i32 @_ZN3gpu19CommandBufferHelper11InsertTokenEv(%"class.gpu::CommandBufferHelper"*) local_unnamed_addr #1
+
+declare void @_ZN3gpu19CommandBufferHelper5FlushEv(%"class.gpu::CommandBufferHelper"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu21ScopedMappedMemoryPtr5ResetEj(%"class.gpu::ScopedMappedMemoryPtr"* nocapture, i32) local_unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.gpu::ScopedMappedMemoryPtr", %"class.gpu::ScopedMappedMemoryPtr"* %0, i64 0, i32 0
+  %4 = load i8*, i8** %3, align 8
+  %5 = icmp eq i8* %4, null
+  br i1 %5, label %50, label %6
+
+6:                                                ; preds = %2
+  %7 = getelementptr inbounds %"class.gpu::ScopedMappedMemoryPtr", %"class.gpu::ScopedMappedMemoryPtr"* %0, i64 0, i32 6
+  %8 = load %"class.gpu::MappedMemoryManager"*, %"class.gpu::MappedMemoryManager"** %7, align 8
+  %9 = getelementptr inbounds %"class.gpu::ScopedMappedMemoryPtr", %"class.gpu::ScopedMappedMemoryPtr"* %0, i64 0, i32 5
+  %10 = load %"class.gpu::CommandBufferHelper"*, %"class.gpu::CommandBufferHelper"** %9, align 8
+  %11 = tail call i32 @_ZN3gpu19CommandBufferHelper11InsertTokenEv(%"class.gpu::CommandBufferHelper"* %10) #9
+  %12 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %8, i64 0, i32 3, i32 0, i32 0
+  %13 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %12, align 8
+  %14 = getelementptr inbounds %"class.gpu::MappedMemoryManager", %"class.gpu::MappedMemoryManager"* %8, i64 0, i32 3, i32 0, i32 1
+  %15 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %14, align 8
+  %16 = icmp eq %"class.std::__1::unique_ptr.7"* %13, %15
+  br i1 %16, label %43, label %17
+
+17:                                               ; preds = %6, %40
+  %18 = phi %"class.std::__1::unique_ptr.7"* [ %41, %40 ], [ %13, %6 ]
+  %19 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %18, i64 0, i32 0, i32 0, i32 0
+  %20 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %19, align 8
+  %21 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %20, i64 0, i32 1, i32 0
+  %22 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %21, align 8
+  %23 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %22, i64 0, i32 3
+  %24 = load i8*, i8** %23, align 8
+  %25 = icmp ugt i8* %24, %4
+  br i1 %25, label %40, label %26
+
+26:                                               ; preds = %17
+  %27 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %22, i64 0, i32 4
+  %28 = load i32, i32* %27, align 8
+  %29 = zext i32 %28 to i64
+  %30 = getelementptr inbounds i8, i8* %24, i64 %29
+  %31 = icmp ugt i8* %30, %4
+  br i1 %31, label %32, label %40
+
+32:                                               ; preds = %26
+  %33 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %20, i64 0, i32 2, i32 0
+  %34 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %20, i64 0, i32 2, i32 1
+  %35 = bitcast i8** %34 to i64*
+  %36 = load i64, i64* %35, align 8
+  %37 = ptrtoint i8* %4 to i64
+  %38 = sub i64 %37, %36
+  %39 = trunc i64 %38 to i32
+  tail call void @_ZN3gpu15FencedAllocator16FreePendingTokenEji(%"class.gpu::FencedAllocator"* %33, i32 %39, i32 %11) #9
+  br label %43
+
+40:                                               ; preds = %26, %17
+  %41 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %18, i64 1
+  %42 = icmp eq %"class.std::__1::unique_ptr.7"* %41, %15
+  br i1 %42, label %43, label %17
+
+43:                                               ; preds = %40, %32, %6
+  %44 = getelementptr inbounds %"class.gpu::ScopedMappedMemoryPtr", %"class.gpu::ScopedMappedMemoryPtr"* %0, i64 0, i32 4
+  %45 = bitcast %"class.gpu::ScopedMappedMemoryPtr"* %0 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %45, i8 0, i64 20, i1 false) #9
+  %46 = load i8, i8* %44, align 4, !range !3
+  %47 = icmp eq i8 %46, 0
+  br i1 %47, label %50, label %48
+
+48:                                               ; preds = %43
+  %49 = load %"class.gpu::CommandBufferHelper"*, %"class.gpu::CommandBufferHelper"** %9, align 8
+  tail call void @_ZN3gpu19CommandBufferHelper5FlushEv(%"class.gpu::CommandBufferHelper"* %49) #9
+  br label %50
+
+50:                                               ; preds = %2, %43, %48
+  %51 = icmp eq i32 %1, 0
+  br i1 %51, label %61, label %52
+
+52:                                               ; preds = %50
+  %53 = getelementptr inbounds %"class.gpu::ScopedMappedMemoryPtr", %"class.gpu::ScopedMappedMemoryPtr"* %0, i64 0, i32 6
+  %54 = load %"class.gpu::MappedMemoryManager"*, %"class.gpu::MappedMemoryManager"** %53, align 8
+  %55 = getelementptr inbounds %"class.gpu::ScopedMappedMemoryPtr", %"class.gpu::ScopedMappedMemoryPtr"* %0, i64 0, i32 2
+  %56 = getelementptr inbounds %"class.gpu::ScopedMappedMemoryPtr", %"class.gpu::ScopedMappedMemoryPtr"* %0, i64 0, i32 3
+  %57 = tail call i8* @_ZN3gpu19MappedMemoryManager5AllocEjPiPjNS_30TransferBufferAllocationOptionE(%"class.gpu::MappedMemoryManager"* %54, i32 %1, i32* %55, i32* %56, i8 signext 0)
+  store i8* %57, i8** %3, align 8
+  %58 = icmp eq i8* %57, null
+  %59 = select i1 %58, i32 0, i32 %1
+  %60 = getelementptr inbounds %"class.gpu::ScopedMappedMemoryPtr", %"class.gpu::ScopedMappedMemoryPtr"* %0, i64 0, i32 1
+  store i32 %59, i32* %60, align 8
+  br label %61
+
+61:                                               ; preds = %50, %52
+  ret void
+}
+
+declare void @_ZN3gpu15FencedAllocatorC1EjPNS_19CommandBufferHelperE(%"class.gpu::FencedAllocator"*, i32, %"class.gpu::CommandBufferHelper"*) unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN3gpu15FencedAllocatorD1Ev(%"class.gpu::FencedAllocator"*) unnamed_addr #5
+
+declare void @_ZN3gpu15FencedAllocator10FreeUnusedEv(%"class.gpu::FencedAllocator"*) local_unnamed_addr #1
+
+declare i32 @_ZN3gpu15FencedAllocator18GetLargestFreeSizeEv(%"class.gpu::FencedAllocator"*) local_unnamed_addr #1
+
+declare i32 @_ZN3gpu15FencedAllocator5AllocEj(%"class.gpu::FencedAllocator"*, i32) local_unnamed_addr #1
+
+declare i32 @_ZN4base14PlatformThread9CurrentIdEv() local_unnamed_addr #1
+
+declare i64 @_ZN4base6subtle28TimeTicksNowIgnoringOverrideEv() local_unnamed_addr #1
+
+declare i64 @_ZN20trace_event_internal37AddTraceEventWithThreadIdAndTimestampEcPKhPKcS3_yyiRKN4base9TimeTicksEPNS4_11trace_event14TraceArgumentsEj(i8 signext, i8*, i8*, i8*, i64, i64, i32, %"class.base::TimeTicks"* dereferenceable(8), %"class.base::trace_event::TraceArguments"*, i32) local_unnamed_addr #1
+
+declare i32 @_ZN3gpu15FencedAllocator27GetLargestFreeOrPendingSizeEv(%"class.gpu::FencedAllocator"*) local_unnamed_addr #1
+
+declare void @_ZN20trace_event_internal24UpdateTraceEventDurationEPKhPKcN4base11trace_event16TraceEventHandleE(i8*, i8*, i64) local_unnamed_addr #1
+
+declare void @_ZN3gpu15FencedAllocator4FreeEj(%"class.gpu::FencedAllocator"*, i32) local_unnamed_addr #1
+
+declare void @_ZN3gpu15FencedAllocator16FreePendingTokenEji(%"class.gpu::FencedAllocator"*, i32, i32) local_unnamed_addr #1
+
+declare zeroext i1 @_ZN3gpu15FencedAllocator18InUseOrFreePendingEv(%"class.gpu::FencedAllocator"*) local_unnamed_addr #1
+
+declare i32 @_ZN3gpu15FencedAllocator11GetFreeSizeEv(%"class.gpu::FencedAllocator"*) local_unnamed_addr #1
+
+declare i32 @_ZN3gpu15FencedAllocator21GetBlockStatusForTestEjPi(%"class.gpu::FencedAllocator"*, i32, i32*) local_unnamed_addr #1
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #6
+
+; Function Attrs: nounwind
+declare void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"*) unnamed_addr #5
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden void @_ZNSt3__16vectorINS_10unique_ptrIN3gpu11MemoryChunkENS_14default_deleteIS3_EEEENS_9allocatorIS6_EEE21__push_back_slow_pathIS6_EEvOT_(%"class.std::__1::vector.5"*, %"class.std::__1::unique_ptr.7"* dereferenceable(8)) local_unnamed_addr #4 comdat align 2 {
+  %3 = getelementptr inbounds %"class.std::__1::vector.5", %"class.std::__1::vector.5"* %0, i64 0, i32 0, i32 1
+  %4 = bitcast %"class.std::__1::unique_ptr.7"** %3 to i64*
+  %5 = load i64, i64* %4, align 8
+  %6 = bitcast %"class.std::__1::vector.5"* %0 to i64*
+  %7 = load i64, i64* %6, align 8
+  %8 = sub i64 %5, %7
+  %9 = ashr exact i64 %8, 3
+  %10 = add nsw i64 %9, 1
+  %11 = icmp ugt i64 %10, 2305843009213693951
+  br i1 %11, label %12, label %14
+
+12:                                               ; preds = %2
+  %13 = bitcast %"class.std::__1::vector.5"* %0 to %"class.std::__1::__vector_base_common"*
+  tail call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"* %13) #11
+  unreachable
+
+14:                                               ; preds = %2
+  %15 = getelementptr inbounds %"class.std::__1::vector.5", %"class.std::__1::vector.5"* %0, i64 0, i32 0, i32 2, i32 0, i32 0
+  %16 = bitcast %"class.std::__1::unique_ptr.7"** %15 to i64*
+  %17 = load i64, i64* %16, align 8
+  %18 = sub i64 %17, %7
+  %19 = ashr exact i64 %18, 3
+  %20 = icmp ult i64 %19, 1152921504606846975
+  br i1 %20, label %21, label %29
+
+21:                                               ; preds = %14
+  %22 = ashr exact i64 %18, 2
+  %23 = icmp ult i64 %22, %10
+  %24 = select i1 %23, i64 %10, i64 %22
+  %25 = icmp eq i64 %24, 0
+  br i1 %25, label %34, label %26
+
+26:                                               ; preds = %21
+  %27 = icmp ugt i64 %24, 2305843009213693951
+  br i1 %27, label %28, label %29
+
+28:                                               ; preds = %26
+  tail call void @abort() #11
+  unreachable
+
+29:                                               ; preds = %14, %26
+  %30 = phi i64 [ %24, %26 ], [ 2305843009213693951, %14 ]
+  %31 = shl i64 %30, 3
+  %32 = tail call i8* @_Znwm(i64 %31) #10
+  %33 = bitcast i8* %32 to %"class.std::__1::unique_ptr.7"*
+  br label %34
+
+34:                                               ; preds = %21, %29
+  %35 = phi i64 [ %30, %29 ], [ 0, %21 ]
+  %36 = phi %"class.std::__1::unique_ptr.7"* [ %33, %29 ], [ null, %21 ]
+  %37 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %36, i64 %9
+  %38 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %36, i64 %35
+  %39 = ptrtoint %"class.std::__1::unique_ptr.7"* %38 to i64
+  %40 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %1, i64 0, i32 0, i32 0, i32 0
+  %41 = bitcast %"class.std::__1::unique_ptr.7"* %1 to i64*
+  %42 = load i64, i64* %41, align 8
+  store %"class.gpu::MemoryChunk"* null, %"class.gpu::MemoryChunk"** %40, align 8
+  %43 = bitcast %"class.std::__1::unique_ptr.7"* %37 to i64*
+  store i64 %42, i64* %43, align 8
+  %44 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %37, i64 1
+  %45 = ptrtoint %"class.std::__1::unique_ptr.7"* %44 to i64
+  %46 = getelementptr inbounds %"class.std::__1::vector.5", %"class.std::__1::vector.5"* %0, i64 0, i32 0, i32 0
+  %47 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %46, align 8
+  %48 = ptrtoint %"class.std::__1::unique_ptr.7"* %47 to i64
+  %49 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %3, align 8
+  %50 = icmp eq %"class.std::__1::unique_ptr.7"* %49, %47
+  br i1 %50, label %132, label %51
+
+51:                                               ; preds = %34
+  %52 = getelementptr %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %49, i64 -1, i32 0, i32 0, i32 0
+  %53 = ptrtoint %"class.gpu::MemoryChunk"** %52 to i64
+  %54 = sub i64 %53, %48
+  %55 = lshr i64 %54, 3
+  %56 = add nuw nsw i64 %55, 1
+  %57 = and i64 %56, 7
+  %58 = icmp eq i64 %57, 0
+  br i1 %58, label %71, label %59
+
+59:                                               ; preds = %51, %59
+  %60 = phi %"class.std::__1::unique_ptr.7"* [ %63, %59 ], [ %37, %51 ]
+  %61 = phi %"class.std::__1::unique_ptr.7"* [ %64, %59 ], [ %49, %51 ]
+  %62 = phi i64 [ %69, %59 ], [ %57, %51 ]
+  %63 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %60, i64 -1
+  %64 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %61, i64 -1
+  %65 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %64, i64 0, i32 0, i32 0, i32 0
+  %66 = bitcast %"class.std::__1::unique_ptr.7"* %64 to i64*
+  %67 = load i64, i64* %66, align 8
+  store %"class.gpu::MemoryChunk"* null, %"class.gpu::MemoryChunk"** %65, align 8
+  %68 = bitcast %"class.std::__1::unique_ptr.7"* %63 to i64*
+  store i64 %67, i64* %68, align 8
+  %69 = add i64 %62, -1
+  %70 = icmp eq i64 %69, 0
+  br i1 %70, label %71, label %59, !llvm.loop !4
+
+71:                                               ; preds = %59, %51
+  %72 = phi %"class.std::__1::unique_ptr.7"* [ undef, %51 ], [ %63, %59 ]
+  %73 = phi %"class.std::__1::unique_ptr.7"* [ %37, %51 ], [ %63, %59 ]
+  %74 = phi %"class.std::__1::unique_ptr.7"* [ %49, %51 ], [ %64, %59 ]
+  %75 = icmp ult i64 %54, 56
+  br i1 %75, label %128, label %76
+
+76:                                               ; preds = %71, %76
+  %77 = phi %"class.std::__1::unique_ptr.7"* [ %121, %76 ], [ %73, %71 ]
+  %78 = phi %"class.std::__1::unique_ptr.7"* [ %122, %76 ], [ %74, %71 ]
+  %79 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %77, i64 -1
+  %80 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %78, i64 -1
+  %81 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %80, i64 0, i32 0, i32 0, i32 0
+  %82 = bitcast %"class.std::__1::unique_ptr.7"* %80 to i64*
+  %83 = load i64, i64* %82, align 8
+  store %"class.gpu::MemoryChunk"* null, %"class.gpu::MemoryChunk"** %81, align 8
+  %84 = bitcast %"class.std::__1::unique_ptr.7"* %79 to i64*
+  store i64 %83, i64* %84, align 8
+  %85 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %77, i64 -2
+  %86 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %78, i64 -2
+  %87 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %86, i64 0, i32 0, i32 0, i32 0
+  %88 = bitcast %"class.std::__1::unique_ptr.7"* %86 to i64*
+  %89 = load i64, i64* %88, align 8
+  store %"class.gpu::MemoryChunk"* null, %"class.gpu::MemoryChunk"** %87, align 8
+  %90 = bitcast %"class.std::__1::unique_ptr.7"* %85 to i64*
+  store i64 %89, i64* %90, align 8
+  %91 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %77, i64 -3
+  %92 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %78, i64 -3
+  %93 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %92, i64 0, i32 0, i32 0, i32 0
+  %94 = bitcast %"class.std::__1::unique_ptr.7"* %92 to i64*
+  %95 = load i64, i64* %94, align 8
+  store %"class.gpu::MemoryChunk"* null, %"class.gpu::MemoryChunk"** %93, align 8
+  %96 = bitcast %"class.std::__1::unique_ptr.7"* %91 to i64*
+  store i64 %95, i64* %96, align 8
+  %97 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %77, i64 -4
+  %98 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %78, i64 -4
+  %99 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %98, i64 0, i32 0, i32 0, i32 0
+  %100 = bitcast %"class.std::__1::unique_ptr.7"* %98 to i64*
+  %101 = load i64, i64* %100, align 8
+  store %"class.gpu::MemoryChunk"* null, %"class.gpu::MemoryChunk"** %99, align 8
+  %102 = bitcast %"class.std::__1::unique_ptr.7"* %97 to i64*
+  store i64 %101, i64* %102, align 8
+  %103 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %77, i64 -5
+  %104 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %78, i64 -5
+  %105 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %104, i64 0, i32 0, i32 0, i32 0
+  %106 = bitcast %"class.std::__1::unique_ptr.7"* %104 to i64*
+  %107 = load i64, i64* %106, align 8
+  store %"class.gpu::MemoryChunk"* null, %"class.gpu::MemoryChunk"** %105, align 8
+  %108 = bitcast %"class.std::__1::unique_ptr.7"* %103 to i64*
+  store i64 %107, i64* %108, align 8
+  %109 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %77, i64 -6
+  %110 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %78, i64 -6
+  %111 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %110, i64 0, i32 0, i32 0, i32 0
+  %112 = bitcast %"class.std::__1::unique_ptr.7"* %110 to i64*
+  %113 = load i64, i64* %112, align 8
+  store %"class.gpu::MemoryChunk"* null, %"class.gpu::MemoryChunk"** %111, align 8
+  %114 = bitcast %"class.std::__1::unique_ptr.7"* %109 to i64*
+  store i64 %113, i64* %114, align 8
+  %115 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %77, i64 -7
+  %116 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %78, i64 -7
+  %117 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %116, i64 0, i32 0, i32 0, i32 0
+  %118 = bitcast %"class.std::__1::unique_ptr.7"* %116 to i64*
+  %119 = load i64, i64* %118, align 8
+  store %"class.gpu::MemoryChunk"* null, %"class.gpu::MemoryChunk"** %117, align 8
+  %120 = bitcast %"class.std::__1::unique_ptr.7"* %115 to i64*
+  store i64 %119, i64* %120, align 8
+  %121 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %77, i64 -8
+  %122 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %78, i64 -8
+  %123 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %122, i64 0, i32 0, i32 0, i32 0
+  %124 = bitcast %"class.std::__1::unique_ptr.7"* %122 to i64*
+  %125 = load i64, i64* %124, align 8
+  store %"class.gpu::MemoryChunk"* null, %"class.gpu::MemoryChunk"** %123, align 8
+  %126 = bitcast %"class.std::__1::unique_ptr.7"* %121 to i64*
+  store i64 %125, i64* %126, align 8
+  %127 = icmp eq %"class.std::__1::unique_ptr.7"* %122, %47
+  br i1 %127, label %128, label %76
+
+128:                                              ; preds = %76, %71
+  %129 = phi %"class.std::__1::unique_ptr.7"* [ %72, %71 ], [ %121, %76 ]
+  %130 = load i64, i64* %6, align 8
+  %131 = load %"class.std::__1::unique_ptr.7"*, %"class.std::__1::unique_ptr.7"** %3, align 8
+  br label %132
+
+132:                                              ; preds = %34, %128
+  %133 = phi %"class.std::__1::unique_ptr.7"* [ %131, %128 ], [ %47, %34 ]
+  %134 = phi %"class.std::__1::unique_ptr.7"* [ %129, %128 ], [ %37, %34 ]
+  %135 = phi i64 [ %130, %128 ], [ %48, %34 ]
+  %136 = ptrtoint %"class.std::__1::unique_ptr.7"* %134 to i64
+  store i64 %136, i64* %6, align 8
+  store i64 %45, i64* %4, align 8
+  store i64 %39, i64* %16, align 8
+  %137 = inttoptr i64 %135 to %"class.std::__1::unique_ptr.7"*
+  %138 = icmp eq %"class.std::__1::unique_ptr.7"* %133, %137
+  br i1 %138, label %160, label %139
+
+139:                                              ; preds = %132, %158
+  %140 = phi %"class.std::__1::unique_ptr.7"* [ %141, %158 ], [ %133, %132 ]
+  %141 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %140, i64 -1
+  %142 = getelementptr inbounds %"class.std::__1::unique_ptr.7", %"class.std::__1::unique_ptr.7"* %141, i64 0, i32 0, i32 0, i32 0
+  %143 = load %"class.gpu::MemoryChunk"*, %"class.gpu::MemoryChunk"** %142, align 8
+  store %"class.gpu::MemoryChunk"* null, %"class.gpu::MemoryChunk"** %142, align 8
+  %144 = icmp eq %"class.gpu::MemoryChunk"* %143, null
+  br i1 %144, label %158, label %145
+
+145:                                              ; preds = %139
+  %146 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %143, i64 0, i32 2, i32 0
+  tail call void @_ZN3gpu15FencedAllocatorD1Ev(%"class.gpu::FencedAllocator"* %146) #9
+  %147 = getelementptr inbounds %"class.gpu::MemoryChunk", %"class.gpu::MemoryChunk"* %143, i64 0, i32 1, i32 0
+  %148 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %147, align 8
+  %149 = icmp eq %"class.gpu::Buffer"* %148, null
+  br i1 %149, label %156, label %150
+
+150:                                              ; preds = %145
+  %151 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %148, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %152 = atomicrmw sub i32* %151, i32 1 acq_rel
+  %153 = icmp eq i32 %152, 1
+  br i1 %153, label %154, label %156
+
+154:                                              ; preds = %150
+  tail call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %148) #9
+  %155 = bitcast %"class.gpu::Buffer"* %148 to i8*
+  tail call void @_ZdlPv(i8* %155) #10
+  br label %156
+
+156:                                              ; preds = %154, %150, %145
+  %157 = bitcast %"class.gpu::MemoryChunk"* %143 to i8*
+  tail call void @_ZdlPv(i8* %157) #10
+  br label %158
+
+158:                                              ; preds = %156, %139
+  %159 = icmp eq %"class.std::__1::unique_ptr.7"* %141, %137
+  br i1 %159, label %160, label %139
+
+160:                                              ; preds = %158, %132
+  %161 = icmp eq i64 %135, 0
+  br i1 %161, label %164, label %162
+
+162:                                              ; preds = %160
+  %163 = inttoptr i64 %135 to i8*
+  tail call void @_ZdlPv(i8* %163) #10
+  br label %164
+
+164:                                              ; preds = %160, %162
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+; Function Attrs: noreturn
+declare void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"*) local_unnamed_addr #7
+
+; Function Attrs: noreturn nounwind
+declare void @abort() local_unnamed_addr #8
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { inlinehint nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { noreturn "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { noreturn nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #9 = { nounwind }
+attributes #10 = { builtin nounwind }
+attributes #11 = { noreturn nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{!"branch_weights", i32 2000, i32 1}
+!3 = !{i8 0, i8 2}
+!4 = distinct !{!4, !5}
+!5 = !{!"llvm.loop.unroll.disable"}

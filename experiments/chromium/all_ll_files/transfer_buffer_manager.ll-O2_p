@@ -1,0 +1,1774 @@
+; ModuleID = '../../gpu/command_buffer/service/transfer_buffer_manager.cc'
+source_filename = "../../gpu/command_buffer/service/transfer_buffer_manager.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.gpu::TransferBufferManager" = type { %"class.base::trace_event::MemoryDumpProvider", %"class.base::flat_map", i64, %"class.gpu::MemoryTracker"* }
+%"class.base::trace_event::MemoryDumpProvider" = type { i32 (...)** }
+%"class.base::flat_map" = type { %"class.base::internal::flat_tree" }
+%"class.base::internal::flat_tree" = type { %"class.std::__1::vector" }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"struct.std::__1::pair"*, %"struct.std::__1::pair"*, %"class.std::__1::__compressed_pair.2" }
+%"struct.std::__1::pair" = type { i32, %class.scoped_refptr }
+%class.scoped_refptr = type { %"class.gpu::Buffer"* }
+%"class.gpu::Buffer" = type <{ %"class.base::RefCountedThreadSafe", [4 x i8], %"class.std::__1::unique_ptr", i8*, i32, [4 x i8] }>
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.0" }
+%"struct.std::__1::__atomic_base.0" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"class.std::__1::unique_ptr" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"class.gpu::BufferBacking"* }
+%"class.gpu::BufferBacking" = type { i32 (...)** }
+%"class.std::__1::__compressed_pair.2" = type { %"struct.std::__1::__compressed_pair_elem.3" }
+%"struct.std::__1::__compressed_pair_elem.3" = type { %"struct.std::__1::pair"* }
+%"class.gpu::MemoryTracker" = type { i32 (...)** }
+%"class.base::trace_event::MemoryDumpManager" = type <{ i32 (...)**, %"class.std::__1::set", %"class.base::RepeatingCallback", i8, [7 x i8], %"class.base::Lock", %"class.std::__1::unique_ptr.15", i64, i8, [7 x i8] }>
+%"class.std::__1::set" = type { %"class.std::__1::__tree" }
+%"class.std::__1::__tree" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.5", %"class.std::__1::__compressed_pair.10" }
+%"class.std::__1::__tree_end_node" = type { %"class.std::__1::__tree_node_base"* }
+%"class.std::__1::__tree_node_base" = type opaque
+%"class.std::__1::__compressed_pair.5" = type { %"struct.std::__1::__compressed_pair_elem.6" }
+%"struct.std::__1::__compressed_pair_elem.6" = type { %"class.std::__1::__tree_end_node" }
+%"class.std::__1::__compressed_pair.10" = type { %"struct.std::__1::__compressed_pair_elem.11" }
+%"struct.std::__1::__compressed_pair_elem.11" = type { i64 }
+%"class.base::RepeatingCallback" = type { %"class.base::internal::CallbackBaseCopyable" }
+%"class.base::internal::CallbackBaseCopyable" = type { %"class.base::internal::CallbackBase" }
+%"class.base::internal::CallbackBase" = type { %class.scoped_refptr.13 }
+%class.scoped_refptr.13 = type { %"class.base::internal::BindStateBase"* }
+%"class.base::internal::BindStateBase" = type { %"class.base::RefCountedThreadSafe.14", void ()*, void (%"class.base::internal::BindStateBase"*)*, i1 (%"class.base::internal::BindStateBase"*, i32)* }
+%"class.base::RefCountedThreadSafe.14" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::Lock" = type { %"class.base::internal::LockImpl" }
+%"class.base::internal::LockImpl" = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%"class.std::__1::unique_ptr.15" = type { %"class.std::__1::__compressed_pair.16" }
+%"class.std::__1::__compressed_pair.16" = type { %"struct.std::__1::__compressed_pair_elem.17" }
+%"struct.std::__1::__compressed_pair_elem.17" = type { %"class.base::Thread"* }
+%"class.base::Thread" = type opaque
+%class.scoped_refptr.21 = type { %"class.base::SingleThreadTaskRunner"* }
+%"class.base::SingleThreadTaskRunner" = type { %"class.base::SequencedTaskRunner.base", [4 x i8] }
+%"class.base::SequencedTaskRunner.base" = type { %"class.base::TaskRunner.base" }
+%"class.base::TaskRunner.base" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe.22" }>
+%"class.base::RefCountedThreadSafe.22" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.logging::CheckError" = type { %"class.logging::LogMessage"* }
+%"class.logging::LogMessage" = type { i32 (...)**, i32, %"class.std::__1::basic_ostringstream", i64, i8*, i32, %"class.base::ScopedClearLastErrorBase" }
+%"class.std::__1::basic_ostringstream" = type { %"class.std::__1::basic_ostream.base", %"class.std::__1::basic_stringbuf", %"class.std::__1::basic_ios.base" }
+%"class.std::__1::basic_ostream.base" = type { i32 (...)** }
+%"class.std::__1::basic_stringbuf" = type <{ %"class.std::__1::basic_streambuf", %"class.std::__1::basic_string", i8*, i32, [4 x i8] }>
+%"class.std::__1::basic_streambuf" = type { i32 (...)**, %"class.std::__1::locale", i8*, i8*, i8*, i8*, i8*, i8* }
+%"class.std::__1::locale" = type { %"class.std::__1::locale::__imp"* }
+%"class.std::__1::locale::__imp" = type opaque
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.44" }
+%"class.std::__1::__compressed_pair.44" = type { %"struct.std::__1::__compressed_pair_elem.45" }
+%"struct.std::__1::__compressed_pair_elem.45" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon }
+%union.anon = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.std::__1::basic_ios.base" = type <{ %"class.std::__1::ios_base", %"class.std::__1::basic_ostream"*, i32 }>
+%"class.std::__1::ios_base" = type { i32 (...)**, i32, i64, i64, i32, i32, i8*, i8*, void (i32, %"class.std::__1::ios_base"*, i32)**, i32*, i64, i64, i64*, i64, i64, i8**, i64, i64 }
+%"class.std::__1::basic_ostream" = type { i32 (...)**, %"class.std::__1::basic_ios.base" }
+%"class.base::ScopedClearLastErrorBase" = type { i32 }
+%"struct.base::trace_event::MemoryDumpArgs" = type { i32, i32, i64 }
+%"class.base::trace_event::ProcessMemoryDump" = type { %"class.base::UnguessableToken", %"class.std::__1::map", %"class.std::__1::map.30", %"struct.base::trace_event::MemoryDumpArgs", %"class.std::__1::unique_ptr.41" }
+%"class.base::UnguessableToken" = type { %"class.base::Token" }
+%"class.base::Token" = type { i64, i64 }
+%"class.std::__1::map" = type { %"class.std::__1::__tree.23" }
+%"class.std::__1::__tree.23" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.24", %"class.std::__1::__compressed_pair.28" }
+%"class.std::__1::__compressed_pair.24" = type { %"struct.std::__1::__compressed_pair_elem.6" }
+%"class.std::__1::__compressed_pair.28" = type { %"struct.std::__1::__compressed_pair_elem.11" }
+%"class.std::__1::map.30" = type { %"class.std::__1::__tree.31" }
+%"class.std::__1::__tree.31" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.32", %"class.std::__1::__compressed_pair.36" }
+%"class.std::__1::__compressed_pair.32" = type { %"struct.std::__1::__compressed_pair_elem.6" }
+%"class.std::__1::__compressed_pair.36" = type { %"struct.std::__1::__compressed_pair_elem.11" }
+%"class.std::__1::unique_ptr.41" = type { %"class.std::__1::__compressed_pair.42" }
+%"class.std::__1::__compressed_pair.42" = type { %"struct.std::__1::__compressed_pair_elem.43" }
+%"struct.std::__1::__compressed_pair_elem.43" = type { %"class.base::trace_event::MemoryAllocatorDump"* }
+%"class.base::trace_event::MemoryAllocatorDump" = type { %"class.std::__1::basic_string", %"class.base::trace_event::MemoryAllocatorDumpGuid", i32, i32, %"class.absl::optional", %"class.std::__1::vector.50" }
+%"class.base::trace_event::MemoryAllocatorDumpGuid" = type { i64 }
+%"class.absl::optional" = type { %"class.absl::optional_internal::optional_data" }
+%"class.absl::optional_internal::optional_data" = type { %"class.absl::optional_internal::optional_data_base" }
+%"class.absl::optional_internal::optional_data_base" = type { %"class.absl::optional_internal::optional_data_dtor_base" }
+%"class.absl::optional_internal::optional_data_dtor_base" = type { i8, %union.anon.49 }
+%union.anon.49 = type { i64 }
+%"class.std::__1::vector.50" = type { %"class.std::__1::__vector_base.51" }
+%"class.std::__1::__vector_base.51" = type { %"struct.base::trace_event::MemoryAllocatorDump::Entry"*, %"struct.base::trace_event::MemoryAllocatorDump::Entry"*, %"class.std::__1::__compressed_pair.52" }
+%"struct.base::trace_event::MemoryAllocatorDump::Entry" = type { %"class.std::__1::basic_string", %"class.std::__1::basic_string", i32, i64, %"class.std::__1::basic_string" }
+%"class.std::__1::__compressed_pair.52" = type { %"struct.std::__1::__compressed_pair_elem.53" }
+%"struct.std::__1::__compressed_pair_elem.53" = type { %"struct.base::trace_event::MemoryAllocatorDump::Entry"* }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short" = type { [23 x i8], %struct.anon }
+%struct.anon = type { i8 }
+%"struct.std::__1::__split_buffer" = type { %"struct.std::__1::pair"*, %"struct.std::__1::pair"*, %"struct.std::__1::pair"*, %"class.std::__1::__compressed_pair.67" }
+%"class.std::__1::__compressed_pair.67" = type { %"struct.std::__1::__compressed_pair_elem.3", %"struct.std::__1::__compressed_pair_elem.68" }
+%"struct.std::__1::__compressed_pair_elem.68" = type { %"class.std::__1::allocator"* }
+%"class.std::__1::allocator" = type { i8 }
+%"class.std::__1::__vector_base_common" = type { i8 }
+
+$_ZN4base8internal9flat_treeIiNS0_8GetFirstENSt3__14lessIvEENS3_6vectorINS3_4pairIi13scoped_refptrIN3gpu6BufferEEEENS3_9allocatorISC_EEEEE5eraseENS3_11__wrap_iterIPSC_EE = comdat any
+
+$_ZN4base8flat_mapIi13scoped_refptrIN3gpu6BufferEENSt3__14lessIvEENS5_6vectorINS5_4pairIiS4_EENS5_9allocatorISA_EEEEEixERKi = comdat any
+
+$_ZNSt3__16vectorINS_4pairIi13scoped_refptrIN3gpu6BufferEEEENS_9allocatorIS6_EEE7emplaceIJRKiS5_EEENS_11__wrap_iterIPS6_EENSD_IPKS6_EEDpOT_ = comdat any
+
+$_ZNSt3__114__split_bufferINS_4pairIi13scoped_refptrIN3gpu6BufferEEEERNS_9allocatorIS6_EEE12emplace_backIJRKiS5_EEEvDpOT_ = comdat any
+
+@_ZTVN3gpu21TransferBufferManagerE = hidden unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.gpu::TransferBufferManager"*)* @_ZN3gpu21TransferBufferManagerD2Ev to i8*), i8* bitcast (void (%"class.gpu::TransferBufferManager"*)* @_ZN3gpu21TransferBufferManagerD0Ev to i8*), i8* bitcast (i1 (%"class.gpu::TransferBufferManager"*, %"struct.base::trace_event::MemoryDumpArgs"*, %"class.base::trace_event::ProcessMemoryDump"*)* @_ZN3gpu21TransferBufferManager12OnMemoryDumpERKN4base11trace_event14MemoryDumpArgsEPNS2_17ProcessMemoryDumpE to i8*)] }, align 8
+@.str = private unnamed_addr constant [27 x i8] c"gpu::TransferBufferManager\00", align 1
+@.str.1 = private unnamed_addr constant [30 x i8] c"gpu/transfer_memory/client_%d\00", align 1
+@_ZN4base11trace_event19MemoryAllocatorDump9kNameSizeE = external constant [0 x i8], align 1
+@_ZN4base11trace_event19MemoryAllocatorDump11kUnitsBytesE = external constant [0 x i8], align 1
+@.str.2 = private unnamed_addr constant [40 x i8] c"gpu/transfer_memory/client_%d/buffer_%d\00", align 1
+@.str.3 = private unnamed_addr constant [34 x i8] c"../../base/containers/flat_tree.h\00", align 1
+@.str.4 = private unnamed_addr constant [24 x i8] c"position != body_.end()\00", align 1
+
+@_ZN3gpu21TransferBufferManagerC1EPNS_13MemoryTrackerE = hidden unnamed_addr alias void (%"class.gpu::TransferBufferManager"*, %"class.gpu::MemoryTracker"*), void (%"class.gpu::TransferBufferManager"*, %"class.gpu::MemoryTracker"*)* @_ZN3gpu21TransferBufferManagerC2EPNS_13MemoryTrackerE
+@_ZN3gpu21TransferBufferManagerD1Ev = hidden unnamed_addr alias void (%"class.gpu::TransferBufferManager"*), void (%"class.gpu::TransferBufferManager"*)* @_ZN3gpu21TransferBufferManagerD2Ev
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu21TransferBufferManagerC2EPNS_13MemoryTrackerE(%"class.gpu::TransferBufferManager"*, %"class.gpu::MemoryTracker"*) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 0
+  %4 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_ZTVN3gpu21TransferBufferManagerE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %4, align 8
+  %5 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 1
+  %6 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 3
+  %7 = bitcast %"class.base::flat_map"* %5 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %7, i8 0, i64 32, i1 false)
+  store %"class.gpu::MemoryTracker"* %1, %"class.gpu::MemoryTracker"** %6, align 8
+  %8 = icmp eq %"class.gpu::MemoryTracker"* %1, null
+  br i1 %8, label %19, label %9
+
+9:                                                ; preds = %2
+  %10 = tail call %"class.base::trace_event::MemoryDumpManager"* @_ZN4base11trace_event17MemoryDumpManager11GetInstanceEv() #8
+  %11 = tail call dereferenceable(8) %class.scoped_refptr.21* @_ZN4base22ThreadTaskRunnerHandle3GetEv() #8
+  %12 = getelementptr inbounds %class.scoped_refptr.21, %class.scoped_refptr.21* %11, i64 0, i32 0
+  %13 = load %"class.base::SingleThreadTaskRunner"*, %"class.base::SingleThreadTaskRunner"** %12, align 8
+  %14 = icmp eq %"class.base::SingleThreadTaskRunner"* %13, null
+  br i1 %14, label %18, label %15
+
+15:                                               ; preds = %9
+  %16 = getelementptr inbounds %"class.base::SingleThreadTaskRunner", %"class.base::SingleThreadTaskRunner"* %13, i64 0, i32 0, i32 0, i32 1, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %17 = atomicrmw add i32* %16, i32 1 monotonic
+  br label %18
+
+18:                                               ; preds = %9, %15
+  tail call void @_ZN4base11trace_event17MemoryDumpManager20RegisterDumpProviderEPNS0_18MemoryDumpProviderEPKc13scoped_refptrINS_22SingleThreadTaskRunnerEE(%"class.base::trace_event::MemoryDumpManager"* %10, %"class.base::trace_event::MemoryDumpProvider"* %3, i8* getelementptr inbounds ([27 x i8], [27 x i8]* @.str, i64 0, i64 0), %"class.base::SingleThreadTaskRunner"* %13) #8
+  br label %19
+
+19:                                               ; preds = %2, %18
+  ret void
+}
+
+declare %"class.base::trace_event::MemoryDumpManager"* @_ZN4base11trace_event17MemoryDumpManager11GetInstanceEv() local_unnamed_addr #1
+
+declare void @_ZN4base11trace_event17MemoryDumpManager20RegisterDumpProviderEPNS0_18MemoryDumpProviderEPKc13scoped_refptrINS_22SingleThreadTaskRunnerEE(%"class.base::trace_event::MemoryDumpManager"*, %"class.base::trace_event::MemoryDumpProvider"*, i8*, %"class.base::SingleThreadTaskRunner"*) local_unnamed_addr #1
+
+declare dereferenceable(8) %class.scoped_refptr.21* @_ZN4base22ThreadTaskRunnerHandle3GetEv() local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu21TransferBufferManagerD2Ev(%"class.gpu::TransferBufferManager"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_ZTVN3gpu21TransferBufferManagerE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 1, i32 0
+  %4 = getelementptr inbounds %"class.base::internal::flat_tree", %"class.base::internal::flat_tree"* %3, i64 0, i32 0, i32 0, i32 0
+  %5 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %4, align 8
+  %6 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 1, i32 0, i32 0, i32 0, i32 1
+  %7 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %6, align 8
+  %8 = icmp eq %"struct.std::__1::pair"* %5, %7
+  br i1 %8, label %24, label %9
+
+9:                                                ; preds = %1
+  %10 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 2
+  br label %11
+
+11:                                               ; preds = %9, %11
+  %12 = phi %"struct.std::__1::pair"* [ %5, %9 ], [ %21, %11 ]
+  %13 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %12, i64 0, i32 1, i32 0
+  %14 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %13, align 8
+  %15 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %14, i64 0, i32 4
+  %16 = load i32, i32* %15, align 8
+  %17 = zext i32 %16 to i64
+  %18 = load i64, i64* %10, align 8
+  %19 = sub i64 %18, %17
+  store i64 %19, i64* %10, align 8
+  %20 = tail call %"struct.std::__1::pair"* @_ZN4base8internal9flat_treeIiNS0_8GetFirstENSt3__14lessIvEENS3_6vectorINS3_4pairIi13scoped_refptrIN3gpu6BufferEEEENS3_9allocatorISC_EEEEE5eraseENS3_11__wrap_iterIPSC_EE(%"class.base::internal::flat_tree"* %3, %"struct.std::__1::pair"* %12)
+  %21 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %4, align 8
+  %22 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %6, align 8
+  %23 = icmp eq %"struct.std::__1::pair"* %21, %22
+  br i1 %23, label %24, label %11
+
+24:                                               ; preds = %11, %1
+  %25 = tail call %"class.base::trace_event::MemoryDumpManager"* @_ZN4base11trace_event17MemoryDumpManager11GetInstanceEv() #8
+  %26 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 0
+  tail call void @_ZN4base11trace_event17MemoryDumpManager22UnregisterDumpProviderEPNS0_18MemoryDumpProviderE(%"class.base::trace_event::MemoryDumpManager"* %25, %"class.base::trace_event::MemoryDumpProvider"* %26) #8
+  %27 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %4, align 8
+  %28 = icmp eq %"struct.std::__1::pair"* %27, null
+  br i1 %28, label %52, label %29
+
+29:                                               ; preds = %24
+  %30 = bitcast %"struct.std::__1::pair"* %27 to i8*
+  %31 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %6, align 8
+  %32 = icmp eq %"struct.std::__1::pair"* %31, %27
+  br i1 %32, label %50, label %33
+
+33:                                               ; preds = %29, %45
+  %34 = phi %"struct.std::__1::pair"* [ %35, %45 ], [ %31, %29 ]
+  %35 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %34, i64 -1
+  %36 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %34, i64 -1, i32 1, i32 0
+  %37 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %36, align 8
+  %38 = icmp eq %"class.gpu::Buffer"* %37, null
+  br i1 %38, label %45, label %39
+
+39:                                               ; preds = %33
+  %40 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %37, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %41 = atomicrmw sub i32* %40, i32 1 acq_rel
+  %42 = icmp eq i32 %41, 1
+  br i1 %42, label %43, label %45
+
+43:                                               ; preds = %39
+  tail call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %37) #8
+  %44 = bitcast %"class.gpu::Buffer"* %37 to i8*
+  tail call void @_ZdlPv(i8* %44) #9
+  br label %45
+
+45:                                               ; preds = %43, %39, %33
+  %46 = icmp eq %"struct.std::__1::pair"* %35, %27
+  br i1 %46, label %47, label %33
+
+47:                                               ; preds = %45
+  %48 = bitcast %"class.base::internal::flat_tree"* %3 to i8**
+  %49 = load i8*, i8** %48, align 8
+  br label %50
+
+50:                                               ; preds = %47, %29
+  %51 = phi i8* [ %49, %47 ], [ %30, %29 ]
+  store %"struct.std::__1::pair"* %27, %"struct.std::__1::pair"** %6, align 8
+  tail call void @_ZdlPv(i8* %51) #9
+  br label %52
+
+52:                                               ; preds = %24, %50
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden %"struct.std::__1::pair"* @_ZN4base8internal9flat_treeIiNS0_8GetFirstENSt3__14lessIvEENS3_6vectorINS3_4pairIi13scoped_refptrIN3gpu6BufferEEEENS3_9allocatorISC_EEEEE5eraseENS3_11__wrap_iterIPSC_EE(%"class.base::internal::flat_tree"*, %"struct.std::__1::pair"*) local_unnamed_addr #0 comdat align 2 {
+  %3 = alloca %"class.logging::CheckError", align 8
+  %4 = getelementptr inbounds %"class.base::internal::flat_tree", %"class.base::internal::flat_tree"* %0, i64 0, i32 0, i32 0, i32 1
+  %5 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %4, align 8
+  %6 = icmp eq %"struct.std::__1::pair"* %5, %1
+  br i1 %6, label %7, label %11
+
+7:                                                ; preds = %2
+  %8 = bitcast %"class.logging::CheckError"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %8) #8
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %3, i8* getelementptr inbounds ([34 x i8], [34 x i8]* @.str.3, i64 0, i64 0), i32 879, i8* getelementptr inbounds ([24 x i8], [24 x i8]* @.str.4, i64 0, i64 0)) #8
+  %9 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %3) #8
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %3) #8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %8) #8
+  %10 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %4, align 8
+  br label %11
+
+11:                                               ; preds = %2, %7
+  %12 = phi %"struct.std::__1::pair"* [ %5, %2 ], [ %10, %7 ]
+  %13 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %1, i64 1
+  %14 = icmp eq %"struct.std::__1::pair"* %13, %12
+  br i1 %14, label %43, label %15
+
+15:                                               ; preds = %11, %36
+  %16 = phi %"struct.std::__1::pair"* [ %38, %36 ], [ %1, %11 ]
+  %17 = phi %"struct.std::__1::pair"* [ %37, %36 ], [ %13, %11 ]
+  %18 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %17, i64 0, i32 0
+  %19 = load i32, i32* %18, align 4
+  %20 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %16, i64 0, i32 0
+  store i32 %19, i32* %20, align 8
+  %21 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %17, i64 0, i32 1
+  %22 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %21, i64 0, i32 0
+  %23 = bitcast %class.scoped_refptr* %21 to i64*
+  %24 = load i64, i64* %23, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %22, align 8
+  %25 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %16, i64 0, i32 1
+  %26 = bitcast %class.scoped_refptr* %25 to i64*
+  %27 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %25, i64 0, i32 0
+  %28 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %27, align 8
+  store i64 %24, i64* %26, align 8
+  %29 = icmp eq %"class.gpu::Buffer"* %28, null
+  br i1 %29, label %36, label %30
+
+30:                                               ; preds = %15
+  %31 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %28, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %32 = atomicrmw sub i32* %31, i32 1 acq_rel
+  %33 = icmp eq i32 %32, 1
+  br i1 %33, label %34, label %36
+
+34:                                               ; preds = %30
+  call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %28) #8
+  %35 = bitcast %"class.gpu::Buffer"* %28 to i8*
+  call void @_ZdlPv(i8* %35) #9
+  br label %36
+
+36:                                               ; preds = %34, %30, %15
+  %37 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %17, i64 1
+  %38 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %16, i64 1
+  %39 = icmp eq %"struct.std::__1::pair"* %37, %12
+  br i1 %39, label %40, label %15
+
+40:                                               ; preds = %36
+  %41 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %4, align 8
+  %42 = icmp eq %"struct.std::__1::pair"* %41, %38
+  br i1 %42, label %60, label %43
+
+43:                                               ; preds = %40, %11
+  %44 = phi %"struct.std::__1::pair"* [ %38, %40 ], [ %1, %11 ]
+  %45 = phi %"struct.std::__1::pair"* [ %41, %40 ], [ %12, %11 ]
+  br label %46
+
+46:                                               ; preds = %58, %43
+  %47 = phi %"struct.std::__1::pair"* [ %48, %58 ], [ %45, %43 ]
+  %48 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %47, i64 -1
+  %49 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %47, i64 -1, i32 1, i32 0
+  %50 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %49, align 8
+  %51 = icmp eq %"class.gpu::Buffer"* %50, null
+  br i1 %51, label %58, label %52
+
+52:                                               ; preds = %46
+  %53 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %50, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %54 = atomicrmw sub i32* %53, i32 1 acq_rel
+  %55 = icmp eq i32 %54, 1
+  br i1 %55, label %56, label %58
+
+56:                                               ; preds = %52
+  call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %50) #8
+  %57 = bitcast %"class.gpu::Buffer"* %50 to i8*
+  call void @_ZdlPv(i8* %57) #9
+  br label %58
+
+58:                                               ; preds = %56, %52, %46
+  %59 = icmp eq %"struct.std::__1::pair"* %48, %44
+  br i1 %59, label %60, label %46
+
+60:                                               ; preds = %58, %40
+  %61 = phi %"struct.std::__1::pair"* [ %38, %40 ], [ %44, %58 ]
+  store %"struct.std::__1::pair"* %61, %"struct.std::__1::pair"** %4, align 8
+  ret %"struct.std::__1::pair"* %1
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+declare void @_ZN4base11trace_event17MemoryDumpManager22UnregisterDumpProviderEPNS0_18MemoryDumpProviderE(%"class.base::trace_event::MemoryDumpManager"*, %"class.base::trace_event::MemoryDumpProvider"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu21TransferBufferManagerD0Ev(%"class.gpu::TransferBufferManager"*) unnamed_addr #0 align 2 {
+  tail call void @_ZN3gpu21TransferBufferManagerD2Ev(%"class.gpu::TransferBufferManager"* %0) #8
+  %2 = bitcast %"class.gpu::TransferBufferManager"* %0 to i8*
+  tail call void @_ZdlPv(i8* %2) #9
+  ret void
+}
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN3gpu21TransferBufferManager22RegisterTransferBufferEi13scoped_refptrINS_6BufferEE(%"class.gpu::TransferBufferManager"*, i32, %"class.gpu::Buffer"*) local_unnamed_addr #0 align 2 {
+  %4 = alloca i32, align 4
+  %5 = ptrtoint %"class.gpu::Buffer"* %2 to i64
+  store i32 %1, i32* %4, align 4
+  %6 = icmp slt i32 %1, 1
+  br i1 %6, label %71, label %7
+
+7:                                                ; preds = %3
+  %8 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 1
+  %9 = getelementptr inbounds %"class.base::flat_map", %"class.base::flat_map"* %8, i64 0, i32 0, i32 0, i32 0, i32 0
+  %10 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %9, align 8
+  %11 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 1, i32 0, i32 0, i32 0, i32 1
+  %12 = bitcast %"struct.std::__1::pair"** %11 to i64*
+  %13 = load i64, i64* %12, align 8
+  %14 = ptrtoint %"struct.std::__1::pair"* %10 to i64
+  %15 = sub i64 %13, %14
+  %16 = icmp eq i64 %15, 0
+  %17 = inttoptr i64 %13 to %"struct.std::__1::pair"*
+  br i1 %16, label %36, label %18
+
+18:                                               ; preds = %7
+  %19 = ashr exact i64 %15, 4
+  br label %20
+
+20:                                               ; preds = %20, %18
+  %21 = phi %"struct.std::__1::pair"* [ %10, %18 ], [ %32, %20 ]
+  %22 = phi i64 [ %19, %18 ], [ %31, %20 ]
+  %23 = lshr i64 %22, 1
+  %24 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %21, i64 %23
+  %25 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %24, i64 0, i32 0
+  %26 = load i32, i32* %25, align 4
+  %27 = icmp slt i32 %26, %1
+  %28 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %24, i64 1
+  %29 = xor i64 %23, -1
+  %30 = add i64 %22, %29
+  %31 = select i1 %27, i64 %30, i64 %23
+  %32 = select i1 %27, %"struct.std::__1::pair"* %28, %"struct.std::__1::pair"* %21
+  %33 = icmp eq i64 %31, 0
+  br i1 %33, label %34, label %20
+
+34:                                               ; preds = %20
+  %35 = ptrtoint %"struct.std::__1::pair"* %32 to i64
+  br label %36
+
+36:                                               ; preds = %34, %7
+  %37 = phi i64 [ %35, %34 ], [ %14, %7 ]
+  %38 = phi %"struct.std::__1::pair"* [ %32, %34 ], [ %10, %7 ]
+  %39 = icmp eq %"struct.std::__1::pair"* %38, %17
+  br i1 %39, label %47, label %40
+
+40:                                               ; preds = %36
+  %41 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %38, i64 0, i32 0
+  %42 = load i32, i32* %41, align 4
+  %43 = icmp sgt i32 %42, %1
+  br i1 %43, label %47, label %44
+
+44:                                               ; preds = %40
+  %45 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %38, i64 1
+  %46 = ptrtoint %"struct.std::__1::pair"* %45 to i64
+  br label %47
+
+47:                                               ; preds = %36, %40, %44
+  %48 = phi i64 [ %46, %44 ], [ %37, %36 ], [ %37, %40 ]
+  %49 = inttoptr i64 %48 to %"struct.std::__1::pair"*
+  %50 = icmp eq %"struct.std::__1::pair"* %38, %49
+  %51 = select i1 %50, %"struct.std::__1::pair"* %17, %"struct.std::__1::pair"* %38
+  %52 = icmp eq %"struct.std::__1::pair"* %51, %17
+  br i1 %52, label %53, label %71
+
+53:                                               ; preds = %47
+  %54 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %2, i64 0, i32 4
+  %55 = load i32, i32* %54, align 8
+  %56 = zext i32 %55 to i64
+  %57 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 2
+  %58 = load i64, i64* %57, align 8
+  %59 = add i64 %58, %56
+  store i64 %59, i64* %57, align 8
+  %60 = call dereferenceable(8) %class.scoped_refptr* @_ZN4base8flat_mapIi13scoped_refptrIN3gpu6BufferEENSt3__14lessIvEENS5_6vectorINS5_4pairIiS4_EENS5_9allocatorISA_EEEEEixERKi(%"class.base::flat_map"* %8, i32* nonnull dereferenceable(4) %4)
+  %61 = bitcast %class.scoped_refptr* %60 to i64*
+  %62 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %60, i64 0, i32 0
+  %63 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %62, align 8
+  store i64 %5, i64* %61, align 8
+  %64 = icmp eq %"class.gpu::Buffer"* %63, null
+  br i1 %64, label %79, label %65
+
+65:                                               ; preds = %53
+  %66 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %63, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %67 = atomicrmw sub i32* %66, i32 1 acq_rel
+  %68 = icmp eq i32 %67, 1
+  br i1 %68, label %69, label %79
+
+69:                                               ; preds = %65
+  call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %63) #8
+  %70 = bitcast %"class.gpu::Buffer"* %63 to i8*
+  call void @_ZdlPv(i8* %70) #9
+  br label %79
+
+71:                                               ; preds = %47, %3
+  %72 = icmp eq %"class.gpu::Buffer"* %2, null
+  br i1 %72, label %79, label %73
+
+73:                                               ; preds = %71
+  %74 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %2, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %75 = atomicrmw sub i32* %74, i32 1 acq_rel
+  %76 = icmp eq i32 %75, 1
+  br i1 %76, label %77, label %79
+
+77:                                               ; preds = %73
+  tail call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %2) #8
+  %78 = bitcast %"class.gpu::Buffer"* %2 to i8*
+  tail call void @_ZdlPv(i8* %78) #9
+  br label %79
+
+79:                                               ; preds = %69, %65, %53, %71, %73, %77
+  %80 = phi i1 [ false, %71 ], [ false, %73 ], [ false, %77 ], [ true, %53 ], [ true, %65 ], [ true, %69 ]
+  ret i1 %80
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden dereferenceable(8) %class.scoped_refptr* @_ZN4base8flat_mapIi13scoped_refptrIN3gpu6BufferEENSt3__14lessIvEENS5_6vectorINS5_4pairIiS4_EENS5_9allocatorISA_EEEEEixERKi(%"class.base::flat_map"*, i32* dereferenceable(4)) local_unnamed_addr #0 comdat align 2 {
+  %3 = alloca %class.scoped_refptr, align 8
+  %4 = getelementptr inbounds %"class.base::flat_map", %"class.base::flat_map"* %0, i64 0, i32 0, i32 0, i32 0, i32 0
+  %5 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %4, align 8
+  %6 = getelementptr inbounds %"class.base::flat_map", %"class.base::flat_map"* %0, i64 0, i32 0, i32 0, i32 0, i32 1
+  %7 = bitcast %"struct.std::__1::pair"** %6 to i64*
+  %8 = load i64, i64* %7, align 8
+  %9 = ptrtoint %"struct.std::__1::pair"* %5 to i64
+  %10 = sub i64 %8, %9
+  %11 = icmp eq i64 %10, 0
+  %12 = inttoptr i64 %8 to %"struct.std::__1::pair"*
+  br i1 %11, label %30, label %13
+
+13:                                               ; preds = %2
+  %14 = ashr exact i64 %10, 4
+  %15 = load i32, i32* %1, align 4
+  br label %16
+
+16:                                               ; preds = %16, %13
+  %17 = phi %"struct.std::__1::pair"* [ %5, %13 ], [ %28, %16 ]
+  %18 = phi i64 [ %14, %13 ], [ %27, %16 ]
+  %19 = lshr i64 %18, 1
+  %20 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %17, i64 %19
+  %21 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %20, i64 0, i32 0
+  %22 = load i32, i32* %21, align 4
+  %23 = icmp slt i32 %22, %15
+  %24 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %20, i64 1
+  %25 = xor i64 %19, -1
+  %26 = add i64 %18, %25
+  %27 = select i1 %23, i64 %26, i64 %19
+  %28 = select i1 %23, %"struct.std::__1::pair"* %24, %"struct.std::__1::pair"* %17
+  %29 = icmp eq i64 %27, 0
+  br i1 %29, label %30, label %16
+
+30:                                               ; preds = %16, %2
+  %31 = phi %"struct.std::__1::pair"* [ %5, %2 ], [ %28, %16 ]
+  %32 = icmp eq %"struct.std::__1::pair"* %31, %12
+  br i1 %32, label %38, label %33
+
+33:                                               ; preds = %30
+  %34 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %31, i64 0, i32 0
+  %35 = load i32, i32* %1, align 4
+  %36 = load i32, i32* %34, align 4
+  %37 = icmp slt i32 %35, %36
+  br i1 %37, label %38, label %52
+
+38:                                               ; preds = %30, %33
+  %39 = bitcast %class.scoped_refptr* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %39) #8
+  %40 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %3, i64 0, i32 0
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %40, align 8
+  %41 = getelementptr inbounds %"class.base::flat_map", %"class.base::flat_map"* %0, i64 0, i32 0, i32 0
+  %42 = call %"struct.std::__1::pair"* @_ZNSt3__16vectorINS_4pairIi13scoped_refptrIN3gpu6BufferEEEENS_9allocatorIS6_EEE7emplaceIJRKiS5_EEENS_11__wrap_iterIPS6_EENSD_IPKS6_EEDpOT_(%"class.std::__1::vector"* %41, %"struct.std::__1::pair"* %31, i32* dereferenceable(4) %1, %class.scoped_refptr* nonnull dereferenceable(8) %3) #8
+  %43 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %40, align 8
+  %44 = icmp eq %"class.gpu::Buffer"* %43, null
+  br i1 %44, label %51, label %45
+
+45:                                               ; preds = %38
+  %46 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %43, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %47 = atomicrmw sub i32* %46, i32 1 acq_rel
+  %48 = icmp eq i32 %47, 1
+  br i1 %48, label %49, label %51
+
+49:                                               ; preds = %45
+  call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %43) #8
+  %50 = bitcast %"class.gpu::Buffer"* %43 to i8*
+  call void @_ZdlPv(i8* %50) #9
+  br label %51
+
+51:                                               ; preds = %38, %45, %49
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %39) #8
+  br label %52
+
+52:                                               ; preds = %51, %33
+  %53 = phi %"struct.std::__1::pair"* [ %42, %51 ], [ %31, %33 ]
+  %54 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %53, i64 0, i32 1
+  ret %class.scoped_refptr* %54
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu21TransferBufferManager21DestroyTransferBufferEi(%"class.gpu::TransferBufferManager"*, i32) local_unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 1, i32 0
+  %4 = getelementptr inbounds %"class.base::internal::flat_tree", %"class.base::internal::flat_tree"* %3, i64 0, i32 0, i32 0, i32 0
+  %5 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %4, align 8
+  %6 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 1, i32 0, i32 0, i32 0, i32 1
+  %7 = bitcast %"struct.std::__1::pair"** %6 to i64*
+  %8 = load i64, i64* %7, align 8
+  %9 = ptrtoint %"struct.std::__1::pair"* %5 to i64
+  %10 = sub i64 %8, %9
+  %11 = icmp eq i64 %10, 0
+  %12 = inttoptr i64 %8 to %"struct.std::__1::pair"*
+  br i1 %11, label %31, label %13
+
+13:                                               ; preds = %2
+  %14 = ashr exact i64 %10, 4
+  br label %15
+
+15:                                               ; preds = %15, %13
+  %16 = phi %"struct.std::__1::pair"* [ %5, %13 ], [ %27, %15 ]
+  %17 = phi i64 [ %14, %13 ], [ %26, %15 ]
+  %18 = lshr i64 %17, 1
+  %19 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %16, i64 %18
+  %20 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %19, i64 0, i32 0
+  %21 = load i32, i32* %20, align 4
+  %22 = icmp slt i32 %21, %1
+  %23 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %19, i64 1
+  %24 = xor i64 %18, -1
+  %25 = add i64 %17, %24
+  %26 = select i1 %22, i64 %25, i64 %18
+  %27 = select i1 %22, %"struct.std::__1::pair"* %23, %"struct.std::__1::pair"* %16
+  %28 = icmp eq i64 %26, 0
+  br i1 %28, label %29, label %15
+
+29:                                               ; preds = %15
+  %30 = ptrtoint %"struct.std::__1::pair"* %27 to i64
+  br label %31
+
+31:                                               ; preds = %29, %2
+  %32 = phi i64 [ %30, %29 ], [ %9, %2 ]
+  %33 = phi %"struct.std::__1::pair"* [ %27, %29 ], [ %5, %2 ]
+  %34 = icmp eq %"struct.std::__1::pair"* %33, %12
+  br i1 %34, label %42, label %35
+
+35:                                               ; preds = %31
+  %36 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %33, i64 0, i32 0
+  %37 = load i32, i32* %36, align 4
+  %38 = icmp sgt i32 %37, %1
+  br i1 %38, label %42, label %39
+
+39:                                               ; preds = %35
+  %40 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %33, i64 1
+  %41 = ptrtoint %"struct.std::__1::pair"* %40 to i64
+  br label %42
+
+42:                                               ; preds = %31, %35, %39
+  %43 = phi i64 [ %41, %39 ], [ %32, %31 ], [ %32, %35 ]
+  %44 = inttoptr i64 %43 to %"struct.std::__1::pair"*
+  %45 = icmp eq %"struct.std::__1::pair"* %33, %44
+  %46 = select i1 %45, %"struct.std::__1::pair"* %12, %"struct.std::__1::pair"* %33
+  %47 = icmp eq %"struct.std::__1::pair"* %46, %12
+  br i1 %47, label %58, label %48
+
+48:                                               ; preds = %42
+  %49 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %46, i64 0, i32 1, i32 0
+  %50 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %49, align 8
+  %51 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %50, i64 0, i32 4
+  %52 = load i32, i32* %51, align 8
+  %53 = zext i32 %52 to i64
+  %54 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 2
+  %55 = load i64, i64* %54, align 8
+  %56 = sub i64 %55, %53
+  store i64 %56, i64* %54, align 8
+  %57 = tail call %"struct.std::__1::pair"* @_ZN4base8internal9flat_treeIiNS0_8GetFirstENSt3__14lessIvEENS3_6vectorINS3_4pairIi13scoped_refptrIN3gpu6BufferEEEENS3_9allocatorISC_EEEEE5eraseENS3_11__wrap_iterIPSC_EE(%"class.base::internal::flat_tree"* %3, %"struct.std::__1::pair"* %46)
+  br label %58
+
+58:                                               ; preds = %42, %48
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden %"class.gpu::Buffer"* @_ZN3gpu21TransferBufferManager17GetTransferBufferEi(%"class.gpu::TransferBufferManager"* nocapture readonly, i32) local_unnamed_addr #0 align 2 {
+  %3 = icmp eq i32 %1, 0
+  br i1 %3, label %56, label %4
+
+4:                                                ; preds = %2
+  %5 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 1, i32 0, i32 0, i32 0, i32 0
+  %6 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %5, align 8
+  %7 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 1, i32 0, i32 0, i32 0, i32 1
+  %8 = bitcast %"struct.std::__1::pair"** %7 to i64*
+  %9 = load i64, i64* %8, align 8
+  %10 = ptrtoint %"struct.std::__1::pair"* %6 to i64
+  %11 = sub i64 %9, %10
+  %12 = icmp eq i64 %11, 0
+  %13 = inttoptr i64 %9 to %"struct.std::__1::pair"*
+  br i1 %12, label %32, label %14
+
+14:                                               ; preds = %4
+  %15 = ashr exact i64 %11, 4
+  br label %16
+
+16:                                               ; preds = %16, %14
+  %17 = phi %"struct.std::__1::pair"* [ %6, %14 ], [ %28, %16 ]
+  %18 = phi i64 [ %15, %14 ], [ %27, %16 ]
+  %19 = lshr i64 %18, 1
+  %20 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %17, i64 %19
+  %21 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %20, i64 0, i32 0
+  %22 = load i32, i32* %21, align 4
+  %23 = icmp slt i32 %22, %1
+  %24 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %20, i64 1
+  %25 = xor i64 %19, -1
+  %26 = add i64 %18, %25
+  %27 = select i1 %23, i64 %26, i64 %19
+  %28 = select i1 %23, %"struct.std::__1::pair"* %24, %"struct.std::__1::pair"* %17
+  %29 = icmp eq i64 %27, 0
+  br i1 %29, label %30, label %16
+
+30:                                               ; preds = %16
+  %31 = ptrtoint %"struct.std::__1::pair"* %28 to i64
+  br label %32
+
+32:                                               ; preds = %30, %4
+  %33 = phi i64 [ %31, %30 ], [ %10, %4 ]
+  %34 = phi %"struct.std::__1::pair"* [ %28, %30 ], [ %6, %4 ]
+  %35 = icmp eq %"struct.std::__1::pair"* %34, %13
+  br i1 %35, label %43, label %36
+
+36:                                               ; preds = %32
+  %37 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %34, i64 0, i32 0
+  %38 = load i32, i32* %37, align 4
+  %39 = icmp sgt i32 %38, %1
+  br i1 %39, label %43, label %40
+
+40:                                               ; preds = %36
+  %41 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %34, i64 1
+  %42 = ptrtoint %"struct.std::__1::pair"* %41 to i64
+  br label %43
+
+43:                                               ; preds = %32, %36, %40
+  %44 = phi i64 [ %42, %40 ], [ %33, %32 ], [ %33, %36 ]
+  %45 = inttoptr i64 %44 to %"struct.std::__1::pair"*
+  %46 = icmp eq %"struct.std::__1::pair"* %34, %45
+  %47 = select i1 %46, %"struct.std::__1::pair"* %13, %"struct.std::__1::pair"* %34
+  %48 = icmp eq %"struct.std::__1::pair"* %47, %13
+  br i1 %48, label %56, label %49
+
+49:                                               ; preds = %43
+  %50 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %47, i64 0, i32 1, i32 0
+  %51 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %50, align 8
+  %52 = icmp eq %"class.gpu::Buffer"* %51, null
+  br i1 %52, label %56, label %53
+
+53:                                               ; preds = %49
+  %54 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %51, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %55 = atomicrmw add i32* %54, i32 1 monotonic
+  br label %56
+
+56:                                               ; preds = %43, %49, %53, %2
+  %57 = phi %"class.gpu::Buffer"* [ null, %2 ], [ null, %43 ], [ null, %49 ], [ %51, %53 ]
+  ret %"class.gpu::Buffer"* %57
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN3gpu21TransferBufferManager12OnMemoryDumpERKN4base11trace_event14MemoryDumpArgsEPNS2_17ProcessMemoryDumpE(%"class.gpu::TransferBufferManager"* nocapture readonly, %"struct.base::trace_event::MemoryDumpArgs"* nocapture readonly dereferenceable(16), %"class.base::trace_event::ProcessMemoryDump"*) unnamed_addr #0 align 2 {
+  %4 = alloca %"class.std::__1::basic_string", align 8
+  %5 = alloca %"class.std::__1::basic_string", align 8
+  %6 = alloca %"class.base::UnguessableToken", align 8
+  %7 = alloca %"class.base::trace_event::MemoryAllocatorDumpGuid", align 8
+  %8 = getelementptr inbounds %"struct.base::trace_event::MemoryDumpArgs", %"struct.base::trace_event::MemoryDumpArgs"* %1, i64 0, i32 0
+  %9 = load i32, i32* %8, align 8
+  %10 = icmp eq i32 %9, 0
+  br i1 %10, label %11, label %32
+
+11:                                               ; preds = %3
+  %12 = bitcast %"class.std::__1::basic_string"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %12) #8
+  %13 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 3
+  %14 = bitcast %"class.std::__1::basic_string"* %4 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %14, i8 -86, i64 24, i1 false)
+  %15 = load %"class.gpu::MemoryTracker"*, %"class.gpu::MemoryTracker"** %13, align 8
+  %16 = bitcast %"class.gpu::MemoryTracker"* %15 to i32 (%"class.gpu::MemoryTracker"*)***
+  %17 = load i32 (%"class.gpu::MemoryTracker"*)**, i32 (%"class.gpu::MemoryTracker"*)*** %16, align 8
+  %18 = getelementptr inbounds i32 (%"class.gpu::MemoryTracker"*)*, i32 (%"class.gpu::MemoryTracker"*)** %17, i64 4
+  %19 = load i32 (%"class.gpu::MemoryTracker"*)*, i32 (%"class.gpu::MemoryTracker"*)** %18, align 8
+  %20 = tail call i32 %19(%"class.gpu::MemoryTracker"* %15) #8
+  call void (%"class.std::__1::basic_string"*, i8*, ...) @_ZN4base12StringPrintfEPKcz(%"class.std::__1::basic_string"* nonnull sret %4, i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.1, i64 0, i64 0), i32 %20) #8
+  %21 = call %"class.base::trace_event::MemoryAllocatorDump"* @_ZN4base11trace_event17ProcessMemoryDump19CreateAllocatorDumpERKNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE(%"class.base::trace_event::ProcessMemoryDump"* %2, %"class.std::__1::basic_string"* nonnull dereferenceable(24) %4) #8
+  %22 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 2
+  %23 = load i64, i64* %22, align 8
+  call void @_ZN4base11trace_event19MemoryAllocatorDump9AddScalarEPKcS3_m(%"class.base::trace_event::MemoryAllocatorDump"* %21, i8* getelementptr inbounds ([0 x i8], [0 x i8]* @_ZN4base11trace_event19MemoryAllocatorDump9kNameSizeE, i64 0, i64 0), i8* getelementptr inbounds ([0 x i8], [0 x i8]* @_ZN4base11trace_event19MemoryAllocatorDump11kUnitsBytesE, i64 0, i64 0), i64 %23) #8
+  %24 = bitcast %"class.std::__1::basic_string"* %4 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %25 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %24, i64 0, i32 1, i32 0
+  %26 = load i8, i8* %25, align 1
+  %27 = icmp slt i8 %26, 0
+  br i1 %27, label %28, label %31
+
+28:                                               ; preds = %11
+  %29 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %4, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %30 = load i8*, i8** %29, align 8
+  call void @_ZdlPv(i8* %30) #9
+  br label %31
+
+31:                                               ; preds = %11, %28
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %12) #8
+  br label %98
+
+32:                                               ; preds = %3
+  %33 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 1, i32 0, i32 0, i32 0, i32 0
+  %34 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %33, align 8
+  %35 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 1, i32 0, i32 0, i32 0, i32 1
+  %36 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %35, align 8
+  %37 = icmp eq %"struct.std::__1::pair"* %34, %36
+  br i1 %37, label %98, label %38
+
+38:                                               ; preds = %32
+  %39 = bitcast %"class.std::__1::basic_string"* %5 to i8*
+  %40 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %5, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %41 = getelementptr inbounds %"class.gpu::TransferBufferManager", %"class.gpu::TransferBufferManager"* %0, i64 0, i32 3
+  %42 = bitcast %"class.base::UnguessableToken"* %6 to i8*
+  %43 = getelementptr inbounds %"class.base::UnguessableToken", %"class.base::UnguessableToken"* %6, i64 0, i32 0, i32 0
+  %44 = getelementptr inbounds %"class.base::UnguessableToken", %"class.base::UnguessableToken"* %6, i64 0, i32 0, i32 1
+  %45 = bitcast %"class.base::trace_event::MemoryAllocatorDumpGuid"* %7 to i8*
+  %46 = getelementptr inbounds %"class.base::trace_event::MemoryAllocatorDumpGuid", %"class.base::trace_event::MemoryAllocatorDumpGuid"* %7, i64 0, i32 0
+  %47 = bitcast %"class.std::__1::basic_string"* %5 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %48 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %47, i64 0, i32 1, i32 0
+  %49 = bitcast %"class.std::__1::basic_string"* %5 to i8*
+  %50 = bitcast %"class.base::UnguessableToken"* %6 to i8*
+  br label %51
+
+51:                                               ; preds = %38, %95
+  %52 = phi %"struct.std::__1::pair"* [ %34, %38 ], [ %96, %95 ]
+  %53 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %52, i64 0, i32 0
+  %54 = load i32, i32* %53, align 8
+  %55 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %52, i64 0, i32 1, i32 0
+  %56 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %55, align 8
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %39) #8
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %49, i8 -86, i64 24, i1 false)
+  %57 = load %"class.gpu::MemoryTracker"*, %"class.gpu::MemoryTracker"** %41, align 8
+  %58 = bitcast %"class.gpu::MemoryTracker"* %57 to i32 (%"class.gpu::MemoryTracker"*)***
+  %59 = load i32 (%"class.gpu::MemoryTracker"*)**, i32 (%"class.gpu::MemoryTracker"*)*** %58, align 8
+  %60 = getelementptr inbounds i32 (%"class.gpu::MemoryTracker"*)*, i32 (%"class.gpu::MemoryTracker"*)** %59, i64 4
+  %61 = load i32 (%"class.gpu::MemoryTracker"*)*, i32 (%"class.gpu::MemoryTracker"*)** %60, align 8
+  %62 = call i32 %61(%"class.gpu::MemoryTracker"* %57) #8
+  call void (%"class.std::__1::basic_string"*, i8*, ...) @_ZN4base12StringPrintfEPKcz(%"class.std::__1::basic_string"* nonnull sret %5, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.2, i64 0, i64 0), i32 %62, i32 %54) #8
+  %63 = call %"class.base::trace_event::MemoryAllocatorDump"* @_ZN4base11trace_event17ProcessMemoryDump19CreateAllocatorDumpERKNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE(%"class.base::trace_event::ProcessMemoryDump"* %2, %"class.std::__1::basic_string"* nonnull dereferenceable(24) %5) #8
+  %64 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %56, i64 0, i32 4
+  %65 = load i32, i32* %64, align 8
+  %66 = zext i32 %65 to i64
+  call void @_ZN4base11trace_event19MemoryAllocatorDump9AddScalarEPKcS3_m(%"class.base::trace_event::MemoryAllocatorDump"* %63, i8* getelementptr inbounds ([0 x i8], [0 x i8]* @_ZN4base11trace_event19MemoryAllocatorDump9kNameSizeE, i64 0, i64 0), i8* getelementptr inbounds ([0 x i8], [0 x i8]* @_ZN4base11trace_event19MemoryAllocatorDump11kUnitsBytesE, i64 0, i64 0), i64 %66) #8
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %42) #8
+  %67 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %56, i64 0, i32 2, i32 0, i32 0, i32 0
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %50, i8 -86, i64 16, i1 false)
+  %68 = load %"class.gpu::BufferBacking"*, %"class.gpu::BufferBacking"** %67, align 8
+  %69 = bitcast %"class.gpu::BufferBacking"* %68 to { i64, i64 } (%"class.gpu::BufferBacking"*)***
+  %70 = load { i64, i64 } (%"class.gpu::BufferBacking"*)**, { i64, i64 } (%"class.gpu::BufferBacking"*)*** %69, align 8
+  %71 = getelementptr inbounds { i64, i64 } (%"class.gpu::BufferBacking"*)*, { i64, i64 } (%"class.gpu::BufferBacking"*)** %70, i64 3
+  %72 = load { i64, i64 } (%"class.gpu::BufferBacking"*)*, { i64, i64 } (%"class.gpu::BufferBacking"*)** %71, align 8
+  %73 = call { i64, i64 } %72(%"class.gpu::BufferBacking"* %68) #8
+  %74 = extractvalue { i64, i64 } %73, 0
+  store i64 %74, i64* %43, align 8
+  %75 = extractvalue { i64, i64 } %73, 1
+  store i64 %75, i64* %44, align 8
+  %76 = or i64 %74, %75
+  %77 = icmp eq i64 %76, 0
+  br i1 %77, label %80, label %78
+
+78:                                               ; preds = %51
+  %79 = getelementptr inbounds %"class.base::trace_event::MemoryAllocatorDump", %"class.base::trace_event::MemoryAllocatorDump"* %63, i64 0, i32 1
+  call void @_ZN4base11trace_event17ProcessMemoryDump31CreateSharedMemoryOwnershipEdgeERKNS0_23MemoryAllocatorDumpGuidERKNS_16UnguessableTokenEi(%"class.base::trace_event::ProcessMemoryDump"* %2, %"class.base::trace_event::MemoryAllocatorDumpGuid"* dereferenceable(8) %79, %"class.base::UnguessableToken"* nonnull dereferenceable(16) %6, i32 0) #8
+  br label %90
+
+80:                                               ; preds = %51
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %45) #8
+  store i64 -6148914691236517206, i64* %46, align 8
+  %81 = load %"class.gpu::MemoryTracker"*, %"class.gpu::MemoryTracker"** %41, align 8
+  %82 = bitcast %"class.gpu::MemoryTracker"* %81 to i64 (%"class.gpu::MemoryTracker"*)***
+  %83 = load i64 (%"class.gpu::MemoryTracker"*)**, i64 (%"class.gpu::MemoryTracker"*)*** %82, align 8
+  %84 = getelementptr inbounds i64 (%"class.gpu::MemoryTracker"*)*, i64 (%"class.gpu::MemoryTracker"*)** %83, i64 5
+  %85 = load i64 (%"class.gpu::MemoryTracker"*)*, i64 (%"class.gpu::MemoryTracker"*)** %84, align 8
+  %86 = call i64 %85(%"class.gpu::MemoryTracker"* %81) #8
+  %87 = call i64 @_ZN3gpu23GetBufferGUIDForTracingEmi(i64 %86, i32 %54) #8
+  store i64 %87, i64* %46, align 8
+  %88 = call %"class.base::trace_event::MemoryAllocatorDump"* @_ZN4base11trace_event17ProcessMemoryDump31CreateSharedGlobalAllocatorDumpERKNS0_23MemoryAllocatorDumpGuidE(%"class.base::trace_event::ProcessMemoryDump"* %2, %"class.base::trace_event::MemoryAllocatorDumpGuid"* nonnull dereferenceable(8) %7) #8
+  %89 = getelementptr inbounds %"class.base::trace_event::MemoryAllocatorDump", %"class.base::trace_event::MemoryAllocatorDump"* %63, i64 0, i32 1
+  call void @_ZN4base11trace_event17ProcessMemoryDump16AddOwnershipEdgeERKNS0_23MemoryAllocatorDumpGuidES4_(%"class.base::trace_event::ProcessMemoryDump"* %2, %"class.base::trace_event::MemoryAllocatorDumpGuid"* dereferenceable(8) %89, %"class.base::trace_event::MemoryAllocatorDumpGuid"* nonnull dereferenceable(8) %7) #8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %45) #8
+  br label %90
+
+90:                                               ; preds = %80, %78
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %42) #8
+  %91 = load i8, i8* %48, align 1
+  %92 = icmp slt i8 %91, 0
+  br i1 %92, label %93, label %95
+
+93:                                               ; preds = %90
+  %94 = load i8*, i8** %40, align 8
+  call void @_ZdlPv(i8* %94) #9
+  br label %95
+
+95:                                               ; preds = %90, %93
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %39) #8
+  %96 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %52, i64 1
+  %97 = icmp eq %"struct.std::__1::pair"* %96, %36
+  br i1 %97, label %98, label %51
+
+98:                                               ; preds = %95, %32, %31
+  ret i1 true
+}
+
+declare void @_ZN4base12StringPrintfEPKcz(%"class.std::__1::basic_string"* sret, i8*, ...) local_unnamed_addr #1
+
+declare %"class.base::trace_event::MemoryAllocatorDump"* @_ZN4base11trace_event17ProcessMemoryDump19CreateAllocatorDumpERKNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE(%"class.base::trace_event::ProcessMemoryDump"*, %"class.std::__1::basic_string"* dereferenceable(24)) local_unnamed_addr #1
+
+declare void @_ZN4base11trace_event19MemoryAllocatorDump9AddScalarEPKcS3_m(%"class.base::trace_event::MemoryAllocatorDump"*, i8*, i8*, i64) local_unnamed_addr #1
+
+declare void @_ZN4base11trace_event17ProcessMemoryDump31CreateSharedMemoryOwnershipEdgeERKNS0_23MemoryAllocatorDumpGuidERKNS_16UnguessableTokenEi(%"class.base::trace_event::ProcessMemoryDump"*, %"class.base::trace_event::MemoryAllocatorDumpGuid"* dereferenceable(8), %"class.base::UnguessableToken"* dereferenceable(16), i32) local_unnamed_addr #1
+
+declare i64 @_ZN3gpu23GetBufferGUIDForTracingEmi(i64, i32) local_unnamed_addr #1
+
+declare %"class.base::trace_event::MemoryAllocatorDump"* @_ZN4base11trace_event17ProcessMemoryDump31CreateSharedGlobalAllocatorDumpERKNS0_23MemoryAllocatorDumpGuidE(%"class.base::trace_event::ProcessMemoryDump"*, %"class.base::trace_event::MemoryAllocatorDumpGuid"* dereferenceable(8)) local_unnamed_addr #1
+
+declare void @_ZN4base11trace_event17ProcessMemoryDump16AddOwnershipEdgeERKNS0_23MemoryAllocatorDumpGuidES4_(%"class.base::trace_event::ProcessMemoryDump"*, %"class.base::trace_event::MemoryAllocatorDumpGuid"* dereferenceable(8), %"class.base::trace_event::MemoryAllocatorDumpGuid"* dereferenceable(8)) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"*) unnamed_addr #4
+
+declare void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* sret, i8*, i32, i8*) local_unnamed_addr #1
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"*) unnamed_addr #4
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden %"struct.std::__1::pair"* @_ZNSt3__16vectorINS_4pairIi13scoped_refptrIN3gpu6BufferEEEENS_9allocatorIS6_EEE7emplaceIJRKiS5_EEENS_11__wrap_iterIPS6_EENSD_IPKS6_EEDpOT_(%"class.std::__1::vector"*, %"struct.std::__1::pair"*, i32* dereferenceable(4), %class.scoped_refptr* dereferenceable(8)) local_unnamed_addr #0 comdat align 2 {
+  %5 = ptrtoint %"struct.std::__1::pair"* %1 to i64
+  %6 = alloca %"struct.std::__1::__split_buffer", align 8
+  %7 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 0
+  %8 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 1
+  %9 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %8, align 8
+  %10 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 2, i32 0, i32 0
+  %11 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %10, align 8
+  %12 = icmp ult %"struct.std::__1::pair"* %9, %11
+  %13 = ptrtoint %"struct.std::__1::pair"* %11 to i64
+  br i1 %12, label %14, label %160
+
+14:                                               ; preds = %4
+  %15 = icmp eq %"struct.std::__1::pair"* %9, %1
+  br i1 %15, label %16, label %27
+
+16:                                               ; preds = %14
+  %17 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %1, i64 0, i32 0
+  %18 = load i32, i32* %2, align 4
+  store i32 %18, i32* %17, align 8
+  %19 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %1, i64 0, i32 1
+  %20 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %3, i64 0, i32 0
+  %21 = bitcast %class.scoped_refptr* %3 to i64*
+  %22 = load i64, i64* %21, align 8
+  %23 = bitcast %class.scoped_refptr* %19 to i64*
+  store i64 %22, i64* %23, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %20, align 8
+  %24 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %1, i64 1
+  %25 = ptrtoint %"struct.std::__1::pair"* %24 to i64
+  %26 = bitcast %"struct.std::__1::pair"** %8 to i64*
+  store i64 %25, i64* %26, align 8
+  br label %372
+
+27:                                               ; preds = %14
+  %28 = load i32, i32* %2, align 4
+  %29 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %3, i64 0, i32 0
+  %30 = bitcast %class.scoped_refptr* %3 to i64*
+  %31 = load i64, i64* %30, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %29, align 8
+  %32 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %8, align 8
+  %33 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %1, i64 1
+  %34 = ptrtoint %"struct.std::__1::pair"* %32 to i64
+  %35 = ptrtoint %"struct.std::__1::pair"* %33 to i64
+  %36 = sub i64 %34, %35
+  %37 = ashr exact i64 %36, 4
+  %38 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %1, i64 %37
+  %39 = bitcast %"struct.std::__1::pair"** %8 to i64*
+  %40 = icmp ult %"struct.std::__1::pair"* %38, %32
+  br i1 %40, label %41, label %77
+
+41:                                               ; preds = %27
+  %42 = sub nsw i64 0, %37
+  %43 = getelementptr %"struct.std::__1::pair", %"struct.std::__1::pair"* %32, i64 %42, i32 0
+  %44 = bitcast i32* %43 to i8*
+  %45 = xor i64 %5, -1
+  %46 = getelementptr i8, i8* %44, i64 %45
+  %47 = ptrtoint i8* %46 to i64
+  %48 = lshr i64 %47, 4
+  %49 = add nuw nsw i64 %48, 1
+  %50 = and i64 %49, 3
+  %51 = icmp eq i64 %50, 0
+  br i1 %51, label %69, label %52
+
+52:                                               ; preds = %41, %52
+  %53 = phi %"struct.std::__1::pair"* [ %66, %52 ], [ %32, %41 ]
+  %54 = phi %"struct.std::__1::pair"* [ %65, %52 ], [ %38, %41 ]
+  %55 = phi i64 [ %67, %52 ], [ %50, %41 ]
+  %56 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %53, i64 0, i32 0
+  %57 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %54, i64 0, i32 0
+  %58 = load i32, i32* %57, align 8
+  store i32 %58, i32* %56, align 8
+  %59 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %53, i64 0, i32 1
+  %60 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %54, i64 0, i32 1
+  %61 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %60, i64 0, i32 0
+  %62 = bitcast %class.scoped_refptr* %60 to i64*
+  %63 = load i64, i64* %62, align 8
+  %64 = bitcast %class.scoped_refptr* %59 to i64*
+  store i64 %63, i64* %64, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %61, align 8
+  %65 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %54, i64 1
+  %66 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %53, i64 1
+  %67 = add i64 %55, -1
+  %68 = icmp eq i64 %67, 0
+  br i1 %68, label %69, label %52, !llvm.loop !2
+
+69:                                               ; preds = %52, %41
+  %70 = phi %"struct.std::__1::pair"* [ %32, %41 ], [ %66, %52 ]
+  %71 = phi %"struct.std::__1::pair"* [ %38, %41 ], [ %65, %52 ]
+  %72 = phi %"struct.std::__1::pair"* [ undef, %41 ], [ %66, %52 ]
+  %73 = icmp ult i8* %46, inttoptr (i64 48 to i8*)
+  br i1 %73, label %74, label %105
+
+74:                                               ; preds = %105, %69
+  %75 = phi %"struct.std::__1::pair"* [ %72, %69 ], [ %145, %105 ]
+  %76 = ptrtoint %"struct.std::__1::pair"* %75 to i64
+  br label %77
+
+77:                                               ; preds = %74, %27
+  %78 = phi i64 [ %76, %74 ], [ %34, %27 ]
+  store i64 %78, i64* %39, align 8
+  %79 = icmp eq i64 %36, 0
+  br i1 %79, label %147, label %80
+
+80:                                               ; preds = %77, %103
+  %81 = phi %"struct.std::__1::pair"* [ %84, %103 ], [ %32, %77 ]
+  %82 = phi %"struct.std::__1::pair"* [ %83, %103 ], [ %38, %77 ]
+  %83 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %82, i64 -1
+  %84 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %81, i64 -1
+  %85 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %83, i64 0, i32 0
+  %86 = load i32, i32* %85, align 4
+  %87 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %84, i64 0, i32 0
+  store i32 %86, i32* %87, align 8
+  %88 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %82, i64 -1, i32 1
+  %89 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %88, i64 0, i32 0
+  %90 = bitcast %class.scoped_refptr* %88 to i64*
+  %91 = load i64, i64* %90, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %89, align 8
+  %92 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %81, i64 -1, i32 1
+  %93 = bitcast %class.scoped_refptr* %92 to i64*
+  %94 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %92, i64 0, i32 0
+  %95 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %94, align 8
+  store i64 %91, i64* %93, align 8
+  %96 = icmp eq %"class.gpu::Buffer"* %95, null
+  br i1 %96, label %103, label %97
+
+97:                                               ; preds = %80
+  %98 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %95, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %99 = atomicrmw sub i32* %98, i32 1 acq_rel
+  %100 = icmp eq i32 %99, 1
+  br i1 %100, label %101, label %103
+
+101:                                              ; preds = %97
+  tail call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %95) #8
+  %102 = bitcast %"class.gpu::Buffer"* %95 to i8*
+  tail call void @_ZdlPv(i8* %102) #9
+  br label %103
+
+103:                                              ; preds = %101, %97, %80
+  %104 = icmp eq %"struct.std::__1::pair"* %83, %1
+  br i1 %104, label %147, label %80
+
+105:                                              ; preds = %69, %105
+  %106 = phi %"struct.std::__1::pair"* [ %145, %105 ], [ %70, %69 ]
+  %107 = phi %"struct.std::__1::pair"* [ %144, %105 ], [ %71, %69 ]
+  %108 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %106, i64 0, i32 0
+  %109 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %107, i64 0, i32 0
+  %110 = load i32, i32* %109, align 8
+  store i32 %110, i32* %108, align 8
+  %111 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %106, i64 0, i32 1
+  %112 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %107, i64 0, i32 1
+  %113 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %112, i64 0, i32 0
+  %114 = bitcast %class.scoped_refptr* %112 to i64*
+  %115 = load i64, i64* %114, align 8
+  %116 = bitcast %class.scoped_refptr* %111 to i64*
+  store i64 %115, i64* %116, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %113, align 8
+  %117 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %106, i64 1, i32 0
+  %118 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %107, i64 1, i32 0
+  %119 = load i32, i32* %118, align 8
+  store i32 %119, i32* %117, align 8
+  %120 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %106, i64 1, i32 1
+  %121 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %107, i64 1, i32 1
+  %122 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %121, i64 0, i32 0
+  %123 = bitcast %class.scoped_refptr* %121 to i64*
+  %124 = load i64, i64* %123, align 8
+  %125 = bitcast %class.scoped_refptr* %120 to i64*
+  store i64 %124, i64* %125, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %122, align 8
+  %126 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %106, i64 2, i32 0
+  %127 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %107, i64 2, i32 0
+  %128 = load i32, i32* %127, align 8
+  store i32 %128, i32* %126, align 8
+  %129 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %106, i64 2, i32 1
+  %130 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %107, i64 2, i32 1
+  %131 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %130, i64 0, i32 0
+  %132 = bitcast %class.scoped_refptr* %130 to i64*
+  %133 = load i64, i64* %132, align 8
+  %134 = bitcast %class.scoped_refptr* %129 to i64*
+  store i64 %133, i64* %134, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %131, align 8
+  %135 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %106, i64 3, i32 0
+  %136 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %107, i64 3, i32 0
+  %137 = load i32, i32* %136, align 8
+  store i32 %137, i32* %135, align 8
+  %138 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %106, i64 3, i32 1
+  %139 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %107, i64 3, i32 1
+  %140 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %139, i64 0, i32 0
+  %141 = bitcast %class.scoped_refptr* %139 to i64*
+  %142 = load i64, i64* %141, align 8
+  %143 = bitcast %class.scoped_refptr* %138 to i64*
+  store i64 %142, i64* %143, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %140, align 8
+  %144 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %107, i64 4
+  %145 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %106, i64 4
+  %146 = icmp ult %"struct.std::__1::pair"* %144, %32
+  br i1 %146, label %105, label %74
+
+147:                                              ; preds = %103, %77
+  %148 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %1, i64 0, i32 0
+  store i32 %28, i32* %148, align 8
+  %149 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %1, i64 0, i32 1
+  %150 = bitcast %class.scoped_refptr* %149 to i64*
+  %151 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %149, i64 0, i32 0
+  %152 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %151, align 8
+  store i64 %31, i64* %150, align 8
+  %153 = icmp eq %"class.gpu::Buffer"* %152, null
+  br i1 %153, label %372, label %154
+
+154:                                              ; preds = %147
+  %155 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %152, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %156 = atomicrmw sub i32* %155, i32 1 acq_rel
+  %157 = icmp eq i32 %156, 1
+  br i1 %157, label %158, label %372
+
+158:                                              ; preds = %154
+  tail call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %152) #8
+  %159 = bitcast %"class.gpu::Buffer"* %152 to i8*
+  tail call void @_ZdlPv(i8* %159) #9
+  br label %372
+
+160:                                              ; preds = %4
+  %161 = ptrtoint %"struct.std::__1::pair"* %9 to i64
+  %162 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 2
+  %163 = bitcast %"struct.std::__1::__split_buffer"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 40, i8* nonnull %163) #8
+  %164 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %6, i64 0, i32 0
+  %165 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %6, i64 0, i32 1
+  %166 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %6, i64 0, i32 2
+  %167 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %6, i64 0, i32 3, i32 0, i32 0
+  %168 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %6, i64 0, i32 3, i32 1, i32 0
+  %169 = bitcast %"struct.std::__1::pair"** %8 to i64*
+  %170 = bitcast %"class.std::__1::vector"* %0 to i64*
+  %171 = bitcast %"struct.std::__1::__split_buffer"* %6 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %171, i8 -86, i64 40, i1 false)
+  %172 = load i64, i64* %170, align 8
+  %173 = sub i64 %161, %172
+  %174 = ashr exact i64 %173, 4
+  %175 = add nsw i64 %174, 1
+  %176 = icmp ugt i64 %175, 1152921504606846975
+  br i1 %176, label %177, label %179
+
+177:                                              ; preds = %160
+  %178 = bitcast %"class.std::__1::vector"* %0 to %"class.std::__1::__vector_base_common"*
+  tail call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"* %178) #10
+  unreachable
+
+179:                                              ; preds = %160
+  %180 = bitcast %"struct.std::__1::pair"** %10 to i64*
+  %181 = sub i64 %13, %172
+  %182 = ashr exact i64 %181, 4
+  %183 = icmp ult i64 %182, 576460752303423487
+  br i1 %183, label %188, label %184
+
+184:                                              ; preds = %179
+  %185 = sub i64 %5, %172
+  %186 = ashr exact i64 %185, 4
+  store %"struct.std::__1::pair"* null, %"struct.std::__1::pair"** %167, align 8
+  %187 = bitcast %"class.std::__1::allocator"** %168 to %"class.std::__1::__compressed_pair.2"**
+  store %"class.std::__1::__compressed_pair.2"* %162, %"class.std::__1::__compressed_pair.2"** %187, align 8
+  br label %199
+
+188:                                              ; preds = %179
+  %189 = ashr exact i64 %181, 3
+  %190 = icmp ult i64 %189, %175
+  %191 = select i1 %190, i64 %175, i64 %189
+  %192 = sub i64 %5, %172
+  %193 = ashr exact i64 %192, 4
+  store %"struct.std::__1::pair"* null, %"struct.std::__1::pair"** %167, align 8
+  %194 = bitcast %"class.std::__1::allocator"** %168 to %"class.std::__1::__compressed_pair.2"**
+  store %"class.std::__1::__compressed_pair.2"* %162, %"class.std::__1::__compressed_pair.2"** %194, align 8
+  %195 = icmp eq i64 %191, 0
+  br i1 %195, label %205, label %196
+
+196:                                              ; preds = %188
+  %197 = icmp ugt i64 %191, 1152921504606846975
+  br i1 %197, label %198, label %199
+
+198:                                              ; preds = %196
+  tail call void @abort() #10
+  unreachable
+
+199:                                              ; preds = %184, %196
+  %200 = phi i64 [ 1152921504606846975, %184 ], [ %191, %196 ]
+  %201 = phi i64 [ %186, %184 ], [ %193, %196 ]
+  %202 = shl i64 %200, 4
+  %203 = tail call i8* @_Znwm(i64 %202) #9
+  %204 = bitcast i8* %203 to %"struct.std::__1::pair"*
+  br label %205
+
+205:                                              ; preds = %188, %199
+  %206 = phi i64 [ %201, %199 ], [ %193, %188 ]
+  %207 = phi i64 [ %200, %199 ], [ 0, %188 ]
+  %208 = phi %"struct.std::__1::pair"* [ %204, %199 ], [ null, %188 ]
+  store %"struct.std::__1::pair"* %208, %"struct.std::__1::pair"** %164, align 8
+  %209 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %208, i64 %206
+  store %"struct.std::__1::pair"* %209, %"struct.std::__1::pair"** %166, align 8
+  store %"struct.std::__1::pair"* %209, %"struct.std::__1::pair"** %165, align 8
+  %210 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %208, i64 %207
+  store %"struct.std::__1::pair"* %210, %"struct.std::__1::pair"** %167, align 8
+  call void @_ZNSt3__114__split_bufferINS_4pairIi13scoped_refptrIN3gpu6BufferEEEERNS_9allocatorIS6_EEE12emplace_backIJRKiS5_EEEvDpOT_(%"struct.std::__1::__split_buffer"* nonnull %6, i32* dereferenceable(4) %2, %class.scoped_refptr* dereferenceable(8) %3)
+  %211 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %165, align 8
+  %212 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %7, align 8
+  %213 = icmp eq %"struct.std::__1::pair"* %212, %1
+  br i1 %213, label %266, label %214
+
+214:                                              ; preds = %205
+  %215 = ptrtoint %"struct.std::__1::pair"* %212 to i64
+  %216 = getelementptr %"struct.std::__1::pair", %"struct.std::__1::pair"* %1, i64 -1, i32 0
+  %217 = ptrtoint i32* %216 to i64
+  %218 = sub i64 %217, %215
+  %219 = and i64 %218, 16
+  %220 = icmp eq i64 %219, 0
+  br i1 %220, label %221, label %234
+
+221:                                              ; preds = %214
+  %222 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %1, i64 -1
+  %223 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %211, i64 -1, i32 0
+  %224 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %222, i64 0, i32 0
+  %225 = load i32, i32* %224, align 8
+  store i32 %225, i32* %223, align 8
+  %226 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %211, i64 -1, i32 1
+  %227 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %1, i64 -1, i32 1
+  %228 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %227, i64 0, i32 0
+  %229 = bitcast %class.scoped_refptr* %227 to i64*
+  %230 = load i64, i64* %229, align 8
+  %231 = bitcast %class.scoped_refptr* %226 to i64*
+  store i64 %230, i64* %231, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %228, align 8
+  %232 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %165, align 8
+  %233 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %232, i64 -1
+  store %"struct.std::__1::pair"* %233, %"struct.std::__1::pair"** %165, align 8
+  br label %234
+
+234:                                              ; preds = %221, %214
+  %235 = phi %"struct.std::__1::pair"* [ undef, %214 ], [ %233, %221 ]
+  %236 = phi %"struct.std::__1::pair"* [ %211, %214 ], [ %233, %221 ]
+  %237 = phi %"struct.std::__1::pair"* [ %1, %214 ], [ %222, %221 ]
+  %238 = icmp ult i64 %218, 16
+  br i1 %238, label %266, label %239
+
+239:                                              ; preds = %234, %239
+  %240 = phi %"struct.std::__1::pair"* [ %264, %239 ], [ %236, %234 ]
+  %241 = phi %"struct.std::__1::pair"* [ %253, %239 ], [ %237, %234 ]
+  %242 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %240, i64 -1, i32 0
+  %243 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %241, i64 -1, i32 0
+  %244 = load i32, i32* %243, align 8
+  store i32 %244, i32* %242, align 8
+  %245 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %240, i64 -1, i32 1
+  %246 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %241, i64 -1, i32 1
+  %247 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %246, i64 0, i32 0
+  %248 = bitcast %class.scoped_refptr* %246 to i64*
+  %249 = load i64, i64* %248, align 8
+  %250 = bitcast %class.scoped_refptr* %245 to i64*
+  store i64 %249, i64* %250, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %247, align 8
+  %251 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %165, align 8
+  %252 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %251, i64 -1
+  store %"struct.std::__1::pair"* %252, %"struct.std::__1::pair"** %165, align 8
+  %253 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %241, i64 -2
+  %254 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %251, i64 -2, i32 0
+  %255 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %253, i64 0, i32 0
+  %256 = load i32, i32* %255, align 8
+  store i32 %256, i32* %254, align 8
+  %257 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %251, i64 -2, i32 1
+  %258 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %241, i64 -2, i32 1
+  %259 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %258, i64 0, i32 0
+  %260 = bitcast %class.scoped_refptr* %258 to i64*
+  %261 = load i64, i64* %260, align 8
+  %262 = bitcast %class.scoped_refptr* %257 to i64*
+  store i64 %261, i64* %262, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %259, align 8
+  %263 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %165, align 8
+  %264 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %263, i64 -1
+  store %"struct.std::__1::pair"* %264, %"struct.std::__1::pair"** %165, align 8
+  %265 = icmp eq %"struct.std::__1::pair"* %253, %212
+  br i1 %265, label %266, label %239
+
+266:                                              ; preds = %234, %239, %205
+  %267 = phi %"struct.std::__1::pair"* [ %211, %205 ], [ %235, %234 ], [ %264, %239 ]
+  %268 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %8, align 8
+  %269 = icmp eq %"struct.std::__1::pair"* %268, %1
+  br i1 %269, label %270, label %276
+
+270:                                              ; preds = %266
+  %271 = ptrtoint %"struct.std::__1::pair"* %268 to i64
+  %272 = ptrtoint %"struct.std::__1::pair"* %267 to i64
+  %273 = bitcast %"struct.std::__1::pair"** %165 to i64*
+  %274 = bitcast %"struct.std::__1::pair"** %166 to i64*
+  %275 = load i64, i64* %274, align 8
+  br label %335
+
+276:                                              ; preds = %266
+  %277 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %166, align 8
+  %278 = getelementptr %"struct.std::__1::pair", %"struct.std::__1::pair"* %268, i64 -1, i32 0
+  %279 = ptrtoint i32* %278 to i64
+  %280 = sub i64 %279, %5
+  %281 = and i64 %280, 16
+  %282 = icmp eq i64 %281, 0
+  br i1 %282, label %283, label %296
+
+283:                                              ; preds = %276
+  %284 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %277, i64 0, i32 0
+  %285 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %1, i64 0, i32 0
+  %286 = load i32, i32* %285, align 8
+  store i32 %286, i32* %284, align 8
+  %287 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %277, i64 0, i32 1
+  %288 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %1, i64 0, i32 1
+  %289 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %288, i64 0, i32 0
+  %290 = bitcast %class.scoped_refptr* %288 to i64*
+  %291 = load i64, i64* %290, align 8
+  %292 = bitcast %class.scoped_refptr* %287 to i64*
+  store i64 %291, i64* %292, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %289, align 8
+  %293 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %1, i64 1
+  %294 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %166, align 8
+  %295 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %294, i64 1
+  store %"struct.std::__1::pair"* %295, %"struct.std::__1::pair"** %166, align 8
+  br label %296
+
+296:                                              ; preds = %283, %276
+  %297 = phi %"struct.std::__1::pair"* [ undef, %276 ], [ %295, %283 ]
+  %298 = phi %"struct.std::__1::pair"* [ %277, %276 ], [ %295, %283 ]
+  %299 = phi %"struct.std::__1::pair"* [ %1, %276 ], [ %293, %283 ]
+  %300 = icmp ult i64 %280, 16
+  br i1 %300, label %328, label %301
+
+301:                                              ; preds = %296, %301
+  %302 = phi %"struct.std::__1::pair"* [ %326, %301 ], [ %298, %296 ]
+  %303 = phi %"struct.std::__1::pair"* [ %324, %301 ], [ %299, %296 ]
+  %304 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %302, i64 0, i32 0
+  %305 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %303, i64 0, i32 0
+  %306 = load i32, i32* %305, align 8
+  store i32 %306, i32* %304, align 8
+  %307 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %302, i64 0, i32 1
+  %308 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %303, i64 0, i32 1
+  %309 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %308, i64 0, i32 0
+  %310 = bitcast %class.scoped_refptr* %308 to i64*
+  %311 = load i64, i64* %310, align 8
+  %312 = bitcast %class.scoped_refptr* %307 to i64*
+  store i64 %311, i64* %312, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %309, align 8
+  %313 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %166, align 8
+  %314 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %313, i64 1
+  store %"struct.std::__1::pair"* %314, %"struct.std::__1::pair"** %166, align 8
+  %315 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %314, i64 0, i32 0
+  %316 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %303, i64 1, i32 0
+  %317 = load i32, i32* %316, align 8
+  store i32 %317, i32* %315, align 8
+  %318 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %313, i64 1, i32 1
+  %319 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %303, i64 1, i32 1
+  %320 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %319, i64 0, i32 0
+  %321 = bitcast %class.scoped_refptr* %319 to i64*
+  %322 = load i64, i64* %321, align 8
+  %323 = bitcast %class.scoped_refptr* %318 to i64*
+  store i64 %322, i64* %323, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %320, align 8
+  %324 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %303, i64 2
+  %325 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %166, align 8
+  %326 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %325, i64 1
+  store %"struct.std::__1::pair"* %326, %"struct.std::__1::pair"** %166, align 8
+  %327 = icmp eq %"struct.std::__1::pair"* %324, %268
+  br i1 %327, label %328, label %301
+
+328:                                              ; preds = %301, %296
+  %329 = phi %"struct.std::__1::pair"* [ %297, %296 ], [ %326, %301 ]
+  %330 = ptrtoint %"struct.std::__1::pair"* %329 to i64
+  %331 = bitcast %"struct.std::__1::pair"** %165 to i64*
+  %332 = load i64, i64* %331, align 8
+  %333 = load i64, i64* %169, align 8
+  %334 = bitcast %"struct.std::__1::pair"** %166 to i64*
+  br label %335
+
+335:                                              ; preds = %270, %328
+  %336 = phi i64* [ %274, %270 ], [ %334, %328 ]
+  %337 = phi i64 [ %275, %270 ], [ %330, %328 ]
+  %338 = phi i64 [ %271, %270 ], [ %333, %328 ]
+  %339 = phi i64* [ %273, %270 ], [ %331, %328 ]
+  %340 = phi i64 [ %272, %270 ], [ %332, %328 ]
+  %341 = load i64, i64* %170, align 8
+  store i64 %340, i64* %170, align 8
+  store i64 %341, i64* %339, align 8
+  store i64 %337, i64* %169, align 8
+  store i64 %338, i64* %336, align 8
+  %342 = load i64, i64* %180, align 8
+  %343 = bitcast %"struct.std::__1::pair"** %167 to i64*
+  %344 = load i64, i64* %343, align 8
+  store i64 %344, i64* %180, align 8
+  store i64 %342, i64* %343, align 8
+  %345 = bitcast %"struct.std::__1::__split_buffer"* %6 to i64*
+  store i64 %341, i64* %345, align 8
+  %346 = inttoptr i64 %341 to %"struct.std::__1::pair"*
+  %347 = inttoptr i64 %338 to %"struct.std::__1::pair"*
+  %348 = icmp eq %"struct.std::__1::pair"* %347, %346
+  br i1 %348, label %366, label %349
+
+349:                                              ; preds = %335, %361
+  %350 = phi %"struct.std::__1::pair"* [ %362, %361 ], [ %347, %335 ]
+  %351 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %350, i64 -1
+  store %"struct.std::__1::pair"* %351, %"struct.std::__1::pair"** %166, align 8
+  %352 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %350, i64 -1, i32 1, i32 0
+  %353 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %352, align 8
+  %354 = icmp eq %"class.gpu::Buffer"* %353, null
+  br i1 %354, label %361, label %355
+
+355:                                              ; preds = %349
+  %356 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %353, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %357 = atomicrmw sub i32* %356, i32 1 acq_rel
+  %358 = icmp eq i32 %357, 1
+  br i1 %358, label %359, label %361
+
+359:                                              ; preds = %355
+  call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %353) #8
+  %360 = bitcast %"class.gpu::Buffer"* %353 to i8*
+  call void @_ZdlPv(i8* %360) #9
+  br label %361
+
+361:                                              ; preds = %359, %355, %349
+  %362 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %166, align 8
+  %363 = icmp eq %"struct.std::__1::pair"* %362, %346
+  br i1 %363, label %364, label %349
+
+364:                                              ; preds = %361
+  %365 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %164, align 8
+  br label %366
+
+366:                                              ; preds = %364, %335
+  %367 = phi %"struct.std::__1::pair"* [ %365, %364 ], [ %346, %335 ]
+  %368 = icmp eq %"struct.std::__1::pair"* %367, null
+  br i1 %368, label %371, label %369
+
+369:                                              ; preds = %366
+  %370 = bitcast %"struct.std::__1::pair"* %367 to i8*
+  call void @_ZdlPv(i8* %370) #9
+  br label %371
+
+371:                                              ; preds = %366, %369
+  call void @llvm.lifetime.end.p0i8(i64 40, i8* nonnull %163) #8
+  br label %372
+
+372:                                              ; preds = %147, %154, %158, %16, %371
+  %373 = phi %"struct.std::__1::pair"* [ %1, %16 ], [ %211, %371 ], [ %1, %158 ], [ %1, %154 ], [ %1, %147 ]
+  ret %"struct.std::__1::pair"* %373
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZNSt3__114__split_bufferINS_4pairIi13scoped_refptrIN3gpu6BufferEEEERNS_9allocatorIS6_EEE12emplace_backIJRKiS5_EEEvDpOT_(%"struct.std::__1::__split_buffer"*, i32* dereferenceable(4), %class.scoped_refptr* dereferenceable(8)) local_unnamed_addr #0 comdat align 2 {
+  %4 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %0, i64 0, i32 2
+  %5 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %4, align 8
+  %6 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %0, i64 0, i32 3, i32 0, i32 0
+  %7 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %6, align 8
+  %8 = icmp eq %"struct.std::__1::pair"* %5, %7
+  %9 = ptrtoint %"struct.std::__1::pair"* %7 to i64
+  br i1 %8, label %10, label %181
+
+10:                                               ; preds = %3
+  %11 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %0, i64 0, i32 1
+  %12 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %11, align 8
+  %13 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %0, i64 0, i32 0
+  %14 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %13, align 8
+  %15 = icmp ugt %"struct.std::__1::pair"* %12, %14
+  %16 = ptrtoint %"struct.std::__1::pair"* %14 to i64
+  br i1 %15, label %17, label %56
+
+17:                                               ; preds = %10
+  %18 = ptrtoint %"struct.std::__1::pair"* %12 to i64
+  %19 = sub i64 %18, %16
+  %20 = ashr exact i64 %19, 4
+  %21 = add nsw i64 %20, 1
+  %22 = sdiv i64 %21, -2
+  %23 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %12, i64 %22
+  %24 = icmp eq %"struct.std::__1::pair"* %12, %5
+  br i1 %24, label %52, label %25
+
+25:                                               ; preds = %17, %46
+  %26 = phi %"struct.std::__1::pair"* [ %48, %46 ], [ %23, %17 ]
+  %27 = phi %"struct.std::__1::pair"* [ %47, %46 ], [ %12, %17 ]
+  %28 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %27, i64 0, i32 0
+  %29 = load i32, i32* %28, align 4
+  %30 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %26, i64 0, i32 0
+  store i32 %29, i32* %30, align 8
+  %31 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %27, i64 0, i32 1
+  %32 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %31, i64 0, i32 0
+  %33 = bitcast %class.scoped_refptr* %31 to i64*
+  %34 = load i64, i64* %33, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %32, align 8
+  %35 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %26, i64 0, i32 1
+  %36 = bitcast %class.scoped_refptr* %35 to i64*
+  %37 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %35, i64 0, i32 0
+  %38 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %37, align 8
+  store i64 %34, i64* %36, align 8
+  %39 = icmp eq %"class.gpu::Buffer"* %38, null
+  br i1 %39, label %46, label %40
+
+40:                                               ; preds = %25
+  %41 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %38, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %42 = atomicrmw sub i32* %41, i32 1 acq_rel
+  %43 = icmp eq i32 %42, 1
+  br i1 %43, label %44, label %46
+
+44:                                               ; preds = %40
+  tail call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %38) #8
+  %45 = bitcast %"class.gpu::Buffer"* %38 to i8*
+  tail call void @_ZdlPv(i8* %45) #9
+  br label %46
+
+46:                                               ; preds = %44, %40, %25
+  %47 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %27, i64 1
+  %48 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %26, i64 1
+  %49 = icmp eq %"struct.std::__1::pair"* %47, %5
+  br i1 %49, label %50, label %25
+
+50:                                               ; preds = %46
+  %51 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %11, align 8
+  br label %52
+
+52:                                               ; preds = %50, %17
+  %53 = phi %"struct.std::__1::pair"* [ %5, %17 ], [ %51, %50 ]
+  %54 = phi %"struct.std::__1::pair"* [ %23, %17 ], [ %48, %50 ]
+  store %"struct.std::__1::pair"* %54, %"struct.std::__1::pair"** %4, align 8
+  %55 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %53, i64 %22
+  store %"struct.std::__1::pair"* %55, %"struct.std::__1::pair"** %11, align 8
+  br label %181
+
+56:                                               ; preds = %10
+  %57 = bitcast %"struct.std::__1::pair"** %6 to i64*
+  %58 = bitcast %"struct.std::__1::__split_buffer"* %0 to i64*
+  %59 = sub i64 %9, %16
+  %60 = ashr exact i64 %59, 3
+  %61 = icmp eq i64 %59, 0
+  %62 = select i1 %61, i64 1, i64 %60
+  %63 = icmp ugt i64 %62, 1152921504606846975
+  br i1 %63, label %64, label %65
+
+64:                                               ; preds = %56
+  tail call void @abort() #10
+  unreachable
+
+65:                                               ; preds = %56
+  %66 = lshr i64 %62, 2
+  %67 = shl i64 %62, 4
+  %68 = tail call i8* @_Znwm(i64 %67) #9
+  %69 = bitcast i8* %68 to %"struct.std::__1::pair"*
+  %70 = ptrtoint i8* %68 to i64
+  %71 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %69, i64 %66
+  %72 = ptrtoint %"struct.std::__1::pair"* %71 to i64
+  %73 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %69, i64 %62
+  %74 = ptrtoint %"struct.std::__1::pair"* %73 to i64
+  %75 = ptrtoint %"struct.std::__1::pair"* %12 to i64
+  %76 = ptrtoint %"struct.std::__1::pair"* %5 to i64
+  %77 = sub i64 %76, %75
+  %78 = ashr exact i64 %77, 4
+  %79 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %71, i64 %78
+  %80 = icmp eq i64 %77, 0
+  br i1 %80, label %155, label %81
+
+81:                                               ; preds = %65
+  %82 = add i64 %77, -16
+  %83 = lshr i64 %82, 4
+  %84 = add nuw nsw i64 %83, 1
+  %85 = and i64 %84, 3
+  %86 = icmp eq i64 %85, 0
+  br i1 %86, label %104, label %87
+
+87:                                               ; preds = %81, %87
+  %88 = phi %"struct.std::__1::pair"* [ %100, %87 ], [ %71, %81 ]
+  %89 = phi %"struct.std::__1::pair"* [ %101, %87 ], [ %12, %81 ]
+  %90 = phi i64 [ %102, %87 ], [ %85, %81 ]
+  %91 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %88, i64 0, i32 0
+  %92 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %89, i64 0, i32 0
+  %93 = load i32, i32* %92, align 8
+  store i32 %93, i32* %91, align 8
+  %94 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %88, i64 0, i32 1
+  %95 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %89, i64 0, i32 1
+  %96 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %95, i64 0, i32 0
+  %97 = bitcast %class.scoped_refptr* %95 to i64*
+  %98 = load i64, i64* %97, align 8
+  %99 = bitcast %class.scoped_refptr* %94 to i64*
+  store i64 %98, i64* %99, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %96, align 8
+  %100 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %88, i64 1
+  %101 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %89, i64 1
+  %102 = add i64 %90, -1
+  %103 = icmp eq i64 %102, 0
+  br i1 %103, label %104, label %87, !llvm.loop !4
+
+104:                                              ; preds = %87, %81
+  %105 = phi %"struct.std::__1::pair"* [ %71, %81 ], [ %100, %87 ]
+  %106 = phi %"struct.std::__1::pair"* [ %12, %81 ], [ %101, %87 ]
+  %107 = icmp ult i64 %82, 48
+  br i1 %107, label %150, label %108
+
+108:                                              ; preds = %104, %108
+  %109 = phi %"struct.std::__1::pair"* [ %147, %108 ], [ %105, %104 ]
+  %110 = phi %"struct.std::__1::pair"* [ %148, %108 ], [ %106, %104 ]
+  %111 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %109, i64 0, i32 0
+  %112 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %110, i64 0, i32 0
+  %113 = load i32, i32* %112, align 8
+  store i32 %113, i32* %111, align 8
+  %114 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %109, i64 0, i32 1
+  %115 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %110, i64 0, i32 1
+  %116 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %115, i64 0, i32 0
+  %117 = bitcast %class.scoped_refptr* %115 to i64*
+  %118 = load i64, i64* %117, align 8
+  %119 = bitcast %class.scoped_refptr* %114 to i64*
+  store i64 %118, i64* %119, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %116, align 8
+  %120 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %109, i64 1, i32 0
+  %121 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %110, i64 1, i32 0
+  %122 = load i32, i32* %121, align 8
+  store i32 %122, i32* %120, align 8
+  %123 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %109, i64 1, i32 1
+  %124 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %110, i64 1, i32 1
+  %125 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %124, i64 0, i32 0
+  %126 = bitcast %class.scoped_refptr* %124 to i64*
+  %127 = load i64, i64* %126, align 8
+  %128 = bitcast %class.scoped_refptr* %123 to i64*
+  store i64 %127, i64* %128, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %125, align 8
+  %129 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %109, i64 2, i32 0
+  %130 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %110, i64 2, i32 0
+  %131 = load i32, i32* %130, align 8
+  store i32 %131, i32* %129, align 8
+  %132 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %109, i64 2, i32 1
+  %133 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %110, i64 2, i32 1
+  %134 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %133, i64 0, i32 0
+  %135 = bitcast %class.scoped_refptr* %133 to i64*
+  %136 = load i64, i64* %135, align 8
+  %137 = bitcast %class.scoped_refptr* %132 to i64*
+  store i64 %136, i64* %137, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %134, align 8
+  %138 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %109, i64 3, i32 0
+  %139 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %110, i64 3, i32 0
+  %140 = load i32, i32* %139, align 8
+  store i32 %140, i32* %138, align 8
+  %141 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %109, i64 3, i32 1
+  %142 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %110, i64 3, i32 1
+  %143 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %142, i64 0, i32 0
+  %144 = bitcast %class.scoped_refptr* %142 to i64*
+  %145 = load i64, i64* %144, align 8
+  %146 = bitcast %class.scoped_refptr* %141 to i64*
+  store i64 %145, i64* %146, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %143, align 8
+  %147 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %109, i64 4
+  %148 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %110, i64 4
+  %149 = icmp eq %"struct.std::__1::pair"* %79, %147
+  br i1 %149, label %150, label %108
+
+150:                                              ; preds = %108, %104
+  %151 = ptrtoint %"struct.std::__1::pair"* %79 to i64
+  %152 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %13, align 8
+  %153 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %11, align 8
+  %154 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %4, align 8
+  br label %155
+
+155:                                              ; preds = %65, %150
+  %156 = phi %"struct.std::__1::pair"* [ %154, %150 ], [ %5, %65 ]
+  %157 = phi %"struct.std::__1::pair"* [ %153, %150 ], [ %12, %65 ]
+  %158 = phi %"struct.std::__1::pair"* [ %152, %150 ], [ %14, %65 ]
+  %159 = phi i64 [ %151, %150 ], [ %72, %65 ]
+  store i64 %70, i64* %58, align 8
+  %160 = bitcast %"struct.std::__1::pair"** %11 to i64*
+  store i64 %72, i64* %160, align 8
+  %161 = bitcast %"struct.std::__1::pair"** %4 to i64*
+  store i64 %159, i64* %161, align 8
+  store i64 %74, i64* %57, align 8
+  %162 = icmp eq %"struct.std::__1::pair"* %156, %157
+  br i1 %162, label %177, label %163
+
+163:                                              ; preds = %155, %175
+  %164 = phi %"struct.std::__1::pair"* [ %165, %175 ], [ %156, %155 ]
+  %165 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %164, i64 -1
+  %166 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %164, i64 -1, i32 1, i32 0
+  %167 = load %"class.gpu::Buffer"*, %"class.gpu::Buffer"** %166, align 8
+  %168 = icmp eq %"class.gpu::Buffer"* %167, null
+  br i1 %168, label %175, label %169
+
+169:                                              ; preds = %163
+  %170 = getelementptr inbounds %"class.gpu::Buffer", %"class.gpu::Buffer"* %167, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %171 = atomicrmw sub i32* %170, i32 1 acq_rel
+  %172 = icmp eq i32 %171, 1
+  br i1 %172, label %173, label %175
+
+173:                                              ; preds = %169
+  tail call void @_ZN3gpu6BufferD1Ev(%"class.gpu::Buffer"* nonnull %167) #8
+  %174 = bitcast %"class.gpu::Buffer"* %167 to i8*
+  tail call void @_ZdlPv(i8* %174) #9
+  br label %175
+
+175:                                              ; preds = %173, %169, %163
+  %176 = icmp eq %"struct.std::__1::pair"* %165, %157
+  br i1 %176, label %177, label %163
+
+177:                                              ; preds = %175, %155
+  %178 = icmp eq %"struct.std::__1::pair"* %158, null
+  br i1 %178, label %181, label %179
+
+179:                                              ; preds = %177
+  %180 = bitcast %"struct.std::__1::pair"* %158 to i8*
+  tail call void @_ZdlPv(i8* %180) #9
+  br label %181
+
+181:                                              ; preds = %179, %177, %52, %3
+  %182 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %4, align 8
+  %183 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %182, i64 0, i32 0
+  %184 = load i32, i32* %1, align 4
+  store i32 %184, i32* %183, align 8
+  %185 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %182, i64 0, i32 1
+  %186 = getelementptr inbounds %class.scoped_refptr, %class.scoped_refptr* %2, i64 0, i32 0
+  %187 = bitcast %class.scoped_refptr* %2 to i64*
+  %188 = load i64, i64* %187, align 8
+  %189 = bitcast %class.scoped_refptr* %185 to i64*
+  store i64 %188, i64* %189, align 8
+  store %"class.gpu::Buffer"* null, %"class.gpu::Buffer"** %186, align 8
+  %190 = load %"struct.std::__1::pair"*, %"struct.std::__1::pair"** %4, align 8
+  %191 = getelementptr inbounds %"struct.std::__1::pair", %"struct.std::__1::pair"* %190, i64 1
+  store %"struct.std::__1::pair"* %191, %"struct.std::__1::pair"** %4, align 8
+  ret void
+}
+
+; Function Attrs: noreturn
+declare void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"*) local_unnamed_addr #5
+
+; Function Attrs: noreturn nounwind
+declare void @abort() local_unnamed_addr #6
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #7
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { noreturn "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { noreturn nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { nounwind }
+attributes #9 = { builtin nounwind }
+attributes #10 = { noreturn nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = distinct !{!2, !3}
+!3 = !{!"llvm.loop.unroll.disable"}
+!4 = distinct !{!4, !3}

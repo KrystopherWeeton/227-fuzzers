@@ -1,0 +1,1503 @@
+; ModuleID = '../../components/query_tiles/internal/image_prefetcher.cc'
+source_filename = "../../components/query_tiles/internal/image_prefetcher.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.query_tiles::ImagePrefetcher" = type { i32 (...)** }
+%"class.query_tiles::ImageLoader" = type { i32 (...)** }
+%"class.base::internal::WeakPtrFactoryBase" = type { %"class.base::internal::WeakReferenceOwner", i64 }
+%"class.base::internal::WeakReferenceOwner" = type { %class.scoped_refptr }
+%class.scoped_refptr = type { %"class.base::internal::WeakReference::Flag"* }
+%"class.base::internal::WeakReference::Flag" = type <{ %"class.base::RefCountedThreadSafe", %"class.base::AtomicFlag", [3 x i8] }>
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.10" }
+%"struct.std::__1::__atomic_base.10" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"class.base::AtomicFlag" = type { %"struct.std::__1::atomic.11" }
+%"struct.std::__1::atomic.11" = type { %"struct.std::__1::__atomic_base.12" }
+%"struct.std::__1::__atomic_base.12" = type { %"struct.std::__1::__atomic_base.13" }
+%"struct.std::__1::__atomic_base.13" = type { %"struct.std::__1::__cxx_atomic_impl.14" }
+%"struct.std::__1::__cxx_atomic_impl.14" = type { %"struct.std::__1::__cxx_atomic_base_impl.15" }
+%"struct.std::__1::__cxx_atomic_base_impl.15" = type { i8 }
+%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl" = type { %"class.query_tiles::ImagePrefetcher", i32, %"class.std::__1::unique_ptr.1", %"class.base::WeakPtrFactory" }
+%"class.std::__1::unique_ptr.1" = type { %"class.std::__1::__compressed_pair.2" }
+%"class.std::__1::__compressed_pair.2" = type { %"struct.std::__1::__compressed_pair_elem.3" }
+%"struct.std::__1::__compressed_pair_elem.3" = type { %"class.query_tiles::ImageLoader"* }
+%"class.base::WeakPtrFactory" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"struct.query_tiles::TileGroup" = type { %"class.std::__1::basic_string", %"class.std::__1::basic_string", %"class.base::Time", %"class.std::__1::vector", %"class.std::__1::map" }
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.19" }
+%"class.std::__1::__compressed_pair.19" = type { %"struct.std::__1::__compressed_pair_elem.20" }
+%"struct.std::__1::__compressed_pair_elem.20" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon }
+%union.anon = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.base::Time" = type { %"class.base::time_internal::TimeBase" }
+%"class.base::time_internal::TimeBase" = type { i64 }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"class.std::__1::unique_ptr.22"*, %"class.std::__1::unique_ptr.22"*, %"class.std::__1::__compressed_pair.23" }
+%"class.std::__1::unique_ptr.22" = type opaque
+%"class.std::__1::__compressed_pair.23" = type { %"struct.std::__1::__compressed_pair_elem.24" }
+%"struct.std::__1::__compressed_pair_elem.24" = type { %"class.std::__1::unique_ptr.22"* }
+%"class.std::__1::map" = type { %"class.std::__1::__tree" }
+%"class.std::__1::__tree" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.28", %"class.std::__1::__compressed_pair.33" }
+%"class.std::__1::__tree_end_node" = type { %"class.std::__1::__tree_node_base"* }
+%"class.std::__1::__tree_node_base" = type opaque
+%"class.std::__1::__compressed_pair.28" = type { %"struct.std::__1::__compressed_pair_elem.29" }
+%"struct.std::__1::__compressed_pair_elem.29" = type { %"class.std::__1::__tree_end_node" }
+%"class.std::__1::__compressed_pair.33" = type { %"struct.std::__1::__compressed_pair_elem.34" }
+%"struct.std::__1::__compressed_pair_elem.34" = type { i64 }
+%"class.base::OnceCallback" = type { %"class.base::internal::CallbackBase" }
+%"class.base::internal::CallbackBase" = type { %class.scoped_refptr.36 }
+%class.scoped_refptr.36 = type { %"class.base::internal::BindStateBase"* }
+%"class.base::internal::BindStateBase" = type { %"class.base::RefCountedThreadSafe.37", void ()*, void (%"class.base::internal::BindStateBase"*)*, i1 (%"class.base::internal::BindStateBase"*, i32)* }
+%"class.base::RefCountedThreadSafe.37" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.logging::CheckError" = type { %"class.logging::LogMessage"* }
+%"class.logging::LogMessage" = type opaque
+%"class.base::Location" = type { i8*, i8*, i32, i8* }
+%"class.std::__1::vector.40" = type { %"class.std::__1::__vector_base.41" }
+%"class.std::__1::__vector_base.41" = type { %class.GURL*, %class.GURL*, %"class.std::__1::__compressed_pair.48" }
+%class.GURL = type { %"class.std::__1::basic_string", i8, %"struct.url::Parsed", %"class.std::__1::unique_ptr.42" }
+%"struct.url::Parsed" = type { %"struct.url::Component", %"struct.url::Component", %"struct.url::Component", %"struct.url::Component", %"struct.url::Component", %"struct.url::Component", %"struct.url::Component", %"struct.url::Component", i8, %"struct.url::Parsed"* }
+%"struct.url::Component" = type { i32, i32 }
+%"class.std::__1::unique_ptr.42" = type { %"class.std::__1::__compressed_pair.43" }
+%"class.std::__1::__compressed_pair.43" = type { %"struct.std::__1::__compressed_pair_elem.44" }
+%"struct.std::__1::__compressed_pair_elem.44" = type { %class.GURL* }
+%"class.std::__1::__compressed_pair.48" = type { %"struct.std::__1::__compressed_pair_elem.44" }
+%"class.query_tiles::TileIterator" = type <{ %"class.std::__1::queue", i32, [4 x i8] }>
+%"class.std::__1::queue" = type { %"class.std::__1::deque" }
+%"class.std::__1::deque" = type { %"class.std::__1::__deque_base" }
+%"class.std::__1::__deque_base" = type { %"struct.std::__1::__split_buffer", i64, %"class.std::__1::__compressed_pair.57" }
+%"struct.std::__1::__split_buffer" = type { %"struct.std::__1::pair"**, %"struct.std::__1::pair"**, %"struct.std::__1::pair"**, %"class.std::__1::__compressed_pair.52" }
+%"struct.std::__1::pair" = type opaque
+%"class.std::__1::__compressed_pair.52" = type { %"struct.std::__1::__compressed_pair_elem.53" }
+%"struct.std::__1::__compressed_pair_elem.53" = type { %"struct.std::__1::pair"** }
+%"class.std::__1::__compressed_pair.57" = type { %"struct.std::__1::__compressed_pair_elem.34" }
+%class.scoped_refptr.38 = type { %"class.base::SingleThreadTaskRunner"* }
+%"class.base::SingleThreadTaskRunner" = type { %"class.base::SequencedTaskRunner.base", [4 x i8] }
+%"class.base::SequencedTaskRunner.base" = type { %"class.base::TaskRunner.base" }
+%"class.base::TaskRunner.base" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe.39" }>
+%"class.base::RefCountedThreadSafe.39" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::TaskRunner" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe.39", [4 x i8] }>
+%"class.std::__1::basic_ostream" = type { i32 (...)**, %"class.std::__1::basic_ios.base" }
+%"class.std::__1::basic_ios.base" = type <{ %"class.std::__1::ios_base", %"class.std::__1::basic_ostream"*, i32 }>
+%"class.std::__1::ios_base" = type { i32 (...)**, i32, i64, i64, i32, i32, i8*, i8*, void (i32, %"class.std::__1::ios_base"*, i32)**, i32*, i64, i64, i64*, i64, i64, i8**, i64, i64 }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short" = type { [23 x i8], %struct.anon }
+%struct.anon = type { i8 }
+%"struct.query_tiles::Tile" = type { %"class.std::__1::basic_string", %"class.std::__1::basic_string", %"class.std::__1::basic_string", %"class.std::__1::basic_string", %"class.std::__1::vector.61", %"class.std::__1::vector", %"class.std::__1::vector.68" }
+%"class.std::__1::vector.61" = type { %"class.std::__1::__vector_base.62" }
+%"class.std::__1::__vector_base.62" = type { %"struct.query_tiles::ImageMetadata"*, %"struct.query_tiles::ImageMetadata"*, %"class.std::__1::__compressed_pair.63" }
+%"struct.query_tiles::ImageMetadata" = type { %class.GURL }
+%"class.std::__1::__compressed_pair.63" = type { %"struct.std::__1::__compressed_pair_elem.64" }
+%"struct.std::__1::__compressed_pair_elem.64" = type { %"struct.query_tiles::ImageMetadata"* }
+%"class.std::__1::vector.68" = type { %"class.std::__1::__vector_base.69" }
+%"class.std::__1::__vector_base.69" = type { %"class.std::__1::basic_string"*, %"class.std::__1::basic_string"*, %"class.std::__1::__compressed_pair.70" }
+%"class.std::__1::__compressed_pair.70" = type { %"struct.std::__1::__compressed_pair_elem.71" }
+%"struct.std::__1::__compressed_pair_elem.71" = type { %"class.std::__1::basic_string"* }
+%"class.base::internal::WeakReference" = type { %class.scoped_refptr.78 }
+%class.scoped_refptr.78 = type { %"class.base::internal::WeakReference::Flag"* }
+%"class.base::WeakPtr" = type { %"class.base::internal::WeakPtrBase" }
+%"class.base::internal::WeakPtrBase" = type { %"class.base::internal::WeakReference", i64 }
+%"class.base::OnceCallback.79" = type { %"class.base::internal::CallbackBase" }
+%"class.base::OnceCallback.80" = type { %"class.base::internal::CallbackBase" }
+%"class.std::__1::__vector_base_common" = type { i8 }
+%class.SkBitmap = type { %class.sk_sp, %class.SkPixmap, %class.sk_sp.82 }
+%class.sk_sp = type { %class.SkPixelRef* }
+%class.SkPixelRef = type opaque
+%class.SkPixmap = type { i8*, i64, %struct.SkImageInfo }
+%struct.SkImageInfo = type { %class.SkColorInfo, %struct.SkISize }
+%class.SkColorInfo = type { %class.sk_sp.81, i32, i32 }
+%class.sk_sp.81 = type { %class.SkColorSpace* }
+%class.SkColorSpace = type <{ %class.SkNVRefCnt, i32, i32, %struct.skcms_TransferFunction, %struct.skcms_Matrix3x3, %struct.skcms_TransferFunction, %struct.skcms_Matrix3x3, %class.SkOnce, [3 x i8] }>
+%class.SkNVRefCnt = type { %"struct.std::__1::atomic" }
+%struct.skcms_TransferFunction = type { float, float, float, float, float, float, float }
+%struct.skcms_Matrix3x3 = type { [3 x [3 x float]] }
+%class.SkOnce = type { %"struct.std::__1::atomic.11" }
+%struct.SkISize = type { i32, i32 }
+%class.sk_sp.82 = type { %class.SkMipmap* }
+%class.SkMipmap = type opaque
+
+$_ZNSt3__16vectorI4GURLNS_9allocatorIS1_EEE24__emplace_back_slow_pathIJS1_EEEvDpOT_ = comdat any
+
+@_ZTVN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplE = internal unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*)* @_ZN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplD2Ev to i8*), i8* bitcast (void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*)* @_ZN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplD0Ev to i8*), i8* bitcast (void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"struct.query_tiles::TileGroup"*, i1, %"class.base::OnceCallback"*)* @_ZN11query_tiles12_GLOBAL__N_119ImagePrefetcherImpl8PrefetchENS_9TileGroupEbN4base12OnceCallbackIFvvEEE to i8*)] }, align 8
+@.str = private unnamed_addr constant [9 x i8] c"Prefetch\00", align 1
+@.str.1 = private unnamed_addr constant [58 x i8] c"../../components/query_tiles/internal/image_prefetcher.cc\00", align 1
+@.str.2 = private unnamed_addr constant [18 x i8] c"../../base/bind.h\00", align 1
+@.str.3 = private unnamed_addr constant [9 x i8] c"callback\00", align 1
+@.str.5 = private unnamed_addr constant [12 x i8] c"FetchImages\00", align 1
+@.str.6 = private unnamed_addr constant [29 x i8] c"../../base/memory/weak_ptr.h\00", align 1
+@.str.7 = private unnamed_addr constant [15 x i8] c"ref_.IsValid()\00", align 1
+@.str.8 = private unnamed_addr constant [28 x i8] c"OnImageFetchedInReducedMode\00", align 1
+@.str.9 = private unnamed_addr constant [15 x i8] c"OnImageFetched\00", align 1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden %"class.query_tiles::ImagePrefetcher"* @_ZN11query_tiles15ImagePrefetcher6CreateE17ImagePrefetchModeNSt3__110unique_ptrINS_11ImageLoaderENS2_14default_deleteIS4_EEEE(i32, %"class.query_tiles::ImageLoader"*) local_unnamed_addr #0 align 2 {
+  %3 = ptrtoint %"class.query_tiles::ImageLoader"* %1 to i64
+  %4 = tail call i8* @_Znwm(i64 40) #8
+  %5 = bitcast i8* %4 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_ZTVN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %5, align 8
+  %6 = getelementptr inbounds i8, i8* %4, i64 8
+  %7 = bitcast i8* %6 to i32*
+  store i32 %0, i32* %7, align 8
+  %8 = getelementptr inbounds i8, i8* %4, i64 16
+  %9 = bitcast i8* %8 to i64*
+  store i64 %3, i64* %9, align 8
+  %10 = getelementptr inbounds i8, i8* %4, i64 24
+  %11 = bitcast i8* %10 to %"class.base::internal::WeakPtrFactoryBase"*
+  %12 = ptrtoint i8* %4 to i64
+  tail call void @_ZN4base8internal18WeakPtrFactoryBaseC2Em(%"class.base::internal::WeakPtrFactoryBase"* %11, i64 %12) #9
+  %13 = bitcast i8* %4 to %"class.query_tiles::ImagePrefetcher"*
+  ret %"class.query_tiles::ImagePrefetcher"* %13
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #2
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplD2Ev(%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl", %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_ZTVN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl", %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %0, i64 0, i32 3, i32 0
+  tail call void @_ZN4base8internal18WeakPtrFactoryBaseD2Ev(%"class.base::internal::WeakPtrFactoryBase"* %3) #9
+  %4 = getelementptr inbounds %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl", %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %0, i64 0, i32 2, i32 0, i32 0, i32 0
+  %5 = load %"class.query_tiles::ImageLoader"*, %"class.query_tiles::ImageLoader"** %4, align 8
+  store %"class.query_tiles::ImageLoader"* null, %"class.query_tiles::ImageLoader"** %4, align 8
+  %6 = icmp eq %"class.query_tiles::ImageLoader"* %5, null
+  br i1 %6, label %12, label %7
+
+7:                                                ; preds = %1
+  %8 = bitcast %"class.query_tiles::ImageLoader"* %5 to void (%"class.query_tiles::ImageLoader"*)***
+  %9 = load void (%"class.query_tiles::ImageLoader"*)**, void (%"class.query_tiles::ImageLoader"*)*** %8, align 8
+  %10 = getelementptr inbounds void (%"class.query_tiles::ImageLoader"*)*, void (%"class.query_tiles::ImageLoader"*)** %9, i64 1
+  %11 = load void (%"class.query_tiles::ImageLoader"*)*, void (%"class.query_tiles::ImageLoader"*)** %10, align 8
+  tail call void %11(%"class.query_tiles::ImageLoader"* nonnull %5) #9
+  br label %12
+
+12:                                               ; preds = %1, %7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplD0Ev(%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl", %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_ZTVN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl", %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %0, i64 0, i32 3, i32 0
+  tail call void @_ZN4base8internal18WeakPtrFactoryBaseD2Ev(%"class.base::internal::WeakPtrFactoryBase"* %3) #9
+  %4 = getelementptr inbounds %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl", %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %0, i64 0, i32 2, i32 0, i32 0, i32 0
+  %5 = load %"class.query_tiles::ImageLoader"*, %"class.query_tiles::ImageLoader"** %4, align 8
+  store %"class.query_tiles::ImageLoader"* null, %"class.query_tiles::ImageLoader"** %4, align 8
+  %6 = icmp eq %"class.query_tiles::ImageLoader"* %5, null
+  br i1 %6, label %12, label %7
+
+7:                                                ; preds = %1
+  %8 = bitcast %"class.query_tiles::ImageLoader"* %5 to void (%"class.query_tiles::ImageLoader"*)***
+  %9 = load void (%"class.query_tiles::ImageLoader"*)**, void (%"class.query_tiles::ImageLoader"*)*** %8, align 8
+  %10 = getelementptr inbounds void (%"class.query_tiles::ImageLoader"*)*, void (%"class.query_tiles::ImageLoader"*)** %9, i64 1
+  %11 = load void (%"class.query_tiles::ImageLoader"*)*, void (%"class.query_tiles::ImageLoader"*)** %10, align 8
+  tail call void %11(%"class.query_tiles::ImageLoader"* nonnull %5) #9
+  br label %12
+
+12:                                               ; preds = %1, %7
+  %13 = bitcast %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %0 to i8*
+  tail call void @_ZdlPv(i8* %13) #8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN11query_tiles12_GLOBAL__N_119ImagePrefetcherImpl8PrefetchENS_9TileGroupEbN4base12OnceCallbackIFvvEEE(%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"struct.query_tiles::TileGroup"*, i1 zeroext, %"class.base::OnceCallback"* nocapture) unnamed_addr #0 align 2 {
+  %5 = alloca %"class.logging::CheckError", align 8
+  %6 = alloca %"class.base::Location", align 8
+  %7 = alloca %"class.base::OnceCallback", align 8
+  %8 = alloca %"class.base::OnceCallback", align 8
+  %9 = alloca %"class.std::__1::vector.40", align 16
+  %10 = alloca %"class.query_tiles::TileIterator", align 8
+  %11 = alloca %class.GURL, align 8
+  %12 = alloca %"class.std::__1::vector.40", align 16
+  %13 = alloca %"class.base::OnceCallback", align 8
+  %14 = getelementptr inbounds %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl", %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %0, i64 0, i32 1
+  %15 = load i32, i32* %14, align 8
+  %16 = icmp eq i32 %15, 0
+  br i1 %16, label %17, label %38
+
+17:                                               ; preds = %4
+  %18 = tail call dereferenceable(8) %class.scoped_refptr.38* @_ZN4base22ThreadTaskRunnerHandle3GetEv() #9
+  %19 = bitcast %class.scoped_refptr.38* %18 to %"class.base::TaskRunner"**
+  %20 = load %"class.base::TaskRunner"*, %"class.base::TaskRunner"** %19, align 8
+  %21 = bitcast %"class.base::Location"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %21) #9
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %6, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([58 x i8], [58 x i8]* @.str.1, i64 0, i64 0), i32 49) #9
+  %22 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %3, i64 0, i32 0, i32 0, i32 0
+  %23 = bitcast %"class.base::OnceCallback"* %3 to i64*
+  %24 = load i64, i64* %23, align 8
+  %25 = bitcast %"class.base::OnceCallback"* %8 to i64*
+  store i64 %24, i64* %25, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %22, align 8
+  %26 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %8, i64 0, i32 0, i32 0, i32 0
+  %27 = icmp eq i64 %24, 0
+  br i1 %27, label %28, label %32
+
+28:                                               ; preds = %17
+  %29 = bitcast %"class.logging::CheckError"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %29) #9, !noalias !2
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %5, i8* getelementptr inbounds ([18 x i8], [18 x i8]* @.str.2, i64 0, i64 0), i32 97, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.3, i64 0, i64 0)) #9, !noalias !2
+  %30 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %5) #9, !noalias !2
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %5) #9, !noalias !2
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %29) #9, !noalias !2
+  %31 = load i64, i64* %25, align 8, !noalias !2
+  br label %32
+
+32:                                               ; preds = %17, %28
+  %33 = phi i64 [ %31, %28 ], [ %24, %17 ]
+  %34 = bitcast %"class.base::OnceCallback"* %7 to i64*
+  store i64 %33, i64* %34, align 8, !alias.scope !2
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %26, align 8, !noalias !2
+  %35 = call zeroext i1 @_ZN4base10TaskRunner8PostTaskERKNS_8LocationENS_12OnceCallbackIFvvEEE(%"class.base::TaskRunner"* %20, %"class.base::Location"* nonnull dereferenceable(32) %6, %"class.base::OnceCallback"* nonnull %7) #9
+  %36 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %7, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %36) #9
+  %37 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %8, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %37) #9
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %21) #9
+  br label %130
+
+38:                                               ; preds = %4
+  %39 = bitcast %"class.std::__1::vector.40"* %9 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %39) #9
+  %40 = getelementptr inbounds %"class.std::__1::vector.40", %"class.std::__1::vector.40"* %9, i64 0, i32 0, i32 0
+  %41 = getelementptr inbounds %"class.std::__1::vector.40", %"class.std::__1::vector.40"* %9, i64 0, i32 0, i32 1
+  %42 = getelementptr inbounds %"class.std::__1::vector.40", %"class.std::__1::vector.40"* %9, i64 0, i32 0, i32 2, i32 0, i32 0
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %39, i8 0, i64 24, i1 false) #9
+  %43 = icmp eq i32 %15, 2
+  %44 = sext i1 %43 to i32
+  %45 = bitcast %"class.query_tiles::TileIterator"* %10 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 56, i8* nonnull %45) #9
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %45, i8 -86, i64 56, i1 false)
+  call void @_ZN11query_tiles12TileIteratorC1ERKNS_9TileGroupEi(%"class.query_tiles::TileIterator"* nonnull %10, %"struct.query_tiles::TileGroup"* dereferenceable(104) %1, i32 %44) #9
+  %46 = call zeroext i1 @_ZNK11query_tiles12TileIterator7HasNextEv(%"class.query_tiles::TileIterator"* nonnull %10) #9
+  br i1 %46, label %47, label %89
+
+47:                                               ; preds = %38
+  %48 = bitcast %class.GURL* %11 to i8*
+  %49 = getelementptr inbounds %class.GURL, %class.GURL* %11, i64 0, i32 1
+  %50 = bitcast %class.GURL* %11 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %51 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %50, i64 0, i32 1, i32 0
+  %52 = getelementptr inbounds %class.GURL, %class.GURL* %11, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %53 = bitcast %class.GURL** %41 to i64*
+  br label %54
+
+54:                                               ; preds = %47, %82
+  %55 = call %"struct.query_tiles::Tile"* @_ZN11query_tiles12TileIterator4NextEv(%"class.query_tiles::TileIterator"* nonnull %10) #9
+  %56 = getelementptr inbounds %"struct.query_tiles::Tile", %"struct.query_tiles::Tile"* %55, i64 0, i32 4, i32 0, i32 0
+  %57 = load %"struct.query_tiles::ImageMetadata"*, %"struct.query_tiles::ImageMetadata"** %56, align 8
+  %58 = getelementptr inbounds %"struct.query_tiles::Tile", %"struct.query_tiles::Tile"* %55, i64 0, i32 4, i32 0, i32 1
+  %59 = load %"struct.query_tiles::ImageMetadata"*, %"struct.query_tiles::ImageMetadata"** %58, align 8
+  %60 = icmp eq %"struct.query_tiles::ImageMetadata"* %57, %59
+  br i1 %60, label %82, label %61
+
+61:                                               ; preds = %54
+  call void @llvm.lifetime.start.p0i8(i64 120, i8* nonnull %48) #9
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %48, i8 -86, i64 120, i1 false)
+  %62 = load %"struct.query_tiles::ImageMetadata"*, %"struct.query_tiles::ImageMetadata"** %56, align 8
+  %63 = getelementptr inbounds %"struct.query_tiles::ImageMetadata", %"struct.query_tiles::ImageMetadata"* %62, i64 0, i32 0
+  call void @_ZN4GURLC1ERKS_(%class.GURL* nonnull %11, %class.GURL* dereferenceable(120) %63) #9
+  %64 = load i8, i8* %49, align 8, !range !5
+  %65 = icmp eq i8 %64, 0
+  br i1 %65, label %81, label %66
+
+66:                                               ; preds = %61
+  %67 = load i8, i8* %51, align 1
+  %68 = icmp slt i8 %67, 0
+  %69 = load i64, i64* %52, align 8
+  %70 = zext i8 %67 to i64
+  %71 = select i1 %68, i64 %69, i64 %70
+  %72 = icmp eq i64 %71, 0
+  br i1 %72, label %81, label %73
+
+73:                                               ; preds = %66
+  %74 = load %class.GURL*, %class.GURL** %41, align 8
+  %75 = load %class.GURL*, %class.GURL** %42, align 16
+  %76 = icmp ult %class.GURL* %74, %75
+  br i1 %76, label %77, label %80
+
+77:                                               ; preds = %73
+  call void @_ZN4GURLC1EOS_(%class.GURL* %74, %class.GURL* nonnull dereferenceable(120) %11) #9
+  %78 = getelementptr inbounds %class.GURL, %class.GURL* %74, i64 1
+  %79 = ptrtoint %class.GURL* %78 to i64
+  store i64 %79, i64* %53, align 8
+  br label %81
+
+80:                                               ; preds = %73
+  call void @_ZNSt3__16vectorI4GURLNS_9allocatorIS1_EEE24__emplace_back_slow_pathIJS1_EEEvDpOT_(%"class.std::__1::vector.40"* nonnull %9, %class.GURL* nonnull dereferenceable(120) %11) #9
+  br label %81
+
+81:                                               ; preds = %61, %80, %77, %66
+  call void @_ZN4GURLD1Ev(%class.GURL* nonnull %11) #9
+  call void @llvm.lifetime.end.p0i8(i64 120, i8* nonnull %48) #9
+  br label %82
+
+82:                                               ; preds = %54, %81
+  %83 = call zeroext i1 @_ZNK11query_tiles12TileIterator7HasNextEv(%"class.query_tiles::TileIterator"* nonnull %10) #9
+  br i1 %83, label %54, label %84
+
+84:                                               ; preds = %82
+  %85 = bitcast %"class.std::__1::vector.40"* %9 to <2 x i64>*
+  %86 = load <2 x i64>, <2 x i64>* %85, align 16
+  %87 = bitcast %class.GURL** %42 to i64*
+  %88 = load i64, i64* %87, align 16
+  br label %89
+
+89:                                               ; preds = %38, %84
+  %90 = phi i64 [ %88, %84 ], [ 0, %38 ]
+  %91 = phi <2 x i64> [ %86, %84 ], [ zeroinitializer, %38 ]
+  %92 = getelementptr inbounds %"class.std::__1::vector.40", %"class.std::__1::vector.40"* %12, i64 0, i32 0, i32 1
+  %93 = bitcast %"class.std::__1::vector.40"* %12 to <2 x i64>*
+  store <2 x i64> %91, <2 x i64>* %93, align 16
+  %94 = getelementptr inbounds %"class.std::__1::vector.40", %"class.std::__1::vector.40"* %12, i64 0, i32 0, i32 2, i32 0, i32 0
+  %95 = bitcast %class.GURL** %94 to i64*
+  store i64 %90, i64* %95, align 16
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %39, i8 0, i64 24, i1 false) #9
+  %96 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %3, i64 0, i32 0, i32 0, i32 0
+  %97 = bitcast %"class.base::OnceCallback"* %3 to i64*
+  %98 = load i64, i64* %97, align 8
+  %99 = bitcast %"class.base::OnceCallback"* %13 to i64*
+  store i64 %98, i64* %99, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %96, align 8
+  call void @_ZN11query_tiles12_GLOBAL__N_119ImagePrefetcherImpl11FetchImagesENSt3__16vectorI4GURLNS2_9allocatorIS4_EEEEbN4base12OnceCallbackIFvvEEE(%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %0, %"class.std::__1::vector.40"* nonnull %12, i1 zeroext %2, %"class.base::OnceCallback"* nonnull %13)
+  %100 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %13, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %100) #9
+  %101 = getelementptr inbounds %"class.std::__1::vector.40", %"class.std::__1::vector.40"* %12, i64 0, i32 0, i32 0
+  %102 = load %class.GURL*, %class.GURL** %101, align 16
+  %103 = icmp eq %class.GURL* %102, null
+  %104 = bitcast %class.GURL* %102 to i8*
+  br i1 %103, label %113, label %105
+
+105:                                              ; preds = %89
+  %106 = load %class.GURL*, %class.GURL** %92, align 8
+  %107 = icmp eq %class.GURL* %106, %102
+  br i1 %107, label %112, label %108
+
+108:                                              ; preds = %105, %108
+  %109 = phi %class.GURL* [ %110, %108 ], [ %106, %105 ]
+  %110 = getelementptr inbounds %class.GURL, %class.GURL* %109, i64 -1
+  call void @_ZN4GURLD1Ev(%class.GURL* %110) #9
+  %111 = icmp eq %class.GURL* %110, %102
+  br i1 %111, label %112, label %108
+
+112:                                              ; preds = %108, %105
+  store %class.GURL* %102, %class.GURL** %92, align 8
+  call void @_ZdlPv(i8* %104) #8
+  br label %113
+
+113:                                              ; preds = %89, %112
+  call void @_ZN11query_tiles12TileIteratorD1Ev(%"class.query_tiles::TileIterator"* nonnull %10) #9
+  call void @llvm.lifetime.end.p0i8(i64 56, i8* nonnull %45) #9
+  %114 = load %class.GURL*, %class.GURL** %40, align 16
+  %115 = icmp eq %class.GURL* %114, null
+  br i1 %115, label %129, label %116
+
+116:                                              ; preds = %113
+  %117 = bitcast %class.GURL* %114 to i8*
+  %118 = load %class.GURL*, %class.GURL** %41, align 8
+  %119 = icmp eq %class.GURL* %118, %114
+  br i1 %119, label %127, label %120
+
+120:                                              ; preds = %116, %120
+  %121 = phi %class.GURL* [ %122, %120 ], [ %118, %116 ]
+  %122 = getelementptr inbounds %class.GURL, %class.GURL* %121, i64 -1
+  call void @_ZN4GURLD1Ev(%class.GURL* %122) #9
+  %123 = icmp eq %class.GURL* %122, %114
+  br i1 %123, label %124, label %120
+
+124:                                              ; preds = %120
+  %125 = bitcast %"class.std::__1::vector.40"* %9 to i8**
+  %126 = load i8*, i8** %125, align 16
+  br label %127
+
+127:                                              ; preds = %124, %116
+  %128 = phi i8* [ %126, %124 ], [ %117, %116 ]
+  store %class.GURL* %114, %class.GURL** %41, align 8
+  call void @_ZdlPv(i8* %128) #8
+  br label %129
+
+129:                                              ; preds = %113, %127
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %39) #9
+  br label %130
+
+130:                                              ; preds = %129, %32
+  ret void
+}
+
+declare void @_ZN4base8internal18WeakPtrFactoryBaseC2Em(%"class.base::internal::WeakPtrFactoryBase"*, i64) unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal18WeakPtrFactoryBaseD2Ev(%"class.base::internal::WeakPtrFactoryBase"*) unnamed_addr #4
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #5
+
+declare dereferenceable(8) %class.scoped_refptr.38* @_ZN4base22ThreadTaskRunnerHandle3GetEv() local_unnamed_addr #3
+
+declare zeroext i1 @_ZN4base10TaskRunner8PostTaskERKNS_8LocationENS_12OnceCallbackIFvvEEE(%"class.base::TaskRunner"*, %"class.base::Location"* dereferenceable(32), %"class.base::OnceCallback"*) local_unnamed_addr #3
+
+declare void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* sret, i8*, i8*, i32) local_unnamed_addr #3
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1
+
+declare void @_ZN11query_tiles12TileIteratorC1ERKNS_9TileGroupEi(%"class.query_tiles::TileIterator"*, %"struct.query_tiles::TileGroup"* dereferenceable(104), i32) unnamed_addr #3
+
+declare zeroext i1 @_ZNK11query_tiles12TileIterator7HasNextEv(%"class.query_tiles::TileIterator"*) local_unnamed_addr #3
+
+declare %"struct.query_tiles::Tile"* @_ZN11query_tiles12TileIterator4NextEv(%"class.query_tiles::TileIterator"*) local_unnamed_addr #3
+
+declare void @_ZN4GURLC1ERKS_(%class.GURL*, %class.GURL* dereferenceable(120)) unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN4GURLD1Ev(%class.GURL*) unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN11query_tiles12_GLOBAL__N_119ImagePrefetcherImpl11FetchImagesENSt3__16vectorI4GURLNS2_9allocatorIS4_EEEEbN4base12OnceCallbackIFvvEEE(%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.std::__1::vector.40"* nocapture, i1 zeroext, %"class.base::OnceCallback"* nocapture) #0 align 2 {
+  %5 = alloca %"class.base::internal::WeakReference", align 8
+  %6 = alloca %"class.base::internal::WeakReference", align 8
+  %7 = alloca %"class.base::internal::WeakReference", align 8
+  %8 = alloca %"class.logging::CheckError", align 8
+  %9 = alloca %"class.base::Location", align 8
+  %10 = alloca %"class.base::OnceCallback", align 8
+  %11 = alloca %"class.base::OnceCallback", align 8
+  %12 = alloca %class.GURL, align 8
+  %13 = alloca %"class.base::OnceCallback", align 8
+  %14 = alloca %"class.base::WeakPtr", align 8
+  %15 = alloca %"class.base::OnceCallback.79", align 8
+  %16 = alloca %"class.base::WeakPtr", align 8
+  %17 = alloca %"class.base::OnceCallback.80", align 8
+  %18 = alloca %"class.base::WeakPtr", align 8
+  %19 = getelementptr inbounds %"class.std::__1::vector.40", %"class.std::__1::vector.40"* %1, i64 0, i32 0, i32 0
+  %20 = load %class.GURL*, %class.GURL** %19, align 8
+  %21 = getelementptr inbounds %"class.std::__1::vector.40", %"class.std::__1::vector.40"* %1, i64 0, i32 0, i32 1
+  %22 = load %class.GURL*, %class.GURL** %21, align 8
+  %23 = icmp eq %class.GURL* %20, %22
+  br i1 %23, label %24, label %45
+
+24:                                               ; preds = %4
+  %25 = tail call dereferenceable(8) %class.scoped_refptr.38* @_ZN4base22ThreadTaskRunnerHandle3GetEv() #9
+  %26 = bitcast %class.scoped_refptr.38* %25 to %"class.base::TaskRunner"**
+  %27 = load %"class.base::TaskRunner"*, %"class.base::TaskRunner"** %26, align 8
+  %28 = bitcast %"class.base::Location"* %9 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %28) #9
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %9, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @.str.5, i64 0, i64 0), i8* getelementptr inbounds ([58 x i8], [58 x i8]* @.str.1, i64 0, i64 0), i32 80) #9
+  %29 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %3, i64 0, i32 0, i32 0, i32 0
+  %30 = bitcast %"class.base::OnceCallback"* %3 to i64*
+  %31 = load i64, i64* %30, align 8
+  %32 = bitcast %"class.base::OnceCallback"* %11 to i64*
+  store i64 %31, i64* %32, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %29, align 8
+  %33 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %11, i64 0, i32 0, i32 0, i32 0
+  %34 = icmp eq i64 %31, 0
+  br i1 %34, label %35, label %39
+
+35:                                               ; preds = %24
+  %36 = bitcast %"class.logging::CheckError"* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %36) #9, !noalias !6
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %8, i8* getelementptr inbounds ([18 x i8], [18 x i8]* @.str.2, i64 0, i64 0), i32 97, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.3, i64 0, i64 0)) #9, !noalias !6
+  %37 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %8) #9, !noalias !6
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %8) #9, !noalias !6
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %36) #9, !noalias !6
+  %38 = load i64, i64* %32, align 8, !noalias !6
+  br label %39
+
+39:                                               ; preds = %24, %35
+  %40 = phi i64 [ %38, %35 ], [ %31, %24 ]
+  %41 = bitcast %"class.base::OnceCallback"* %10 to i64*
+  store i64 %40, i64* %41, align 8, !alias.scope !6
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %33, align 8, !noalias !6
+  %42 = call zeroext i1 @_ZN4base10TaskRunner8PostTaskERKNS_8LocationENS_12OnceCallbackIFvvEEE(%"class.base::TaskRunner"* %27, %"class.base::Location"* nonnull dereferenceable(32) %9, %"class.base::OnceCallback"* nonnull %10) #9
+  %43 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %10, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %43) #9
+  %44 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %11, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %44) #9
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %28) #9
+  br label %146
+
+45:                                               ; preds = %4
+  %46 = zext i1 %2 to i8
+  %47 = bitcast %class.GURL* %12 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 120, i8* nonnull %47) #9
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %47, i8 -86, i64 120, i1 false)
+  %48 = getelementptr inbounds %class.GURL, %class.GURL* %22, i64 -1
+  call void @_ZN4GURLC1ERKS_(%class.GURL* nonnull %12, %class.GURL* dereferenceable(120) %48) #9
+  %49 = load %class.GURL*, %class.GURL** %21, align 8
+  %50 = getelementptr inbounds %class.GURL, %class.GURL* %49, i64 -1
+  call void @_ZN4GURLD1Ev(%class.GURL* %50) #9
+  store %class.GURL* %50, %class.GURL** %21, align 8
+  %51 = bitcast %"class.base::OnceCallback"* %13 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %51) #9
+  %52 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %13, i64 0, i32 0, i32 0, i32 0
+  %53 = bitcast %"class.base::WeakPtr"* %14 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %53) #9
+  %54 = bitcast %"class.base::internal::WeakReference"* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %54) #9, !noalias !9
+  %55 = getelementptr inbounds %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl", %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %0, i64 0, i32 3, i32 0, i32 0
+  call void @_ZNK4base8internal18WeakReferenceOwner6GetRefEv(%"class.base::internal::WeakReference"* nonnull sret %7, %"class.base::internal::WeakReferenceOwner"* %55) #9, !noalias !9
+  %56 = getelementptr inbounds %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl", %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %0, i64 0, i32 3, i32 0, i32 1
+  %57 = load i64, i64* %56, align 8, !noalias !9
+  %58 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %14, i64 0, i32 0
+  call void @_ZN4base8internal11WeakPtrBaseC2ERKNS0_13WeakReferenceEm(%"class.base::internal::WeakPtrBase"* nonnull %58, %"class.base::internal::WeakReference"* nonnull dereferenceable(8) %7, i64 %57) #9
+  call void @_ZN4base8internal13WeakReferenceD1Ev(%"class.base::internal::WeakReference"* nonnull %7) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %54) #9, !noalias !9
+  %59 = call i8* @_Znwm(i64 104) #8, !noalias !12
+  %60 = bitcast i8* %59 to %"class.base::internal::BindStateBase"*
+  call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_EPFbS5_NS1_21CancellationQueryModeEE(%"class.base::internal::BindStateBase"* nonnull %60, void ()* bitcast (void (%"class.base::internal::BindStateBase"*)* @_ZN4base8internal7InvokerINS0_9BindStateIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNSt3__16vectorI4GURLNS6_9allocatorIS8_EEEEbNS_12OnceCallbackIFvvEEEEJNS_7WeakPtrIS5_EESB_bSE_EEESD_E7RunOnceEPNS0_13BindStateBaseE to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @_ZN4base8internal9BindStateIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNSt3__16vectorI4GURLNS5_9allocatorIS7_EEEEbNS_12OnceCallbackIFvvEEEEJNS_7WeakPtrIS4_EESA_bSD_EE7DestroyEPKNS0_13BindStateBaseE, i1 (%"class.base::internal::BindStateBase"*, i32)* nonnull @_ZN4base8internal23QueryCancellationTraitsINS0_9BindStateIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNSt3__16vectorI4GURLNS6_9allocatorIS8_EEEEbNS_12OnceCallbackIFvvEEEEJNS_7WeakPtrIS5_EESB_bSE_EEEEEbPKNS0_13BindStateBaseENSK_21CancellationQueryModeE) #9, !noalias !12
+  %61 = getelementptr inbounds i8, i8* %59, i64 32
+  %62 = bitcast i8* %61 to <2 x i64>*
+  store <2 x i64> <i64 ptrtoint (void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.std::__1::vector.40"*, i1, %"class.base::OnceCallback"*)* @_ZN11query_tiles12_GLOBAL__N_119ImagePrefetcherImpl11FetchImagesENSt3__16vectorI4GURLNS2_9allocatorIS4_EEEEbN4base12OnceCallbackIFvvEEE to i64), i64 0>, <2 x i64>* %62, align 8, !noalias !12
+  %63 = getelementptr inbounds i8, i8* %59, i64 48
+  %64 = bitcast i8* %63 to %"class.base::internal::WeakReference"*
+  %65 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %14, i64 0, i32 0, i32 0
+  call void @_ZN4base8internal13WeakReferenceC1EOS1_(%"class.base::internal::WeakReference"* %64, %"class.base::internal::WeakReference"* nonnull dereferenceable(8) %65) #9, !noalias !12
+  %66 = getelementptr inbounds i8, i8* %59, i64 56
+  %67 = bitcast i8* %66 to i64*
+  %68 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %14, i64 0, i32 0, i32 1
+  %69 = load i64, i64* %68, align 8, !noalias !12
+  store i64 %69, i64* %67, align 8, !noalias !12
+  %70 = getelementptr inbounds i8, i8* %59, i64 64
+  %71 = bitcast %"class.std::__1::vector.40"* %1 to <2 x i64>*
+  %72 = load <2 x i64>, <2 x i64>* %71, align 8, !noalias !12
+  %73 = bitcast i8* %70 to <2 x i64>*
+  store <2 x i64> %72, <2 x i64>* %73, align 8, !noalias !12
+  %74 = getelementptr inbounds %"class.std::__1::vector.40", %"class.std::__1::vector.40"* %1, i64 0, i32 0, i32 2, i32 0, i32 0
+  %75 = bitcast %class.GURL** %74 to i64*
+  %76 = load i64, i64* %75, align 8, !noalias !12
+  %77 = getelementptr inbounds i8, i8* %59, i64 80
+  %78 = bitcast i8* %77 to i64*
+  store i64 %76, i64* %78, align 8, !noalias !12
+  %79 = bitcast %"class.std::__1::vector.40"* %1 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %79, i8 0, i64 24, i1 false) #9, !noalias !12
+  %80 = getelementptr inbounds i8, i8* %59, i64 88
+  store i8 %46, i8* %80, align 1, !noalias !12
+  %81 = getelementptr inbounds i8, i8* %59, i64 96
+  %82 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %3, i64 0, i32 0, i32 0, i32 0
+  %83 = bitcast %"class.base::OnceCallback"* %3 to i64*
+  %84 = load i64, i64* %83, align 8, !noalias !12
+  %85 = bitcast i8* %81 to i64*
+  store i64 %84, i64* %85, align 8, !noalias !12
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %82, align 8, !noalias !12
+  %86 = bitcast %"class.base::OnceCallback"* %13 to i8**
+  store i8* %59, i8** %86, align 8, !alias.scope !12
+  call void @_ZN4base8internal11WeakPtrBaseD2Ev(%"class.base::internal::WeakPtrBase"* nonnull %58) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %53) #9
+  %87 = getelementptr inbounds %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl", %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %0, i64 0, i32 2, i32 0, i32 0, i32 0
+  %88 = load %"class.query_tiles::ImageLoader"*, %"class.query_tiles::ImageLoader"** %87, align 8
+  br i1 %2, label %89, label %115
+
+89:                                               ; preds = %45
+  %90 = bitcast %"class.base::WeakPtr"* %16 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %90) #9
+  %91 = bitcast %"class.base::internal::WeakReference"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %91) #9, !noalias !17
+  call void @_ZNK4base8internal18WeakReferenceOwner6GetRefEv(%"class.base::internal::WeakReference"* nonnull sret %6, %"class.base::internal::WeakReferenceOwner"* %55) #9, !noalias !17
+  %92 = load i64, i64* %56, align 8, !noalias !17
+  %93 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %16, i64 0, i32 0
+  call void @_ZN4base8internal11WeakPtrBaseC2ERKNS0_13WeakReferenceEm(%"class.base::internal::WeakPtrBase"* nonnull %93, %"class.base::internal::WeakReference"* nonnull dereferenceable(8) %6, i64 %92) #9
+  call void @_ZN4base8internal13WeakReferenceD1Ev(%"class.base::internal::WeakReference"* nonnull %6) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %91) #9, !noalias !17
+  %94 = call i8* @_Znwm(i64 72) #8, !noalias !20
+  %95 = bitcast i8* %94 to %"class.base::internal::BindStateBase"*
+  call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_EPFbS5_NS1_21CancellationQueryModeEE(%"class.base::internal::BindStateBase"* nonnull %95, void ()* bitcast (void (%"class.base::internal::BindStateBase"*, i1)* @_ZN4base8internal7InvokerINS0_9BindStateIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS_12OnceCallbackIFvvEEEbEJNS_7WeakPtrIS5_EES8_EEEFvbEE7RunOnceEPNS0_13BindStateBaseEb to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @_ZN4base8internal9BindStateIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS_12OnceCallbackIFvvEEEbEJNS_7WeakPtrIS4_EES7_EE7DestroyEPKNS0_13BindStateBaseE, i1 (%"class.base::internal::BindStateBase"*, i32)* nonnull @_ZN4base8internal23QueryCancellationTraitsINS0_9BindStateIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS_12OnceCallbackIFvvEEEbEJNS_7WeakPtrIS5_EES8_EEEEEbPKNS0_13BindStateBaseENSE_21CancellationQueryModeE) #9, !noalias !20
+  %96 = getelementptr inbounds i8, i8* %94, i64 32
+  %97 = bitcast i8* %96 to <2 x i64>*
+  store <2 x i64> <i64 ptrtoint (void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.base::OnceCallback"*, i1)* @_ZN11query_tiles12_GLOBAL__N_119ImagePrefetcherImpl27OnImageFetchedInReducedModeEN4base12OnceCallbackIFvvEEEb to i64), i64 0>, <2 x i64>* %97, align 8, !noalias !20
+  %98 = getelementptr inbounds i8, i8* %94, i64 48
+  %99 = bitcast i8* %98 to %"class.base::internal::WeakReference"*
+  %100 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %16, i64 0, i32 0, i32 0
+  call void @_ZN4base8internal13WeakReferenceC1EOS1_(%"class.base::internal::WeakReference"* %99, %"class.base::internal::WeakReference"* nonnull dereferenceable(8) %100) #9, !noalias !20
+  %101 = getelementptr inbounds i8, i8* %94, i64 56
+  %102 = bitcast i8* %101 to i64*
+  %103 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %16, i64 0, i32 0, i32 1
+  %104 = load i64, i64* %103, align 8, !noalias !20
+  store i64 %104, i64* %102, align 8, !noalias !20
+  %105 = getelementptr inbounds i8, i8* %94, i64 64
+  %106 = bitcast %"class.base::OnceCallback"* %13 to i64*
+  %107 = load i64, i64* %106, align 8, !noalias !20
+  %108 = bitcast i8* %105 to i64*
+  store i64 %107, i64* %108, align 8, !noalias !20
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %52, align 8, !noalias !20
+  %109 = bitcast %"class.base::OnceCallback.79"* %15 to i8**
+  store i8* %94, i8** %109, align 8, !alias.scope !20
+  %110 = bitcast %"class.query_tiles::ImageLoader"* %88 to void (%"class.query_tiles::ImageLoader"*, %class.GURL*, %"class.base::OnceCallback.79"*)***
+  %111 = load void (%"class.query_tiles::ImageLoader"*, %class.GURL*, %"class.base::OnceCallback.79"*)**, void (%"class.query_tiles::ImageLoader"*, %class.GURL*, %"class.base::OnceCallback.79"*)*** %110, align 8
+  %112 = getelementptr inbounds void (%"class.query_tiles::ImageLoader"*, %class.GURL*, %"class.base::OnceCallback.79"*)*, void (%"class.query_tiles::ImageLoader"*, %class.GURL*, %"class.base::OnceCallback.79"*)** %111, i64 3
+  %113 = load void (%"class.query_tiles::ImageLoader"*, %class.GURL*, %"class.base::OnceCallback.79"*)*, void (%"class.query_tiles::ImageLoader"*, %class.GURL*, %"class.base::OnceCallback.79"*)** %112, align 8
+  call void %113(%"class.query_tiles::ImageLoader"* %88, %class.GURL* nonnull dereferenceable(120) %12, %"class.base::OnceCallback.79"* nonnull %15) #9
+  %114 = getelementptr inbounds %"class.base::OnceCallback.79", %"class.base::OnceCallback.79"* %15, i64 0, i32 0
+  br label %141
+
+115:                                              ; preds = %45
+  %116 = bitcast %"class.base::WeakPtr"* %18 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %116) #9
+  %117 = bitcast %"class.base::internal::WeakReference"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %117) #9, !noalias !25
+  call void @_ZNK4base8internal18WeakReferenceOwner6GetRefEv(%"class.base::internal::WeakReference"* nonnull sret %5, %"class.base::internal::WeakReferenceOwner"* %55) #9, !noalias !25
+  %118 = load i64, i64* %56, align 8, !noalias !25
+  %119 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %18, i64 0, i32 0
+  call void @_ZN4base8internal11WeakPtrBaseC2ERKNS0_13WeakReferenceEm(%"class.base::internal::WeakPtrBase"* nonnull %119, %"class.base::internal::WeakReference"* nonnull dereferenceable(8) %5, i64 %118) #9
+  call void @_ZN4base8internal13WeakReferenceD1Ev(%"class.base::internal::WeakReference"* nonnull %5) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %117) #9, !noalias !25
+  %120 = call i8* @_Znwm(i64 72) #8, !noalias !28
+  %121 = bitcast i8* %120 to %"class.base::internal::BindStateBase"*
+  call void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_EPFbS5_NS1_21CancellationQueryModeEE(%"class.base::internal::BindStateBase"* nonnull %121, void ()* bitcast (void (%"class.base::internal::BindStateBase"*, %class.SkBitmap*)* @_ZN4base8internal7InvokerINS0_9BindStateIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS_12OnceCallbackIFvvEEE8SkBitmapEJNS_7WeakPtrIS5_EES8_EEEFvS9_EE7RunOnceEPNS0_13BindStateBaseEOS9_ to void ()*), void (%"class.base::internal::BindStateBase"*)* nonnull @_ZN4base8internal9BindStateIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS_12OnceCallbackIFvvEEE8SkBitmapEJNS_7WeakPtrIS4_EES7_EE7DestroyEPKNS0_13BindStateBaseE, i1 (%"class.base::internal::BindStateBase"*, i32)* nonnull @_ZN4base8internal23QueryCancellationTraitsINS0_9BindStateIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS_12OnceCallbackIFvvEEE8SkBitmapEJNS_7WeakPtrIS5_EES8_EEEEEbPKNS0_13BindStateBaseENSF_21CancellationQueryModeE) #9, !noalias !28
+  %122 = getelementptr inbounds i8, i8* %120, i64 32
+  %123 = bitcast i8* %122 to <2 x i64>*
+  store <2 x i64> <i64 ptrtoint (void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.base::OnceCallback"*, %class.SkBitmap*)* @_ZN11query_tiles12_GLOBAL__N_119ImagePrefetcherImpl14OnImageFetchedEN4base12OnceCallbackIFvvEEE8SkBitmap to i64), i64 0>, <2 x i64>* %123, align 8, !noalias !28
+  %124 = getelementptr inbounds i8, i8* %120, i64 48
+  %125 = bitcast i8* %124 to %"class.base::internal::WeakReference"*
+  %126 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %18, i64 0, i32 0, i32 0
+  call void @_ZN4base8internal13WeakReferenceC1EOS1_(%"class.base::internal::WeakReference"* %125, %"class.base::internal::WeakReference"* nonnull dereferenceable(8) %126) #9, !noalias !28
+  %127 = getelementptr inbounds i8, i8* %120, i64 56
+  %128 = bitcast i8* %127 to i64*
+  %129 = getelementptr inbounds %"class.base::WeakPtr", %"class.base::WeakPtr"* %18, i64 0, i32 0, i32 1
+  %130 = load i64, i64* %129, align 8, !noalias !28
+  store i64 %130, i64* %128, align 8, !noalias !28
+  %131 = getelementptr inbounds i8, i8* %120, i64 64
+  %132 = bitcast %"class.base::OnceCallback"* %13 to i64*
+  %133 = load i64, i64* %132, align 8, !noalias !28
+  %134 = bitcast i8* %131 to i64*
+  store i64 %133, i64* %134, align 8, !noalias !28
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %52, align 8, !noalias !28
+  %135 = bitcast %"class.base::OnceCallback.80"* %17 to i8**
+  store i8* %120, i8** %135, align 8, !alias.scope !28
+  %136 = bitcast %"class.query_tiles::ImageLoader"* %88 to void (%"class.query_tiles::ImageLoader"*, %class.GURL*, %"class.base::OnceCallback.80"*)***
+  %137 = load void (%"class.query_tiles::ImageLoader"*, %class.GURL*, %"class.base::OnceCallback.80"*)**, void (%"class.query_tiles::ImageLoader"*, %class.GURL*, %"class.base::OnceCallback.80"*)*** %136, align 8
+  %138 = getelementptr inbounds void (%"class.query_tiles::ImageLoader"*, %class.GURL*, %"class.base::OnceCallback.80"*)*, void (%"class.query_tiles::ImageLoader"*, %class.GURL*, %"class.base::OnceCallback.80"*)** %137, i64 2
+  %139 = load void (%"class.query_tiles::ImageLoader"*, %class.GURL*, %"class.base::OnceCallback.80"*)*, void (%"class.query_tiles::ImageLoader"*, %class.GURL*, %"class.base::OnceCallback.80"*)** %138, align 8
+  call void %139(%"class.query_tiles::ImageLoader"* %88, %class.GURL* nonnull dereferenceable(120) %12, %"class.base::OnceCallback.80"* nonnull %17) #9
+  %140 = getelementptr inbounds %"class.base::OnceCallback.80", %"class.base::OnceCallback.80"* %17, i64 0, i32 0
+  br label %141
+
+141:                                              ; preds = %115, %89
+  %142 = phi %"class.base::internal::CallbackBase"* [ %140, %115 ], [ %114, %89 ]
+  %143 = phi %"class.base::internal::WeakPtrBase"* [ %119, %115 ], [ %93, %89 ]
+  %144 = phi i8* [ %116, %115 ], [ %90, %89 ]
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %142) #9
+  call void @_ZN4base8internal11WeakPtrBaseD2Ev(%"class.base::internal::WeakPtrBase"* nonnull %143) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %144) #9
+  %145 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %13, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %145) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %51) #9
+  call void @_ZN4GURLD1Ev(%class.GURL* nonnull %12) #9
+  call void @llvm.lifetime.end.p0i8(i64 120, i8* nonnull %47) #9
+  br label %146
+
+146:                                              ; preds = %141, %39
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @_ZN11query_tiles12TileIteratorD1Ev(%"class.query_tiles::TileIterator"*) unnamed_addr #4
+
+declare void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* sret, i8*, i32, i8*) local_unnamed_addr #3
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"*) local_unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"*) unnamed_addr #4
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden void @_ZNSt3__16vectorI4GURLNS_9allocatorIS1_EEE24__emplace_back_slow_pathIJS1_EEEvDpOT_(%"class.std::__1::vector.40"*, %class.GURL* dereferenceable(120)) local_unnamed_addr #6 comdat align 2 {
+  %3 = getelementptr inbounds %"class.std::__1::vector.40", %"class.std::__1::vector.40"* %0, i64 0, i32 0, i32 1
+  %4 = bitcast %class.GURL** %3 to i64*
+  %5 = load i64, i64* %4, align 8
+  %6 = bitcast %"class.std::__1::vector.40"* %0 to i64*
+  %7 = load i64, i64* %6, align 8
+  %8 = sub i64 %5, %7
+  %9 = sdiv exact i64 %8, 120
+  %10 = add nsw i64 %9, 1
+  %11 = icmp ugt i64 %10, 153722867280912930
+  br i1 %11, label %12, label %14
+
+12:                                               ; preds = %2
+  %13 = bitcast %"class.std::__1::vector.40"* %0 to %"class.std::__1::__vector_base_common"*
+  tail call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"* %13) #10
+  unreachable
+
+14:                                               ; preds = %2
+  %15 = getelementptr inbounds %"class.std::__1::vector.40", %"class.std::__1::vector.40"* %0, i64 0, i32 0, i32 2, i32 0, i32 0
+  %16 = bitcast %class.GURL** %15 to i64*
+  %17 = load i64, i64* %16, align 8
+  %18 = sub i64 %17, %7
+  %19 = sdiv exact i64 %18, 120
+  %20 = icmp ult i64 %19, 76861433640456465
+  br i1 %20, label %21, label %26
+
+21:                                               ; preds = %14
+  %22 = shl nsw i64 %19, 1
+  %23 = icmp ult i64 %22, %10
+  %24 = select i1 %23, i64 %10, i64 %22
+  %25 = icmp eq i64 %24, 0
+  br i1 %25, label %31, label %26
+
+26:                                               ; preds = %14, %21
+  %27 = phi i64 [ %24, %21 ], [ 153722867280912930, %14 ]
+  %28 = mul i64 %27, 120
+  %29 = tail call i8* @_Znwm(i64 %28) #8
+  %30 = bitcast i8* %29 to %class.GURL*
+  br label %31
+
+31:                                               ; preds = %21, %26
+  %32 = phi i64 [ %27, %26 ], [ 0, %21 ]
+  %33 = phi %class.GURL* [ %30, %26 ], [ null, %21 ]
+  %34 = getelementptr inbounds %class.GURL, %class.GURL* %33, i64 %9
+  %35 = getelementptr inbounds %class.GURL, %class.GURL* %33, i64 %32
+  %36 = ptrtoint %class.GURL* %35 to i64
+  tail call void @_ZN4GURLC1EOS_(%class.GURL* %34, %class.GURL* dereferenceable(120) %1) #9
+  %37 = getelementptr inbounds %class.GURL, %class.GURL* %34, i64 1
+  %38 = ptrtoint %class.GURL* %37 to i64
+  %39 = getelementptr inbounds %"class.std::__1::vector.40", %"class.std::__1::vector.40"* %0, i64 0, i32 0, i32 0
+  %40 = load %class.GURL*, %class.GURL** %39, align 8
+  %41 = load %class.GURL*, %class.GURL** %3, align 8
+  %42 = icmp eq %class.GURL* %41, %40
+  br i1 %42, label %43, label %45
+
+43:                                               ; preds = %31
+  %44 = ptrtoint %class.GURL* %40 to i64
+  br label %54
+
+45:                                               ; preds = %31, %45
+  %46 = phi %class.GURL* [ %48, %45 ], [ %34, %31 ]
+  %47 = phi %class.GURL* [ %49, %45 ], [ %41, %31 ]
+  %48 = getelementptr inbounds %class.GURL, %class.GURL* %46, i64 -1
+  %49 = getelementptr inbounds %class.GURL, %class.GURL* %47, i64 -1
+  tail call void @_ZN4GURLC1EOS_(%class.GURL* %48, %class.GURL* dereferenceable(120) %49) #9
+  %50 = icmp eq %class.GURL* %49, %40
+  br i1 %50, label %51, label %45
+
+51:                                               ; preds = %45
+  %52 = load i64, i64* %6, align 8
+  %53 = load %class.GURL*, %class.GURL** %3, align 8
+  br label %54
+
+54:                                               ; preds = %43, %51
+  %55 = phi %class.GURL* [ %40, %43 ], [ %53, %51 ]
+  %56 = phi %class.GURL* [ %34, %43 ], [ %48, %51 ]
+  %57 = phi i64 [ %44, %43 ], [ %52, %51 ]
+  %58 = ptrtoint %class.GURL* %56 to i64
+  store i64 %58, i64* %6, align 8
+  store i64 %38, i64* %4, align 8
+  store i64 %36, i64* %16, align 8
+  %59 = inttoptr i64 %57 to %class.GURL*
+  %60 = icmp eq %class.GURL* %55, %59
+  br i1 %60, label %65, label %61
+
+61:                                               ; preds = %54, %61
+  %62 = phi %class.GURL* [ %63, %61 ], [ %55, %54 ]
+  %63 = getelementptr inbounds %class.GURL, %class.GURL* %62, i64 -1
+  tail call void @_ZN4GURLD1Ev(%class.GURL* %63) #9
+  %64 = icmp eq %class.GURL* %63, %59
+  br i1 %64, label %65, label %61
+
+65:                                               ; preds = %61, %54
+  %66 = icmp eq i64 %57, 0
+  br i1 %66, label %69, label %67
+
+67:                                               ; preds = %65
+  %68 = inttoptr i64 %57 to i8*
+  tail call void @_ZdlPv(i8* %68) #8
+  br label %69
+
+69:                                               ; preds = %65, %67
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @_ZN4GURLC1EOS_(%class.GURL*, %class.GURL* dereferenceable(120)) unnamed_addr #4
+
+; Function Attrs: noreturn
+declare void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"*) local_unnamed_addr #7
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal11WeakPtrBaseD2Ev(%"class.base::internal::WeakPtrBase"*) unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN11query_tiles12_GLOBAL__N_119ImagePrefetcherImpl27OnImageFetchedInReducedModeEN4base12OnceCallbackIFvvEEEb(%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* nocapture readnone, %"class.base::OnceCallback"* nocapture, i1 zeroext) #0 align 2 {
+  %4 = alloca %"class.logging::CheckError", align 8
+  %5 = alloca %"class.base::Location", align 8
+  %6 = alloca %"class.base::OnceCallback", align 8
+  %7 = alloca %"class.base::OnceCallback", align 8
+  %8 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %1, i64 0, i32 0, i32 0, i32 0
+  %9 = load %"class.base::internal::BindStateBase"*, %"class.base::internal::BindStateBase"** %8, align 8
+  %10 = icmp eq %"class.base::internal::BindStateBase"* %9, null
+  br i1 %10, label %31, label %11
+
+11:                                               ; preds = %3
+  %12 = tail call dereferenceable(8) %class.scoped_refptr.38* @_ZN4base22ThreadTaskRunnerHandle3GetEv() #9
+  %13 = bitcast %class.scoped_refptr.38* %12 to %"class.base::TaskRunner"**
+  %14 = load %"class.base::TaskRunner"*, %"class.base::TaskRunner"** %13, align 8
+  %15 = bitcast %"class.base::Location"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %15) #9
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %5, i8* getelementptr inbounds ([28 x i8], [28 x i8]* @.str.8, i64 0, i64 0), i8* getelementptr inbounds ([58 x i8], [58 x i8]* @.str.1, i64 0, i64 0), i32 114) #9
+  %16 = bitcast %"class.base::OnceCallback"* %1 to i64*
+  %17 = load i64, i64* %16, align 8
+  %18 = bitcast %"class.base::OnceCallback"* %7 to i64*
+  store i64 %17, i64* %18, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %8, align 8
+  %19 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %7, i64 0, i32 0, i32 0, i32 0
+  %20 = icmp eq i64 %17, 0
+  br i1 %20, label %21, label %25
+
+21:                                               ; preds = %11
+  %22 = bitcast %"class.logging::CheckError"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %22) #9, !noalias !33
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %4, i8* getelementptr inbounds ([18 x i8], [18 x i8]* @.str.2, i64 0, i64 0), i32 97, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.3, i64 0, i64 0)) #9, !noalias !33
+  %23 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %4) #9, !noalias !33
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %4) #9, !noalias !33
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %22) #9, !noalias !33
+  %24 = load i64, i64* %18, align 8, !noalias !33
+  br label %25
+
+25:                                               ; preds = %11, %21
+  %26 = phi i64 [ %24, %21 ], [ %17, %11 ]
+  %27 = bitcast %"class.base::OnceCallback"* %6 to i64*
+  store i64 %26, i64* %27, align 8, !alias.scope !33
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %19, align 8, !noalias !33
+  %28 = call zeroext i1 @_ZN4base10TaskRunner8PostTaskERKNS_8LocationENS_12OnceCallbackIFvvEEE(%"class.base::TaskRunner"* %14, %"class.base::Location"* nonnull dereferenceable(32) %5, %"class.base::OnceCallback"* nonnull %6) #9
+  %29 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %6, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %29) #9
+  %30 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %7, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %30) #9
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %15) #9
+  br label %31
+
+31:                                               ; preds = %3, %25
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"*) unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN11query_tiles12_GLOBAL__N_119ImagePrefetcherImpl14OnImageFetchedEN4base12OnceCallbackIFvvEEE8SkBitmap(%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* nocapture readnone, %"class.base::OnceCallback"* nocapture, %class.SkBitmap* nocapture readnone) #0 align 2 {
+  %4 = alloca %"class.logging::CheckError", align 8
+  %5 = alloca %"class.base::Location", align 8
+  %6 = alloca %"class.base::OnceCallback", align 8
+  %7 = alloca %"class.base::OnceCallback", align 8
+  %8 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %1, i64 0, i32 0, i32 0, i32 0
+  %9 = load %"class.base::internal::BindStateBase"*, %"class.base::internal::BindStateBase"** %8, align 8
+  %10 = icmp eq %"class.base::internal::BindStateBase"* %9, null
+  br i1 %10, label %31, label %11
+
+11:                                               ; preds = %3
+  %12 = tail call dereferenceable(8) %class.scoped_refptr.38* @_ZN4base22ThreadTaskRunnerHandle3GetEv() #9
+  %13 = bitcast %class.scoped_refptr.38* %12 to %"class.base::TaskRunner"**
+  %14 = load %"class.base::TaskRunner"*, %"class.base::TaskRunner"** %13, align 8
+  %15 = bitcast %"class.base::Location"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 32, i8* nonnull %15) #9
+  call void @_ZN4base8Location7CurrentEPKcS2_i(%"class.base::Location"* nonnull sret %5, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.9, i64 0, i64 0), i8* getelementptr inbounds ([58 x i8], [58 x i8]* @.str.1, i64 0, i64 0), i32 107) #9
+  %16 = bitcast %"class.base::OnceCallback"* %1 to i64*
+  %17 = load i64, i64* %16, align 8
+  %18 = bitcast %"class.base::OnceCallback"* %7 to i64*
+  store i64 %17, i64* %18, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %8, align 8
+  %19 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %7, i64 0, i32 0, i32 0, i32 0
+  %20 = icmp eq i64 %17, 0
+  br i1 %20, label %21, label %25
+
+21:                                               ; preds = %11
+  %22 = bitcast %"class.logging::CheckError"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %22) #9, !noalias !36
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %4, i8* getelementptr inbounds ([18 x i8], [18 x i8]* @.str.2, i64 0, i64 0), i32 97, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.3, i64 0, i64 0)) #9, !noalias !36
+  %23 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %4) #9, !noalias !36
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %4) #9, !noalias !36
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %22) #9, !noalias !36
+  %24 = load i64, i64* %18, align 8, !noalias !36
+  br label %25
+
+25:                                               ; preds = %11, %21
+  %26 = phi i64 [ %24, %21 ], [ %17, %11 ]
+  %27 = bitcast %"class.base::OnceCallback"* %6 to i64*
+  store i64 %26, i64* %27, align 8, !alias.scope !36
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %19, align 8, !noalias !36
+  %28 = call zeroext i1 @_ZN4base10TaskRunner8PostTaskERKNS_8LocationENS_12OnceCallbackIFvvEEE(%"class.base::TaskRunner"* %14, %"class.base::Location"* nonnull dereferenceable(32) %5, %"class.base::OnceCallback"* nonnull %6) #9
+  %29 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %6, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %29) #9
+  %30 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %7, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %30) #9
+  call void @llvm.lifetime.end.p0i8(i64 32, i8* nonnull %15) #9
+  br label %31
+
+31:                                               ; preds = %3, %25
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN4base8internal7InvokerINS0_9BindStateIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNSt3__16vectorI4GURLNS6_9allocatorIS8_EEEEbNS_12OnceCallbackIFvvEEEEJNS_7WeakPtrIS5_EESB_bSE_EEESD_E7RunOnceEPNS0_13BindStateBaseE(%"class.base::internal::BindStateBase"*) #0 align 2 {
+  %2 = alloca %"class.logging::CheckError", align 8
+  %3 = alloca %"class.std::__1::vector.40", align 16
+  %4 = alloca %"class.base::OnceCallback", align 8
+  %5 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1
+  %6 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  %7 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %6, i64 2
+  %8 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %6, i64 5
+  %9 = bitcast void (%"class.base::internal::BindStateBase"*)** %8 to i8*
+  %10 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %6, i64 6
+  %11 = bitcast void (%"class.base::internal::BindStateBase"*)** %6 to %"class.base::internal::WeakReference"*
+  %12 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %11) #9
+  br i1 %12, label %13, label %84
+
+13:                                               ; preds = %1
+  %14 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %6, i64 1
+  %15 = bitcast void (%"class.base::internal::BindStateBase"*)** %14 to %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"**
+  %16 = load %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"** %15, align 8
+  %17 = icmp eq %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %16, null
+  br i1 %17, label %84, label %18
+
+18:                                               ; preds = %13
+  %19 = bitcast %"class.base::internal::BindStateBase"* %5 to i64*
+  %20 = load i64, i64* %19, align 8
+  %21 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 1
+  %22 = bitcast void ()** %21 to i64*
+  %23 = load i64, i64* %22, align 8
+  %24 = bitcast %"class.std::__1::vector.40"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %24) #9
+  %25 = bitcast %"class.base::OnceCallback"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %25) #9
+  %26 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %11) #9
+  br i1 %26, label %30, label %27
+
+27:                                               ; preds = %18
+  %28 = bitcast %"class.logging::CheckError"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %28) #9
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %2, i8* getelementptr inbounds ([29 x i8], [29 x i8]* @.str.6, i64 0, i64 0), i32 251, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.7, i64 0, i64 0)) #9
+  %29 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %2) #9
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %2) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %28) #9
+  br label %30
+
+30:                                               ; preds = %27, %18
+  %31 = call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %11) #9
+  %32 = bitcast void (%"class.base::internal::BindStateBase"*)** %14 to i8**
+  %33 = load i8*, i8** %32, align 8
+  %34 = select i1 %31, i8* %33, i8* null
+  %35 = getelementptr inbounds i8, i8* %34, i64 %23
+  %36 = bitcast i8* %35 to %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*
+  %37 = and i64 %20, 1
+  %38 = icmp eq i64 %37, 0
+  br i1 %38, label %46, label %39
+
+39:                                               ; preds = %30
+  %40 = bitcast i8* %35 to i8**
+  %41 = load i8*, i8** %40, align 8
+  %42 = add i64 %20, -1
+  %43 = getelementptr i8, i8* %41, i64 %42
+  %44 = bitcast i8* %43 to void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.std::__1::vector.40"*, i1, %"class.base::OnceCallback"*)**
+  %45 = load void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.std::__1::vector.40"*, i1, %"class.base::OnceCallback"*)*, void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.std::__1::vector.40"*, i1, %"class.base::OnceCallback"*)** %44, align 8
+  br label %48
+
+46:                                               ; preds = %30
+  %47 = inttoptr i64 %20 to void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.std::__1::vector.40"*, i1, %"class.base::OnceCallback"*)*
+  br label %48
+
+48:                                               ; preds = %46, %39
+  %49 = phi void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.std::__1::vector.40"*, i1, %"class.base::OnceCallback"*)* [ %45, %39 ], [ %47, %46 ]
+  %50 = bitcast void (%"class.base::internal::BindStateBase"*)** %7 to <2 x i64>*
+  %51 = load <2 x i64>, <2 x i64>* %50, align 8
+  %52 = getelementptr inbounds %"class.std::__1::vector.40", %"class.std::__1::vector.40"* %3, i64 0, i32 0, i32 1
+  %53 = bitcast %"class.std::__1::vector.40"* %3 to <2 x i64>*
+  store <2 x i64> %51, <2 x i64>* %53, align 16
+  %54 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %6, i64 4
+  %55 = bitcast void (%"class.base::internal::BindStateBase"*)** %54 to i64*
+  %56 = load i64, i64* %55, align 8
+  %57 = getelementptr inbounds %"class.std::__1::vector.40", %"class.std::__1::vector.40"* %3, i64 0, i32 0, i32 2, i32 0, i32 0
+  %58 = bitcast %class.GURL** %57 to i64*
+  store i64 %56, i64* %58, align 16
+  %59 = bitcast void (%"class.base::internal::BindStateBase"*)** %7 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %59, i8 0, i64 24, i1 false) #9
+  %60 = load i8, i8* %9, align 1, !range !5
+  %61 = icmp ne i8 %60, 0
+  %62 = bitcast void (%"class.base::internal::BindStateBase"*)** %10 to %"class.base::internal::BindStateBase"**
+  %63 = bitcast void (%"class.base::internal::BindStateBase"*)** %10 to i64*
+  %64 = load i64, i64* %63, align 8
+  %65 = bitcast %"class.base::OnceCallback"* %4 to i64*
+  store i64 %64, i64* %65, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %62, align 8
+  call void %49(%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %36, %"class.std::__1::vector.40"* nonnull %3, i1 zeroext %61, %"class.base::OnceCallback"* nonnull %4) #9
+  %66 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %4, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %66) #9
+  %67 = getelementptr inbounds %"class.std::__1::vector.40", %"class.std::__1::vector.40"* %3, i64 0, i32 0, i32 0
+  %68 = load %class.GURL*, %class.GURL** %67, align 16
+  %69 = icmp eq %class.GURL* %68, null
+  br i1 %69, label %83, label %70
+
+70:                                               ; preds = %48
+  %71 = bitcast %class.GURL* %68 to i8*
+  %72 = load %class.GURL*, %class.GURL** %52, align 8
+  %73 = icmp eq %class.GURL* %72, %68
+  br i1 %73, label %81, label %74
+
+74:                                               ; preds = %70, %74
+  %75 = phi %class.GURL* [ %76, %74 ], [ %72, %70 ]
+  %76 = getelementptr inbounds %class.GURL, %class.GURL* %75, i64 -1
+  call void @_ZN4GURLD1Ev(%class.GURL* %76) #9
+  %77 = icmp eq %class.GURL* %76, %68
+  br i1 %77, label %78, label %74
+
+78:                                               ; preds = %74
+  %79 = bitcast %"class.std::__1::vector.40"* %3 to i8**
+  %80 = load i8*, i8** %79, align 16
+  br label %81
+
+81:                                               ; preds = %78, %70
+  %82 = phi i8* [ %80, %78 ], [ %71, %70 ]
+  store %class.GURL* %68, %class.GURL** %52, align 8
+  call void @_ZdlPv(i8* %82) #8
+  br label %83
+
+83:                                               ; preds = %81, %48
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %24) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %25) #9
+  br label %84
+
+84:                                               ; preds = %1, %13, %83
+  ret void
+}
+
+declare zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"*) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN4base8internal9BindStateIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNSt3__16vectorI4GURLNS5_9allocatorIS7_EEEEbNS_12OnceCallbackIFvvEEEEJNS_7WeakPtrIS4_EESA_bSD_EE7DestroyEPKNS0_13BindStateBaseE(%"class.base::internal::BindStateBase"*) #0 align 2 {
+  %2 = icmp eq %"class.base::internal::BindStateBase"* %0, null
+  br i1 %2, label %29, label %3
+
+3:                                                ; preds = %1
+  %4 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 3
+  %5 = bitcast %"class.base::internal::BindStateBase"* %4 to %"class.base::internal::CallbackBase"*
+  tail call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* %5) #9
+  %6 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 2
+  %7 = bitcast %"class.base::internal::BindStateBase"* %6 to %class.GURL**
+  %8 = load %class.GURL*, %class.GURL** %7, align 8
+  %9 = icmp eq %class.GURL* %8, null
+  br i1 %9, label %25, label %10
+
+10:                                               ; preds = %3
+  %11 = bitcast %class.GURL* %8 to i8*
+  %12 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 2, i32 1
+  %13 = bitcast void ()** %12 to %class.GURL**
+  %14 = load %class.GURL*, %class.GURL** %13, align 8
+  %15 = icmp eq %class.GURL* %14, %8
+  br i1 %15, label %23, label %16
+
+16:                                               ; preds = %10, %16
+  %17 = phi %class.GURL* [ %18, %16 ], [ %14, %10 ]
+  %18 = getelementptr inbounds %class.GURL, %class.GURL* %17, i64 -1
+  tail call void @_ZN4GURLD1Ev(%class.GURL* %18) #9
+  %19 = icmp eq %class.GURL* %18, %8
+  br i1 %19, label %20, label %16
+
+20:                                               ; preds = %16
+  %21 = bitcast %"class.base::internal::BindStateBase"* %6 to i8**
+  %22 = load i8*, i8** %21, align 8
+  br label %23
+
+23:                                               ; preds = %20, %10
+  %24 = phi i8* [ %22, %20 ], [ %11, %10 ]
+  store %class.GURL* %8, %class.GURL** %13, align 8
+  tail call void @_ZdlPv(i8* %24) #8
+  br label %25
+
+25:                                               ; preds = %3, %23
+  %26 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  %27 = bitcast void (%"class.base::internal::BindStateBase"*)** %26 to %"class.base::internal::WeakPtrBase"*
+  tail call void @_ZN4base8internal11WeakPtrBaseD2Ev(%"class.base::internal::WeakPtrBase"* %27) #9
+  %28 = bitcast %"class.base::internal::BindStateBase"* %0 to i8*
+  tail call void @_ZdlPv(i8* %28) #8
+  br label %29
+
+29:                                               ; preds = %25, %1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal zeroext i1 @_ZN4base8internal23QueryCancellationTraitsINS0_9BindStateIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNSt3__16vectorI4GURLNS6_9allocatorIS8_EEEEbNS_12OnceCallbackIFvvEEEEJNS_7WeakPtrIS5_EESB_bSE_EEEEEbPKNS0_13BindStateBaseENSK_21CancellationQueryModeE(%"class.base::internal::BindStateBase"*, i32) #0 {
+  %3 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  switch i32 %1, label %16 [
+    i32 0, label %4
+    i32 1, label %13
+  ]
+
+4:                                                ; preds = %2
+  %5 = bitcast void (%"class.base::internal::BindStateBase"*)** %3 to %"class.base::internal::WeakReference"*
+  %6 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %5) #9
+  %7 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %3, i64 1
+  %8 = bitcast void (%"class.base::internal::BindStateBase"*)** %7 to %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"**
+  %9 = load %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"** %8, align 8
+  %10 = icmp ne %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %9, null
+  %11 = and i1 %6, %10
+  %12 = xor i1 %11, true
+  br label %16
+
+13:                                               ; preds = %2
+  %14 = bitcast void (%"class.base::internal::BindStateBase"*)** %3 to %"class.base::internal::WeakReference"*
+  %15 = tail call zeroext i1 @_ZNK4base8internal13WeakReference10MaybeValidEv(%"class.base::internal::WeakReference"* %14) #9
+  br label %16
+
+16:                                               ; preds = %2, %4, %13
+  %17 = phi i1 [ %15, %13 ], [ %12, %4 ], [ false, %2 ]
+  ret i1 %17
+}
+
+declare void @_ZN4base8internal13BindStateBaseC2EPFvvEPFvPKS1_EPFbS5_NS1_21CancellationQueryModeEE(%"class.base::internal::BindStateBase"*, void ()*, void (%"class.base::internal::BindStateBase"*)*, i1 (%"class.base::internal::BindStateBase"*, i32)*) unnamed_addr #3
+
+declare zeroext i1 @_ZNK4base8internal13WeakReference10MaybeValidEv(%"class.base::internal::WeakReference"*) local_unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal13WeakReferenceC1EOS1_(%"class.base::internal::WeakReference"*, %"class.base::internal::WeakReference"* dereferenceable(8)) unnamed_addr #4
+
+declare void @_ZNK4base8internal18WeakReferenceOwner6GetRefEv(%"class.base::internal::WeakReference"* sret, %"class.base::internal::WeakReferenceOwner"*) local_unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal13WeakReferenceD1Ev(%"class.base::internal::WeakReference"*) unnamed_addr #4
+
+declare void @_ZN4base8internal11WeakPtrBaseC2ERKNS0_13WeakReferenceEm(%"class.base::internal::WeakPtrBase"*, %"class.base::internal::WeakReference"* dereferenceable(8), i64) unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN4base8internal7InvokerINS0_9BindStateIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS_12OnceCallbackIFvvEEEbEJNS_7WeakPtrIS5_EES8_EEEFvbEE7RunOnceEPNS0_13BindStateBaseEb(%"class.base::internal::BindStateBase"*, i1 zeroext) #0 align 2 {
+  %3 = alloca %"class.logging::CheckError", align 8
+  %4 = alloca %"class.base::OnceCallback", align 8
+  %5 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1
+  %6 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  %7 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %6, i64 2
+  %8 = bitcast void (%"class.base::internal::BindStateBase"*)** %6 to %"class.base::internal::WeakReference"*
+  %9 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %8) #9
+  br i1 %9, label %10, label %51
+
+10:                                               ; preds = %2
+  %11 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %6, i64 1
+  %12 = bitcast void (%"class.base::internal::BindStateBase"*)** %11 to %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"**
+  %13 = load %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"** %12, align 8
+  %14 = icmp eq %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %13, null
+  br i1 %14, label %51, label %15
+
+15:                                               ; preds = %10
+  %16 = bitcast %"class.base::internal::BindStateBase"* %5 to i64*
+  %17 = load i64, i64* %16, align 8
+  %18 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 1
+  %19 = bitcast void ()** %18 to i64*
+  %20 = load i64, i64* %19, align 8
+  %21 = bitcast %"class.base::OnceCallback"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %21) #9
+  %22 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %8) #9
+  br i1 %22, label %26, label %23
+
+23:                                               ; preds = %15
+  %24 = bitcast %"class.logging::CheckError"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %24) #9
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %3, i8* getelementptr inbounds ([29 x i8], [29 x i8]* @.str.6, i64 0, i64 0), i32 251, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.7, i64 0, i64 0)) #9
+  %25 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %3) #9
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %3) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %24) #9
+  br label %26
+
+26:                                               ; preds = %23, %15
+  %27 = call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %8) #9
+  %28 = bitcast void (%"class.base::internal::BindStateBase"*)** %11 to i8**
+  %29 = load i8*, i8** %28, align 8
+  %30 = select i1 %27, i8* %29, i8* null
+  %31 = getelementptr inbounds i8, i8* %30, i64 %20
+  %32 = bitcast i8* %31 to %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*
+  %33 = and i64 %17, 1
+  %34 = icmp eq i64 %33, 0
+  br i1 %34, label %42, label %35
+
+35:                                               ; preds = %26
+  %36 = bitcast i8* %31 to i8**
+  %37 = load i8*, i8** %36, align 8
+  %38 = add i64 %17, -1
+  %39 = getelementptr i8, i8* %37, i64 %38
+  %40 = bitcast i8* %39 to void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.base::OnceCallback"*, i1)**
+  %41 = load void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.base::OnceCallback"*, i1)*, void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.base::OnceCallback"*, i1)** %40, align 8
+  br label %44
+
+42:                                               ; preds = %26
+  %43 = inttoptr i64 %17 to void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.base::OnceCallback"*, i1)*
+  br label %44
+
+44:                                               ; preds = %42, %35
+  %45 = phi void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.base::OnceCallback"*, i1)* [ %41, %35 ], [ %43, %42 ]
+  %46 = bitcast void (%"class.base::internal::BindStateBase"*)** %7 to %"class.base::internal::BindStateBase"**
+  %47 = bitcast void (%"class.base::internal::BindStateBase"*)** %7 to i64*
+  %48 = load i64, i64* %47, align 8
+  %49 = bitcast %"class.base::OnceCallback"* %4 to i64*
+  store i64 %48, i64* %49, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %46, align 8
+  call void %45(%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %32, %"class.base::OnceCallback"* nonnull %4, i1 zeroext %1) #9
+  %50 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %4, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %50) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %21) #9
+  br label %51
+
+51:                                               ; preds = %2, %10, %44
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN4base8internal9BindStateIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS_12OnceCallbackIFvvEEEbEJNS_7WeakPtrIS4_EES7_EE7DestroyEPKNS0_13BindStateBaseE(%"class.base::internal::BindStateBase"*) #0 align 2 {
+  %2 = icmp eq %"class.base::internal::BindStateBase"* %0, null
+  br i1 %2, label %9, label %3
+
+3:                                                ; preds = %1
+  %4 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 2
+  %5 = bitcast %"class.base::internal::BindStateBase"* %4 to %"class.base::internal::CallbackBase"*
+  tail call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* %5) #9
+  %6 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  %7 = bitcast void (%"class.base::internal::BindStateBase"*)** %6 to %"class.base::internal::WeakPtrBase"*
+  tail call void @_ZN4base8internal11WeakPtrBaseD2Ev(%"class.base::internal::WeakPtrBase"* %7) #9
+  %8 = bitcast %"class.base::internal::BindStateBase"* %0 to i8*
+  tail call void @_ZdlPv(i8* %8) #8
+  br label %9
+
+9:                                                ; preds = %3, %1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal zeroext i1 @_ZN4base8internal23QueryCancellationTraitsINS0_9BindStateIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS_12OnceCallbackIFvvEEEbEJNS_7WeakPtrIS5_EES8_EEEEEbPKNS0_13BindStateBaseENSE_21CancellationQueryModeE(%"class.base::internal::BindStateBase"*, i32) #0 {
+  %3 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  switch i32 %1, label %16 [
+    i32 0, label %4
+    i32 1, label %13
+  ]
+
+4:                                                ; preds = %2
+  %5 = bitcast void (%"class.base::internal::BindStateBase"*)** %3 to %"class.base::internal::WeakReference"*
+  %6 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %5) #9
+  %7 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %3, i64 1
+  %8 = bitcast void (%"class.base::internal::BindStateBase"*)** %7 to %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"**
+  %9 = load %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"** %8, align 8
+  %10 = icmp ne %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %9, null
+  %11 = and i1 %6, %10
+  %12 = xor i1 %11, true
+  br label %16
+
+13:                                               ; preds = %2
+  %14 = bitcast void (%"class.base::internal::BindStateBase"*)** %3 to %"class.base::internal::WeakReference"*
+  %15 = tail call zeroext i1 @_ZNK4base8internal13WeakReference10MaybeValidEv(%"class.base::internal::WeakReference"* %14) #9
+  br label %16
+
+16:                                               ; preds = %2, %4, %13
+  %17 = phi i1 [ %15, %13 ], [ %12, %4 ], [ false, %2 ]
+  ret i1 %17
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN4base8internal7InvokerINS0_9BindStateIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS_12OnceCallbackIFvvEEE8SkBitmapEJNS_7WeakPtrIS5_EES8_EEEFvS9_EE7RunOnceEPNS0_13BindStateBaseEOS9_(%"class.base::internal::BindStateBase"*, %class.SkBitmap* dereferenceable(56)) #0 align 2 {
+  %3 = alloca %"class.logging::CheckError", align 8
+  %4 = alloca %"class.base::OnceCallback", align 8
+  %5 = alloca %class.SkBitmap, align 8
+  %6 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1
+  %7 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  %8 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %7, i64 2
+  %9 = bitcast void (%"class.base::internal::BindStateBase"*)** %7 to %"class.base::internal::WeakReference"*
+  %10 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %9) #9
+  br i1 %10, label %11, label %53
+
+11:                                               ; preds = %2
+  %12 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %7, i64 1
+  %13 = bitcast void (%"class.base::internal::BindStateBase"*)** %12 to %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"**
+  %14 = load %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"** %13, align 8
+  %15 = icmp eq %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %14, null
+  br i1 %15, label %53, label %16
+
+16:                                               ; preds = %11
+  %17 = bitcast %"class.base::internal::BindStateBase"* %6 to i64*
+  %18 = load i64, i64* %17, align 8
+  %19 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 1
+  %20 = bitcast void ()** %19 to i64*
+  %21 = load i64, i64* %20, align 8
+  %22 = bitcast %"class.base::OnceCallback"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %22) #9
+  %23 = bitcast %class.SkBitmap* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 56, i8* nonnull %23) #9
+  %24 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %9) #9
+  br i1 %24, label %28, label %25
+
+25:                                               ; preds = %16
+  %26 = bitcast %"class.logging::CheckError"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %26) #9
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %3, i8* getelementptr inbounds ([29 x i8], [29 x i8]* @.str.6, i64 0, i64 0), i32 251, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.7, i64 0, i64 0)) #9
+  %27 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %3) #9
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %3) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %26) #9
+  br label %28
+
+28:                                               ; preds = %25, %16
+  %29 = call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %9) #9
+  %30 = bitcast void (%"class.base::internal::BindStateBase"*)** %12 to i8**
+  %31 = load i8*, i8** %30, align 8
+  %32 = select i1 %29, i8* %31, i8* null
+  %33 = getelementptr inbounds i8, i8* %32, i64 %21
+  %34 = bitcast i8* %33 to %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*
+  %35 = and i64 %18, 1
+  %36 = icmp eq i64 %35, 0
+  br i1 %36, label %44, label %37
+
+37:                                               ; preds = %28
+  %38 = bitcast i8* %33 to i8**
+  %39 = load i8*, i8** %38, align 8
+  %40 = add i64 %18, -1
+  %41 = getelementptr i8, i8* %39, i64 %40
+  %42 = bitcast i8* %41 to void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.base::OnceCallback"*, %class.SkBitmap*)**
+  %43 = load void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.base::OnceCallback"*, %class.SkBitmap*)*, void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.base::OnceCallback"*, %class.SkBitmap*)** %42, align 8
+  br label %46
+
+44:                                               ; preds = %28
+  %45 = inttoptr i64 %18 to void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.base::OnceCallback"*, %class.SkBitmap*)*
+  br label %46
+
+46:                                               ; preds = %44, %37
+  %47 = phi void (%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.base::OnceCallback"*, %class.SkBitmap*)* [ %43, %37 ], [ %45, %44 ]
+  %48 = bitcast void (%"class.base::internal::BindStateBase"*)** %8 to %"class.base::internal::BindStateBase"**
+  %49 = bitcast void (%"class.base::internal::BindStateBase"*)** %8 to i64*
+  %50 = load i64, i64* %49, align 8
+  %51 = bitcast %"class.base::OnceCallback"* %4 to i64*
+  store i64 %50, i64* %51, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %48, align 8
+  call void @_ZN8SkBitmapC1EOS_(%class.SkBitmap* nonnull %5, %class.SkBitmap* dereferenceable(56) %1) #9
+  call void %47(%"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %34, %"class.base::OnceCallback"* nonnull %4, %class.SkBitmap* nonnull %5) #9
+  call void @_ZN8SkBitmapD1Ev(%class.SkBitmap* nonnull %5) #9
+  %52 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %4, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %52) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %22) #9
+  call void @llvm.lifetime.end.p0i8(i64 56, i8* nonnull %23) #9
+  br label %53
+
+53:                                               ; preds = %2, %11, %46
+  ret void
+}
+
+declare void @_ZN8SkBitmapC1EOS_(%class.SkBitmap*, %class.SkBitmap* dereferenceable(56)) unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN8SkBitmapD1Ev(%class.SkBitmap*) unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN4base8internal9BindStateIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS_12OnceCallbackIFvvEEE8SkBitmapEJNS_7WeakPtrIS4_EES7_EE7DestroyEPKNS0_13BindStateBaseE(%"class.base::internal::BindStateBase"*) #0 align 2 {
+  %2 = icmp eq %"class.base::internal::BindStateBase"* %0, null
+  br i1 %2, label %9, label %3
+
+3:                                                ; preds = %1
+  %4 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 2
+  %5 = bitcast %"class.base::internal::BindStateBase"* %4 to %"class.base::internal::CallbackBase"*
+  tail call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* %5) #9
+  %6 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  %7 = bitcast void (%"class.base::internal::BindStateBase"*)** %6 to %"class.base::internal::WeakPtrBase"*
+  tail call void @_ZN4base8internal11WeakPtrBaseD2Ev(%"class.base::internal::WeakPtrBase"* %7) #9
+  %8 = bitcast %"class.base::internal::BindStateBase"* %0 to i8*
+  tail call void @_ZdlPv(i8* %8) #8
+  br label %9
+
+9:                                                ; preds = %3, %1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal zeroext i1 @_ZN4base8internal23QueryCancellationTraitsINS0_9BindStateIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS_12OnceCallbackIFvvEEE8SkBitmapEJNS_7WeakPtrIS5_EES8_EEEEEbPKNS0_13BindStateBaseENSF_21CancellationQueryModeE(%"class.base::internal::BindStateBase"*, i32) #0 {
+  %3 = getelementptr inbounds %"class.base::internal::BindStateBase", %"class.base::internal::BindStateBase"* %0, i64 1, i32 2
+  switch i32 %1, label %16 [
+    i32 0, label %4
+    i32 1, label %13
+  ]
+
+4:                                                ; preds = %2
+  %5 = bitcast void (%"class.base::internal::BindStateBase"*)** %3 to %"class.base::internal::WeakReference"*
+  %6 = tail call zeroext i1 @_ZNK4base8internal13WeakReference7IsValidEv(%"class.base::internal::WeakReference"* %5) #9
+  %7 = getelementptr inbounds void (%"class.base::internal::BindStateBase"*)*, void (%"class.base::internal::BindStateBase"*)** %3, i64 1
+  %8 = bitcast void (%"class.base::internal::BindStateBase"*)** %7 to %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"**
+  %9 = load %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"*, %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"** %8, align 8
+  %10 = icmp ne %"class.query_tiles::(anonymous namespace)::ImagePrefetcherImpl"* %9, null
+  %11 = and i1 %6, %10
+  %12 = xor i1 %11, true
+  br label %16
+
+13:                                               ; preds = %2
+  %14 = bitcast void (%"class.base::internal::BindStateBase"*)** %3 to %"class.base::internal::WeakReference"*
+  %15 = tail call zeroext i1 @_ZNK4base8internal13WeakReference10MaybeValidEv(%"class.base::internal::WeakReference"* %14) #9
+  br label %16
+
+16:                                               ; preds = %2, %4, %13
+  %17 = phi i1 [ %15, %13 ], [ %12, %4 ], [ false, %2 ]
+  ret i1 %17
+}
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { argmemonly nounwind }
+attributes #2 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { inlinehint nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { noreturn "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { builtin nounwind }
+attributes #9 = { nounwind }
+attributes #10 = { noreturn nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{!3}
+!3 = distinct !{!3, !4, !"_ZN4base8BindOnceIFvvEEENS_12OnceCallbackIT_EES4_: argument 0"}
+!4 = distinct !{!4, !"_ZN4base8BindOnceIFvvEEENS_12OnceCallbackIT_EES4_"}
+!5 = !{i8 0, i8 2}
+!6 = !{!7}
+!7 = distinct !{!7, !8, !"_ZN4base8BindOnceIFvvEEENS_12OnceCallbackIT_EES4_: argument 0"}
+!8 = distinct !{!8, !"_ZN4base8BindOnceIFvvEEENS_12OnceCallbackIT_EES4_"}
+!9 = !{!10}
+!10 = distinct !{!10, !11, !"_ZNK4base14WeakPtrFactoryIN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEE10GetWeakPtrEv: argument 0"}
+!11 = distinct !{!11, !"_ZNK4base14WeakPtrFactoryIN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEE10GetWeakPtrEv"}
+!12 = !{!13, !15}
+!13 = distinct !{!13, !14, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNSt3__16vectorI4GURLNS6_9allocatorIS8_EEEEbNS2_IFvvEEEEJNS_7WeakPtrIS5_EESB_RbSD_EEEDcOT0_DpOT1_: argument 0"}
+!14 = distinct !{!14, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNSt3__16vectorI4GURLNS6_9allocatorIS8_EEEEbNS2_IFvvEEEEJNS_7WeakPtrIS5_EESB_RbSD_EEEDcOT0_DpOT1_"}
+!15 = distinct !{!15, !16, !"_ZN4base8BindOnceIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNSt3__16vectorI4GURLNS4_9allocatorIS6_EEEEbNS_12OnceCallbackIFvvEEEEJNS_7WeakPtrIS3_EES9_RbSC_EEENSA_INS_8internal14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSK_DpOSL_: argument 0"}
+!16 = distinct !{!16, !"_ZN4base8BindOnceIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNSt3__16vectorI4GURLNS4_9allocatorIS6_EEEEbNS_12OnceCallbackIFvvEEEEJNS_7WeakPtrIS3_EES9_RbSC_EEENSA_INS_8internal14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSK_DpOSL_"}
+!17 = !{!18}
+!18 = distinct !{!18, !19, !"_ZNK4base14WeakPtrFactoryIN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEE10GetWeakPtrEv: argument 0"}
+!19 = distinct !{!19, !"_ZNK4base14WeakPtrFactoryIN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEE10GetWeakPtrEv"}
+!20 = !{!21, !23}
+!21 = distinct !{!21, !22, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS2_IFvvEEEbEJNS_7WeakPtrIS5_EES7_EEEDcOT0_DpOT1_: argument 0"}
+!22 = distinct !{!22, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS2_IFvvEEEbEJNS_7WeakPtrIS5_EES7_EEEDcOT0_DpOT1_"}
+!23 = distinct !{!23, !24, !"_ZN4base8BindOnceIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS_12OnceCallbackIFvvEEEbEJNS_7WeakPtrIS3_EES6_EEENS4_INS_8internal14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSD_DpOSE_: argument 0"}
+!24 = distinct !{!24, !"_ZN4base8BindOnceIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS_12OnceCallbackIFvvEEEbEJNS_7WeakPtrIS3_EES6_EEENS4_INS_8internal14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSD_DpOSE_"}
+!25 = !{!26}
+!26 = distinct !{!26, !27, !"_ZNK4base14WeakPtrFactoryIN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEE10GetWeakPtrEv: argument 0"}
+!27 = distinct !{!27, !"_ZNK4base14WeakPtrFactoryIN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEE10GetWeakPtrEv"}
+!28 = !{!29, !31}
+!29 = distinct !{!29, !30, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS2_IFvvEEE8SkBitmapEJNS_7WeakPtrIS5_EES7_EEEDcOT0_DpOT1_: argument 0"}
+!30 = distinct !{!30, !"_ZN4base8internal8BindImplINS_12OnceCallbackEMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS2_IFvvEEE8SkBitmapEJNS_7WeakPtrIS5_EES7_EEEDcOT0_DpOT1_"}
+!31 = distinct !{!31, !32, !"_ZN4base8BindOnceIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS_12OnceCallbackIFvvEEE8SkBitmapEJNS_7WeakPtrIS3_EES6_EEENS4_INS_8internal14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSE_DpOSF_: argument 0"}
+!32 = distinct !{!32, !"_ZN4base8BindOnceIMN11query_tiles12_GLOBAL__N_119ImagePrefetcherImplEFvNS_12OnceCallbackIFvvEEE8SkBitmapEJNS_7WeakPtrIS3_EES6_EEENS4_INS_8internal14BindTypeHelperIT_JDpT0_EE14UnboundRunTypeEEEOSE_DpOSF_"}
+!33 = !{!34}
+!34 = distinct !{!34, !35, !"_ZN4base8BindOnceIFvvEEENS_12OnceCallbackIT_EES4_: argument 0"}
+!35 = distinct !{!35, !"_ZN4base8BindOnceIFvvEEENS_12OnceCallbackIT_EES4_"}
+!36 = !{!37}
+!37 = distinct !{!37, !38, !"_ZN4base8BindOnceIFvvEEENS_12OnceCallbackIT_EES4_: argument 0"}
+!38 = distinct !{!38, !"_ZN4base8BindOnceIFvvEEENS_12OnceCallbackIT_EES4_"}

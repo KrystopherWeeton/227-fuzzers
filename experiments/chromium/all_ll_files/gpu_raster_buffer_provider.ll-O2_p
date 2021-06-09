@@ -1,0 +1,1907 @@
+; ModuleID = '../../cc/raster/gpu_raster_buffer_provider.cc'
+source_filename = "../../cc/raster/gpu_raster_buffer_provider.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"struct.base::trace_event::TraceCategory" = type { i8, i32, i8* }
+%"class.cc::GpuRasterBufferProvider::RasterBufferImpl" = type { %"class.cc::RasterBuffer", %"class.cc::GpuRasterBufferProvider"*, %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"*, %"class.gfx::Size", i32, %"class.gfx::ColorSpace", i8, i8, i8, i8, %"struct.gpu::SyncToken", i32, i8, %"struct.gpu::Mailbox", %"struct.gpu::SyncToken", %"class.base::TimeTicks" }
+%"class.cc::RasterBuffer" = type { i32 (...)** }
+%"class.gfx::Size" = type { i32, i32 }
+%"class.gfx::ColorSpace" = type { i8, i8, i8, i8, [9 x float], [7 x float] }
+%"struct.gpu::Mailbox" = type { [16 x i8] }
+%"struct.gpu::SyncToken" = type { i8, i8, %"class.util::IdType", i64 }
+%"class.util::IdType" = type { %"class.base::StrongAlias" }
+%"class.base::StrongAlias" = type { i64 }
+%"class.base::TimeTicks" = type { %"class.base::time_internal::TimeBase" }
+%"class.base::time_internal::TimeBase" = type { i64 }
+%"class.cc::GpuRasterBufferProvider" = type { %"class.cc::RasterBufferProvider", %"class.viz::ContextProvider"*, %"class.viz::RasterContextProvider"*, i8, i32, %"class.gfx::Size", i8, %"class.cc::RasterQueryQueue"*, %"class.std::__1::mersenne_twister_engine", %"class.std::__1::bernoulli_distribution" }
+%"class.cc::RasterBufferProvider" = type { i32 (...)** }
+%"class.viz::ContextProvider" = type { i32 (...)** }
+%"class.viz::RasterContextProvider" = type { i32 (...)** }
+%"class.cc::RasterQueryQueue" = type { i32 (...)**, %"class.viz::RasterContextProvider"*, i8, %"class.base::Lock", %"class.base::circular_deque" }
+%"class.base::Lock" = type { %"class.base::internal::LockImpl" }
+%"class.base::internal::LockImpl" = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%"class.base::circular_deque" = type { %"class.base::internal::VectorBuffer", i64, i64 }
+%"class.base::internal::VectorBuffer" = type { %"struct.cc::RasterQuery"*, i64 }
+%"struct.cc::RasterQuery" = type <{ i32, [4 x i8], %"class.base::TimeDelta", i32, [4 x i8], %"class.base::TimeTicks", i8, i8, [6 x i8] }>
+%"class.base::TimeDelta" = type { i64 }
+%"class.std::__1::mersenne_twister_engine" = type { [624 x i64], i64 }
+%"class.std::__1::bernoulli_distribution" = type { %"class.std::__1::bernoulli_distribution::param_type" }
+%"class.std::__1::bernoulli_distribution::param_type" = type { double }
+%"class.cc::ResourcePool::InUsePoolResource" = type { i8, %"class.cc::ResourcePool::PoolResource"* }
+%"class.cc::ResourcePool::PoolResource" = type { i64, %"class.gfx::Size", i32, %"class.gfx::ColorSpace", i64, %"class.base::TimeTicks", %"class.gfx::Rect", i8, %"class.util::IdType.0", %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr.3" }
+%"class.gfx::Rect" = type { %"class.gfx::Point", %"class.gfx::Size" }
+%"class.gfx::Point" = type { i32, i32 }
+%"class.util::IdType.0" = type { %"class.base::StrongAlias.1" }
+%"class.base::StrongAlias.1" = type { i32 }
+%"class.std::__1::unique_ptr" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"class.cc::ResourcePool::GpuBacking"* }
+%"class.cc::ResourcePool::GpuBacking" = type { i32 (...)**, %"struct.gpu::Mailbox", %"struct.gpu::SyncToken", i32, i8, i8, %"struct.gpu::SyncToken" }
+%"class.std::__1::unique_ptr.3" = type { %"class.std::__1::__compressed_pair.4" }
+%"class.std::__1::__compressed_pair.4" = type { %"struct.std::__1::__compressed_pair_elem.5" }
+%"struct.std::__1::__compressed_pair_elem.5" = type { %"class.cc::ResourcePool::SoftwareBacking"* }
+%"class.cc::ResourcePool::SoftwareBacking" = type { i32 (...)**, %"struct.gpu::Mailbox" }
+%"class.cc::GpuRasterBufferProvider::GpuRasterBacking" = type { %"class.cc::ResourcePool::GpuBacking", %"class.viz::RasterContextProvider"* }
+%"class.cc::RasterSource" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe", [4 x i8], i64, %class.scoped_refptr, i32, i8, i8, [2 x i8], i32, %"class.gfx::Rect", %"class.gfx::Size", i32, float, [4 x i8] }>
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.9" }
+%"struct.std::__1::__atomic_base.9" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%class.scoped_refptr = type { %"class.cc::DisplayItemList"* }
+%"class.cc::DisplayItemList" = type <{ %"class.base::RefCountedThreadSafe.10", [4 x i8], %"class.cc::RTree", %"class.cc::DiscardableImageMap", %"class.cc::PaintOpBuffer", %"class.std::__1::vector.82", %"class.std::__1::vector.89", %"class.std::__1::vector.96", i32, [4 x i8] }>
+%"class.base::RefCountedThreadSafe.10" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.cc::RTree" = type <{ i64, %"struct.cc::RTree<unsigned long>::Branch", %"class.std::__1::vector", i8, [7 x i8] }>
+%"struct.cc::RTree<unsigned long>::Branch" = type { %"struct.cc::RTree<unsigned long>::Node"*, i64, %"class.gfx::Rect" }
+%"struct.cc::RTree<unsigned long>::Node" = type opaque
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"struct.cc::RTree<unsigned long>::Node"*, %"struct.cc::RTree<unsigned long>::Node"*, %"class.std::__1::__compressed_pair.11" }
+%"class.std::__1::__compressed_pair.11" = type { %"struct.std::__1::__compressed_pair_elem.12" }
+%"struct.std::__1::__compressed_pair_elem.12" = type { %"struct.cc::RTree<unsigned long>::Node"* }
+%"class.cc::DiscardableImageMap" = type { %"class.base::flat_map", %"class.std::__1::vector.21", %"class.base::flat_map.35", i8, i8, [6 x i8], %"class.cc::RTree.45", %"class.std::__1::vector.74" }
+%"class.base::flat_map" = type { %"class.base::internal::flat_tree" }
+%"class.base::internal::flat_tree" = type { %"class.std::__1::vector.14" }
+%"class.std::__1::vector.14" = type { %"class.std::__1::__vector_base.15" }
+%"class.std::__1::__vector_base.15" = type { %"struct.std::__1::pair"*, %"struct.std::__1::pair"*, %"class.std::__1::__compressed_pair.16" }
+%"struct.std::__1::pair" = type opaque
+%"class.std::__1::__compressed_pair.16" = type { %"struct.std::__1::__compressed_pair_elem.17" }
+%"struct.std::__1::__compressed_pair_elem.17" = type { %"struct.std::__1::pair"* }
+%"class.std::__1::vector.21" = type { %"class.std::__1::__vector_base.22" }
+%"class.std::__1::__vector_base.22" = type { %"struct.cc::DiscardableImageMap::AnimatedImageMetadata"*, %"struct.cc::DiscardableImageMap::AnimatedImageMetadata"*, %"class.std::__1::__compressed_pair.30" }
+%"struct.cc::DiscardableImageMap::AnimatedImageMetadata" = type { i32, i32, %"class.std::__1::vector.23", i32, i32 }
+%"class.std::__1::vector.23" = type { %"class.std::__1::__vector_base.24" }
+%"class.std::__1::__vector_base.24" = type { %"struct.cc::FrameMetadata"*, %"struct.cc::FrameMetadata"*, %"class.std::__1::__compressed_pair.25" }
+%"struct.cc::FrameMetadata" = type { i8, %"class.base::TimeDelta" }
+%"class.std::__1::__compressed_pair.25" = type { %"struct.std::__1::__compressed_pair_elem.26" }
+%"struct.std::__1::__compressed_pair_elem.26" = type { %"struct.cc::FrameMetadata"* }
+%"class.std::__1::__compressed_pair.30" = type { %"struct.std::__1::__compressed_pair_elem.31" }
+%"struct.std::__1::__compressed_pair_elem.31" = type { %"struct.cc::DiscardableImageMap::AnimatedImageMetadata"* }
+%"class.base::flat_map.35" = type { %"class.base::internal::flat_tree.36" }
+%"class.base::internal::flat_tree.36" = type { %"class.std::__1::vector.37" }
+%"class.std::__1::vector.37" = type { %"class.std::__1::__vector_base.38" }
+%"class.std::__1::__vector_base.38" = type { %"struct.std::__1::pair.39"*, %"struct.std::__1::pair.39"*, %"class.std::__1::__compressed_pair.40" }
+%"struct.std::__1::pair.39" = type { i32, i32 }
+%"class.std::__1::__compressed_pair.40" = type { %"struct.std::__1::__compressed_pair_elem.41" }
+%"struct.std::__1::__compressed_pair_elem.41" = type { %"struct.std::__1::pair.39"* }
+%"class.cc::RTree.45" = type <{ i64, %"struct.cc::RTree<cc::DrawImage>::Branch", %"class.std::__1::vector.66", i8, [7 x i8] }>
+%"struct.cc::RTree<cc::DrawImage>::Branch" = type { %"struct.cc::RTree<cc::DrawImage>::Node"*, %"class.cc::DrawImage", %"class.gfx::Rect" }
+%"struct.cc::RTree<cc::DrawImage>::Node" = type opaque
+%"class.cc::DrawImage" = type <{ %"class.cc::PaintImage", i8, [3 x i8], %struct.SkIRect, i32, %struct.SkSize, i8, [7 x i8], %"class.absl::optional", %"class.absl::optional.61", float, [4 x i8] }>
+%"class.cc::PaintImage" = type { %class.sk_sp, %class.sk_sp.52, %"class.gfx::Rect", i32, %class.sk_sp.57, %class.sk_sp.58, i32, i32, i32, i32, i8, i8, i32, i32, %class.sk_sp, %class.scoped_refptr.59 }
+%class.sk_sp.52 = type { %"class.cc::PaintOpBuffer"* }
+%class.sk_sp.57 = type { %"class.cc::PaintImageGenerator"* }
+%"class.cc::PaintImageGenerator" = type opaque
+%class.sk_sp.58 = type { %"class.cc::TextureBacking"* }
+%"class.cc::TextureBacking" = type opaque
+%class.sk_sp = type { %class.SkImage* }
+%class.SkImage = type <{ %class.SkRefCnt.base, [4 x i8], %struct.SkImageInfo, i32, [4 x i8] }>
+%class.SkRefCnt.base = type { %class.SkRefCntBase.base }
+%class.SkRefCntBase.base = type <{ i32 (...)**, %"struct.std::__1::atomic" }>
+%struct.SkImageInfo = type { %class.SkColorInfo, %struct.SkISize }
+%class.SkColorInfo = type { %class.sk_sp.46, i32, i32 }
+%class.sk_sp.46 = type { %class.SkColorSpace* }
+%class.SkColorSpace = type <{ %class.SkNVRefCnt, i32, i32, %struct.skcms_TransferFunction, %struct.skcms_Matrix3x3, %struct.skcms_TransferFunction, %struct.skcms_Matrix3x3, %class.SkOnce, [3 x i8] }>
+%class.SkNVRefCnt = type { %"struct.std::__1::atomic" }
+%struct.skcms_TransferFunction = type { float, float, float, float, float, float, float }
+%struct.skcms_Matrix3x3 = type { [3 x [3 x float]] }
+%class.SkOnce = type { %"struct.std::__1::atomic.47" }
+%"struct.std::__1::atomic.47" = type { %"struct.std::__1::__atomic_base.48" }
+%"struct.std::__1::__atomic_base.48" = type { %"struct.std::__1::__atomic_base.49" }
+%"struct.std::__1::__atomic_base.49" = type { %"struct.std::__1::__cxx_atomic_impl.50" }
+%"struct.std::__1::__cxx_atomic_impl.50" = type { %"struct.std::__1::__cxx_atomic_base_impl.51" }
+%"struct.std::__1::__cxx_atomic_base_impl.51" = type { i8 }
+%struct.SkISize = type { i32, i32 }
+%class.scoped_refptr.59 = type { %"class.cc::PaintWorkletInput"* }
+%"class.cc::PaintWorkletInput" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe.60", [4 x i8] }>
+%"class.base::RefCountedThreadSafe.60" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%struct.SkIRect = type { i32, i32, i32, i32 }
+%struct.SkSize = type { float, float }
+%"class.absl::optional" = type { %"class.absl::optional_internal::optional_data" }
+%"class.absl::optional_internal::optional_data" = type { %"class.absl::optional_internal::optional_data_base" }
+%"class.absl::optional_internal::optional_data_base" = type { %"class.absl::optional_internal::optional_data_dtor_base" }
+%"class.absl::optional_internal::optional_data_dtor_base" = type { i8, %union.anon }
+%union.anon = type { i64 }
+%"class.absl::optional.61" = type { %"class.absl::optional_internal::optional_data.62" }
+%"class.absl::optional_internal::optional_data.62" = type { %"class.absl::optional_internal::optional_data_base.63" }
+%"class.absl::optional_internal::optional_data_base.63" = type { %"class.absl::optional_internal::optional_data_dtor_base.64" }
+%"class.absl::optional_internal::optional_data_dtor_base.64" = type { i8, %union.anon.65 }
+%union.anon.65 = type { %"class.gfx::ColorSpace" }
+%"class.std::__1::vector.66" = type { %"class.std::__1::__vector_base.67" }
+%"class.std::__1::__vector_base.67" = type { %"struct.cc::RTree<cc::DrawImage>::Node"*, %"struct.cc::RTree<cc::DrawImage>::Node"*, %"class.std::__1::__compressed_pair.68" }
+%"class.std::__1::__compressed_pair.68" = type { %"struct.std::__1::__compressed_pair_elem.69" }
+%"struct.std::__1::__compressed_pair_elem.69" = type { %"struct.cc::RTree<cc::DrawImage>::Node"* }
+%"class.std::__1::vector.74" = type { %"class.std::__1::__vector_base.75" }
+%"class.std::__1::__vector_base.75" = type { %"struct.std::__1::pair.76"*, %"struct.std::__1::pair.76"*, %"class.std::__1::__compressed_pair.77" }
+%"struct.std::__1::pair.76" = type opaque
+%"class.std::__1::__compressed_pair.77" = type { %"struct.std::__1::__compressed_pair_elem.78" }
+%"struct.std::__1::__compressed_pair_elem.78" = type { %"struct.std::__1::pair.76"* }
+%"class.cc::PaintOpBuffer" = type <{ %class.SkRefCnt.base, [4 x i8], %"class.std::__1::unique_ptr.53", i64, i64, i64, i64, i64, i32, i8, [3 x i8] }>
+%"class.std::__1::unique_ptr.53" = type { %"class.std::__1::__compressed_pair.54" }
+%"class.std::__1::__compressed_pair.54" = type { %"struct.std::__1::__compressed_pair_elem.55" }
+%"struct.std::__1::__compressed_pair_elem.55" = type { i8* }
+%"class.std::__1::vector.82" = type { %"class.std::__1::__vector_base.83" }
+%"class.std::__1::__vector_base.83" = type { %"class.gfx::Rect"*, %"class.gfx::Rect"*, %"class.std::__1::__compressed_pair.84" }
+%"class.std::__1::__compressed_pair.84" = type { %"struct.std::__1::__compressed_pair_elem.85" }
+%"struct.std::__1::__compressed_pair_elem.85" = type { %"class.gfx::Rect"* }
+%"class.std::__1::vector.89" = type { %"class.std::__1::__vector_base.90" }
+%"class.std::__1::__vector_base.90" = type { i64*, i64*, %"class.std::__1::__compressed_pair.91" }
+%"class.std::__1::__compressed_pair.91" = type { %"struct.std::__1::__compressed_pair_elem.92" }
+%"struct.std::__1::__compressed_pair_elem.92" = type { i64* }
+%"class.std::__1::vector.96" = type { %"class.std::__1::__vector_base.97" }
+%"class.std::__1::__vector_base.97" = type { %"struct.cc::DisplayItemList::PairedBeginInfo"*, %"struct.cc::DisplayItemList::PairedBeginInfo"*, %"class.std::__1::__compressed_pair.98" }
+%"struct.cc::DisplayItemList::PairedBeginInfo" = type { i64, i64 }
+%"class.std::__1::__compressed_pair.98" = type { %"struct.std::__1::__compressed_pair_elem.99" }
+%"struct.std::__1::__compressed_pair_elem.99" = type { %"struct.cc::DisplayItemList::PairedBeginInfo"* }
+%"class.gfx::AxisTransform2d" = type { %"class.gfx::Vector2dF", %"class.gfx::Vector2dF" }
+%"class.gfx::Vector2dF" = type { float, float }
+%"struct.cc::RasterSource::PlaybackSettings" = type { i8, i32, %"class.cc::ImageProvider"* }
+%"class.cc::ImageProvider" = type opaque
+%class.GURL = type { %"class.std::__1::basic_string", i8, %"struct.url::Parsed", %"class.std::__1::unique_ptr.109" }
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.103" }
+%"class.std::__1::__compressed_pair.103" = type { %"struct.std::__1::__compressed_pair_elem.104" }
+%"struct.std::__1::__compressed_pair_elem.104" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon.105 }
+%union.anon.105 = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"struct.url::Parsed" = type { %"struct.url::Component", %"struct.url::Component", %"struct.url::Component", %"struct.url::Component", %"struct.url::Component", %"struct.url::Component", %"struct.url::Component", %"struct.url::Component", i8, %"struct.url::Parsed"* }
+%"struct.url::Component" = type { i32, i32 }
+%"class.std::__1::unique_ptr.109" = type { %"class.std::__1::__compressed_pair.110" }
+%"class.std::__1::__compressed_pair.110" = type { %"struct.std::__1::__compressed_pair_elem.111" }
+%"struct.std::__1::__compressed_pair_elem.111" = type { %class.GURL* }
+%"class.base::trace_event::TraceArguments" = type { i8, [2 x i8], [2 x i8*], [2 x %"union.base::trace_event::TraceValue"] }
+%"union.base::trace_event::TraceValue" = type { i64 }
+%"struct.gpu::Capabilities" = type { %"struct.gpu::Capabilities::PerStagePrecisions", %"struct.gpu::Capabilities::PerStagePrecisions", i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i64, i32, i64, i32, i32, i64, i32, i32, i32, i32, i32, i32, i32, i64, float, i32, i32, i32, i64, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i32, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i32, i32, i8, %"struct.gpu::GpuMemoryBufferFormatSet", %"class.std::__1::vector.127" }
+%"struct.gpu::Capabilities::PerStagePrecisions" = type { %"struct.gpu::Capabilities::ShaderPrecision", %"struct.gpu::Capabilities::ShaderPrecision", %"struct.gpu::Capabilities::ShaderPrecision", %"struct.gpu::Capabilities::ShaderPrecision", %"struct.gpu::Capabilities::ShaderPrecision", %"struct.gpu::Capabilities::ShaderPrecision" }
+%"struct.gpu::Capabilities::ShaderPrecision" = type { i32, i32, i32 }
+%"struct.gpu::GpuMemoryBufferFormatSet" = type { i32 }
+%"class.std::__1::vector.127" = type { %"class.std::__1::__vector_base.128" }
+%"class.std::__1::__vector_base.128" = type { %"struct.gfx::BufferUsageAndFormat"*, %"struct.gfx::BufferUsageAndFormat"*, %"class.std::__1::__compressed_pair.129" }
+%"struct.gfx::BufferUsageAndFormat" = type { i32, i32 }
+%"class.std::__1::__compressed_pair.129" = type { %"struct.std::__1::__compressed_pair_elem.130" }
+%"struct.std::__1::__compressed_pair_elem.130" = type { %"struct.gfx::BufferUsageAndFormat"* }
+%"class.gpu::ContextSupport" = type { i32 (...)** }
+%"class.std::__1::vector.140" = type { %"class.std::__1::__vector_base.141" }
+%"class.std::__1::__vector_base.141" = type { %"class.cc::ResourcePool::InUsePoolResource"**, %"class.cc::ResourcePool::InUsePoolResource"**, %"class.std::__1::__compressed_pair.142" }
+%"class.std::__1::__compressed_pair.142" = type { %"struct.std::__1::__compressed_pair_elem.143" }
+%"struct.std::__1::__compressed_pair_elem.143" = type { %"class.cc::ResourcePool::InUsePoolResource"** }
+%"class.base::OnceCallback" = type { %"class.base::internal::CallbackBase" }
+%"class.base::internal::CallbackBase" = type { %class.scoped_refptr.147 }
+%class.scoped_refptr.147 = type { %"class.base::internal::BindStateBase"* }
+%"class.base::internal::BindStateBase" = type { %"class.base::RefCountedThreadSafe.148", void ()*, void (%"class.base::internal::BindStateBase"*)*, i1 (%"class.base::internal::BindStateBase"*, i32)* }
+%"class.base::RefCountedThreadSafe.148" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.viz::ClientResourceProvider::ScopedSkSurface" = type { %class.sk_sp.182 }
+%class.sk_sp.182 = type { %class.SkSurface* }
+%class.SkSurface = type { %class.SkRefCnt.base, %class.SkSurfaceProps, i32, i32, i32 }
+%class.SkSurfaceProps = type { i32, i32 }
+%"class.viz::RasterContextProvider::ScopedRasterContextLock" = type { %"class.viz::RasterContextProvider"*, %"class.base::internal::BasicAutoLock", %"class.std::__1::unique_ptr.149" }
+%"class.base::internal::BasicAutoLock" = type { %"class.base::Lock"* }
+%"class.std::__1::unique_ptr.149" = type { %"class.std::__1::__compressed_pair.150" }
+%"class.std::__1::__compressed_pair.150" = type { %"struct.std::__1::__compressed_pair_elem.151" }
+%"struct.std::__1::__compressed_pair_elem.151" = type { %"class.viz::ContextCacheController::ScopedToken"* }
+%"class.viz::ContextCacheController::ScopedToken" = type { i8 }
+%"class.absl::optional.155" = type { %"class.absl::optional_internal::optional_data.156" }
+%"class.absl::optional_internal::optional_data.156" = type { %"class.absl::optional_internal::optional_data_base.157" }
+%"class.absl::optional_internal::optional_data_base.157" = type { %"class.absl::optional_internal::optional_data_dtor_base.158" }
+%"class.absl::optional_internal::optional_data_dtor_base.158" = type { i8, %union.anon.159 }
+%union.anon.159 = type { %"class.base::ElapsedTimer" }
+%"class.base::ElapsedTimer" = type { %"class.base::TimeTicks" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short" = type { [23 x i8], %struct.anon }
+%struct.anon = type { i8 }
+%"class.gpu::raster::RasterInterface" = type { %"class.gpu::InterfaceBase" }
+%"class.gpu::InterfaceBase" = type { i32 (...)** }
+%"class.gpu::SharedImageInterface" = type { i32 (...)** }
+%class.GrDirectContext = type { %class.GrRecordingContext, %"class.GrDirectContext::DirectContextID", %"class.std::__1::unique_ptr.214", %"class.std::__1::unique_ptr.220", %class.sk_sp.226, %"class.std::__1::unique_ptr.227", %"class.std::__1::unique_ptr.233", i8, i8, %"class.GrContextOptions::PersistentCache"*, %"class.GrContextOptions::ShaderErrorHandler"*, %"class.std::__1::unique_ptr.239", %"class.std::__1::unique_ptr.245", %"class.std::__1::unique_ptr.251" }
+%class.GrRecordingContext = type { %class.GrImageContext.base, %"class.GrRecordingContext::Stats", %"class.std::__1::unique_ptr.184", %"class.GrRecordingContext::OwnedArenas", %"class.std::__1::unique_ptr.202", %"class.std::__1::unique_ptr.208" }
+%class.GrImageContext.base = type <{ %class.GrContext_Base, %class.GrSingleOwner }>
+%class.GrContext_Base = type { %class.SkRefCnt.base, %class.sk_sp.183 }
+%class.sk_sp.183 = type { %class.GrContextThreadSafeProxy* }
+%class.GrContextThreadSafeProxy = type opaque
+%class.GrSingleOwner = type { i8 }
+%"class.GrRecordingContext::Stats" = type { i8 }
+%"class.std::__1::unique_ptr.184" = type { %"class.std::__1::__compressed_pair.185" }
+%"class.std::__1::__compressed_pair.185" = type { %"struct.std::__1::__compressed_pair_elem.186" }
+%"struct.std::__1::__compressed_pair_elem.186" = type { %class.GrAuditTrail* }
+%class.GrAuditTrail = type opaque
+%"class.GrRecordingContext::OwnedArenas" = type { i8, %"class.std::__1::unique_ptr.190", %"class.std::__1::unique_ptr.196" }
+%"class.std::__1::unique_ptr.190" = type { %"class.std::__1::__compressed_pair.191" }
+%"class.std::__1::__compressed_pair.191" = type { %"struct.std::__1::__compressed_pair_elem.192" }
+%"struct.std::__1::__compressed_pair_elem.192" = type { %class.SkArenaAlloc* }
+%class.SkArenaAlloc = type opaque
+%"class.std::__1::unique_ptr.196" = type { %"class.std::__1::__compressed_pair.197" }
+%"class.std::__1::__compressed_pair.197" = type { %"struct.std::__1::__compressed_pair_elem.198" }
+%"struct.std::__1::__compressed_pair_elem.198" = type { %class.GrSubRunAllocator* }
+%class.GrSubRunAllocator = type opaque
+%"class.std::__1::unique_ptr.202" = type { %"class.std::__1::__compressed_pair.203" }
+%"class.std::__1::__compressed_pair.203" = type { %"struct.std::__1::__compressed_pair_elem.204" }
+%"struct.std::__1::__compressed_pair_elem.204" = type { %class.GrDrawingManager* }
+%class.GrDrawingManager = type opaque
+%"class.std::__1::unique_ptr.208" = type { %"class.std::__1::__compressed_pair.209" }
+%"class.std::__1::__compressed_pair.209" = type { %"struct.std::__1::__compressed_pair_elem.210" }
+%"struct.std::__1::__compressed_pair_elem.210" = type { %class.GrProxyProvider* }
+%class.GrProxyProvider = type opaque
+%"class.GrDirectContext::DirectContextID" = type { i32 }
+%"class.std::__1::unique_ptr.214" = type { %"class.std::__1::__compressed_pair.215" }
+%"class.std::__1::__compressed_pair.215" = type { %"struct.std::__1::__compressed_pair_elem.216" }
+%"struct.std::__1::__compressed_pair_elem.216" = type { %class.SkTaskGroup* }
+%class.SkTaskGroup = type opaque
+%"class.std::__1::unique_ptr.220" = type { %"class.std::__1::__compressed_pair.221" }
+%"class.std::__1::__compressed_pair.221" = type { %"struct.std::__1::__compressed_pair_elem.222" }
+%"struct.std::__1::__compressed_pair_elem.222" = type { %class.GrStrikeCache* }
+%class.GrStrikeCache = type opaque
+%class.sk_sp.226 = type { %class.GrGpu* }
+%class.GrGpu = type opaque
+%"class.std::__1::unique_ptr.227" = type { %"class.std::__1::__compressed_pair.228" }
+%"class.std::__1::__compressed_pair.228" = type { %"struct.std::__1::__compressed_pair_elem.229" }
+%"struct.std::__1::__compressed_pair_elem.229" = type { %class.GrResourceCache* }
+%class.GrResourceCache = type opaque
+%"class.std::__1::unique_ptr.233" = type { %"class.std::__1::__compressed_pair.234" }
+%"class.std::__1::__compressed_pair.234" = type { %"struct.std::__1::__compressed_pair_elem.235" }
+%"struct.std::__1::__compressed_pair_elem.235" = type { %class.GrResourceProvider* }
+%class.GrResourceProvider = type opaque
+%"class.GrContextOptions::PersistentCache" = type { i32 (...)** }
+%"class.GrContextOptions::ShaderErrorHandler" = type { i32 (...)** }
+%"class.std::__1::unique_ptr.239" = type { %"class.std::__1::__compressed_pair.240" }
+%"class.std::__1::__compressed_pair.240" = type { %"struct.std::__1::__compressed_pair_elem.241" }
+%"struct.std::__1::__compressed_pair_elem.241" = type { %class.GrClientMappedBufferManager* }
+%class.GrClientMappedBufferManager = type opaque
+%"class.std::__1::unique_ptr.245" = type { %"class.std::__1::__compressed_pair.246" }
+%"class.std::__1::__compressed_pair.246" = type { %"struct.std::__1::__compressed_pair_elem.247" }
+%"struct.std::__1::__compressed_pair_elem.247" = type { %class.GrAtlasManager* }
+%class.GrAtlasManager = type opaque
+%"class.std::__1::unique_ptr.251" = type { %"class.std::__1::__compressed_pair.252" }
+%"class.std::__1::__compressed_pair.252" = type { %"struct.std::__1::__compressed_pair_elem.253" }
+%"struct.std::__1::__compressed_pair_elem.253" = type { %class.GrSmallPathAtlasMgr* }
+%class.GrSmallPathAtlasMgr = type opaque
+%class.SkCanvas = type { i32 (...)**, %class.SkDeque, %"class.SkCanvas::MCRec"*, %class.sk_sp.257, [384 x i64], %class.sk_sp.258, %class.SkSurfaceProps, i32, %"class.std::__1::unique_ptr.259", %class.SkSurface_Base*, %struct.SkIRect, %struct.SkRect, %"class.std::__1::unique_ptr.265" }
+%class.SkDeque = type { i8*, i8*, %"struct.SkDeque::Block"*, %"struct.SkDeque::Block"*, i64, i8*, i32, i32 }
+%"struct.SkDeque::Block" = type opaque
+%"class.SkCanvas::MCRec" = type opaque
+%class.sk_sp.257 = type { %class.SkMarkerStack* }
+%class.SkMarkerStack = type opaque
+%class.sk_sp.258 = type { %class.SkBaseDevice* }
+%class.SkBaseDevice = type opaque
+%"class.std::__1::unique_ptr.259" = type { %"class.std::__1::__compressed_pair.260" }
+%"class.std::__1::__compressed_pair.260" = type { %"struct.std::__1::__compressed_pair_elem.261" }
+%"struct.std::__1::__compressed_pair_elem.261" = type { %class.SkRasterHandleAllocator* }
+%class.SkRasterHandleAllocator = type { i32 (...)** }
+%class.SkSurface_Base = type opaque
+%struct.SkRect = type { float, float, float, float }
+%"class.std::__1::unique_ptr.265" = type { %"class.std::__1::__compressed_pair.266" }
+%"class.std::__1::__compressed_pair.266" = type { %"struct.std::__1::__compressed_pair_elem.267" }
+%"struct.std::__1::__compressed_pair_elem.267" = type { %class.SkGlyphRunBuilder* }
+%class.SkGlyphRunBuilder = type opaque
+%"class.base::WaitableEvent" = type opaque
+%"class.base::trace_event::ProcessMemoryDump" = type { %"class.base::UnguessableToken", %"class.std::__1::map", %"class.std::__1::map.278", %"struct.base::trace_event::MemoryDumpArgs", %"class.std::__1::unique_ptr.289" }
+%"class.base::UnguessableToken" = type { %"class.base::Token" }
+%"class.base::Token" = type { i64, i64 }
+%"class.std::__1::map" = type { %"class.std::__1::__tree" }
+%"class.std::__1::__tree" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.271", %"class.std::__1::__compressed_pair.276" }
+%"class.std::__1::__tree_end_node" = type { %"class.std::__1::__tree_node_base"* }
+%"class.std::__1::__tree_node_base" = type opaque
+%"class.std::__1::__compressed_pair.271" = type { %"struct.std::__1::__compressed_pair_elem.272" }
+%"struct.std::__1::__compressed_pair_elem.272" = type { %"class.std::__1::__tree_end_node" }
+%"class.std::__1::__compressed_pair.276" = type { %"struct.std::__1::__compressed_pair_elem.178" }
+%"struct.std::__1::__compressed_pair_elem.178" = type { i64 }
+%"class.std::__1::map.278" = type { %"class.std::__1::__tree.279" }
+%"class.std::__1::__tree.279" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.280", %"class.std::__1::__compressed_pair.284" }
+%"class.std::__1::__compressed_pair.280" = type { %"struct.std::__1::__compressed_pair_elem.272" }
+%"class.std::__1::__compressed_pair.284" = type { %"struct.std::__1::__compressed_pair_elem.178" }
+%"struct.base::trace_event::MemoryDumpArgs" = type { i32, i32, i64 }
+%"class.std::__1::unique_ptr.289" = type { %"class.std::__1::__compressed_pair.290" }
+%"class.std::__1::__compressed_pair.290" = type { %"struct.std::__1::__compressed_pair_elem.291" }
+%"struct.std::__1::__compressed_pair_elem.291" = type { %"class.base::trace_event::MemoryAllocatorDump"* }
+%"class.base::trace_event::MemoryAllocatorDump" = type { %"class.std::__1::basic_string", %"class.base::trace_event::MemoryAllocatorDumpGuid", i32, i32, %"class.absl::optional", %"class.std::__1::vector.292" }
+%"class.base::trace_event::MemoryAllocatorDumpGuid" = type { i64 }
+%"class.std::__1::vector.292" = type { %"class.std::__1::__vector_base.293" }
+%"class.std::__1::__vector_base.293" = type { %"struct.base::trace_event::MemoryAllocatorDump::Entry"*, %"struct.base::trace_event::MemoryAllocatorDump::Entry"*, %"class.std::__1::__compressed_pair.294" }
+%"struct.base::trace_event::MemoryAllocatorDump::Entry" = type { %"class.std::__1::basic_string", %"class.std::__1::basic_string", i32, i64, %"class.std::__1::basic_string" }
+%"class.std::__1::__compressed_pair.294" = type { %"struct.std::__1::__compressed_pair_elem.295" }
+%"struct.std::__1::__compressed_pair_elem.295" = type { %"struct.base::trace_event::MemoryAllocatorDump::Entry"* }
+
+$_ZN2cc20RasterBufferProvider16SetShutdownEventEPN4base13WaitableEventE = comdat any
+
+$_ZN2cc23GpuRasterBufferProvider16GpuRasterBackingD2Ev = comdat any
+
+$_ZN2cc23GpuRasterBufferProvider16GpuRasterBackingD0Ev = comdat any
+
+$_ZNK2cc23GpuRasterBufferProvider16GpuRasterBacking12OnMemoryDumpEPN4base11trace_event17ProcessMemoryDumpERKNS3_23MemoryAllocatorDumpGuidEmi = comdat any
+
+$_ZN2cc12ResourcePool10GpuBackingD2Ev = comdat any
+
+$_ZN2cc12ResourcePool10GpuBackingD0Ev = comdat any
+
+$_ZTVN2cc23GpuRasterBufferProvider16GpuRasterBackingE = comdat any
+
+$_ZTVN2cc12ResourcePool10GpuBackingE = comdat any
+
+@_ZTVN2cc23GpuRasterBufferProvider16RasterBufferImplE = hidden unnamed_addr constant { [6 x i8*] } { [6 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.cc::GpuRasterBufferProvider::RasterBufferImpl"*)* @_ZN2cc23GpuRasterBufferProvider16RasterBufferImplD2Ev to i8*), i8* bitcast (void (%"class.cc::GpuRasterBufferProvider::RasterBufferImpl"*)* @_ZN2cc23GpuRasterBufferProvider16RasterBufferImplD0Ev to i8*), i8* bitcast (void (%"class.cc::GpuRasterBufferProvider::RasterBufferImpl"*, %"class.cc::RasterSource"*, %"class.gfx::Rect"*, %"class.gfx::Rect"*, i64, %"class.gfx::AxisTransform2d"*, %"struct.cc::RasterSource::PlaybackSettings"*, %class.GURL*)* @_ZN2cc23GpuRasterBufferProvider16RasterBufferImpl8PlaybackEPKNS_12RasterSourceERKN3gfx4RectES8_mRKNS5_15AxisTransform2dERKNS2_16PlaybackSettingsERK4GURL to i8*), i8* bitcast (i1 (%"class.cc::GpuRasterBufferProvider::RasterBufferImpl"*)* @_ZNK2cc23GpuRasterBufferProvider16RasterBufferImpl32SupportsBackgroundThreadPriorityEv to i8*)] }, align 8
+@_ZN4base11trace_event16CategoryRegistry11categories_E = external global [300 x %"struct.base::trace_event::TraceCategory"], align 16
+@.str = private unnamed_addr constant [26 x i8] c"GpuRasterBuffer::Playback\00", align 1
+@_ZTVN2cc23GpuRasterBufferProviderE = hidden unnamed_addr constant { [13 x i8*] } { [13 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.cc::GpuRasterBufferProvider"*)* @_ZN2cc23GpuRasterBufferProviderD2Ev to i8*), i8* bitcast (void (%"class.cc::GpuRasterBufferProvider"*)* @_ZN2cc23GpuRasterBufferProviderD0Ev to i8*), i8* bitcast (%"class.cc::RasterBuffer"* (%"class.cc::GpuRasterBufferProvider"*, %"class.cc::ResourcePool::InUsePoolResource"*, i64, i64, i1, i1, i1)* @_ZN2cc23GpuRasterBufferProvider22AcquireBufferForRasterERKNS_12ResourcePool17InUsePoolResourceEmmbbb to i8*), i8* bitcast (void (%"class.cc::GpuRasterBufferProvider"*)* @_ZN2cc23GpuRasterBufferProvider5FlushEv to i8*), i8* bitcast (i32 (%"class.cc::GpuRasterBufferProvider"*)* @_ZNK2cc23GpuRasterBufferProvider17GetResourceFormatEv to i8*), i8* bitcast (i1 (%"class.cc::GpuRasterBufferProvider"*)* @_ZNK2cc23GpuRasterBufferProvider23IsResourcePremultipliedEv to i8*), i8* bitcast (i1 (%"class.cc::GpuRasterBufferProvider"*)* @_ZNK2cc23GpuRasterBufferProvider36CanPartialRasterIntoProvidedResourceEv to i8*), i8* bitcast (i1 (%"class.cc::GpuRasterBufferProvider"*, %"class.cc::ResourcePool::InUsePoolResource"*)* @_ZNK2cc23GpuRasterBufferProvider21IsResourceReadyToDrawERKNS_12ResourcePool17InUsePoolResourceE to i8*), i8* bitcast (i64 (%"class.cc::GpuRasterBufferProvider"*, %"class.std::__1::vector.140"*, %"class.base::OnceCallback"*, i64)* @_ZNK2cc23GpuRasterBufferProvider22SetReadyToDrawCallbackERKNSt3__16vectorIPKNS_12ResourcePool17InUsePoolResourceENS1_9allocatorIS6_EEEEN4base12OnceCallbackIFvvEEEm to i8*), i8* bitcast (void (%"class.cc::RasterBufferProvider"*, %"class.base::WaitableEvent"*)* @_ZN2cc20RasterBufferProvider16SetShutdownEventEPN4base13WaitableEventE to i8*), i8* bitcast (void (%"class.cc::GpuRasterBufferProvider"*)* @_ZN2cc23GpuRasterBufferProvider8ShutdownEv to i8*)] }, align 8
+@_ZTVN2cc23GpuRasterBufferProvider16GpuRasterBackingE = linkonce_odr hidden unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.cc::GpuRasterBufferProvider::GpuRasterBacking"*)* @_ZN2cc23GpuRasterBufferProvider16GpuRasterBackingD2Ev to i8*), i8* bitcast (void (%"class.cc::GpuRasterBufferProvider::GpuRasterBacking"*)* @_ZN2cc23GpuRasterBufferProvider16GpuRasterBackingD0Ev to i8*), i8* bitcast (void (%"class.cc::GpuRasterBufferProvider::GpuRasterBacking"*, %"class.base::trace_event::ProcessMemoryDump"*, %"class.base::trace_event::MemoryAllocatorDumpGuid"*, i64, i32)* @_ZNK2cc23GpuRasterBufferProvider16GpuRasterBacking12OnMemoryDumpEPN4base11trace_event17ProcessMemoryDumpERKNS3_23MemoryAllocatorDumpGuidEmi to i8*)] }, comdat, align 8
+@_ZTVN2cc12ResourcePool10GpuBackingE = linkonce_odr hidden unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.cc::ResourcePool::GpuBacking"*)* @_ZN2cc12ResourcePool10GpuBackingD2Ev to i8*), i8* bitcast (void (%"class.cc::ResourcePool::GpuBacking"*)* @_ZN2cc12ResourcePool10GpuBackingD0Ev to i8*), i8* bitcast (void ()* @__cxa_pure_virtual to i8*)] }, comdat, align 8
+
+@_ZN2cc23GpuRasterBufferProvider16RasterBufferImplC1EPS0_RKNS_12ResourcePool17InUsePoolResourceEPNS0_16GpuRasterBackingEbbbb = hidden unnamed_addr alias void (%"class.cc::GpuRasterBufferProvider::RasterBufferImpl"*, %"class.cc::GpuRasterBufferProvider"*, %"class.cc::ResourcePool::InUsePoolResource"*, %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"*, i1, i1, i1, i1), void (%"class.cc::GpuRasterBufferProvider::RasterBufferImpl"*, %"class.cc::GpuRasterBufferProvider"*, %"class.cc::ResourcePool::InUsePoolResource"*, %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"*, i1, i1, i1, i1)* @_ZN2cc23GpuRasterBufferProvider16RasterBufferImplC2EPS0_RKNS_12ResourcePool17InUsePoolResourceEPNS0_16GpuRasterBackingEbbbb
+@_ZN2cc23GpuRasterBufferProvider16RasterBufferImplD1Ev = hidden unnamed_addr alias void (%"class.cc::GpuRasterBufferProvider::RasterBufferImpl"*), void (%"class.cc::GpuRasterBufferProvider::RasterBufferImpl"*)* @_ZN2cc23GpuRasterBufferProvider16RasterBufferImplD2Ev
+@_ZN2cc23GpuRasterBufferProviderC1EPN3viz15ContextProviderEPNS1_21RasterContextProviderEbNS1_14ResourceFormatERKN3gfx4SizeEbbPNS_16RasterQueryQueueEf = hidden unnamed_addr alias void (%"class.cc::GpuRasterBufferProvider"*, %"class.viz::ContextProvider"*, %"class.viz::RasterContextProvider"*, i1, i32, %"class.gfx::Size"*, i1, i1, %"class.cc::RasterQueryQueue"*, float), void (%"class.cc::GpuRasterBufferProvider"*, %"class.viz::ContextProvider"*, %"class.viz::RasterContextProvider"*, i1, i32, %"class.gfx::Size"*, i1, i1, %"class.cc::RasterQueryQueue"*, float)* @_ZN2cc23GpuRasterBufferProviderC2EPN3viz15ContextProviderEPNS1_21RasterContextProviderEbNS1_14ResourceFormatERKN3gfx4SizeEbbPNS_16RasterQueryQueueEf
+@_ZN2cc23GpuRasterBufferProviderD1Ev = hidden unnamed_addr alias void (%"class.cc::GpuRasterBufferProvider"*), void (%"class.cc::GpuRasterBufferProvider"*)* @_ZN2cc23GpuRasterBufferProviderD2Ev
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc23GpuRasterBufferProvider16RasterBufferImplC2EPS0_RKNS_12ResourcePool17InUsePoolResourceEPNS0_16GpuRasterBackingEbbbb(%"class.cc::GpuRasterBufferProvider::RasterBufferImpl"*, %"class.cc::GpuRasterBufferProvider"*, %"class.cc::ResourcePool::InUsePoolResource"* nocapture readonly dereferenceable(16), %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"*, i1 zeroext, i1 zeroext, i1 zeroext, i1 zeroext) unnamed_addr #0 align 2 {
+  %9 = zext i1 %4 to i8
+  %10 = zext i1 %5 to i8
+  %11 = zext i1 %6 to i8
+  %12 = zext i1 %7 to i8
+  %13 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 0
+  tail call void @_ZN2cc12RasterBufferC2Ev(%"class.cc::RasterBuffer"* %13) #9
+  %14 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [6 x i8*] }, { [6 x i8*] }* @_ZTVN2cc23GpuRasterBufferProvider16RasterBufferImplE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %14, align 8
+  %15 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 1
+  store %"class.cc::GpuRasterBufferProvider"* %1, %"class.cc::GpuRasterBufferProvider"** %15, align 8
+  %16 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 2
+  store %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %3, %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"** %16, align 8
+  %17 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 3
+  %18 = getelementptr inbounds %"class.cc::ResourcePool::InUsePoolResource", %"class.cc::ResourcePool::InUsePoolResource"* %2, i64 0, i32 1
+  %19 = load %"class.cc::ResourcePool::PoolResource"*, %"class.cc::ResourcePool::PoolResource"** %18, align 8
+  %20 = getelementptr inbounds %"class.cc::ResourcePool::PoolResource", %"class.cc::ResourcePool::PoolResource"* %19, i64 0, i32 1
+  %21 = bitcast %"class.gfx::Size"* %20 to i64*
+  %22 = bitcast %"class.gfx::Size"* %17 to i64*
+  %23 = load i64, i64* %21, align 4
+  store i64 %23, i64* %22, align 8
+  %24 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 4
+  %25 = load %"class.cc::ResourcePool::PoolResource"*, %"class.cc::ResourcePool::PoolResource"** %18, align 8
+  %26 = getelementptr inbounds %"class.cc::ResourcePool::PoolResource", %"class.cc::ResourcePool::PoolResource"* %25, i64 0, i32 2
+  %27 = load i32, i32* %26, align 4
+  store i32 %27, i32* %24, align 8
+  %28 = load %"class.cc::ResourcePool::PoolResource"*, %"class.cc::ResourcePool::PoolResource"** %18, align 8
+  %29 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 5, i32 0
+  %30 = getelementptr inbounds %"class.cc::ResourcePool::PoolResource", %"class.cc::ResourcePool::PoolResource"* %28, i64 0, i32 3, i32 0
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %29, i8* align 4 %30, i64 68, i1 false)
+  %31 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 6
+  store i8 %9, i8* %31, align 8
+  %32 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 7
+  store i8 %10, i8* %32, align 1
+  %33 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 8
+  store i8 %11, i8* %33, align 2
+  %34 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 9
+  store i8 %12, i8* %34, align 1
+  %35 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 10
+  %36 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %3, i64 0, i32 0, i32 6
+  tail call void @_ZN3gpu9SyncTokenC1ERKS0_(%"struct.gpu::SyncToken"* %35, %"struct.gpu::SyncToken"* dereferenceable(24) %36) #9
+  %37 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 11
+  %38 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %3, i64 0, i32 0, i32 3
+  %39 = load i32, i32* %38, align 8
+  store i32 %39, i32* %37, align 8
+  %40 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 12
+  %41 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %3, i64 0, i32 0, i32 4
+  %42 = load i8, i8* %41, align 4, !range !2
+  store i8 %42, i8* %40, align 4
+  %43 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 13, i32 0, i64 0
+  %44 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %3, i64 0, i32 0, i32 1, i32 0, i64 0
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %43, i8* align 8 %44, i64 16, i1 false)
+  %45 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 14
+  tail call void @_ZN3gpu9SyncTokenC1Ev(%"struct.gpu::SyncToken"* %45) #9
+  %46 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 15, i32 0, i32 0
+  store i64 0, i64* %46, align 8
+  ret void
+}
+
+declare void @_ZN2cc12RasterBufferC2Ev(%"class.cc::RasterBuffer"*) unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #2
+
+declare void @_ZN3gpu9SyncTokenC1ERKS0_(%"struct.gpu::SyncToken"*, %"struct.gpu::SyncToken"* dereferenceable(24)) unnamed_addr #1
+
+declare void @_ZN3gpu9SyncTokenC1Ev(%"struct.gpu::SyncToken"*) unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc23GpuRasterBufferProvider16RasterBufferImplD2Ev(%"class.cc::GpuRasterBufferProvider::RasterBufferImpl"*) unnamed_addr #0 align 2 {
+  %2 = alloca %"struct.gpu::SyncToken", align 8
+  %3 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [6 x i8*] }, { [6 x i8*] }* @_ZTVN2cc23GpuRasterBufferProvider16RasterBufferImplE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %3, align 8
+  %4 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 2
+  %5 = bitcast %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"** %4 to %"class.cc::ResourcePool::GpuBacking"**
+  %6 = load %"class.cc::ResourcePool::GpuBacking"*, %"class.cc::ResourcePool::GpuBacking"** %5, align 8
+  %7 = getelementptr inbounds %"class.cc::ResourcePool::GpuBacking", %"class.cc::ResourcePool::GpuBacking"* %6, i64 0, i32 2, i32 0
+  %8 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 14, i32 0
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %7, i8* align 8 %8, i64 24, i1 false)
+  %9 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 14, i32 1
+  %10 = load i8, i8* %9, align 1
+  %11 = icmp eq i8 %10, -1
+  br i1 %11, label %16, label %12
+
+12:                                               ; preds = %1
+  %13 = getelementptr inbounds %"struct.gpu::SyncToken", %"struct.gpu::SyncToken"* %2, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %13) #9
+  call void @_ZN3gpu9SyncTokenC1Ev(%"struct.gpu::SyncToken"* nonnull %2) #9
+  %14 = load %"class.cc::ResourcePool::GpuBacking"*, %"class.cc::ResourcePool::GpuBacking"** %5, align 8
+  %15 = getelementptr inbounds %"class.cc::ResourcePool::GpuBacking", %"class.cc::ResourcePool::GpuBacking"* %14, i64 0, i32 6, i32 0
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %15, i8* nonnull align 8 %13, i64 24, i1 false)
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %13) #9
+  br label %16
+
+16:                                               ; preds = %1, %12
+  %17 = load %"class.cc::ResourcePool::GpuBacking"*, %"class.cc::ResourcePool::GpuBacking"** %5, align 8
+  %18 = getelementptr inbounds %"class.cc::ResourcePool::GpuBacking", %"class.cc::ResourcePool::GpuBacking"* %17, i64 0, i32 1, i32 0, i64 0
+  %19 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 13, i32 0, i64 0
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %18, i8* align 1 %19, i64 16, i1 false)
+  %20 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 0
+  call void @_ZN2cc12RasterBufferD2Ev(%"class.cc::RasterBuffer"* %20) #9
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: nounwind
+declare void @_ZN2cc12RasterBufferD2Ev(%"class.cc::RasterBuffer"*) unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc23GpuRasterBufferProvider16RasterBufferImplD0Ev(%"class.cc::GpuRasterBufferProvider::RasterBufferImpl"*) unnamed_addr #0 align 2 {
+  %2 = alloca %"struct.gpu::SyncToken", align 8
+  %3 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [6 x i8*] }, { [6 x i8*] }* @_ZTVN2cc23GpuRasterBufferProvider16RasterBufferImplE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %3, align 8
+  %4 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 2
+  %5 = bitcast %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"** %4 to %"class.cc::ResourcePool::GpuBacking"**
+  %6 = load %"class.cc::ResourcePool::GpuBacking"*, %"class.cc::ResourcePool::GpuBacking"** %5, align 8
+  %7 = getelementptr inbounds %"class.cc::ResourcePool::GpuBacking", %"class.cc::ResourcePool::GpuBacking"* %6, i64 0, i32 2, i32 0
+  %8 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 14, i32 0
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %7, i8* align 8 %8, i64 24, i1 false) #9
+  %9 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 14, i32 1
+  %10 = load i8, i8* %9, align 1
+  %11 = icmp eq i8 %10, -1
+  br i1 %11, label %16, label %12
+
+12:                                               ; preds = %1
+  %13 = getelementptr inbounds %"struct.gpu::SyncToken", %"struct.gpu::SyncToken"* %2, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %13) #9
+  call void @_ZN3gpu9SyncTokenC1Ev(%"struct.gpu::SyncToken"* nonnull %2) #9
+  %14 = load %"class.cc::ResourcePool::GpuBacking"*, %"class.cc::ResourcePool::GpuBacking"** %5, align 8
+  %15 = getelementptr inbounds %"class.cc::ResourcePool::GpuBacking", %"class.cc::ResourcePool::GpuBacking"* %14, i64 0, i32 6, i32 0
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %15, i8* nonnull align 8 %13, i64 24, i1 false) #9
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %13) #9
+  br label %16
+
+16:                                               ; preds = %1, %12
+  %17 = load %"class.cc::ResourcePool::GpuBacking"*, %"class.cc::ResourcePool::GpuBacking"** %5, align 8
+  %18 = getelementptr inbounds %"class.cc::ResourcePool::GpuBacking", %"class.cc::ResourcePool::GpuBacking"* %17, i64 0, i32 1, i32 0, i64 0
+  %19 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 13, i32 0, i64 0
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %18, i8* align 1 %19, i64 16, i1 false) #9
+  %20 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 0
+  call void @_ZN2cc12RasterBufferD2Ev(%"class.cc::RasterBuffer"* %20) #9
+  %21 = bitcast %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0 to i8*
+  call void @_ZdlPv(i8* %21) #10
+  ret void
+}
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc23GpuRasterBufferProvider16RasterBufferImpl8PlaybackEPKNS_12RasterSourceERKN3gfx4RectES8_mRKNS5_15AxisTransform2dERKNS2_16PlaybackSettingsERK4GURL(%"class.cc::GpuRasterBufferProvider::RasterBufferImpl"*, %"class.cc::RasterSource"*, %"class.gfx::Rect"* dereferenceable(16), %"class.gfx::Rect"* dereferenceable(16), i64, %"class.gfx::AxisTransform2d"* dereferenceable(16), %"struct.cc::RasterSource::PlaybackSettings"* dereferenceable(16), %class.GURL* dereferenceable(120)) unnamed_addr #0 align 2 {
+  %9 = alloca %"struct.cc::RasterQuery", align 8
+  %10 = alloca %"struct.cc::RasterQuery", align 8
+  %11 = alloca %"class.base::TimeTicks", align 8
+  %12 = alloca %"struct.gpu::SyncToken", align 8
+  %13 = load i8, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 32, i32 0), align 16
+  %14 = and i8 %13, 25
+  %15 = icmp eq i8 %14, 0
+  br i1 %15, label %22, label %16, !prof !3
+
+16:                                               ; preds = %8
+  %17 = tail call i32 @_ZN4base14PlatformThread9CurrentIdEv() #9
+  %18 = bitcast %"class.base::TimeTicks"* %11 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %18) #9
+  %19 = getelementptr inbounds %"class.base::TimeTicks", %"class.base::TimeTicks"* %11, i64 0, i32 0, i32 0
+  %20 = tail call i64 @_ZN4base6subtle28TimeTicksNowIgnoringOverrideEv() #9
+  store i64 %20, i64* %19, align 8
+  %21 = call i64 @_ZN20trace_event_internal37AddTraceEventWithThreadIdAndTimestampEcPKhPKcS3_yyiRKN4base9TimeTicksEPNS4_11trace_event14TraceArgumentsEj(i8 signext 88, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 32, i32 0), i8* getelementptr inbounds ([26 x i8], [26 x i8]* @.str, i64 0, i64 0), i8* null, i64 0, i64 0, i32 %17, %"class.base::TimeTicks"* nonnull dereferenceable(8) %11, %"class.base::trace_event::TraceArguments"* null, i32 0) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %18) #9
+  br label %22
+
+22:                                               ; preds = %8, %16
+  %23 = phi i64 [ -6148914691236517206, %8 ], [ %21, %16 ]
+  %24 = phi i8* [ inttoptr (i64 -6148914691236517206 to i8*), %8 ], [ getelementptr inbounds ([26 x i8], [26 x i8]* @.str, i64 0, i64 0), %16 ]
+  %25 = phi i8* [ null, %8 ], [ getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 32, i32 0), %16 ]
+  %26 = getelementptr inbounds %"struct.gpu::SyncToken", %"struct.gpu::SyncToken"* %12, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %26) #9
+  %27 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 1
+  %28 = load %"class.cc::GpuRasterBufferProvider"*, %"class.cc::GpuRasterBufferProvider"** %27, align 8
+  %29 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 13
+  %30 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 11
+  %31 = load i32, i32* %30, align 8
+  %32 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 12
+  %33 = load i8, i8* %32, align 4, !range !2
+  %34 = icmp ne i8 %33, 0
+  %35 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 10
+  %36 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 3
+  %37 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 4
+  %38 = load i32, i32* %37, align 8
+  %39 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 5
+  %40 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 6
+  %41 = load i8, i8* %40, align 8, !range !2
+  %42 = icmp ne i8 %41, 0
+  %43 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 15, i32 0, i32 0
+  %44 = load i64, i64* %43, align 8
+  %45 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 8
+  %46 = load i8, i8* %45, align 2, !range !2
+  %47 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 9
+  %48 = load i8, i8* %47, align 1, !range !2
+  %49 = bitcast %"struct.cc::RasterQuery"* %10 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 40, i8* nonnull %49)
+  %50 = bitcast %"struct.cc::RasterQuery"* %9 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 40, i8* nonnull %50) #9, !noalias !4
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %50, i8 -86, i64 40, i1 false) #9, !noalias !4
+  call void @_ZN2cc11RasterQueryC1Ev(%"struct.cc::RasterQuery"* nonnull %9) #9, !noalias !4
+  %51 = getelementptr inbounds %"struct.cc::RasterQuery", %"struct.cc::RasterQuery"* %9, i64 0, i32 6
+  store i8 %46, i8* %51, align 8, !noalias !4
+  %52 = getelementptr inbounds %"struct.cc::RasterQuery", %"struct.cc::RasterQuery"* %9, i64 0, i32 7
+  store i8 %48, i8* %52, align 1, !noalias !4
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %26, i8 -86, i64 24, i1 false) #9, !alias.scope !4
+  call void @_ZN2cc23GpuRasterBufferProvider30PlaybackOnWorkerThreadInternalEPN3gpu7MailboxEjbRKNS1_9SyncTokenERKN3gfx4SizeEN3viz14ResourceFormatERKNS7_10ColorSpaceEbPKNS_12RasterSourceERKNS7_4RectESL_mRKNS7_15AxisTransform2dERKNSG_16PlaybackSettingsERK4GURLbPNS_11RasterQueryE(%"struct.gpu::SyncToken"* nonnull sret %12, %"class.cc::GpuRasterBufferProvider"* %28, %"struct.gpu::Mailbox"* %29, i32 %31, i1 zeroext %34, %"struct.gpu::SyncToken"* dereferenceable(24) %35, %"class.gfx::Size"* dereferenceable(8) %36, i32 %38, %"class.gfx::ColorSpace"* dereferenceable(68) %39, i1 zeroext %42, %"class.cc::RasterSource"* %1, %"class.gfx::Rect"* dereferenceable(16) %2, %"class.gfx::Rect"* dereferenceable(16) %3, i64 undef, %"class.gfx::AxisTransform2d"* dereferenceable(16) %5, %"struct.cc::RasterSource::PlaybackSettings"* dereferenceable(16) %6, %class.GURL* dereferenceable(120) %7, i1 zeroext undef, %"struct.cc::RasterQuery"* nonnull %9) #9
+  %53 = getelementptr inbounds %"struct.cc::RasterQuery", %"struct.cc::RasterQuery"* %9, i64 0, i32 0
+  %54 = load i32, i32* %53, align 8, !noalias !4
+  %55 = icmp eq i32 %54, 0
+  br i1 %55, label %65, label %56
+
+56:                                               ; preds = %22
+  %57 = getelementptr inbounds %"struct.cc::RasterQuery", %"struct.cc::RasterQuery"* %9, i64 0, i32 3
+  %58 = load i32, i32* %57, align 8, !noalias !4
+  %59 = icmp eq i32 %58, 0
+  br i1 %59, label %62, label %60
+
+60:                                               ; preds = %56
+  %61 = getelementptr inbounds %"struct.cc::RasterQuery", %"struct.cc::RasterQuery"* %9, i64 0, i32 5, i32 0, i32 0
+  store i64 %44, i64* %61, align 8, !noalias !4
+  br label %62
+
+62:                                               ; preds = %60, %56
+  %63 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %28, i64 0, i32 7
+  %64 = load %"class.cc::RasterQueryQueue"*, %"class.cc::RasterQueryQueue"** %63, align 8, !noalias !4
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %49, i8* nonnull align 8 %50, i64 40, i1 false) #9, !noalias !4
+  call void @_ZN2cc16RasterQueryQueue6AppendENS_11RasterQueryE(%"class.cc::RasterQueryQueue"* %64, %"struct.cc::RasterQuery"* nonnull %10) #9
+  call void @_ZN2cc11RasterQueryD1Ev(%"struct.cc::RasterQuery"* nonnull %10) #9
+  br label %65
+
+65:                                               ; preds = %22, %62
+  call void @_ZN2cc11RasterQueryD1Ev(%"struct.cc::RasterQuery"* nonnull %9) #9
+  call void @llvm.lifetime.end.p0i8(i64 40, i8* nonnull %50) #9, !noalias !4
+  call void @llvm.lifetime.end.p0i8(i64 40, i8* nonnull %49)
+  %66 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::RasterBufferImpl", %"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* %0, i64 0, i32 14, i32 0
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %66, i8* nonnull align 8 %26, i64 24, i1 false)
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %26) #9
+  %67 = icmp eq i8* %25, null
+  br i1 %67, label %72, label %68
+
+68:                                               ; preds = %65
+  %69 = load i8, i8* %25, align 1
+  %70 = icmp eq i8 %69, 0
+  br i1 %70, label %72, label %71
+
+71:                                               ; preds = %68
+  call void @_ZN20trace_event_internal24UpdateTraceEventDurationEPKhPKcN4base11trace_event16TraceEventHandleE(i8* nonnull %25, i8* %24, i64 %23) #9
+  br label %72
+
+72:                                               ; preds = %65, %68, %71
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc23GpuRasterBufferProvider22PlaybackOnWorkerThreadEPN3gpu7MailboxEjbRKNS1_9SyncTokenERKN3gfx4SizeEN3viz14ResourceFormatERKNS7_10ColorSpaceEbPKNS_12RasterSourceERKNS7_4RectESL_mRKNS7_15AxisTransform2dERKNSG_16PlaybackSettingsERK4GURLN4base9TimeTicksEbbb(%"struct.gpu::SyncToken"* noalias sret, %"class.cc::GpuRasterBufferProvider"* nocapture, %"struct.gpu::Mailbox"*, i32, i1 zeroext, %"struct.gpu::SyncToken"* dereferenceable(24), %"class.gfx::Size"* dereferenceable(8), i32, %"class.gfx::ColorSpace"* dereferenceable(68), i1 zeroext, %"class.cc::RasterSource"*, %"class.gfx::Rect"* dereferenceable(16), %"class.gfx::Rect"* dereferenceable(16), i64, %"class.gfx::AxisTransform2d"* dereferenceable(16), %"struct.cc::RasterSource::PlaybackSettings"* dereferenceable(16), %class.GURL* dereferenceable(120), i64, i1 zeroext, i1 zeroext, i1 zeroext) local_unnamed_addr #0 align 2 {
+  %22 = alloca %"struct.cc::RasterQuery", align 8
+  %23 = alloca %"struct.cc::RasterQuery", align 8
+  %24 = zext i1 %19 to i8
+  %25 = zext i1 %20 to i8
+  %26 = bitcast %"struct.cc::RasterQuery"* %22 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 40, i8* nonnull %26) #9
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %26, i8 -86, i64 40, i1 false)
+  call void @_ZN2cc11RasterQueryC1Ev(%"struct.cc::RasterQuery"* nonnull %22) #9
+  %27 = getelementptr inbounds %"struct.cc::RasterQuery", %"struct.cc::RasterQuery"* %22, i64 0, i32 6
+  store i8 %24, i8* %27, align 8
+  %28 = getelementptr inbounds %"struct.cc::RasterQuery", %"struct.cc::RasterQuery"* %22, i64 0, i32 7
+  store i8 %25, i8* %28, align 1
+  %29 = getelementptr inbounds %"struct.gpu::SyncToken", %"struct.gpu::SyncToken"* %0, i64 0, i32 0
+  call void @llvm.memset.p0i8.i64(i8* align 8 %29, i8 -86, i64 24, i1 false)
+  call void @_ZN2cc23GpuRasterBufferProvider30PlaybackOnWorkerThreadInternalEPN3gpu7MailboxEjbRKNS1_9SyncTokenERKN3gfx4SizeEN3viz14ResourceFormatERKNS7_10ColorSpaceEbPKNS_12RasterSourceERKNS7_4RectESL_mRKNS7_15AxisTransform2dERKNSG_16PlaybackSettingsERK4GURLbPNS_11RasterQueryE(%"struct.gpu::SyncToken"* sret %0, %"class.cc::GpuRasterBufferProvider"* %1, %"struct.gpu::Mailbox"* %2, i32 %3, i1 zeroext %4, %"struct.gpu::SyncToken"* dereferenceable(24) %5, %"class.gfx::Size"* dereferenceable(8) %6, i32 %7, %"class.gfx::ColorSpace"* dereferenceable(68) %8, i1 zeroext %9, %"class.cc::RasterSource"* %10, %"class.gfx::Rect"* dereferenceable(16) %11, %"class.gfx::Rect"* dereferenceable(16) %12, i64 undef, %"class.gfx::AxisTransform2d"* dereferenceable(16) %14, %"struct.cc::RasterSource::PlaybackSettings"* dereferenceable(16) %15, %class.GURL* dereferenceable(120) %16, i1 zeroext undef, %"struct.cc::RasterQuery"* nonnull %22)
+  %30 = getelementptr inbounds %"struct.cc::RasterQuery", %"struct.cc::RasterQuery"* %22, i64 0, i32 0
+  %31 = load i32, i32* %30, align 8
+  %32 = icmp eq i32 %31, 0
+  br i1 %32, label %43, label %33
+
+33:                                               ; preds = %21
+  %34 = getelementptr inbounds %"struct.cc::RasterQuery", %"struct.cc::RasterQuery"* %22, i64 0, i32 3
+  %35 = load i32, i32* %34, align 8
+  %36 = icmp eq i32 %35, 0
+  br i1 %36, label %39, label %37
+
+37:                                               ; preds = %33
+  %38 = getelementptr inbounds %"struct.cc::RasterQuery", %"struct.cc::RasterQuery"* %22, i64 0, i32 5, i32 0, i32 0
+  store i64 %17, i64* %38, align 8
+  br label %39
+
+39:                                               ; preds = %33, %37
+  %40 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %1, i64 0, i32 7
+  %41 = load %"class.cc::RasterQueryQueue"*, %"class.cc::RasterQueryQueue"** %40, align 8
+  %42 = bitcast %"struct.cc::RasterQuery"* %23 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %42, i8* nonnull align 8 %26, i64 40, i1 false)
+  call void @_ZN2cc16RasterQueryQueue6AppendENS_11RasterQueryE(%"class.cc::RasterQueryQueue"* %41, %"struct.cc::RasterQuery"* nonnull %23) #9
+  call void @_ZN2cc11RasterQueryD1Ev(%"struct.cc::RasterQuery"* nonnull %23) #9
+  br label %43
+
+43:                                               ; preds = %21, %39
+  call void @_ZN2cc11RasterQueryD1Ev(%"struct.cc::RasterQuery"* nonnull %22) #9
+  call void @llvm.lifetime.end.p0i8(i64 40, i8* nonnull %26) #9
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden zeroext i1 @_ZNK2cc23GpuRasterBufferProvider16RasterBufferImpl32SupportsBackgroundThreadPriorityEv(%"class.cc::GpuRasterBufferProvider::RasterBufferImpl"* nocapture readnone) unnamed_addr #5 align 2 {
+  ret i1 true
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc23GpuRasterBufferProviderC2EPN3viz15ContextProviderEPNS1_21RasterContextProviderEbNS1_14ResourceFormatERKN3gfx4SizeEbbPNS_16RasterQueryQueueEf(%"class.cc::GpuRasterBufferProvider"*, %"class.viz::ContextProvider"*, %"class.viz::RasterContextProvider"*, i1 zeroext, i32, %"class.gfx::Size"* nocapture readonly dereferenceable(8), i1 zeroext, i1 zeroext, %"class.cc::RasterQueryQueue"*, float) unnamed_addr #0 align 2 {
+  %11 = zext i1 %3 to i8
+  %12 = zext i1 %7 to i8
+  %13 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 0
+  tail call void @_ZN2cc20RasterBufferProviderC2Ev(%"class.cc::RasterBufferProvider"* %13) #9
+  %14 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [13 x i8*] }, { [13 x i8*] }* @_ZTVN2cc23GpuRasterBufferProviderE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %14, align 8
+  %15 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 1
+  store %"class.viz::ContextProvider"* %1, %"class.viz::ContextProvider"** %15, align 8
+  %16 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 2
+  store %"class.viz::RasterContextProvider"* %2, %"class.viz::RasterContextProvider"** %16, align 8
+  %17 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 3
+  store i8 %11, i8* %17, align 8
+  %18 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 4
+  store i32 %4, i32* %18, align 4
+  %19 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 5
+  %20 = bitcast %"class.gfx::Size"* %5 to i64*
+  %21 = bitcast %"class.gfx::Size"* %19 to i64*
+  %22 = load i64, i64* %20, align 4
+  store i64 %22, i64* %21, align 8
+  %23 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 6
+  store i8 %12, i8* %23, align 8
+  %24 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 7
+  store %"class.cc::RasterQueryQueue"* %8, %"class.cc::RasterQueryQueue"** %24, align 8
+  %25 = tail call i64 @_ZN4base10RandUint64Ev() #9
+  %26 = and i64 %25, 4294967295
+  %27 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 8, i32 0, i64 0
+  store i64 %26, i64* %27, align 8
+  br label %28
+
+28:                                               ; preds = %43, %10
+  %29 = phi i64 [ %26, %10 ], [ %48, %43 ]
+  %30 = phi i64 [ 1, %10 ], [ %50, %43 ]
+  %31 = lshr i64 %29, 30
+  %32 = xor i64 %31, %29
+  %33 = mul nuw nsw i64 %32, 1812433253
+  %34 = add nuw i64 %33, %30
+  %35 = and i64 %34, 4294967295
+  %36 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 8, i32 0, i64 %30
+  store i64 %35, i64* %36, align 8
+  %37 = add nuw nsw i64 %30, 1
+  %38 = icmp eq i64 %37, 624
+  br i1 %38, label %39, label %43
+
+39:                                               ; preds = %28
+  %40 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 8, i32 1
+  store i64 0, i64* %40, align 8
+  %41 = fpext float %9 to double
+  %42 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 9, i32 0, i32 0
+  store double %41, double* %42, align 8
+  ret void
+
+43:                                               ; preds = %28
+  %44 = lshr i64 %35, 30
+  %45 = xor i64 %44, %35
+  %46 = mul nuw nsw i64 %45, 1812433253
+  %47 = add nuw i64 %46, %37
+  %48 = and i64 %47, 4294967295
+  %49 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 8, i32 0, i64 %37
+  store i64 %48, i64* %49, align 8
+  %50 = add nuw nsw i64 %30, 2
+  br label %28
+}
+
+declare void @_ZN2cc20RasterBufferProviderC2Ev(%"class.cc::RasterBufferProvider"*) unnamed_addr #1
+
+declare i64 @_ZN4base10RandUint64Ev() local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN2cc20RasterBufferProviderD2Ev(%"class.cc::RasterBufferProvider"*) unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc23GpuRasterBufferProviderD2Ev(%"class.cc::GpuRasterBufferProvider"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 0
+  tail call void @_ZN2cc20RasterBufferProviderD2Ev(%"class.cc::RasterBufferProvider"* %2) #9
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc23GpuRasterBufferProviderD0Ev(%"class.cc::GpuRasterBufferProvider"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 0
+  tail call void @_ZN2cc20RasterBufferProviderD2Ev(%"class.cc::RasterBufferProvider"* %2) #9
+  %3 = bitcast %"class.cc::GpuRasterBufferProvider"* %0 to i8*
+  tail call void @_ZdlPv(i8* %3) #10
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden %"class.cc::RasterBuffer"* @_ZN2cc23GpuRasterBufferProvider22AcquireBufferForRasterERKNS_12ResourcePool17InUsePoolResourceEmmbbb(%"class.cc::GpuRasterBufferProvider"*, %"class.cc::ResourcePool::InUsePoolResource"* nocapture readonly dereferenceable(16), i64, i64, i1 zeroext, i1 zeroext, i1 zeroext) unnamed_addr #0 align 2 {
+  %8 = zext i1 %4 to i8
+  %9 = zext i1 %5 to i8
+  %10 = zext i1 %6 to i8
+  %11 = getelementptr inbounds %"class.cc::ResourcePool::InUsePoolResource", %"class.cc::ResourcePool::InUsePoolResource"* %1, i64 0, i32 1
+  %12 = load %"class.cc::ResourcePool::PoolResource"*, %"class.cc::ResourcePool::PoolResource"** %11, align 8
+  %13 = getelementptr inbounds %"class.cc::ResourcePool::PoolResource", %"class.cc::ResourcePool::PoolResource"* %12, i64 0, i32 9, i32 0, i32 0, i32 0
+  %14 = load %"class.cc::ResourcePool::GpuBacking"*, %"class.cc::ResourcePool::GpuBacking"** %13, align 8
+  %15 = icmp eq %"class.cc::ResourcePool::GpuBacking"* %14, null
+  br i1 %15, label %16, label %60
+
+16:                                               ; preds = %7
+  %17 = tail call i8* @_Znwm(i64 88) #10
+  tail call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %17, i8 0, i64 88, i1 false) #9
+  %18 = bitcast i8* %17 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_ZTVN2cc12ResourcePool10GpuBackingE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %18, align 8
+  %19 = getelementptr inbounds i8, i8* %17, i64 8
+  %20 = bitcast i8* %19 to %"struct.gpu::Mailbox"*
+  tail call void @_ZN3gpu7MailboxC1Ev(%"struct.gpu::Mailbox"* %20) #9
+  %21 = getelementptr inbounds i8, i8* %17, i64 24
+  %22 = bitcast i8* %21 to %"struct.gpu::SyncToken"*
+  tail call void @_ZN3gpu9SyncTokenC1Ev(%"struct.gpu::SyncToken"* %22) #9
+  %23 = getelementptr inbounds i8, i8* %17, i64 48
+  %24 = bitcast i8* %23 to i32*
+  store i32 0, i32* %24, align 8
+  %25 = getelementptr inbounds i8, i8* %17, i64 52
+  store i8 0, i8* %25, align 4
+  %26 = getelementptr inbounds i8, i8* %17, i64 53
+  store i8 0, i8* %26, align 1
+  %27 = getelementptr inbounds i8, i8* %17, i64 56
+  %28 = bitcast i8* %27 to %"struct.gpu::SyncToken"*
+  tail call void @_ZN3gpu9SyncTokenC1Ev(%"struct.gpu::SyncToken"* %28) #9
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_ZTVN2cc23GpuRasterBufferProvider16GpuRasterBackingE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %18, align 8
+  %29 = getelementptr inbounds i8, i8* %17, i64 80
+  %30 = ptrtoint i8* %17 to i64
+  %31 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 2
+  %32 = bitcast %"class.viz::RasterContextProvider"** %31 to i64*
+  %33 = load i64, i64* %32, align 8
+  %34 = bitcast i8* %29 to i64*
+  store i64 %33, i64* %34, align 8
+  %35 = bitcast i8* %17 to %"class.cc::ResourcePool::GpuBacking"*
+  %36 = load %"class.cc::ResourcePool::PoolResource"*, %"class.cc::ResourcePool::PoolResource"** %11, align 8
+  %37 = getelementptr inbounds %"class.cc::ResourcePool::PoolResource", %"class.cc::ResourcePool::PoolResource"* %36, i64 0, i32 2
+  %38 = load i32, i32* %37, align 4
+  %39 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 1
+  %40 = load %"class.viz::ContextProvider"*, %"class.viz::ContextProvider"** %39, align 8
+  %41 = bitcast %"class.viz::ContextProvider"* %40 to %"struct.gpu::Capabilities"* (%"class.viz::ContextProvider"*)***
+  %42 = load %"struct.gpu::Capabilities"* (%"class.viz::ContextProvider"*)**, %"struct.gpu::Capabilities"* (%"class.viz::ContextProvider"*)*** %41, align 8
+  %43 = getelementptr inbounds %"struct.gpu::Capabilities"* (%"class.viz::ContextProvider"*)*, %"struct.gpu::Capabilities"* (%"class.viz::ContextProvider"*)** %42, i64 10
+  %44 = load %"struct.gpu::Capabilities"* (%"class.viz::ContextProvider"*)*, %"struct.gpu::Capabilities"* (%"class.viz::ContextProvider"*)** %43, align 8
+  %45 = tail call dereferenceable(480) %"struct.gpu::Capabilities"* %44(%"class.viz::ContextProvider"* %40) #9
+  %46 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 3
+  %47 = load i8, i8* %46, align 8, !range !2
+  %48 = icmp ne i8 %47, 0
+  tail call void @_ZN2cc12ResourcePool10GpuBacking36InitOverlayCandidateAndTextureTargetEN3viz14ResourceFormatERKN3gpu12CapabilitiesEb(%"class.cc::ResourcePool::GpuBacking"* nonnull %35, i32 %38, %"struct.gpu::Capabilities"* dereferenceable(480) %45, i1 zeroext %48) #9
+  %49 = load %"class.cc::ResourcePool::PoolResource"*, %"class.cc::ResourcePool::PoolResource"** %11, align 8
+  %50 = getelementptr inbounds %"class.cc::ResourcePool::PoolResource", %"class.cc::ResourcePool::PoolResource"* %49, i64 0, i32 9
+  %51 = getelementptr inbounds %"class.std::__1::unique_ptr", %"class.std::__1::unique_ptr"* %50, i64 0, i32 0, i32 0, i32 0
+  %52 = load %"class.cc::ResourcePool::GpuBacking"*, %"class.cc::ResourcePool::GpuBacking"** %51, align 8
+  %53 = bitcast %"class.std::__1::unique_ptr"* %50 to i64*
+  store i64 %30, i64* %53, align 8
+  %54 = icmp eq %"class.cc::ResourcePool::GpuBacking"* %52, null
+  br i1 %54, label %60, label %55
+
+55:                                               ; preds = %16
+  %56 = bitcast %"class.cc::ResourcePool::GpuBacking"* %52 to void (%"class.cc::ResourcePool::GpuBacking"*)***
+  %57 = load void (%"class.cc::ResourcePool::GpuBacking"*)**, void (%"class.cc::ResourcePool::GpuBacking"*)*** %56, align 8
+  %58 = getelementptr inbounds void (%"class.cc::ResourcePool::GpuBacking"*)*, void (%"class.cc::ResourcePool::GpuBacking"*)** %57, i64 1
+  %59 = load void (%"class.cc::ResourcePool::GpuBacking"*)*, void (%"class.cc::ResourcePool::GpuBacking"*)** %58, align 8
+  tail call void %59(%"class.cc::ResourcePool::GpuBacking"* nonnull %52) #9
+  br label %60
+
+60:                                               ; preds = %7, %55, %16
+  %61 = load %"class.cc::ResourcePool::PoolResource"*, %"class.cc::ResourcePool::PoolResource"** %11, align 8
+  %62 = getelementptr inbounds %"class.cc::ResourcePool::PoolResource", %"class.cc::ResourcePool::PoolResource"* %61, i64 0, i32 9, i32 0, i32 0, i32 0
+  %63 = bitcast %"class.cc::ResourcePool::GpuBacking"** %62 to %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"**
+  %64 = load %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"*, %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"** %63, align 8
+  %65 = icmp ne i64 %2, 0
+  %66 = icmp eq i64 %2, %3
+  %67 = and i1 %65, %66
+  %68 = zext i1 %67 to i8
+  %69 = ptrtoint %"class.cc::GpuRasterBufferProvider"* %0 to i64
+  %70 = tail call i8* @_Znwm(i64 192) #10
+  %71 = bitcast i8* %70 to %"class.cc::RasterBuffer"*
+  tail call void @_ZN2cc12RasterBufferC2Ev(%"class.cc::RasterBuffer"* nonnull %71) #9
+  %72 = bitcast i8* %70 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [6 x i8*] }, { [6 x i8*] }* @_ZTVN2cc23GpuRasterBufferProvider16RasterBufferImplE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %72, align 8
+  %73 = getelementptr inbounds i8, i8* %70, i64 8
+  %74 = bitcast i8* %73 to i64*
+  store i64 %69, i64* %74, align 8
+  %75 = getelementptr inbounds i8, i8* %70, i64 16
+  %76 = bitcast i8* %75 to %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"**
+  store %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %64, %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"** %76, align 8
+  %77 = getelementptr inbounds i8, i8* %70, i64 24
+  %78 = load %"class.cc::ResourcePool::PoolResource"*, %"class.cc::ResourcePool::PoolResource"** %11, align 8
+  %79 = getelementptr inbounds %"class.cc::ResourcePool::PoolResource", %"class.cc::ResourcePool::PoolResource"* %78, i64 0, i32 1
+  %80 = bitcast %"class.gfx::Size"* %79 to i64*
+  %81 = bitcast i8* %77 to i64*
+  %82 = load i64, i64* %80, align 4
+  store i64 %82, i64* %81, align 8
+  %83 = getelementptr inbounds i8, i8* %70, i64 32
+  %84 = bitcast i8* %83 to i32*
+  %85 = getelementptr inbounds %"class.cc::ResourcePool::PoolResource", %"class.cc::ResourcePool::PoolResource"* %78, i64 0, i32 2
+  %86 = load i32, i32* %85, align 4
+  store i32 %86, i32* %84, align 8
+  %87 = getelementptr inbounds i8, i8* %70, i64 36
+  %88 = getelementptr inbounds %"class.cc::ResourcePool::PoolResource", %"class.cc::ResourcePool::PoolResource"* %78, i64 0, i32 3, i32 0
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %87, i8* align 4 %88, i64 68, i1 false) #9
+  %89 = getelementptr inbounds i8, i8* %70, i64 104
+  store i8 %68, i8* %89, align 8
+  %90 = getelementptr inbounds i8, i8* %70, i64 105
+  store i8 %8, i8* %90, align 1
+  %91 = getelementptr inbounds i8, i8* %70, i64 106
+  store i8 %9, i8* %91, align 2
+  %92 = getelementptr inbounds i8, i8* %70, i64 107
+  store i8 %10, i8* %92, align 1
+  %93 = getelementptr inbounds i8, i8* %70, i64 112
+  %94 = bitcast i8* %93 to %"struct.gpu::SyncToken"*
+  %95 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %64, i64 0, i32 0, i32 6
+  tail call void @_ZN3gpu9SyncTokenC1ERKS0_(%"struct.gpu::SyncToken"* %94, %"struct.gpu::SyncToken"* dereferenceable(24) %95) #9
+  %96 = getelementptr inbounds i8, i8* %70, i64 136
+  %97 = bitcast i8* %96 to i32*
+  %98 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %64, i64 0, i32 0, i32 3
+  %99 = load i32, i32* %98, align 8
+  store i32 %99, i32* %97, align 8
+  %100 = getelementptr inbounds i8, i8* %70, i64 140
+  %101 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %64, i64 0, i32 0, i32 4
+  %102 = load i8, i8* %101, align 4, !range !2
+  store i8 %102, i8* %100, align 4
+  %103 = getelementptr inbounds i8, i8* %70, i64 141
+  %104 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %64, i64 0, i32 0, i32 1, i32 0, i64 0
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %103, i8* align 8 %104, i64 16, i1 false) #9
+  %105 = getelementptr inbounds i8, i8* %70, i64 160
+  %106 = bitcast i8* %105 to %"struct.gpu::SyncToken"*
+  tail call void @_ZN3gpu9SyncTokenC1Ev(%"struct.gpu::SyncToken"* %106) #9
+  %107 = getelementptr inbounds i8, i8* %70, i64 184
+  %108 = bitcast i8* %107 to i64*
+  store i64 0, i64* %108, align 8
+  ret %"class.cc::RasterBuffer"* %71
+}
+
+declare void @_ZN2cc12ResourcePool10GpuBacking36InitOverlayCandidateAndTextureTargetEN3viz14ResourceFormatERKN3gpu12CapabilitiesEb(%"class.cc::ResourcePool::GpuBacking"*, i32, %"struct.gpu::Capabilities"* dereferenceable(480), i1 zeroext) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc23GpuRasterBufferProvider5FlushEv(%"class.cc::GpuRasterBufferProvider"* nocapture readonly) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 1
+  %3 = load %"class.viz::ContextProvider"*, %"class.viz::ContextProvider"** %2, align 8
+  %4 = bitcast %"class.viz::ContextProvider"* %3 to %"class.gpu::ContextSupport"* (%"class.viz::ContextProvider"*)***
+  %5 = load %"class.gpu::ContextSupport"* (%"class.viz::ContextProvider"*)**, %"class.gpu::ContextSupport"* (%"class.viz::ContextProvider"*)*** %4, align 8
+  %6 = getelementptr inbounds %"class.gpu::ContextSupport"* (%"class.viz::ContextProvider"*)*, %"class.gpu::ContextSupport"* (%"class.viz::ContextProvider"*)** %5, i64 7
+  %7 = load %"class.gpu::ContextSupport"* (%"class.viz::ContextProvider"*)*, %"class.gpu::ContextSupport"* (%"class.viz::ContextProvider"*)** %6, align 8
+  %8 = tail call %"class.gpu::ContextSupport"* %7(%"class.viz::ContextProvider"* %3) #9
+  %9 = bitcast %"class.gpu::ContextSupport"* %8 to void (%"class.gpu::ContextSupport"*)***
+  %10 = load void (%"class.gpu::ContextSupport"*)**, void (%"class.gpu::ContextSupport"*)*** %9, align 8
+  %11 = load void (%"class.gpu::ContextSupport"*)*, void (%"class.gpu::ContextSupport"*)** %10, align 8
+  tail call void %11(%"class.gpu::ContextSupport"* %8) #9
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden i32 @_ZNK2cc23GpuRasterBufferProvider17GetResourceFormatEv(%"class.cc::GpuRasterBufferProvider"* nocapture readonly) unnamed_addr #6 align 2 {
+  %2 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 4
+  %3 = load i32, i32* %2, align 4
+  ret i32 %3
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZNK2cc23GpuRasterBufferProvider23IsResourcePremultipliedEv(%"class.cc::GpuRasterBufferProvider"*) unnamed_addr #0 align 2 {
+  %2 = bitcast %"class.cc::GpuRasterBufferProvider"* %0 to i32 (%"class.cc::GpuRasterBufferProvider"*)***
+  %3 = load i32 (%"class.cc::GpuRasterBufferProvider"*)**, i32 (%"class.cc::GpuRasterBufferProvider"*)*** %2, align 8
+  %4 = getelementptr inbounds i32 (%"class.cc::GpuRasterBufferProvider"*)*, i32 (%"class.cc::GpuRasterBufferProvider"*)** %3, i64 4
+  %5 = load i32 (%"class.cc::GpuRasterBufferProvider"*)*, i32 (%"class.cc::GpuRasterBufferProvider"*)** %4, align 8
+  %6 = tail call i32 %5(%"class.cc::GpuRasterBufferProvider"* %0) #9
+  ret i1 true
+}
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden zeroext i1 @_ZNK2cc23GpuRasterBufferProvider36ShouldUnpremultiplyAndDitherResourceEN3viz14ResourceFormatE(%"class.cc::GpuRasterBufferProvider"* nocapture readnone, i32) local_unnamed_addr #5 align 2 {
+  ret i1 false
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZNK2cc23GpuRasterBufferProvider21IsResourceReadyToDrawERKNS_12ResourcePool17InUsePoolResourceE(%"class.cc::GpuRasterBufferProvider"* nocapture readonly, %"class.cc::ResourcePool::InUsePoolResource"* nocapture readonly dereferenceable(16)) unnamed_addr #0 align 2 {
+  %3 = getelementptr inbounds %"class.cc::ResourcePool::InUsePoolResource", %"class.cc::ResourcePool::InUsePoolResource"* %1, i64 0, i32 1
+  %4 = load %"class.cc::ResourcePool::PoolResource"*, %"class.cc::ResourcePool::PoolResource"** %3, align 8
+  %5 = getelementptr inbounds %"class.cc::ResourcePool::PoolResource", %"class.cc::ResourcePool::PoolResource"* %4, i64 0, i32 9, i32 0, i32 0, i32 0
+  %6 = load %"class.cc::ResourcePool::GpuBacking"*, %"class.cc::ResourcePool::GpuBacking"** %5, align 8
+  %7 = getelementptr inbounds %"class.cc::ResourcePool::GpuBacking", %"class.cc::ResourcePool::GpuBacking"* %6, i64 0, i32 2
+  %8 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 2
+  %9 = load %"class.viz::RasterContextProvider"*, %"class.viz::RasterContextProvider"** %8, align 8
+  %10 = bitcast %"class.viz::RasterContextProvider"* %9 to %"class.gpu::ContextSupport"* (%"class.viz::RasterContextProvider"*)***
+  %11 = load %"class.gpu::ContextSupport"* (%"class.viz::RasterContextProvider"*)**, %"class.gpu::ContextSupport"* (%"class.viz::RasterContextProvider"*)*** %10, align 8
+  %12 = getelementptr inbounds %"class.gpu::ContextSupport"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::ContextSupport"* (%"class.viz::RasterContextProvider"*)** %11, i64 7
+  %13 = load %"class.gpu::ContextSupport"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::ContextSupport"* (%"class.viz::RasterContextProvider"*)** %12, align 8
+  %14 = tail call %"class.gpu::ContextSupport"* %13(%"class.viz::RasterContextProvider"* %9) #9
+  %15 = bitcast %"class.gpu::ContextSupport"* %14 to i1 (%"class.gpu::ContextSupport"*, %"struct.gpu::SyncToken"*)***
+  %16 = load i1 (%"class.gpu::ContextSupport"*, %"struct.gpu::SyncToken"*)**, i1 (%"class.gpu::ContextSupport"*, %"struct.gpu::SyncToken"*)*** %15, align 8
+  %17 = getelementptr inbounds i1 (%"class.gpu::ContextSupport"*, %"struct.gpu::SyncToken"*)*, i1 (%"class.gpu::ContextSupport"*, %"struct.gpu::SyncToken"*)** %16, i64 2
+  %18 = load i1 (%"class.gpu::ContextSupport"*, %"struct.gpu::SyncToken"*)*, i1 (%"class.gpu::ContextSupport"*, %"struct.gpu::SyncToken"*)** %17, align 8
+  %19 = tail call zeroext i1 %18(%"class.gpu::ContextSupport"* %14, %"struct.gpu::SyncToken"* dereferenceable(24) %7) #9
+  ret i1 %19
+}
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden zeroext i1 @_ZNK2cc23GpuRasterBufferProvider36CanPartialRasterIntoProvidedResourceEv(%"class.cc::GpuRasterBufferProvider"* nocapture readnone) unnamed_addr #5 align 2 {
+  ret i1 true
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i64 @_ZNK2cc23GpuRasterBufferProvider22SetReadyToDrawCallbackERKNSt3__16vectorIPKNS_12ResourcePool17InUsePoolResourceENS1_9allocatorIS6_EEEEN4base12OnceCallbackIFvvEEEm(%"class.cc::GpuRasterBufferProvider"* nocapture readonly, %"class.std::__1::vector.140"* nocapture readonly dereferenceable(24), %"class.base::OnceCallback"* nocapture, i64) unnamed_addr #0 align 2 {
+  %5 = alloca %"struct.gpu::SyncToken", align 8
+  %6 = alloca %"class.base::OnceCallback", align 8
+  %7 = getelementptr inbounds %"struct.gpu::SyncToken", %"struct.gpu::SyncToken"* %5, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %7) #9
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %7, i8 -86, i64 24, i1 false)
+  call void @_ZN3gpu9SyncTokenC1Ev(%"struct.gpu::SyncToken"* nonnull %5) #9
+  %8 = getelementptr inbounds %"class.std::__1::vector.140", %"class.std::__1::vector.140"* %1, i64 0, i32 0, i32 0
+  %9 = load %"class.cc::ResourcePool::InUsePoolResource"**, %"class.cc::ResourcePool::InUsePoolResource"*** %8, align 8
+  %10 = getelementptr inbounds %"class.std::__1::vector.140", %"class.std::__1::vector.140"* %1, i64 0, i32 0, i32 1
+  %11 = load %"class.cc::ResourcePool::InUsePoolResource"**, %"class.cc::ResourcePool::InUsePoolResource"*** %10, align 8
+  %12 = icmp eq %"class.cc::ResourcePool::InUsePoolResource"** %9, %11
+  br i1 %12, label %38, label %13
+
+13:                                               ; preds = %4
+  %14 = ptrtoint %"class.cc::ResourcePool::InUsePoolResource"** %9 to i64
+  %15 = getelementptr inbounds %"struct.gpu::SyncToken", %"struct.gpu::SyncToken"* %5, i64 0, i32 3
+  %16 = getelementptr %"class.cc::ResourcePool::InUsePoolResource"*, %"class.cc::ResourcePool::InUsePoolResource"** %11, i64 -1
+  %17 = ptrtoint %"class.cc::ResourcePool::InUsePoolResource"** %16 to i64
+  %18 = sub i64 %17, %14
+  %19 = and i64 %18, 8
+  %20 = icmp eq i64 %19, 0
+  br i1 %20, label %21, label %35
+
+21:                                               ; preds = %13
+  %22 = load %"class.cc::ResourcePool::InUsePoolResource"*, %"class.cc::ResourcePool::InUsePoolResource"** %9, align 8
+  %23 = getelementptr inbounds %"class.cc::ResourcePool::InUsePoolResource", %"class.cc::ResourcePool::InUsePoolResource"* %22, i64 0, i32 1
+  %24 = load %"class.cc::ResourcePool::PoolResource"*, %"class.cc::ResourcePool::PoolResource"** %23, align 8
+  %25 = getelementptr inbounds %"class.cc::ResourcePool::PoolResource", %"class.cc::ResourcePool::PoolResource"* %24, i64 0, i32 9, i32 0, i32 0, i32 0
+  %26 = load %"class.cc::ResourcePool::GpuBacking"*, %"class.cc::ResourcePool::GpuBacking"** %25, align 8
+  %27 = getelementptr inbounds %"class.cc::ResourcePool::GpuBacking", %"class.cc::ResourcePool::GpuBacking"* %26, i64 0, i32 2, i32 3
+  %28 = load i64, i64* %27, align 8
+  %29 = load i64, i64* %15, align 8
+  %30 = icmp ugt i64 %28, %29
+  br i1 %30, label %31, label %33
+
+31:                                               ; preds = %21
+  %32 = getelementptr inbounds %"class.cc::ResourcePool::GpuBacking", %"class.cc::ResourcePool::GpuBacking"* %26, i64 0, i32 2, i32 0
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %7, i8* align 8 %32, i64 24, i1 false)
+  br label %33
+
+33:                                               ; preds = %31, %21
+  %34 = getelementptr inbounds %"class.cc::ResourcePool::InUsePoolResource"*, %"class.cc::ResourcePool::InUsePoolResource"** %9, i64 1
+  br label %35
+
+35:                                               ; preds = %33, %13
+  %36 = phi %"class.cc::ResourcePool::InUsePoolResource"** [ %9, %13 ], [ %34, %33 ]
+  %37 = icmp ult i64 %18, 8
+  br i1 %37, label %38, label %42
+
+38:                                               ; preds = %35, %86, %4
+  %39 = getelementptr inbounds %"struct.gpu::SyncToken", %"struct.gpu::SyncToken"* %5, i64 0, i32 3
+  %40 = load i64, i64* %39, align 8
+  %41 = icmp eq i64 %40, %3
+  br i1 %41, label %83, label %66
+
+42:                                               ; preds = %35, %86
+  %43 = phi %"class.cc::ResourcePool::InUsePoolResource"** [ %87, %86 ], [ %36, %35 ]
+  %44 = load %"class.cc::ResourcePool::InUsePoolResource"*, %"class.cc::ResourcePool::InUsePoolResource"** %43, align 8
+  %45 = getelementptr inbounds %"class.cc::ResourcePool::InUsePoolResource", %"class.cc::ResourcePool::InUsePoolResource"* %44, i64 0, i32 1
+  %46 = load %"class.cc::ResourcePool::PoolResource"*, %"class.cc::ResourcePool::PoolResource"** %45, align 8
+  %47 = getelementptr inbounds %"class.cc::ResourcePool::PoolResource", %"class.cc::ResourcePool::PoolResource"* %46, i64 0, i32 9, i32 0, i32 0, i32 0
+  %48 = load %"class.cc::ResourcePool::GpuBacking"*, %"class.cc::ResourcePool::GpuBacking"** %47, align 8
+  %49 = getelementptr inbounds %"class.cc::ResourcePool::GpuBacking", %"class.cc::ResourcePool::GpuBacking"* %48, i64 0, i32 2, i32 3
+  %50 = load i64, i64* %49, align 8
+  %51 = load i64, i64* %15, align 8
+  %52 = icmp ugt i64 %50, %51
+  br i1 %52, label %53, label %55
+
+53:                                               ; preds = %42
+  %54 = getelementptr inbounds %"class.cc::ResourcePool::GpuBacking", %"class.cc::ResourcePool::GpuBacking"* %48, i64 0, i32 2, i32 0
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %7, i8* align 8 %54, i64 24, i1 false)
+  br label %55
+
+55:                                               ; preds = %53, %42
+  %56 = getelementptr inbounds %"class.cc::ResourcePool::InUsePoolResource"*, %"class.cc::ResourcePool::InUsePoolResource"** %43, i64 1
+  %57 = load %"class.cc::ResourcePool::InUsePoolResource"*, %"class.cc::ResourcePool::InUsePoolResource"** %56, align 8
+  %58 = getelementptr inbounds %"class.cc::ResourcePool::InUsePoolResource", %"class.cc::ResourcePool::InUsePoolResource"* %57, i64 0, i32 1
+  %59 = load %"class.cc::ResourcePool::PoolResource"*, %"class.cc::ResourcePool::PoolResource"** %58, align 8
+  %60 = getelementptr inbounds %"class.cc::ResourcePool::PoolResource", %"class.cc::ResourcePool::PoolResource"* %59, i64 0, i32 9, i32 0, i32 0, i32 0
+  %61 = load %"class.cc::ResourcePool::GpuBacking"*, %"class.cc::ResourcePool::GpuBacking"** %60, align 8
+  %62 = getelementptr inbounds %"class.cc::ResourcePool::GpuBacking", %"class.cc::ResourcePool::GpuBacking"* %61, i64 0, i32 2, i32 3
+  %63 = load i64, i64* %62, align 8
+  %64 = load i64, i64* %15, align 8
+  %65 = icmp ugt i64 %63, %64
+  br i1 %65, label %84, label %86
+
+66:                                               ; preds = %38
+  %67 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %0, i64 0, i32 1
+  %68 = load %"class.viz::ContextProvider"*, %"class.viz::ContextProvider"** %67, align 8
+  %69 = bitcast %"class.viz::ContextProvider"* %68 to %"class.gpu::ContextSupport"* (%"class.viz::ContextProvider"*)***
+  %70 = load %"class.gpu::ContextSupport"* (%"class.viz::ContextProvider"*)**, %"class.gpu::ContextSupport"* (%"class.viz::ContextProvider"*)*** %69, align 8
+  %71 = getelementptr inbounds %"class.gpu::ContextSupport"* (%"class.viz::ContextProvider"*)*, %"class.gpu::ContextSupport"* (%"class.viz::ContextProvider"*)** %70, i64 7
+  %72 = load %"class.gpu::ContextSupport"* (%"class.viz::ContextProvider"*)*, %"class.gpu::ContextSupport"* (%"class.viz::ContextProvider"*)** %71, align 8
+  %73 = call %"class.gpu::ContextSupport"* %72(%"class.viz::ContextProvider"* %68) #9
+  %74 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %2, i64 0, i32 0, i32 0, i32 0
+  %75 = bitcast %"class.base::OnceCallback"* %2 to i64*
+  %76 = load i64, i64* %75, align 8
+  %77 = bitcast %"class.base::OnceCallback"* %6 to i64*
+  store i64 %76, i64* %77, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %74, align 8
+  %78 = bitcast %"class.gpu::ContextSupport"* %73 to void (%"class.gpu::ContextSupport"*, %"struct.gpu::SyncToken"*, %"class.base::OnceCallback"*)***
+  %79 = load void (%"class.gpu::ContextSupport"*, %"struct.gpu::SyncToken"*, %"class.base::OnceCallback"*)**, void (%"class.gpu::ContextSupport"*, %"struct.gpu::SyncToken"*, %"class.base::OnceCallback"*)*** %78, align 8
+  %80 = getelementptr inbounds void (%"class.gpu::ContextSupport"*, %"struct.gpu::SyncToken"*, %"class.base::OnceCallback"*)*, void (%"class.gpu::ContextSupport"*, %"struct.gpu::SyncToken"*, %"class.base::OnceCallback"*)** %79, i64 1
+  %81 = load void (%"class.gpu::ContextSupport"*, %"struct.gpu::SyncToken"*, %"class.base::OnceCallback"*)*, void (%"class.gpu::ContextSupport"*, %"struct.gpu::SyncToken"*, %"class.base::OnceCallback"*)** %80, align 8
+  call void %81(%"class.gpu::ContextSupport"* %73, %"struct.gpu::SyncToken"* nonnull dereferenceable(24) %5, %"class.base::OnceCallback"* nonnull %6) #9
+  %82 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %6, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %82) #9
+  br label %83
+
+83:                                               ; preds = %38, %66
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %7) #9
+  ret i64 %40
+
+84:                                               ; preds = %55
+  %85 = getelementptr inbounds %"class.cc::ResourcePool::GpuBacking", %"class.cc::ResourcePool::GpuBacking"* %61, i64 0, i32 2, i32 0
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %7, i8* align 8 %85, i64 24, i1 false)
+  br label %86
+
+86:                                               ; preds = %84, %55
+  %87 = getelementptr inbounds %"class.cc::ResourcePool::InUsePoolResource"*, %"class.cc::ResourcePool::InUsePoolResource"** %43, i64 2
+  %88 = icmp eq %"class.cc::ResourcePool::InUsePoolResource"** %87, %11
+  br i1 %88, label %38, label %42
+}
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"*) unnamed_addr #3
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden void @_ZN2cc23GpuRasterBufferProvider8ShutdownEv(%"class.cc::GpuRasterBufferProvider"* nocapture) unnamed_addr #5 align 2 {
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+declare void @_ZN2cc11RasterQueryC1Ev(%"struct.cc::RasterQuery"*) unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc23GpuRasterBufferProvider30PlaybackOnWorkerThreadInternalEPN3gpu7MailboxEjbRKNS1_9SyncTokenERKN3gfx4SizeEN3viz14ResourceFormatERKNS7_10ColorSpaceEbPKNS_12RasterSourceERKNS7_4RectESL_mRKNS7_15AxisTransform2dERKNSG_16PlaybackSettingsERK4GURLbPNS_11RasterQueryE(%"struct.gpu::SyncToken"* noalias sret, %"class.cc::GpuRasterBufferProvider"* nocapture, %"struct.gpu::Mailbox"*, i32, i1 zeroext, %"struct.gpu::SyncToken"* dereferenceable(24), %"class.gfx::Size"* dereferenceable(8), i32, %"class.gfx::ColorSpace"* dereferenceable(68), i1 zeroext, %"class.cc::RasterSource"*, %"class.gfx::Rect"* dereferenceable(16), %"class.gfx::Rect"* dereferenceable(16), i64, %"class.gfx::AxisTransform2d"* dereferenceable(16), %"struct.cc::RasterSource::PlaybackSettings"* dereferenceable(16), %class.GURL* dereferenceable(120), i1 zeroext, %"struct.cc::RasterQuery"*) local_unnamed_addr #0 align 2 {
+  %20 = alloca %"struct.gpu::SyncToken", align 8
+  %21 = alloca i64, align 8
+  %22 = alloca i64, align 8
+  %23 = alloca %"struct.gpu::SyncToken", align 8
+  %24 = alloca %class.sk_sp.46, align 8
+  %25 = alloca %"class.viz::ClientResourceProvider::ScopedSkSurface", align 8
+  %26 = alloca %class.sk_sp.46, align 8
+  %27 = alloca %class.SkSurfaceProps, align 4
+  %28 = alloca i64, align 8
+  %29 = alloca %"class.viz::RasterContextProvider::ScopedRasterContextLock", align 8
+  %30 = alloca %"class.gfx::Rect", align 4
+  %31 = alloca %"class.absl::optional.155", align 8
+  %32 = bitcast %"class.viz::RasterContextProvider::ScopedRasterContextLock"* %29 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %32) #9
+  %33 = getelementptr inbounds %"class.viz::RasterContextProvider::ScopedRasterContextLock", %"class.viz::RasterContextProvider::ScopedRasterContextLock"* %29, i64 0, i32 0
+  %34 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %1, i64 0, i32 2
+  %35 = bitcast %"class.viz::RasterContextProvider::ScopedRasterContextLock"* %29 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %35, i8 -86, i64 24, i1 false)
+  %36 = load %"class.viz::RasterContextProvider"*, %"class.viz::RasterContextProvider"** %34, align 8
+  %37 = bitcast %class.GURL* %16 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %38 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %37, i64 0, i32 1, i32 0
+  %39 = load i8, i8* %38, align 1
+  %40 = icmp slt i8 %39, 0
+  %41 = getelementptr inbounds %class.GURL, %class.GURL* %16, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %42 = load i8*, i8** %41, align 8
+  %43 = bitcast %class.GURL* %16 to i8*
+  %44 = select i1 %40, i8* %42, i8* %43
+  call void @_ZN3viz21RasterContextProvider23ScopedRasterContextLockC1EPS0_PKc(%"class.viz::RasterContextProvider::ScopedRasterContextLock"* nonnull %29, %"class.viz::RasterContextProvider"* %36, i8* %44) #9
+  %45 = load %"class.viz::RasterContextProvider"*, %"class.viz::RasterContextProvider"** %33, align 8
+  %46 = bitcast %"class.viz::RasterContextProvider"* %45 to %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)***
+  %47 = load %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)**, %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)*** %46, align 8
+  %48 = getelementptr inbounds %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)** %47, i64 13
+  %49 = load %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)** %48, align 8
+  %50 = call %"class.gpu::raster::RasterInterface"* %49(%"class.viz::RasterContextProvider"* %45) #9
+  %51 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %1, i64 0, i32 8, i32 1
+  %52 = load i64, i64* %51, align 8
+  %53 = add i64 %52, 1
+  %54 = urem i64 %53, 624
+  %55 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %1, i64 0, i32 8, i32 0, i64 %52
+  %56 = load i64, i64* %55, align 8
+  %57 = and i64 %56, -2147483648
+  %58 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %1, i64 0, i32 8, i32 0, i64 %54
+  %59 = load i64, i64* %58, align 8
+  %60 = and i64 %59, 2147483646
+  %61 = or i64 %60, %57
+  %62 = add i64 %52, 397
+  %63 = urem i64 %62, 624
+  %64 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %1, i64 0, i32 8, i32 0, i64 %63
+  %65 = load i64, i64* %64, align 8
+  %66 = lshr exact i64 %61, 1
+  %67 = and i64 %59, 1
+  %68 = mul nuw nsw i64 %67, 2567483615
+  %69 = xor i64 %68, %65
+  %70 = xor i64 %69, %66
+  store i64 %70, i64* %55, align 8
+  %71 = load i64, i64* %51, align 8
+  %72 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %1, i64 0, i32 8, i32 0, i64 %71
+  %73 = load i64, i64* %72, align 8
+  %74 = lshr i64 %73, 11
+  %75 = and i64 %74, 4294967295
+  %76 = xor i64 %75, %73
+  store i64 %54, i64* %51, align 8
+  %77 = shl i64 %76, 7
+  %78 = and i64 %77, 2636928640
+  %79 = xor i64 %78, %76
+  %80 = shl i64 %79, 15
+  %81 = and i64 %80, 4022730752
+  %82 = xor i64 %81, %79
+  %83 = lshr i64 %82, 18
+  %84 = xor i64 %83, %82
+  %85 = uitofp i64 %84 to double
+  %86 = trunc i64 %54 to i16
+  %87 = add nuw nsw i16 %86, 1
+  %88 = urem i16 %87, 624
+  %89 = zext i16 %88 to i64
+  %90 = load i64, i64* %58, align 8
+  %91 = and i64 %90, -2147483648
+  %92 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %1, i64 0, i32 8, i32 0, i64 %89
+  %93 = load i64, i64* %92, align 8
+  %94 = and i64 %93, 2147483646
+  %95 = or i64 %94, %91
+  %96 = add nuw nsw i16 %86, 397
+  %97 = urem i16 %96, 624
+  %98 = zext i16 %97 to i64
+  %99 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %1, i64 0, i32 8, i32 0, i64 %98
+  %100 = load i64, i64* %99, align 8
+  %101 = lshr exact i64 %95, 1
+  %102 = and i64 %93, 1
+  %103 = mul nuw nsw i64 %102, 2567483615
+  %104 = xor i64 %103, %100
+  %105 = xor i64 %104, %101
+  store i64 %105, i64* %58, align 8
+  %106 = load i64, i64* %51, align 8
+  %107 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %1, i64 0, i32 8, i32 0, i64 %106
+  %108 = load i64, i64* %107, align 8
+  %109 = lshr i64 %108, 11
+  %110 = and i64 %109, 4294967295
+  %111 = xor i64 %110, %108
+  store i64 %89, i64* %51, align 8
+  %112 = shl i64 %111, 7
+  %113 = and i64 %112, 2636928640
+  %114 = xor i64 %113, %111
+  %115 = shl i64 %114, 15
+  %116 = and i64 %115, 4022730752
+  %117 = xor i64 %116, %114
+  %118 = lshr i64 %117, 18
+  %119 = xor i64 %118, %117
+  %120 = uitofp i64 %119 to double
+  %121 = fmul double %120, 0x41F0000000000000
+  %122 = fadd double %121, %85
+  %123 = fmul double %122, 0x3BF0000000000000
+  %124 = fadd double %123, 0.000000e+00
+  %125 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %1, i64 0, i32 9, i32 0, i32 0
+  %126 = load double, double* %125, align 8
+  %127 = fcmp olt double %124, %126
+  %128 = bitcast %"class.gfx::Rect"* %30 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %128) #9
+  %129 = getelementptr inbounds %"class.gfx::Rect", %"class.gfx::Rect"* %30, i64 0, i32 0, i32 0
+  %130 = getelementptr inbounds %"class.gfx::Rect", %"class.gfx::Rect"* %30, i64 0, i32 0, i32 1
+  %131 = getelementptr inbounds %"class.gfx::Rect", %"class.gfx::Rect"* %30, i64 0, i32 1, i32 0
+  %132 = getelementptr inbounds %"class.gfx::Rect", %"class.gfx::Rect"* %30, i64 0, i32 1, i32 1
+  %133 = bitcast %"class.gfx::Rect"* %11 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 4 %128, i8* align 4 %133, i64 16, i1 false)
+  br i1 %9, label %134, label %135
+
+134:                                              ; preds = %19
+  call void @_ZN3gfx4Rect9IntersectERKS0_(%"class.gfx::Rect"* nonnull %30, %"class.gfx::Rect"* dereferenceable(16) %12) #9
+  br label %135
+
+135:                                              ; preds = %134, %19
+  br i1 %127, label %138, label %136
+
+136:                                              ; preds = %135
+  %137 = getelementptr inbounds %"class.absl::optional.155", %"class.absl::optional.155"* %31, i64 0, i32 0, i32 0, i32 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %137) #9
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %137, i8 -86, i64 16, i1 false)
+  store i8 0, i8* %137, align 8
+  br label %151
+
+138:                                              ; preds = %135
+  %139 = getelementptr inbounds %"struct.cc::RasterQuery", %"struct.cc::RasterQuery"* %18, i64 0, i32 0
+  %140 = bitcast %"class.gpu::raster::RasterInterface"* %50 to void (%"class.gpu::raster::RasterInterface"*, i32, i32*)***
+  %141 = load void (%"class.gpu::raster::RasterInterface"*, i32, i32*)**, void (%"class.gpu::raster::RasterInterface"*, i32, i32*)*** %140, align 8
+  %142 = getelementptr inbounds void (%"class.gpu::raster::RasterInterface"*, i32, i32*)*, void (%"class.gpu::raster::RasterInterface"*, i32, i32*)** %141, i64 29
+  %143 = load void (%"class.gpu::raster::RasterInterface"*, i32, i32*)*, void (%"class.gpu::raster::RasterInterface"*, i32, i32*)** %142, align 8
+  call void %143(%"class.gpu::raster::RasterInterface"* %50, i32 1, i32* %139) #9
+  %144 = load i32, i32* %139, align 8
+  %145 = bitcast %"class.gpu::raster::RasterInterface"* %50 to void (%"class.gpu::raster::RasterInterface"*, i32, i32)***
+  %146 = load void (%"class.gpu::raster::RasterInterface"*, i32, i32)**, void (%"class.gpu::raster::RasterInterface"*, i32, i32)*** %145, align 8
+  %147 = getelementptr inbounds void (%"class.gpu::raster::RasterInterface"*, i32, i32)*, void (%"class.gpu::raster::RasterInterface"*, i32, i32)** %146, i64 32
+  %148 = load void (%"class.gpu::raster::RasterInterface"*, i32, i32)*, void (%"class.gpu::raster::RasterInterface"*, i32, i32)** %147, align 8
+  call void %148(%"class.gpu::raster::RasterInterface"* %50, i32 24580, i32 %144) #9
+  %149 = getelementptr inbounds %"class.absl::optional.155", %"class.absl::optional.155"* %31, i64 0, i32 0, i32 0, i32 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %149) #9
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %149, i8 -86, i64 16, i1 false)
+  store i8 0, i8* %149, align 8
+  %150 = getelementptr inbounds %"class.absl::optional.155", %"class.absl::optional.155"* %31, i64 0, i32 0, i32 0, i32 0, i32 1, i32 0
+  call void @_ZN4base12ElapsedTimerC1Ev(%"class.base::ElapsedTimer"* %150) #9
+  store i8 1, i8* %149, align 8
+  br label %151
+
+151:                                              ; preds = %136, %138
+  %152 = phi i8* [ %149, %138 ], [ %137, %136 ]
+  %153 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider", %"class.cc::GpuRasterBufferProvider"* %1, i64 0, i32 6
+  %154 = load i8, i8* %153, align 8, !range !2
+  %155 = icmp eq i8 %154, 0
+  %156 = load %"class.viz::RasterContextProvider"*, %"class.viz::RasterContextProvider"** %34, align 8
+  br i1 %155, label %239, label %157
+
+157:                                              ; preds = %151
+  %158 = bitcast i64* %21 to %"class.gfx::Vector2dF"*
+  %159 = bitcast i64* %22 to %"class.gfx::Size"*
+  %160 = bitcast %"class.viz::RasterContextProvider"* %156 to %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)***
+  %161 = load %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)**, %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)*** %160, align 8
+  %162 = getelementptr inbounds %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)** %161, i64 13
+  %163 = load %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)** %162, align 8
+  %164 = call %"class.gpu::raster::RasterInterface"* %163(%"class.viz::RasterContextProvider"* %156) #9
+  %165 = call zeroext i1 @_ZNK3gpu7Mailbox6IsZeroEv(%"struct.gpu::Mailbox"* %2) #9
+  br i1 %165, label %166, label %193
+
+166:                                              ; preds = %157
+  %167 = bitcast %"class.viz::RasterContextProvider"* %156 to %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)***
+  %168 = load %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)**, %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)*** %167, align 8
+  %169 = getelementptr inbounds %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)** %168, i64 9
+  %170 = load %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)** %169, align 8
+  %171 = call %"class.gpu::SharedImageInterface"* %170(%"class.viz::RasterContextProvider"* %156) #9
+  %172 = select i1 %4, i32 60, i32 44
+  %173 = bitcast %"class.gpu::SharedImageInterface"* %171 to { i64, i64 } (%"class.gpu::SharedImageInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::ColorSpace"*, i32, i32, i32, i32)***
+  %174 = load { i64, i64 } (%"class.gpu::SharedImageInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::ColorSpace"*, i32, i32, i32, i32)**, { i64, i64 } (%"class.gpu::SharedImageInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::ColorSpace"*, i32, i32, i32, i32)*** %173, align 8
+  %175 = getelementptr inbounds { i64, i64 } (%"class.gpu::SharedImageInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::ColorSpace"*, i32, i32, i32, i32)*, { i64, i64 } (%"class.gpu::SharedImageInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::ColorSpace"*, i32, i32, i32, i32)** %174, i64 2
+  %176 = load { i64, i64 } (%"class.gpu::SharedImageInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::ColorSpace"*, i32, i32, i32, i32)*, { i64, i64 } (%"class.gpu::SharedImageInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::ColorSpace"*, i32, i32, i32, i32)** %175, align 8
+  %177 = call { i64, i64 } %176(%"class.gpu::SharedImageInterface"* %171, i32 %7, %"class.gfx::Size"* dereferenceable(8) %6, %"class.gfx::ColorSpace"* dereferenceable(68) %8, i32 0, i32 2, i32 %172, i32 0) #9
+  %178 = extractvalue { i64, i64 } %177, 0
+  %179 = extractvalue { i64, i64 } %177, 1
+  %180 = bitcast %"struct.gpu::Mailbox"* %2 to i64*
+  store i64 %178, i64* %180, align 1
+  %181 = getelementptr inbounds %"struct.gpu::Mailbox", %"struct.gpu::Mailbox"* %2, i64 0, i32 0, i64 8
+  %182 = bitcast i8* %181 to i64*
+  store i64 %179, i64* %182, align 1
+  %183 = getelementptr inbounds %"class.gpu::raster::RasterInterface", %"class.gpu::raster::RasterInterface"* %164, i64 0, i32 0
+  %184 = getelementptr inbounds %"struct.gpu::SyncToken", %"struct.gpu::SyncToken"* %20, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %184) #9
+  %185 = bitcast %"class.gpu::SharedImageInterface"* %171 to void (%"struct.gpu::SyncToken"*, %"class.gpu::SharedImageInterface"*)***
+  %186 = load void (%"struct.gpu::SyncToken"*, %"class.gpu::SharedImageInterface"*)**, void (%"struct.gpu::SyncToken"*, %"class.gpu::SharedImageInterface"*)*** %185, align 8
+  %187 = getelementptr inbounds void (%"struct.gpu::SyncToken"*, %"class.gpu::SharedImageInterface"*)*, void (%"struct.gpu::SyncToken"*, %"class.gpu::SharedImageInterface"*)** %186, i64 11
+  %188 = load void (%"struct.gpu::SyncToken"*, %"class.gpu::SharedImageInterface"*)*, void (%"struct.gpu::SyncToken"*, %"class.gpu::SharedImageInterface"*)** %187, align 8
+  call void %188(%"struct.gpu::SyncToken"* nonnull sret %20, %"class.gpu::SharedImageInterface"* %171) #9
+  %189 = bitcast %"class.gpu::raster::RasterInterface"* %164 to void (%"class.gpu::InterfaceBase"*, i8*)***
+  %190 = load void (%"class.gpu::InterfaceBase"*, i8*)**, void (%"class.gpu::InterfaceBase"*, i8*)*** %189, align 8
+  %191 = getelementptr inbounds void (%"class.gpu::InterfaceBase"*, i8*)*, void (%"class.gpu::InterfaceBase"*, i8*)** %190, i64 3
+  %192 = load void (%"class.gpu::InterfaceBase"*, i8*)*, void (%"class.gpu::InterfaceBase"*, i8*)** %191, align 8
+  call void %192(%"class.gpu::InterfaceBase"* %183, i8* nonnull %184) #9
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %184) #9
+  br label %200
+
+193:                                              ; preds = %157
+  %194 = getelementptr inbounds %"class.gpu::raster::RasterInterface", %"class.gpu::raster::RasterInterface"* %164, i64 0, i32 0
+  %195 = getelementptr inbounds %"struct.gpu::SyncToken", %"struct.gpu::SyncToken"* %5, i64 0, i32 0
+  %196 = bitcast %"class.gpu::raster::RasterInterface"* %164 to void (%"class.gpu::InterfaceBase"*, i8*)***
+  %197 = load void (%"class.gpu::InterfaceBase"*, i8*)**, void (%"class.gpu::InterfaceBase"*, i8*)*** %196, align 8
+  %198 = getelementptr inbounds void (%"class.gpu::InterfaceBase"*, i8*)*, void (%"class.gpu::InterfaceBase"*, i8*)** %197, i64 3
+  %199 = load void (%"class.gpu::InterfaceBase"*, i8*)*, void (%"class.gpu::InterfaceBase"*, i8*)** %198, align 8
+  call void %199(%"class.gpu::InterfaceBase"* %194, i8* %195) #9
+  br label %200
+
+200:                                              ; preds = %166, %193
+  %201 = phi i8 [ 1, %166 ], [ 0, %193 ]
+  %202 = getelementptr inbounds %"class.cc::RasterSource", %"class.cc::RasterSource"* %10, i64 0, i32 5
+  %203 = load i32, i32* %202, align 8
+  %204 = getelementptr inbounds %"struct.cc::RasterSource::PlaybackSettings", %"struct.cc::RasterSource::PlaybackSettings"* %15, i64 0, i32 1
+  %205 = load i32, i32* %204, align 4
+  %206 = getelementptr inbounds %"struct.cc::RasterSource::PlaybackSettings", %"struct.cc::RasterSource::PlaybackSettings"* %15, i64 0, i32 0
+  %207 = load i8, i8* %206, align 8, !range !2
+  %208 = getelementptr inbounds %"struct.gpu::Mailbox", %"struct.gpu::Mailbox"* %2, i64 0, i32 0, i64 0
+  %209 = bitcast %"class.gpu::raster::RasterInterface"* %164 to void (%"class.gpu::raster::RasterInterface"*, i32, i8, i32, i8, %"class.gfx::ColorSpace"*, i8*)***
+  %210 = load void (%"class.gpu::raster::RasterInterface"*, i32, i8, i32, i8, %"class.gfx::ColorSpace"*, i8*)**, void (%"class.gpu::raster::RasterInterface"*, i32, i8, i32, i8, %"class.gfx::ColorSpace"*, i8*)*** %209, align 8
+  %211 = getelementptr inbounds void (%"class.gpu::raster::RasterInterface"*, i32, i8, i32, i8, %"class.gfx::ColorSpace"*, i8*)*, void (%"class.gpu::raster::RasterInterface"*, i32, i8, i32, i8, %"class.gfx::ColorSpace"*, i8*)** %210, i64 10
+  %212 = load void (%"class.gpu::raster::RasterInterface"*, i32, i8, i32, i8, %"class.gfx::ColorSpace"*, i8*)*, void (%"class.gpu::raster::RasterInterface"*, i32, i8, i32, i8, %"class.gfx::ColorSpace"*, i8*)** %211, align 8
+  call void %212(%"class.gpu::raster::RasterInterface"* %164, i32 %203, i8 zeroext %201, i32 %205, i8 zeroext %207, %"class.gfx::ColorSpace"* dereferenceable(68) %8, i8* %208) #9
+  %213 = bitcast i64* %21 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %213) #9
+  %214 = getelementptr inbounds %"class.gfx::AxisTransform2d", %"class.gfx::AxisTransform2d"* %14, i64 0, i32 0
+  %215 = bitcast %"class.gfx::AxisTransform2d"* %14 to i64*
+  %216 = load i64, i64* %215, align 4
+  store i64 %216, i64* %21, align 8
+  %217 = getelementptr inbounds %"class.cc::RasterSource", %"class.cc::RasterSource"* %10, i64 0, i32 13
+  %218 = load float, float* %217, align 8
+  %219 = fdiv float 1.000000e+00, %218
+  call void @_ZN3gfx9Vector2dF5ScaleEff(%"class.gfx::Vector2dF"* nonnull %158, float %219, float %219) #9
+  %220 = bitcast i64* %22 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %220) #9
+  %221 = call i64 @_ZNK2cc12RasterSource14GetContentSizeERKN3gfx9Vector2dFE(%"class.cc::RasterSource"* %10, %"class.gfx::Vector2dF"* dereferenceable(8) %214) #9
+  store i64 %221, i64* %22, align 8
+  %222 = getelementptr inbounds %"class.cc::RasterSource", %"class.cc::RasterSource"* %10, i64 0, i32 4, i32 0
+  %223 = load %"class.cc::DisplayItemList"*, %"class.cc::DisplayItemList"** %222, align 8
+  %224 = getelementptr inbounds %"struct.cc::RasterSource::PlaybackSettings", %"struct.cc::RasterSource::PlaybackSettings"* %15, i64 0, i32 2
+  %225 = load %"class.cc::ImageProvider"*, %"class.cc::ImageProvider"** %224, align 8
+  %226 = getelementptr inbounds %"class.gfx::AxisTransform2d", %"class.gfx::AxisTransform2d"* %14, i64 0, i32 1
+  %227 = getelementptr inbounds %"class.cc::RasterSource", %"class.cc::RasterSource"* %10, i64 0, i32 6
+  %228 = load i8, i8* %227, align 4, !range !2
+  %229 = icmp ne i8 %228, 0
+  %230 = getelementptr inbounds %"class.cc::RasterSource", %"class.cc::RasterSource"* %10, i64 0, i32 3
+  %231 = bitcast %"class.gpu::raster::RasterInterface"* %164 to void (%"class.gpu::raster::RasterInterface"*, %"class.cc::DisplayItemList"*, %"class.cc::ImageProvider"*, %"class.gfx::Size"*, %"class.gfx::Rect"*, %"class.gfx::Rect"*, %"class.gfx::Vector2dF"*, %"class.gfx::Vector2dF"*, i1, i64*)***
+  %232 = load void (%"class.gpu::raster::RasterInterface"*, %"class.cc::DisplayItemList"*, %"class.cc::ImageProvider"*, %"class.gfx::Size"*, %"class.gfx::Rect"*, %"class.gfx::Rect"*, %"class.gfx::Vector2dF"*, %"class.gfx::Vector2dF"*, i1, i64*)**, void (%"class.gpu::raster::RasterInterface"*, %"class.cc::DisplayItemList"*, %"class.cc::ImageProvider"*, %"class.gfx::Size"*, %"class.gfx::Rect"*, %"class.gfx::Rect"*, %"class.gfx::Vector2dF"*, %"class.gfx::Vector2dF"*, i1, i64*)*** %231, align 8
+  %233 = getelementptr inbounds void (%"class.gpu::raster::RasterInterface"*, %"class.cc::DisplayItemList"*, %"class.cc::ImageProvider"*, %"class.gfx::Size"*, %"class.gfx::Rect"*, %"class.gfx::Rect"*, %"class.gfx::Vector2dF"*, %"class.gfx::Vector2dF"*, i1, i64*)*, void (%"class.gpu::raster::RasterInterface"*, %"class.cc::DisplayItemList"*, %"class.cc::ImageProvider"*, %"class.gfx::Size"*, %"class.gfx::Rect"*, %"class.gfx::Rect"*, %"class.gfx::Vector2dF"*, %"class.gfx::Vector2dF"*, i1, i64*)** %232, i64 11
+  %234 = load void (%"class.gpu::raster::RasterInterface"*, %"class.cc::DisplayItemList"*, %"class.cc::ImageProvider"*, %"class.gfx::Size"*, %"class.gfx::Rect"*, %"class.gfx::Rect"*, %"class.gfx::Vector2dF"*, %"class.gfx::Vector2dF"*, i1, i64*)*, void (%"class.gpu::raster::RasterInterface"*, %"class.cc::DisplayItemList"*, %"class.cc::ImageProvider"*, %"class.gfx::Size"*, %"class.gfx::Rect"*, %"class.gfx::Rect"*, %"class.gfx::Vector2dF"*, %"class.gfx::Vector2dF"*, i1, i64*)** %233, align 8
+  call void %234(%"class.gpu::raster::RasterInterface"* %164, %"class.cc::DisplayItemList"* %223, %"class.cc::ImageProvider"* %225, %"class.gfx::Size"* nonnull dereferenceable(8) %159, %"class.gfx::Rect"* dereferenceable(16) %11, %"class.gfx::Rect"* nonnull dereferenceable(16) %30, %"class.gfx::Vector2dF"* dereferenceable(8) %226, %"class.gfx::Vector2dF"* nonnull dereferenceable(8) %158, i1 zeroext %229, i64* %230) #9
+  %235 = bitcast %"class.gpu::raster::RasterInterface"* %164 to void (%"class.gpu::raster::RasterInterface"*)***
+  %236 = load void (%"class.gpu::raster::RasterInterface"*)**, void (%"class.gpu::raster::RasterInterface"*)*** %235, align 8
+  %237 = getelementptr inbounds void (%"class.gpu::raster::RasterInterface"*)*, void (%"class.gpu::raster::RasterInterface"*)** %236, i64 38
+  %238 = load void (%"class.gpu::raster::RasterInterface"*)*, void (%"class.gpu::raster::RasterInterface"*)** %237, align 8
+  call void %238(%"class.gpu::raster::RasterInterface"* %164) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %220) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %213) #9
+  br label %406
+
+239:                                              ; preds = %151
+  %240 = bitcast %class.sk_sp.46* %26 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %240)
+  %241 = bitcast %class.SkSurfaceProps* %27 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %241)
+  %242 = bitcast i64* %28 to %"class.gfx::Size"*
+  %243 = bitcast %"class.viz::RasterContextProvider"* %156 to %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)***
+  %244 = load %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)**, %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)*** %243, align 8
+  %245 = getelementptr inbounds %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)** %244, i64 13
+  %246 = load %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)** %245, align 8
+  %247 = call %"class.gpu::raster::RasterInterface"* %246(%"class.viz::RasterContextProvider"* %156) #9
+  %248 = call zeroext i1 @_ZNK3gpu7Mailbox6IsZeroEv(%"struct.gpu::Mailbox"* %2) #9
+  br i1 %248, label %249, label %276
+
+249:                                              ; preds = %239
+  %250 = bitcast %"class.viz::RasterContextProvider"* %156 to %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)***
+  %251 = load %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)**, %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)*** %250, align 8
+  %252 = getelementptr inbounds %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)** %251, i64 9
+  %253 = load %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)** %252, align 8
+  %254 = call %"class.gpu::SharedImageInterface"* %253(%"class.viz::RasterContextProvider"* %156) #9
+  %255 = select i1 %4, i32 27, i32 11
+  %256 = bitcast %"class.gpu::SharedImageInterface"* %254 to { i64, i64 } (%"class.gpu::SharedImageInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::ColorSpace"*, i32, i32, i32, i32)***
+  %257 = load { i64, i64 } (%"class.gpu::SharedImageInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::ColorSpace"*, i32, i32, i32, i32)**, { i64, i64 } (%"class.gpu::SharedImageInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::ColorSpace"*, i32, i32, i32, i32)*** %256, align 8
+  %258 = getelementptr inbounds { i64, i64 } (%"class.gpu::SharedImageInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::ColorSpace"*, i32, i32, i32, i32)*, { i64, i64 } (%"class.gpu::SharedImageInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::ColorSpace"*, i32, i32, i32, i32)** %257, i64 2
+  %259 = load { i64, i64 } (%"class.gpu::SharedImageInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::ColorSpace"*, i32, i32, i32, i32)*, { i64, i64 } (%"class.gpu::SharedImageInterface"*, i32, %"class.gfx::Size"*, %"class.gfx::ColorSpace"*, i32, i32, i32, i32)** %258, align 8
+  %260 = call { i64, i64 } %259(%"class.gpu::SharedImageInterface"* %254, i32 %7, %"class.gfx::Size"* dereferenceable(8) %6, %"class.gfx::ColorSpace"* dereferenceable(68) %8, i32 0, i32 2, i32 %255, i32 0) #9
+  %261 = extractvalue { i64, i64 } %260, 0
+  %262 = extractvalue { i64, i64 } %260, 1
+  %263 = bitcast %"struct.gpu::Mailbox"* %2 to i64*
+  store i64 %261, i64* %263, align 1
+  %264 = getelementptr inbounds %"struct.gpu::Mailbox", %"struct.gpu::Mailbox"* %2, i64 0, i32 0, i64 8
+  %265 = bitcast i8* %264 to i64*
+  store i64 %262, i64* %265, align 1
+  %266 = getelementptr inbounds %"class.gpu::raster::RasterInterface", %"class.gpu::raster::RasterInterface"* %247, i64 0, i32 0
+  %267 = getelementptr inbounds %"struct.gpu::SyncToken", %"struct.gpu::SyncToken"* %23, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %267) #9
+  %268 = bitcast %"class.gpu::SharedImageInterface"* %254 to void (%"struct.gpu::SyncToken"*, %"class.gpu::SharedImageInterface"*)***
+  %269 = load void (%"struct.gpu::SyncToken"*, %"class.gpu::SharedImageInterface"*)**, void (%"struct.gpu::SyncToken"*, %"class.gpu::SharedImageInterface"*)*** %268, align 8
+  %270 = getelementptr inbounds void (%"struct.gpu::SyncToken"*, %"class.gpu::SharedImageInterface"*)*, void (%"struct.gpu::SyncToken"*, %"class.gpu::SharedImageInterface"*)** %269, i64 11
+  %271 = load void (%"struct.gpu::SyncToken"*, %"class.gpu::SharedImageInterface"*)*, void (%"struct.gpu::SyncToken"*, %"class.gpu::SharedImageInterface"*)** %270, align 8
+  call void %271(%"struct.gpu::SyncToken"* nonnull sret %23, %"class.gpu::SharedImageInterface"* %254) #9
+  %272 = bitcast %"class.gpu::raster::RasterInterface"* %247 to void (%"class.gpu::InterfaceBase"*, i8*)***
+  %273 = load void (%"class.gpu::InterfaceBase"*, i8*)**, void (%"class.gpu::InterfaceBase"*, i8*)*** %272, align 8
+  %274 = getelementptr inbounds void (%"class.gpu::InterfaceBase"*, i8*)*, void (%"class.gpu::InterfaceBase"*, i8*)** %273, i64 3
+  %275 = load void (%"class.gpu::InterfaceBase"*, i8*)*, void (%"class.gpu::InterfaceBase"*, i8*)** %274, align 8
+  call void %275(%"class.gpu::InterfaceBase"* %266, i8* nonnull %267) #9
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %267) #9
+  br label %283
+
+276:                                              ; preds = %239
+  %277 = getelementptr inbounds %"class.gpu::raster::RasterInterface", %"class.gpu::raster::RasterInterface"* %247, i64 0, i32 0
+  %278 = getelementptr inbounds %"struct.gpu::SyncToken", %"struct.gpu::SyncToken"* %5, i64 0, i32 0
+  %279 = bitcast %"class.gpu::raster::RasterInterface"* %247 to void (%"class.gpu::InterfaceBase"*, i8*)***
+  %280 = load void (%"class.gpu::InterfaceBase"*, i8*)**, void (%"class.gpu::InterfaceBase"*, i8*)*** %279, align 8
+  %281 = getelementptr inbounds void (%"class.gpu::InterfaceBase"*, i8*)*, void (%"class.gpu::InterfaceBase"*, i8*)** %280, i64 3
+  %282 = load void (%"class.gpu::InterfaceBase"*, i8*)*, void (%"class.gpu::InterfaceBase"*, i8*)** %281, align 8
+  call void %282(%"class.gpu::InterfaceBase"* %277, i8* %278) #9
+  br label %283
+
+283:                                              ; preds = %276, %249
+  %284 = bitcast %"class.gpu::raster::RasterInterface"* %247 to i32 (%"class.gpu::raster::RasterInterface"*, %"struct.gpu::Mailbox"*)***
+  %285 = load i32 (%"class.gpu::raster::RasterInterface"*, %"struct.gpu::Mailbox"*)**, i32 (%"class.gpu::raster::RasterInterface"*, %"struct.gpu::Mailbox"*)*** %284, align 8
+  %286 = getelementptr inbounds i32 (%"class.gpu::raster::RasterInterface"*, %"struct.gpu::Mailbox"*)*, i32 (%"class.gpu::raster::RasterInterface"*, %"struct.gpu::Mailbox"*)** %285, i64 16
+  %287 = load i32 (%"class.gpu::raster::RasterInterface"*, %"struct.gpu::Mailbox"*)*, i32 (%"class.gpu::raster::RasterInterface"*, %"struct.gpu::Mailbox"*)** %286, align 8
+  %288 = call i32 %287(%"class.gpu::raster::RasterInterface"* %247, %"struct.gpu::Mailbox"* dereferenceable(16) %2) #9
+  %289 = bitcast %"class.gpu::raster::RasterInterface"* %247 to void (%"class.gpu::raster::RasterInterface"*, i32, i32)***
+  %290 = load void (%"class.gpu::raster::RasterInterface"*, i32, i32)**, void (%"class.gpu::raster::RasterInterface"*, i32, i32)*** %289, align 8
+  %291 = getelementptr inbounds void (%"class.gpu::raster::RasterInterface"*, i32, i32)*, void (%"class.gpu::raster::RasterInterface"*, i32, i32)** %290, i64 20
+  %292 = load void (%"class.gpu::raster::RasterInterface"*, i32, i32)*, void (%"class.gpu::raster::RasterInterface"*, i32, i32)** %291, align 8
+  call void %292(%"class.gpu::raster::RasterInterface"* %247, i32 %288, i32 35575) #9
+  %293 = load %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)**, %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)*** %243, align 8
+  %294 = getelementptr inbounds %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)** %293, i64 13
+  %295 = load %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)** %294, align 8
+  %296 = call %"class.gpu::raster::RasterInterface"* %295(%"class.viz::RasterContextProvider"* %156) #9
+  %297 = bitcast %"class.gpu::raster::RasterInterface"* %296 to void (%"class.gpu::raster::RasterInterface"*)***
+  %298 = load void (%"class.gpu::raster::RasterInterface"*)**, void (%"class.gpu::raster::RasterInterface"*)*** %297, align 8
+  %299 = getelementptr inbounds void (%"class.gpu::raster::RasterInterface"*)*, void (%"class.gpu::raster::RasterInterface"*)** %298, i64 18
+  %300 = load void (%"class.gpu::raster::RasterInterface"*)*, void (%"class.gpu::raster::RasterInterface"*)** %299, align 8
+  call void %300(%"class.gpu::raster::RasterInterface"* %296) #9
+  %301 = bitcast %class.sk_sp.46* %24 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %301) #9
+  %302 = getelementptr inbounds %class.sk_sp.46, %class.sk_sp.46* %24, i64 0, i32 0
+  store %class.SkColorSpace* inttoptr (i64 -6148914691236517206 to %class.SkColorSpace*), %class.SkColorSpace** %302, align 8
+  call void @_ZNK3gfx10ColorSpace14ToSkColorSpaceEv(%class.sk_sp.46* nonnull sret %24, %"class.gfx::ColorSpace"* %8) #9
+  %303 = bitcast %"class.viz::ClientResourceProvider::ScopedSkSurface"* %25 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %303) #9
+  %304 = getelementptr inbounds %"class.viz::ClientResourceProvider::ScopedSkSurface", %"class.viz::ClientResourceProvider::ScopedSkSurface"* %25, i64 0, i32 0, i32 0
+  store %class.SkSurface* inttoptr (i64 -6148914691236517206 to %class.SkSurface*), %class.SkSurface** %304, align 8
+  %305 = bitcast %"class.viz::RasterContextProvider"* %156 to %class.GrDirectContext* (%"class.viz::RasterContextProvider"*)***
+  %306 = load %class.GrDirectContext* (%"class.viz::RasterContextProvider"*)**, %class.GrDirectContext* (%"class.viz::RasterContextProvider"*)*** %305, align 8
+  %307 = getelementptr inbounds %class.GrDirectContext* (%"class.viz::RasterContextProvider"*)*, %class.GrDirectContext* (%"class.viz::RasterContextProvider"*)** %306, i64 8
+  %308 = load %class.GrDirectContext* (%"class.viz::RasterContextProvider"*)*, %class.GrDirectContext* (%"class.viz::RasterContextProvider"*)** %307, align 8
+  %309 = call %class.GrDirectContext* %308(%"class.viz::RasterContextProvider"* %156) #9
+  %310 = getelementptr inbounds %class.sk_sp.46, %class.sk_sp.46* %26, i64 0, i32 0
+  %311 = load %class.SkColorSpace*, %class.SkColorSpace** %302, align 8
+  %312 = icmp eq %class.SkColorSpace* %311, null
+  br i1 %312, label %316, label %313
+
+313:                                              ; preds = %283
+  %314 = getelementptr inbounds %class.SkColorSpace, %class.SkColorSpace* %311, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %315 = atomicrmw add i32* %314, i32 1 monotonic
+  br label %316
+
+316:                                              ; preds = %313, %283
+  store %class.SkColorSpace* %311, %class.SkColorSpace** %310, align 8
+  %317 = getelementptr inbounds %"struct.cc::RasterSource::PlaybackSettings", %"struct.cc::RasterSource::PlaybackSettings"* %15, i64 0, i32 0
+  %318 = load i8, i8* %317, align 8, !range !2
+  %319 = icmp ne i8 %318, 0
+  call void @_ZN4skia20LegacyDisplayGlobals19ComputeSurfacePropsEb(%class.SkSurfaceProps* nonnull sret %27, i1 zeroext %319) #9
+  %320 = getelementptr inbounds %"struct.cc::RasterSource::PlaybackSettings", %"struct.cc::RasterSource::PlaybackSettings"* %15, i64 0, i32 1
+  %321 = load i32, i32* %320, align 4
+  call void @_ZN3viz22ClientResourceProvider15ScopedSkSurfaceC1EP15GrDirectContext5sk_spI12SkColorSpaceEjjRKN3gfx4SizeENS_14ResourceFormatE14SkSurfacePropsi(%"class.viz::ClientResourceProvider::ScopedSkSurface"* nonnull %25, %class.GrDirectContext* %309, %class.sk_sp.46* nonnull %26, i32 %288, i32 %3, %"class.gfx::Size"* dereferenceable(8) %6, i32 %7, %class.SkSurfaceProps* nonnull %27, i32 %321) #9
+  %322 = load %class.SkColorSpace*, %class.SkColorSpace** %310, align 8
+  %323 = icmp eq %class.SkColorSpace* %322, null
+  br i1 %323, label %330, label %324
+
+324:                                              ; preds = %316
+  %325 = getelementptr inbounds %class.SkColorSpace, %class.SkColorSpace* %322, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %326 = atomicrmw add i32* %325, i32 -1 acq_rel
+  %327 = icmp eq i32 %326, 1
+  br i1 %327, label %328, label %330
+
+328:                                              ; preds = %324
+  %329 = bitcast %class.SkColorSpace* %322 to i8*
+  call void @_ZdlPv(i8* %329) #10
+  br label %330
+
+330:                                              ; preds = %328, %324, %316
+  %331 = load %class.SkSurface*, %class.SkSurface** %304, align 8
+  %332 = icmp eq %class.SkSurface* %331, null
+  br i1 %332, label %387, label %333
+
+333:                                              ; preds = %330
+  %334 = call %class.SkCanvas* @_ZN9SkSurface9getCanvasEv(%class.SkSurface* nonnull %331) #9
+  %335 = getelementptr inbounds %"class.gfx::Rect", %"class.gfx::Rect"* %11, i64 0, i32 0, i32 0
+  %336 = load i32, i32* %335, align 4
+  %337 = load i32, i32* %129, align 4
+  %338 = icmp eq i32 %336, %337
+  br i1 %338, label %339, label %359
+
+339:                                              ; preds = %333
+  %340 = getelementptr inbounds %"class.gfx::Rect", %"class.gfx::Rect"* %11, i64 0, i32 0, i32 1
+  %341 = load i32, i32* %340, align 4
+  %342 = load i32, i32* %130, align 4
+  %343 = icmp eq i32 %341, %342
+  br i1 %343, label %344, label %359
+
+344:                                              ; preds = %339
+  %345 = getelementptr inbounds %"class.gfx::Rect", %"class.gfx::Rect"* %11, i64 0, i32 1, i32 0
+  %346 = load i32, i32* %345, align 4
+  %347 = load i32, i32* %131, align 4
+  %348 = icmp eq i32 %346, %347
+  br i1 %348, label %349, label %359
+
+349:                                              ; preds = %344
+  %350 = getelementptr inbounds %"class.gfx::Rect", %"class.gfx::Rect"* %11, i64 0, i32 1, i32 1
+  %351 = load i32, i32* %350, align 4
+  %352 = load i32, i32* %132, align 4
+  %353 = icmp eq i32 %351, %352
+  br i1 %353, label %354, label %359
+
+354:                                              ; preds = %349
+  %355 = bitcast %class.SkCanvas* %334 to void (%class.SkCanvas*)***
+  %356 = load void (%class.SkCanvas*)**, void (%class.SkCanvas*)*** %355, align 8
+  %357 = getelementptr inbounds void (%class.SkCanvas*)*, void (%class.SkCanvas*)** %356, i64 51
+  %358 = load void (%class.SkCanvas*)*, void (%class.SkCanvas*)** %357, align 8
+  call void %358(%class.SkCanvas* %334) #9
+  br label %359
+
+359:                                              ; preds = %354, %349, %344, %339, %333
+  %360 = bitcast i64* %28 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %360) #9
+  %361 = getelementptr inbounds %"class.gfx::AxisTransform2d", %"class.gfx::AxisTransform2d"* %14, i64 0, i32 0
+  %362 = call i64 @_ZNK2cc12RasterSource14GetContentSizeERKN3gfx9Vector2dFE(%"class.cc::RasterSource"* %10, %"class.gfx::Vector2dF"* dereferenceable(8) %361) #9
+  store i64 %362, i64* %28, align 8
+  call void @_ZNK2cc12RasterSource16PlaybackToCanvasEP8SkCanvasRKN3gfx4SizeERKNS3_4RectES9_RKNS3_15AxisTransform2dERKNS0_16PlaybackSettingsE(%"class.cc::RasterSource"* %10, %class.SkCanvas* %334, %"class.gfx::Size"* nonnull dereferenceable(8) %242, %"class.gfx::Rect"* dereferenceable(16) %11, %"class.gfx::Rect"* nonnull dereferenceable(16) %30, %"class.gfx::AxisTransform2d"* dereferenceable(16) %14, %"struct.cc::RasterSource::PlaybackSettings"* dereferenceable(16) %15) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %360) #9
+  call void @_ZN3viz22ClientResourceProvider15ScopedSkSurfaceD1Ev(%"class.viz::ClientResourceProvider::ScopedSkSurface"* nonnull %25) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %303) #9
+  %363 = load %class.SkColorSpace*, %class.SkColorSpace** %302, align 8
+  %364 = icmp eq %class.SkColorSpace* %363, null
+  br i1 %364, label %371, label %365
+
+365:                                              ; preds = %359
+  %366 = getelementptr inbounds %class.SkColorSpace, %class.SkColorSpace* %363, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %367 = atomicrmw add i32* %366, i32 -1 acq_rel
+  %368 = icmp eq i32 %367, 1
+  br i1 %368, label %369, label %371
+
+369:                                              ; preds = %365
+  %370 = bitcast %class.SkColorSpace* %363 to i8*
+  call void @_ZdlPv(i8* %370) #10
+  br label %371
+
+371:                                              ; preds = %369, %365, %359
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %301) #9
+  %372 = load %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)**, %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)*** %243, align 8
+  %373 = getelementptr inbounds %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)** %372, i64 13
+  %374 = load %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)** %373, align 8
+  %375 = call %"class.gpu::raster::RasterInterface"* %374(%"class.viz::RasterContextProvider"* %156) #9
+  %376 = bitcast %"class.gpu::raster::RasterInterface"* %375 to void (%"class.gpu::raster::RasterInterface"*)***
+  %377 = load void (%"class.gpu::raster::RasterInterface"*)**, void (%"class.gpu::raster::RasterInterface"*)*** %376, align 8
+  %378 = getelementptr inbounds void (%"class.gpu::raster::RasterInterface"*)*, void (%"class.gpu::raster::RasterInterface"*)** %377, i64 19
+  %379 = load void (%"class.gpu::raster::RasterInterface"*)*, void (%"class.gpu::raster::RasterInterface"*)** %378, align 8
+  call void %379(%"class.gpu::raster::RasterInterface"* %375) #9
+  %380 = bitcast %"class.gpu::raster::RasterInterface"* %247 to void (%"class.gpu::raster::RasterInterface"*, i32)***
+  %381 = load void (%"class.gpu::raster::RasterInterface"*, i32)**, void (%"class.gpu::raster::RasterInterface"*, i32)*** %380, align 8
+  %382 = getelementptr inbounds void (%"class.gpu::raster::RasterInterface"*, i32)*, void (%"class.gpu::raster::RasterInterface"*, i32)** %381, i64 21
+  %383 = load void (%"class.gpu::raster::RasterInterface"*, i32)*, void (%"class.gpu::raster::RasterInterface"*, i32)** %382, align 8
+  call void %383(%"class.gpu::raster::RasterInterface"* %247, i32 %288) #9
+  %384 = load void (%"class.gpu::raster::RasterInterface"*, i32)**, void (%"class.gpu::raster::RasterInterface"*, i32)*** %380, align 8
+  %385 = getelementptr inbounds void (%"class.gpu::raster::RasterInterface"*, i32)*, void (%"class.gpu::raster::RasterInterface"*, i32)** %384, i64 17
+  %386 = load void (%"class.gpu::raster::RasterInterface"*, i32)*, void (%"class.gpu::raster::RasterInterface"*, i32)** %385, align 8
+  call void %386(%"class.gpu::raster::RasterInterface"* %247, i32 %288) #9
+  br label %405
+
+387:                                              ; preds = %330
+  call void @_ZN3viz22ClientResourceProvider15ScopedSkSurfaceD1Ev(%"class.viz::ClientResourceProvider::ScopedSkSurface"* nonnull %25) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %303) #9
+  %388 = load %class.SkColorSpace*, %class.SkColorSpace** %302, align 8
+  %389 = icmp eq %class.SkColorSpace* %388, null
+  br i1 %389, label %396, label %390
+
+390:                                              ; preds = %387
+  %391 = getelementptr inbounds %class.SkColorSpace, %class.SkColorSpace* %388, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %392 = atomicrmw add i32* %391, i32 -1 acq_rel
+  %393 = icmp eq i32 %392, 1
+  br i1 %393, label %394, label %396
+
+394:                                              ; preds = %390
+  %395 = bitcast %class.SkColorSpace* %388 to i8*
+  call void @_ZdlPv(i8* %395) #10
+  br label %396
+
+396:                                              ; preds = %394, %390, %387
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %301) #9
+  %397 = load %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)**, %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)*** %243, align 8
+  %398 = getelementptr inbounds %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)** %397, i64 13
+  %399 = load %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::raster::RasterInterface"* (%"class.viz::RasterContextProvider"*)** %398, align 8
+  %400 = call %"class.gpu::raster::RasterInterface"* %399(%"class.viz::RasterContextProvider"* %156) #9
+  %401 = bitcast %"class.gpu::raster::RasterInterface"* %400 to void (%"class.gpu::raster::RasterInterface"*)***
+  %402 = load void (%"class.gpu::raster::RasterInterface"*)**, void (%"class.gpu::raster::RasterInterface"*)*** %401, align 8
+  %403 = getelementptr inbounds void (%"class.gpu::raster::RasterInterface"*)*, void (%"class.gpu::raster::RasterInterface"*)** %402, i64 19
+  %404 = load void (%"class.gpu::raster::RasterInterface"*)*, void (%"class.gpu::raster::RasterInterface"*)** %403, align 8
+  call void %404(%"class.gpu::raster::RasterInterface"* %400) #9
+  br label %405
+
+405:                                              ; preds = %371, %396
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %240)
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %241)
+  br label %406
+
+406:                                              ; preds = %405, %200
+  br i1 %127, label %407, label %419
+
+407:                                              ; preds = %406
+  %408 = load i8, i8* %152, align 8, !range !2
+  %409 = icmp eq i8 %408, 0
+  br i1 %409, label %410, label %411, !prof !7
+
+410:                                              ; preds = %407
+  call void @llvm.trap() #9
+  unreachable
+
+411:                                              ; preds = %407
+  %412 = getelementptr inbounds %"class.absl::optional.155", %"class.absl::optional.155"* %31, i64 0, i32 0, i32 0, i32 0, i32 1, i32 0
+  %413 = call i64 @_ZNK4base12ElapsedTimer7ElapsedEv(%"class.base::ElapsedTimer"* %412) #9
+  %414 = getelementptr inbounds %"struct.cc::RasterQuery", %"struct.cc::RasterQuery"* %18, i64 0, i32 2, i32 0
+  store i64 %413, i64* %414, align 8
+  %415 = bitcast %"class.gpu::raster::RasterInterface"* %50 to void (%"class.gpu::raster::RasterInterface"*, i32)***
+  %416 = load void (%"class.gpu::raster::RasterInterface"*, i32)**, void (%"class.gpu::raster::RasterInterface"*, i32)*** %415, align 8
+  %417 = getelementptr inbounds void (%"class.gpu::raster::RasterInterface"*, i32)*, void (%"class.gpu::raster::RasterInterface"*, i32)** %416, i64 33
+  %418 = load void (%"class.gpu::raster::RasterInterface"*, i32)*, void (%"class.gpu::raster::RasterInterface"*, i32)** %417, align 8
+  call void %418(%"class.gpu::raster::RasterInterface"* %50, i32 24580) #9
+  br label %419
+
+419:                                              ; preds = %411, %406
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* %152) #9
+  call void @_ZN3viz22ClientResourceProvider23GenerateSyncTokenHelperEPN3gpu6raster15RasterInterfaceE(%"struct.gpu::SyncToken"* sret %0, %"class.gpu::raster::RasterInterface"* %50) #9
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %128) #9
+  call void @_ZN3viz21RasterContextProvider23ScopedRasterContextLockD1Ev(%"class.viz::RasterContextProvider::ScopedRasterContextLock"* nonnull %29) #9
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %32) #9
+  ret void
+}
+
+declare void @_ZN2cc16RasterQueryQueue6AppendENS_11RasterQueryE(%"class.cc::RasterQueryQueue"*, %"struct.cc::RasterQuery"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN2cc11RasterQueryD1Ev(%"struct.cc::RasterQuery"*) unnamed_addr #3
+
+declare void @_ZN3viz21RasterContextProvider23ScopedRasterContextLockC1EPS0_PKc(%"class.viz::RasterContextProvider::ScopedRasterContextLock"*, %"class.viz::RasterContextProvider"*, i8*) unnamed_addr #1
+
+declare void @_ZN3gfx4Rect9IntersectERKS0_(%"class.gfx::Rect"*, %"class.gfx::Rect"* dereferenceable(16)) local_unnamed_addr #1
+
+declare i64 @_ZNK4base12ElapsedTimer7ElapsedEv(%"class.base::ElapsedTimer"*) local_unnamed_addr #1
+
+declare void @_ZN3viz22ClientResourceProvider23GenerateSyncTokenHelperEPN3gpu6raster15RasterInterfaceE(%"struct.gpu::SyncToken"* sret, %"class.gpu::raster::RasterInterface"*) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN3viz21RasterContextProvider23ScopedRasterContextLockD1Ev(%"class.viz::RasterContextProvider::ScopedRasterContextLock"*) unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN2cc20RasterBufferProvider16SetShutdownEventEPN4base13WaitableEventE(%"class.cc::RasterBufferProvider"*, %"class.base::WaitableEvent"*) unnamed_addr #0 comdat align 2 {
+  ret void
+}
+
+declare i32 @_ZN4base14PlatformThread9CurrentIdEv() local_unnamed_addr #1
+
+declare i64 @_ZN4base6subtle28TimeTicksNowIgnoringOverrideEv() local_unnamed_addr #1
+
+declare i64 @_ZN20trace_event_internal37AddTraceEventWithThreadIdAndTimestampEcPKhPKcS3_yyiRKN4base9TimeTicksEPNS4_11trace_event14TraceArgumentsEj(i8 signext, i8*, i8*, i8*, i64, i64, i32, %"class.base::TimeTicks"* dereferenceable(8), %"class.base::trace_event::TraceArguments"*, i32) local_unnamed_addr #1
+
+declare void @_ZN20trace_event_internal24UpdateTraceEventDurationEPKhPKcN4base11trace_event16TraceEventHandleE(i8*, i8*, i64) local_unnamed_addr #1
+
+declare zeroext i1 @_ZNK3gpu7Mailbox6IsZeroEv(%"struct.gpu::Mailbox"*) local_unnamed_addr #1
+
+declare i64 @_ZNK2cc12RasterSource14GetContentSizeERKN3gfx9Vector2dFE(%"class.cc::RasterSource"*, %"class.gfx::Vector2dF"* dereferenceable(8)) local_unnamed_addr #1
+
+declare void @_ZN3gfx9Vector2dF5ScaleEff(%"class.gfx::Vector2dF"*, float, float) local_unnamed_addr #1
+
+declare void @_ZNK3gfx10ColorSpace14ToSkColorSpaceEv(%class.sk_sp.46* sret, %"class.gfx::ColorSpace"*) local_unnamed_addr #1
+
+declare void @_ZN4skia20LegacyDisplayGlobals19ComputeSurfacePropsEb(%class.SkSurfaceProps* sret, i1 zeroext) local_unnamed_addr #1
+
+declare void @_ZN3viz22ClientResourceProvider15ScopedSkSurfaceC1EP15GrDirectContext5sk_spI12SkColorSpaceEjjRKN3gfx4SizeENS_14ResourceFormatE14SkSurfacePropsi(%"class.viz::ClientResourceProvider::ScopedSkSurface"*, %class.GrDirectContext*, %class.sk_sp.46*, i32, i32, %"class.gfx::Size"* dereferenceable(8), i32, %class.SkSurfaceProps*, i32) unnamed_addr #1
+
+declare %class.SkCanvas* @_ZN9SkSurface9getCanvasEv(%class.SkSurface*) local_unnamed_addr #1
+
+declare void @_ZNK2cc12RasterSource16PlaybackToCanvasEP8SkCanvasRKN3gfx4SizeERKNS3_4RectES9_RKNS3_15AxisTransform2dERKNS0_16PlaybackSettingsE(%"class.cc::RasterSource"*, %class.SkCanvas*, %"class.gfx::Size"* dereferenceable(8), %"class.gfx::Rect"* dereferenceable(16), %"class.gfx::Rect"* dereferenceable(16), %"class.gfx::AxisTransform2d"* dereferenceable(16), %"struct.cc::RasterSource::PlaybackSettings"* dereferenceable(16)) local_unnamed_addr #1
+
+; Function Attrs: nounwind
+declare void @_ZN3viz22ClientResourceProvider15ScopedSkSurfaceD1Ev(%"class.viz::ClientResourceProvider::ScopedSkSurface"*) unnamed_addr #3
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #7
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN2cc23GpuRasterBufferProvider16GpuRasterBackingD2Ev(%"class.cc::GpuRasterBufferProvider::GpuRasterBacking"*) unnamed_addr #0 comdat align 2 {
+  %2 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_ZTVN2cc23GpuRasterBufferProvider16GpuRasterBackingE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %0, i64 0, i32 0, i32 1
+  %4 = tail call zeroext i1 @_ZNK3gpu7Mailbox6IsZeroEv(%"struct.gpu::Mailbox"* %3) #9
+  br i1 %4, label %32, label %5
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %0, i64 0, i32 1
+  %7 = load %"class.viz::RasterContextProvider"*, %"class.viz::RasterContextProvider"** %6, align 8
+  %8 = bitcast %"class.viz::RasterContextProvider"* %7 to %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)***
+  %9 = load %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)**, %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)*** %8, align 8
+  %10 = getelementptr inbounds %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)** %9, i64 9
+  %11 = load %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)** %10, align 8
+  %12 = tail call %"class.gpu::SharedImageInterface"* %11(%"class.viz::RasterContextProvider"* %7) #9
+  %13 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %0, i64 0, i32 0, i32 6, i32 1
+  %14 = load i8, i8* %13, align 1
+  %15 = icmp eq i8 %14, -1
+  br i1 %15, label %22, label %16
+
+16:                                               ; preds = %5
+  %17 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %0, i64 0, i32 0, i32 6
+  %18 = bitcast %"class.gpu::SharedImageInterface"* %12 to void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)***
+  %19 = load void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)**, void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)*** %18, align 8
+  %20 = getelementptr inbounds void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)*, void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)** %19, i64 8
+  %21 = load void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)*, void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)** %20, align 8
+  tail call void %21(%"class.gpu::SharedImageInterface"* %12, %"struct.gpu::SyncToken"* dereferenceable(24) %17, %"struct.gpu::Mailbox"* dereferenceable(16) %3) #9
+  br label %32
+
+22:                                               ; preds = %5
+  %23 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %0, i64 0, i32 0, i32 2, i32 1
+  %24 = load i8, i8* %23, align 1
+  %25 = icmp eq i8 %24, -1
+  br i1 %25, label %32, label %26
+
+26:                                               ; preds = %22
+  %27 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %0, i64 0, i32 0, i32 2
+  %28 = bitcast %"class.gpu::SharedImageInterface"* %12 to void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)***
+  %29 = load void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)**, void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)*** %28, align 8
+  %30 = getelementptr inbounds void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)*, void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)** %29, i64 8
+  %31 = load void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)*, void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)** %30, align 8
+  tail call void %31(%"class.gpu::SharedImageInterface"* %12, %"struct.gpu::SyncToken"* dereferenceable(24) %27, %"struct.gpu::Mailbox"* dereferenceable(16) %3) #9
+  br label %32
+
+32:                                               ; preds = %22, %16, %26, %1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN2cc23GpuRasterBufferProvider16GpuRasterBackingD0Ev(%"class.cc::GpuRasterBufferProvider::GpuRasterBacking"*) unnamed_addr #0 comdat align 2 {
+  %2 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_ZTVN2cc23GpuRasterBufferProvider16GpuRasterBackingE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %0, i64 0, i32 0, i32 1
+  %4 = tail call zeroext i1 @_ZNK3gpu7Mailbox6IsZeroEv(%"struct.gpu::Mailbox"* %3) #9
+  br i1 %4, label %32, label %5
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %0, i64 0, i32 1
+  %7 = load %"class.viz::RasterContextProvider"*, %"class.viz::RasterContextProvider"** %6, align 8
+  %8 = bitcast %"class.viz::RasterContextProvider"* %7 to %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)***
+  %9 = load %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)**, %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)*** %8, align 8
+  %10 = getelementptr inbounds %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)** %9, i64 9
+  %11 = load %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)*, %"class.gpu::SharedImageInterface"* (%"class.viz::RasterContextProvider"*)** %10, align 8
+  %12 = tail call %"class.gpu::SharedImageInterface"* %11(%"class.viz::RasterContextProvider"* %7) #9
+  %13 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %0, i64 0, i32 0, i32 6, i32 1
+  %14 = load i8, i8* %13, align 1
+  %15 = icmp eq i8 %14, -1
+  br i1 %15, label %22, label %16
+
+16:                                               ; preds = %5
+  %17 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %0, i64 0, i32 0, i32 6
+  %18 = bitcast %"class.gpu::SharedImageInterface"* %12 to void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)***
+  %19 = load void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)**, void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)*** %18, align 8
+  %20 = getelementptr inbounds void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)*, void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)** %19, i64 8
+  %21 = load void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)*, void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)** %20, align 8
+  tail call void %21(%"class.gpu::SharedImageInterface"* %12, %"struct.gpu::SyncToken"* dereferenceable(24) %17, %"struct.gpu::Mailbox"* dereferenceable(16) %3) #9
+  br label %32
+
+22:                                               ; preds = %5
+  %23 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %0, i64 0, i32 0, i32 2, i32 1
+  %24 = load i8, i8* %23, align 1
+  %25 = icmp eq i8 %24, -1
+  br i1 %25, label %32, label %26
+
+26:                                               ; preds = %22
+  %27 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %0, i64 0, i32 0, i32 2
+  %28 = bitcast %"class.gpu::SharedImageInterface"* %12 to void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)***
+  %29 = load void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)**, void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)*** %28, align 8
+  %30 = getelementptr inbounds void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)*, void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)** %29, i64 8
+  %31 = load void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)*, void (%"class.gpu::SharedImageInterface"*, %"struct.gpu::SyncToken"*, %"struct.gpu::Mailbox"*)** %30, align 8
+  tail call void %31(%"class.gpu::SharedImageInterface"* %12, %"struct.gpu::SyncToken"* dereferenceable(24) %27, %"struct.gpu::Mailbox"* dereferenceable(16) %3) #9
+  br label %32
+
+32:                                               ; preds = %1, %16, %22, %26
+  %33 = bitcast %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %0 to i8*
+  tail call void @_ZdlPv(i8* %33) #10
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZNK2cc23GpuRasterBufferProvider16GpuRasterBacking12OnMemoryDumpEPN4base11trace_event17ProcessMemoryDumpERKNS3_23MemoryAllocatorDumpGuidEmi(%"class.cc::GpuRasterBufferProvider::GpuRasterBacking"*, %"class.base::trace_event::ProcessMemoryDump"*, %"class.base::trace_event::MemoryAllocatorDumpGuid"* dereferenceable(8), i64, i32) unnamed_addr #0 comdat align 2 {
+  %6 = alloca %"class.base::trace_event::MemoryAllocatorDumpGuid", align 8
+  %7 = getelementptr inbounds %"class.cc::GpuRasterBufferProvider::GpuRasterBacking", %"class.cc::GpuRasterBufferProvider::GpuRasterBacking"* %0, i64 0, i32 0, i32 1
+  %8 = tail call zeroext i1 @_ZNK3gpu7Mailbox6IsZeroEv(%"struct.gpu::Mailbox"* %7) #9
+  br i1 %8, label %14, label %9
+
+9:                                                ; preds = %5
+  %10 = bitcast %"class.base::trace_event::MemoryAllocatorDumpGuid"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %10) #9
+  %11 = getelementptr inbounds %"class.base::trace_event::MemoryAllocatorDumpGuid", %"class.base::trace_event::MemoryAllocatorDumpGuid"* %6, i64 0, i32 0
+  %12 = tail call i64 @_ZN3gpu28GetSharedImageGUIDForTracingERKNS_7MailboxE(%"struct.gpu::Mailbox"* dereferenceable(16) %7) #9
+  store i64 %12, i64* %11, align 8
+  %13 = call %"class.base::trace_event::MemoryAllocatorDump"* @_ZN4base11trace_event17ProcessMemoryDump31CreateSharedGlobalAllocatorDumpERKNS0_23MemoryAllocatorDumpGuidE(%"class.base::trace_event::ProcessMemoryDump"* %1, %"class.base::trace_event::MemoryAllocatorDumpGuid"* nonnull dereferenceable(8) %6) #9
+  call void @_ZN4base11trace_event17ProcessMemoryDump16AddOwnershipEdgeERKNS0_23MemoryAllocatorDumpGuidES4_i(%"class.base::trace_event::ProcessMemoryDump"* %1, %"class.base::trace_event::MemoryAllocatorDumpGuid"* dereferenceable(8) %2, %"class.base::trace_event::MemoryAllocatorDumpGuid"* nonnull dereferenceable(8) %6, i32 %4) #9
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10) #9
+  br label %14
+
+14:                                               ; preds = %5, %9
+  ret void
+}
+
+declare void @_ZN3gpu7MailboxC1Ev(%"struct.gpu::Mailbox"*) unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN2cc12ResourcePool10GpuBackingD2Ev(%"class.cc::ResourcePool::GpuBacking"*) unnamed_addr #0 comdat align 2 {
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN2cc12ResourcePool10GpuBackingD0Ev(%"class.cc::ResourcePool::GpuBacking"*) unnamed_addr #0 comdat align 2 {
+  tail call void @llvm.trap() #11
+  unreachable
+}
+
+declare void @__cxa_pure_virtual() unnamed_addr
+
+; Function Attrs: cold noreturn nounwind
+declare void @llvm.trap() #8
+
+declare i64 @_ZN3gpu28GetSharedImageGUIDForTracingERKNS_7MailboxE(%"struct.gpu::Mailbox"* dereferenceable(16)) local_unnamed_addr #1
+
+declare %"class.base::trace_event::MemoryAllocatorDump"* @_ZN4base11trace_event17ProcessMemoryDump31CreateSharedGlobalAllocatorDumpERKNS0_23MemoryAllocatorDumpGuidE(%"class.base::trace_event::ProcessMemoryDump"*, %"class.base::trace_event::MemoryAllocatorDumpGuid"* dereferenceable(8)) local_unnamed_addr #1
+
+declare void @_ZN4base11trace_event17ProcessMemoryDump16AddOwnershipEdgeERKNS0_23MemoryAllocatorDumpGuidES4_i(%"class.base::trace_event::ProcessMemoryDump"*, %"class.base::trace_event::MemoryAllocatorDumpGuid"* dereferenceable(8), %"class.base::trace_event::MemoryAllocatorDumpGuid"* dereferenceable(8), i32) local_unnamed_addr #1
+
+declare void @_ZN4base12ElapsedTimerC1Ev(%"class.base::ElapsedTimer"*) unnamed_addr #1
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { norecurse nounwind readnone ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { norecurse nounwind readonly ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { cold noreturn nounwind }
+attributes #9 = { nounwind }
+attributes #10 = { builtin nounwind }
+attributes #11 = { noreturn nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{i8 0, i8 2}
+!3 = !{!"branch_weights", i32 2000, i32 1}
+!4 = !{!5}
+!5 = distinct !{!5, !6, !"_ZN2cc23GpuRasterBufferProvider22PlaybackOnWorkerThreadEPN3gpu7MailboxEjbRKNS1_9SyncTokenERKN3gfx4SizeEN3viz14ResourceFormatERKNS7_10ColorSpaceEbPKNS_12RasterSourceERKNS7_4RectESL_mRKNS7_15AxisTransform2dERKNSG_16PlaybackSettingsERK4GURLN4base9TimeTicksEbbb: argument 0"}
+!6 = distinct !{!6, !"_ZN2cc23GpuRasterBufferProvider22PlaybackOnWorkerThreadEPN3gpu7MailboxEjbRKNS1_9SyncTokenERKN3gfx4SizeEN3viz14ResourceFormatERKNS7_10ColorSpaceEbPKNS_12RasterSourceERKNS7_4RectESL_mRKNS7_15AxisTransform2dERKNSG_16PlaybackSettingsERK4GURLN4base9TimeTicksEbbb"}
+!7 = !{!"branch_weights", i32 1, i32 2000}

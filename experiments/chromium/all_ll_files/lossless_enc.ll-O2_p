@@ -1,0 +1,3161 @@
+; ModuleID = '../../third_party/libwebp/src/dsp/lossless_enc.c'
+source_filename = "../../third_party/libwebp/src/dsp/lossless_enc.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%struct.VP8LPrefixCode = type { i8, i8 }
+%struct.VP8LMultipliers = type { i8, i8, i8 }
+%struct.VP8LBitEntropy = type { double, i32, i32, i32, i32 }
+%struct.VP8LStreaks = type { [2 x i32], [2 x [2 x i32]] }
+%struct.VP8LHistogram = type { i32*, [256 x i32], [256 x i32], [256 x i32], [40 x i32], i32, i32, double, double, double, double, [5 x i8] }
+
+@kLog2Table = hidden local_unnamed_addr constant [256 x float] [float 0.000000e+00, float 0.000000e+00, float 1.000000e+00, float 0x3FF95C01A0000000, float 2.000000e+00, float 0x4002934F00000000, float 0x4004AE00E0000000, float 0x4006757680000000, float 3.000000e+00, float 0x40095C01A0000000, float 0x400A934F00000000, float 0x400BACEA80000000, float 0x400CAE00E0000000, float 0x400D9A8020000000, float 0x400E757680000000, float 0x400F414FE0000000, float 4.000000e+00, float 0x4010598FE0000000, float 0x4010AE00E0000000, float 0x4010FDE0C0000000, float 0x401149A780000000, float 0x401191BBA0000000, float 0x4011D67540000000, float 0x40121820A0000000, float 0x4012570060000000, float 0x4012934F00000000, float 0x4012CD4020000000, float 0x4013050140000000, float 0x40133ABB40000000, float 0x40136E92A0000000, float 0x4013A0A7E0000000, float 0x4013D118E0000000, float 5.000000e+00, float 0x40142D75A0000000, float 0x4014598FE0000000, float 0x40148462C0000000, float 0x4014AE00E0000000, float 0x4014D67B00000000, float 0x4014FDE0C0000000, float 0x4015244080000000, float 0x401549A780000000, float 0x40156E2220000000, float 0x401591BBA0000000, float 0x4015B47EC0000000, float 0x4015D67540000000, float 0x4015F7A860000000, float 0x40161820A0000000, float 0x401637E620000000, float 0x4016570060000000, float 0x4016757680000000, float 0x4016934F00000000, float 0x4016B09040000000, float 0x4016CD4020000000, float 0x4016E96400000000, float 0x4017050140000000, float 0x4017201CC0000000, float 0x40173ABB40000000, float 0x401754E120000000, float 0x40176E92A0000000, float 0x401787D3A0000000, float 0x4017A0A7E0000000, float 0x4017B91340000000, float 0x4017D118E0000000, float 0x4017E8BC20000000, float 6.000000e+00, float 0x401816E7A0000000, float 0x40182D75A0000000, float 0x401843ACE0000000, float 0x4018598FE0000000, float 0x40186F2100000000, float 0x40188462C0000000, float 0x4018995740000000, float 0x4018AE00E0000000, float 0x4018C26160000000, float 0x4018D67B00000000, float 0x4018EA4F80000000, float 0x4018FDE0C0000000, float 0x4019113080000000, float 0x4019244080000000, float 0x4019371240000000, float 0x401949A780000000, float 0x40195C01A0000000, float 0x40196E2220000000, float 0x4019800A60000000, float 0x401991BBA0000000, float 0x4019A33760000000, float 0x4019B47EC0000000, float 0x4019C59300000000, float 0x4019D67540000000, float 0x4019E726A0000000, float 0x4019F7A860000000, float 0x401A07FB60000000, float 0x401A1820A0000000, float 0x401A281940000000, float 0x401A37E620000000, float 0x401A478840000000, float 0x401A570060000000, float 0x401A664F80000000, float 0x401A757680000000, float 0x401A847600000000, float 0x401A934F00000000, float 0x401AA20240000000, float 0x401AB09040000000, float 0x401ABEFA00000000, float 0x401ACD4020000000, float 0x401ADB6320000000, float 0x401AE96400000000, float 0x401AF74320000000, float 0x401B050140000000, float 0x401B129EE0000000, float 0x401B201CC0000000, float 0x401B2D7B60000000, float 0x401B3ABB40000000, float 0x401B47DD00000000, float 0x401B54E120000000, float 0x401B61C820000000, float 0x401B6E92A0000000, float 0x401B7B40E0000000, float 0x401B87D3A0000000, float 0x401B944B20000000, float 0x401BA0A7E0000000, float 0x401BACEA80000000, float 0x401BB91340000000, float 0x401BC52280000000, float 0x401BD118E0000000, float 0x401BDCF680000000, float 0x401BE8BC20000000, float 0x401BF469C0000000, float 7.000000e+00, float 0x401C0B7F20000000, float 0x401C16E7A0000000, float 0x401C2239A0000000, float 0x401C2D75A0000000, float 0x401C389C00000000, float 0x401C43ACE0000000, float 0x401C4EA8C0000000, float 0x401C598FE0000000, float 0x401C646280000000, float 0x401C6F2100000000, float 0x401C79CBC0000000, float 0x401C8462C0000000, float 0x401C8EE680000000, float 0x401C995740000000, float 0x401CA3B540000000, float 0x401CAE00E0000000, float 0x401CB83A20000000, float 0x401CC26160000000, float 0x401CCC76E0000000, float 0x401CD67B00000000, float 0x401CE06DC0000000, float 0x401CEA4F80000000, float 0x401CF42060000000, float 0x401CFDE0C0000000, float 0x401D0790A0000000, float 0x401D113080000000, float 0x401D1AC060000000, float 0x401D244080000000, float 0x401D2DB100000000, float 0x401D371240000000, float 0x401D406460000000, float 0x401D49A780000000, float 0x401D52DBE0000000, float 0x401D5C01A0000000, float 0x401D651900000000, float 0x401D6E2220000000, float 0x401D771D20000000, float 0x401D800A60000000, float 0x401D88E9C0000000, float 0x401D91BBA0000000, float 0x401D9A8020000000, float 0x401DA33760000000, float 0x401DABE180000000, float 0x401DB47EC0000000, float 0x401DBD0F20000000, float 0x401DC59300000000, float 0x401DCE0A40000000, float 0x401DD67540000000, float 0x401DDED400000000, float 0x401DE726A0000000, float 0x401DEF6D60000000, float 0x401DF7A860000000, float 0x401DFFD7A0000000, float 0x401E07FB60000000, float 0x401E1013A0000000, float 0x401E1820A0000000, float 0x401E202280000000, float 0x401E281940000000, float 0x401E300520000000, float 0x401E37E620000000, float 0x401E3FBC80000000, float 0x401E478840000000, float 0x401E4F4980000000, float 0x401E570060000000, float 0x401E5EAD00000000, float 0x401E664F80000000, float 0x401E6DE800000000, float 0x401E757680000000, float 0x401E7CFB20000000, float 0x401E847600000000, float 0x401E8BE760000000, float 0x401E934F00000000, float 0x401E9AAD40000000, float 0x401EA20240000000, float 0x401EA94DE0000000, float 0x401EB09040000000, float 0x401EB7C9A0000000, float 0x401EBEFA00000000, float 0x401EC62180000000, float 0x401ECD4020000000, float 0x401ED45600000000, float 0x401EDB6320000000, float 0x401EE267E0000000, float 0x401EE96400000000, float 0x401EF057C0000000, float 0x401EF74320000000, float 0x401EFE2640000000, float 0x401F050140000000, float 0x401F0BD420000000, float 0x401F129EE0000000, float 0x401F1961C0000000, float 0x401F201CC0000000, float 0x401F26CFE0000000, float 0x401F2D7B60000000, float 0x401F341F20000000, float 0x401F3ABB40000000, float 0x401F414FE0000000, float 0x401F47DD00000000, float 0x401F4E62C0000000, float 0x401F54E120000000, float 0x401F5B5840000000, float 0x401F61C820000000, float 0x401F6830E0000000, float 0x401F6E92A0000000, float 0x401F74ED40000000, float 0x401F7B40E0000000, float 0x401F818DA0000000, float 0x401F87D3A0000000, float 0x401F8E12C0000000, float 0x401F944B20000000, float 0x401F9A7CE0000000, float 0x401FA0A7E0000000, float 0x401FA6CC80000000, float 0x401FACEA80000000, float 0x401FB30200000000, float 0x401FB91340000000, float 0x401FBF1E00000000, float 0x401FC52280000000, float 0x401FCB20C0000000, float 0x401FD118E0000000, float 0x401FD70AC0000000, float 0x401FDCF680000000, float 0x401FE2DC60000000, float 0x401FE8BC20000000, float 0x401FEE95E0000000, float 0x401FF469C0000000, float 0x401FFA37C0000000], align 16
+@kSLog2Table = hidden local_unnamed_addr constant [256 x float] [float 0.000000e+00, float 0.000000e+00, float 2.000000e+00, float 0x4013050140000000, float 8.000000e+00, float 0x40273822C0000000, float 0x402F050140000000, float 0x4033A6C7A0000000, float 2.400000e+01, float 0x403C8781E0000000, float 0x40409C1160000000, float 0x404306E140000000, float 0x40458280A0000000, float 0x40480D8820000000, float 0x404AA6C7A0000000, float 0x404D4D3AE0000000, float 6.400000e+01, float 0x40515F28E0000000, float 0x4052C3C0E0000000, float 0x40542D7AE0000000, float 0x40559C1160000000, float 0x40570F4640000000, float 0x405886E140000000, float 0x405A02AEE0000000, float 0x405B8280A0000000, float 0x405D062B80000000, float 0x405E8D8820000000, float 0x40600C3900000000, float 0x4060D363E0000000, float 0x40619C34E0000000, float 0x4062669D60000000, float 0x4063329000000000, float 1.600000e+02, float 0x4064CEE160000000, float 0x40659F28E0000000, float 0x406670CC00000000, float 0x406743C0E0000000, float 0x406817FE20000000, float 0x4068ED7AE0000000, float 0x4069C42EA0000000, float 0x406A9C1160000000, float 0x406B751BC0000000, float 0x406C4F4640000000, float 0x406D2A8A60000000, float 0x406E06E140000000, float 0x406EE444C0000000, float 0x406FC2AEE0000000, float 0x4070510D00000000, float 0x4070C14040000000, float 0x407131EEC0000000, float 0x4071A315C0000000, float 0x407214B300000000, float 0x407286C400000000, float 0x4072F946C0000000, float 0x40736C3900000000, float 0x4073DF98C0000000, float 0x40745363E0000000, float 0x4074C79880000000, float 0x40753C34E0000000, float 0x4075B13700000000, float 0x4076269D60000000, float 0x40769C6640000000, float 0x4077129000000000, float 0x4077891920000000, float 3.840000e+02, float 0x4078774340000000, float 0x4078EEE160000000, float 0x407966D900000000, float 0x4079DF28E0000000, float 0x407A57CFA0000000, float 0x407AD0CC00000000, float 0x407B4A1CE0000000, float 0x407BC3C0E0000000, float 0x407C3DB700000000, float 0x407CB7FE20000000, float 0x407D329520000000, float 0x407DAD7AE0000000, float 0x407E28AE60000000, float 0x407EA42EA0000000, float 0x407F1FFAA0000000, float 0x407F9C1160000000, float 0x40800C3900000000, float 0x40804A8DE0000000, float 0x40808906C0000000, float 0x4080C7A320000000, float 0x40810662C0000000, float 0x4081454520000000, float 0x40818449E0000000, float 0x4081C370A0000000, float 0x408202B8E0000000, float 0x4082422260000000, float 0x408281ACA0000000, float 0x4082C15780000000, float 0x4083012260000000, float 0x4083410D00000000, float 0x4083811720000000, float 0x4083C14040000000, float 0x4084018840000000, float 0x408441EEC0000000, float 0x4084827360000000, float 0x4084C315C0000000, float 0x408503D5C0000000, float 0x408544B300000000, float 0x408585AD20000000, float 0x4085C6C400000000, float 0x408607F760000000, float 0x40864946C0000000, float 0x40868AB220000000, float 0x4086CC3900000000, float 0x40870DDB60000000, float 0x40874F98C0000000, float 0x4087917100000000, float 0x4087D363E0000000, float 0x4088157120000000, float 0x4088579880000000, float 0x408899D9E0000000, float 0x4088DC34E0000000, float 0x40891EA960000000, float 0x4089613700000000, float 0x4089A3DDE0000000, float 0x4089E69D60000000, float 0x408A2975A0000000, float 0x408A6C6640000000, float 0x408AAF6F20000000, float 0x408AF29000000000, float 0x408B35C8C0000000, float 0x408B791920000000, float 0x408BBC80E0000000, float 8.960000e+02, float 0x408C439620000000, float 0x408C874340000000, float 0x408CCB0700000000, float 0x408D0EE160000000, float 0x408D52D200000000, float 0x408D96D900000000, float 0x408DDAF600000000, float 0x408E1F28E0000000, float 0x408E637180000000, float 0x408EA7CFA0000000, float 0x408EEC4340000000, float 0x408F30CC00000000, float 0x408F756A00000000, float 0x408FBA1CE0000000, float 0x408FFEE480000000, float 0x409021E080000000, float 0x40904458E0000000, float 0x409066DB80000000, float 0x4090896840000000, float 0x4090ABFF20000000, float 0x4090CE9FE0000000, float 0x4090F14A80000000, float 0x409113FF20000000, float 0x409136BD60000000, float 0x4091598580000000, float 0x40917C5720000000, float 0x40919F3280000000, float 0x4091C21740000000, float 0x4091E505A0000000, float 0x409207FD40000000, float 0x40922AFE60000000, float 0x40924E08C0000000, float 0x4092711C40000000, float 0x4092943900000000, float 0x4092B75EE0000000, float 0x4092DA8DE0000000, float 0x4092FDC5C0000000, float 0x40932106C0000000, float 0x4093445080000000, float 0x409367A320000000, float 0x40938AFEA0000000, float 0x4093AE62C0000000, float 0x4093D1CFA0000000, float 0x4093F54520000000, float 0x409418C340000000, float 0x40943C49E0000000, float 0x40945FD900000000, float 0x40948370A0000000, float 0x4094A710A0000000, float 0x4094CAB8E0000000, float 0x4094EE6980000000, float 0x4095122260000000, float 0x409535E360000000, float 0x409559ACA0000000, float 0x40957D7E00000000, float 0x4095A15780000000, float 0x4095C538E0000000, float 0x4095E92260000000, float 0x40960D13C0000000, float 0x4096310D00000000, float 0x4096550E20000000, float 0x4096791720000000, float 0x40969D27E0000000, float 0x4096C14040000000, float 0x4096E56080000000, float 0x4097098840000000, float 0x40972DB7C0000000, float 0x409751EEC0000000, float 0x4097762D40000000, float 0x40979A7360000000, float 0x4097BEC0E0000000, float 0x4097E315C0000000, float 0x4098077220000000, float 0x40982BD5C0000000, float 0x40985040C0000000, float 0x409874B300000000, float 0x4098992C80000000, float 0x4098BDAD20000000, float 0x4098E23500000000, float 0x409906C400000000, float 0x40992B5A20000000, float 0x40994FF760000000, float 0x4099749BA0000000, float 0x40999946C0000000, float 0x4099BDF900000000, float 0x4099E2B220000000, float 0x409A077220000000, float 0x409A2C3900000000, float 0x409A5106C0000000, float 0x409A75DB60000000, float 0x409A9AB6A0000000, float 0x409ABF98C0000000, float 0x409AE48180000000, float 0x409B097100000000, float 0x409B2E6720000000, float 0x409B5363E0000000, float 0x409B786720000000, float 0x409B9D7120000000, float 0x409BC28180000000, float 0x409BE79880000000, float 0x409C0CB5E0000000, float 0x409C31D9E0000000, float 0x409C570420000000, float 0x409C7C34E0000000, float 0x409CA16BE0000000, float 0x409CC6A960000000, float 0x409CEBED00000000, float 0x409D113700000000, float 0x409D368760000000, float 0x409D5BDDE0000000, float 0x409D813A80000000, float 0x409DA69D60000000, float 0x409DCC0680000000, float 0x409DF175A0000000, float 0x409E16EB00000000, float 0x409E3C6640000000, float 0x409E61E7C0000000, float 0x409E876F20000000, float 0x409EACFCA0000000, float 0x409ED29000000000, float 0x409EF82980000000, float 0x409F1DC8C0000000, float 0x409F436E00000000, float 0x409F691920000000, float 0x409F8ECA20000000, float 0x409FB480E0000000, float 0x409FDA3DA0000000], align 16
+@kPrefixEncodeCode = hidden local_unnamed_addr constant [512 x %struct.VP8LPrefixCode] [%struct.VP8LPrefixCode zeroinitializer, %struct.VP8LPrefixCode zeroinitializer, %struct.VP8LPrefixCode { i8 1, i8 0 }, %struct.VP8LPrefixCode { i8 2, i8 0 }, %struct.VP8LPrefixCode { i8 3, i8 0 }, %struct.VP8LPrefixCode { i8 4, i8 1 }, %struct.VP8LPrefixCode { i8 4, i8 1 }, %struct.VP8LPrefixCode { i8 5, i8 1 }, %struct.VP8LPrefixCode { i8 5, i8 1 }, %struct.VP8LPrefixCode { i8 6, i8 2 }, %struct.VP8LPrefixCode { i8 6, i8 2 }, %struct.VP8LPrefixCode { i8 6, i8 2 }, %struct.VP8LPrefixCode { i8 6, i8 2 }, %struct.VP8LPrefixCode { i8 7, i8 2 }, %struct.VP8LPrefixCode { i8 7, i8 2 }, %struct.VP8LPrefixCode { i8 7, i8 2 }, %struct.VP8LPrefixCode { i8 7, i8 2 }, %struct.VP8LPrefixCode { i8 8, i8 3 }, %struct.VP8LPrefixCode { i8 8, i8 3 }, %struct.VP8LPrefixCode { i8 8, i8 3 }, %struct.VP8LPrefixCode { i8 8, i8 3 }, %struct.VP8LPrefixCode { i8 8, i8 3 }, %struct.VP8LPrefixCode { i8 8, i8 3 }, %struct.VP8LPrefixCode { i8 8, i8 3 }, %struct.VP8LPrefixCode { i8 8, i8 3 }, %struct.VP8LPrefixCode { i8 9, i8 3 }, %struct.VP8LPrefixCode { i8 9, i8 3 }, %struct.VP8LPrefixCode { i8 9, i8 3 }, %struct.VP8LPrefixCode { i8 9, i8 3 }, %struct.VP8LPrefixCode { i8 9, i8 3 }, %struct.VP8LPrefixCode { i8 9, i8 3 }, %struct.VP8LPrefixCode { i8 9, i8 3 }, %struct.VP8LPrefixCode { i8 9, i8 3 }, %struct.VP8LPrefixCode { i8 10, i8 4 }, %struct.VP8LPrefixCode { i8 10, i8 4 }, %struct.VP8LPrefixCode { i8 10, i8 4 }, %struct.VP8LPrefixCode { i8 10, i8 4 }, %struct.VP8LPrefixCode { i8 10, i8 4 }, %struct.VP8LPrefixCode { i8 10, i8 4 }, %struct.VP8LPrefixCode { i8 10, i8 4 }, %struct.VP8LPrefixCode { i8 10, i8 4 }, %struct.VP8LPrefixCode { i8 10, i8 4 }, %struct.VP8LPrefixCode { i8 10, i8 4 }, %struct.VP8LPrefixCode { i8 10, i8 4 }, %struct.VP8LPrefixCode { i8 10, i8 4 }, %struct.VP8LPrefixCode { i8 10, i8 4 }, %struct.VP8LPrefixCode { i8 10, i8 4 }, %struct.VP8LPrefixCode { i8 10, i8 4 }, %struct.VP8LPrefixCode { i8 10, i8 4 }, %struct.VP8LPrefixCode { i8 11, i8 4 }, %struct.VP8LPrefixCode { i8 11, i8 4 }, %struct.VP8LPrefixCode { i8 11, i8 4 }, %struct.VP8LPrefixCode { i8 11, i8 4 }, %struct.VP8LPrefixCode { i8 11, i8 4 }, %struct.VP8LPrefixCode { i8 11, i8 4 }, %struct.VP8LPrefixCode { i8 11, i8 4 }, %struct.VP8LPrefixCode { i8 11, i8 4 }, %struct.VP8LPrefixCode { i8 11, i8 4 }, %struct.VP8LPrefixCode { i8 11, i8 4 }, %struct.VP8LPrefixCode { i8 11, i8 4 }, %struct.VP8LPrefixCode { i8 11, i8 4 }, %struct.VP8LPrefixCode { i8 11, i8 4 }, %struct.VP8LPrefixCode { i8 11, i8 4 }, %struct.VP8LPrefixCode { i8 11, i8 4 }, %struct.VP8LPrefixCode { i8 11, i8 4 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 12, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 13, i8 5 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 14, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 15, i8 6 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 16, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }, %struct.VP8LPrefixCode { i8 17, i8 7 }], align 16
+@kPrefixEncodeExtraBitsValue = hidden local_unnamed_addr constant [512 x i8] c"\00\00\00\00\00\00\01\00\01\00\01\02\03\00\01\02\03\00\01\02\03\04\05\06\07\00\01\02\03\04\05\06\07\00\01\02\03\04\05\06\07\08\09\0A\0B\0C\0D\0E\0F\00\01\02\03\04\05\06\07\08\09\0A\0B\0C\0D\0E\0F\00\01\02\03\04\05\06\07\08\09\0A\0B\0C\0D\0E\0F\10\11\12\13\14\15\16\17\18\19\1A\1B\1C\1D\1E\1F\00\01\02\03\04\05\06\07\08\09\0A\0B\0C\0D\0E\0F\10\11\12\13\14\15\16\17\18\19\1A\1B\1C\1D\1E\1F\00\01\02\03\04\05\06\07\08\09\0A\0B\0C\0D\0E\0F\10\11\12\13\14\15\16\17\18\19\1A\1B\1C\1D\1E\1F !\22#$%&'()*+,-./0123456789:;<=>?\00\01\02\03\04\05\06\07\08\09\0A\0B\0C\0D\0E\0F\10\11\12\13\14\15\16\17\18\19\1A\1B\1C\1D\1E\1F !\22#$%&'()*+,-./0123456789:;<=>?\00\01\02\03\04\05\06\07\08\09\0A\0B\0C\0D\0E\0F\10\11\12\13\14\15\16\17\18\19\1A\1B\1C\1D\1E\1F !\22#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\5C]^_`abcdefghijklmnopqrstuvwxyz{|}~\7F\00\01\02\03\04\05\06\07\08\09\0A\0B\0C\0D\0E\0F\10\11\12\13\14\15\16\17\18\19\1A\1B\1C\1D\1E\1F !\22#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\5C]^_`abcdefghijklmnopqrstuvwxyz{|}~", align 16
+@VP8LAddVector = common hidden local_unnamed_addr global void (i32*, i32*, i32*, i32)* null, align 8
+@VP8LAddVectorEq = common hidden local_unnamed_addr global void (i32*, i32*, i32)* null, align 8
+@VP8LEncDspInit.VP8LEncDspInit_body_last_cpuinfo_used = internal global i32 (i32)* bitcast (i32 (i32)** @VP8LEncDspInit.VP8LEncDspInit_body_last_cpuinfo_used to i32 (i32)*), align 8
+@VP8GetCPUInfo = external local_unnamed_addr global i32 (i32)*, align 8
+@VP8LSubtractGreenFromBlueAndRed = common hidden local_unnamed_addr global void (i32*, i32)* null, align 8
+@VP8LTransformColor = common hidden local_unnamed_addr global void (%struct.VP8LMultipliers*, i32*, i32)* null, align 8
+@VP8LCollectColorBlueTransforms = common hidden local_unnamed_addr global void (i32*, i32, i32, i32, i32, i32, i32*)* null, align 8
+@VP8LCollectColorRedTransforms = common hidden local_unnamed_addr global void (i32*, i32, i32, i32, i32, i32*)* null, align 8
+@VP8LFastLog2Slow = common hidden local_unnamed_addr global float (i32)* null, align 8
+@VP8LFastSLog2Slow = common hidden local_unnamed_addr global float (i32)* null, align 8
+@VP8LExtraCost = common hidden local_unnamed_addr global double (i32*, i32)* null, align 8
+@VP8LExtraCostCombined = common hidden local_unnamed_addr global double (i32*, i32*, i32)* null, align 8
+@VP8LCombinedShannonEntropy = common hidden local_unnamed_addr global float (i32*, i32*)* null, align 8
+@VP8LGetEntropyUnrefined = common hidden local_unnamed_addr global void (i32*, i32, %struct.VP8LBitEntropy*, %struct.VP8LStreaks*)* null, align 8
+@VP8LGetCombinedEntropyUnrefined = common hidden local_unnamed_addr global void (i32*, i32*, i32, %struct.VP8LBitEntropy*, %struct.VP8LStreaks*)* null, align 8
+@VP8LVectorMismatch = common hidden local_unnamed_addr global i32 (i32*, i32*, i32)* null, align 8
+@VP8LBundleColorMap = common hidden local_unnamed_addr global void (i8*, i32, i32, i32*)* null, align 8
+@VP8LPredictorsSub = common hidden local_unnamed_addr global [16 x void (i32*, i32*, i32, i32*)*] zeroinitializer, align 16
+@VP8LPredictorsSub_C = common hidden local_unnamed_addr global [16 x void (i32*, i32*, i32, i32*)*] zeroinitializer, align 16
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable writeonly
+define hidden void @VP8LBitEntropyInit(%struct.VP8LBitEntropy* nocapture) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %0, i64 0, i32 4
+  %3 = bitcast %struct.VP8LBitEntropy* %0 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %3, i8 0, i64 20, i1 false)
+  store i32 -1, i32* %2, align 4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @VP8LBitsEntropyUnrefined(i32* nocapture readonly, i32, %struct.VP8LBitEntropy* nocapture) local_unnamed_addr #1 {
+  %4 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %2, i64 0, i32 4
+  %5 = bitcast %struct.VP8LBitEntropy* %2 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %5, i8 0, i64 20, i1 false) #8
+  store i32 -1, i32* %4, align 4
+  %6 = icmp sgt i32 %1, 0
+  br i1 %6, label %7, label %54
+
+7:                                                ; preds = %3
+  %8 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %2, i64 0, i32 1
+  %9 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %2, i64 0, i32 2
+  %10 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %2, i64 0, i32 0
+  %11 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %2, i64 0, i32 3
+  %12 = zext i32 %1 to i64
+  br label %13
+
+13:                                               ; preds = %46, %7
+  %14 = phi i32 [ 0, %7 ], [ %47, %46 ]
+  %15 = phi double [ 0.000000e+00, %7 ], [ %48, %46 ]
+  %16 = phi i64 [ 0, %7 ], [ %49, %46 ]
+  %17 = getelementptr inbounds i32, i32* %0, i64 %16
+  %18 = load i32, i32* %17, align 4
+  %19 = icmp eq i32 %18, 0
+  br i1 %19, label %46, label %20
+
+20:                                               ; preds = %13
+  %21 = load i32, i32* %8, align 8
+  %22 = add i32 %21, %18
+  store i32 %22, i32* %8, align 8
+  %23 = trunc i64 %16 to i32
+  store i32 %23, i32* %4, align 4
+  %24 = load i32, i32* %9, align 4
+  %25 = add nsw i32 %24, 1
+  store i32 %25, i32* %9, align 4
+  %26 = load i32, i32* %17, align 4
+  %27 = icmp ult i32 %26, 256
+  br i1 %27, label %28, label %32
+
+28:                                               ; preds = %20
+  %29 = zext i32 %26 to i64
+  %30 = getelementptr inbounds [256 x float], [256 x float]* @kSLog2Table, i64 0, i64 %29
+  %31 = load float, float* %30, align 4
+  br label %37
+
+32:                                               ; preds = %20
+  %33 = load float (i32)*, float (i32)** @VP8LFastSLog2Slow, align 8
+  %34 = tail call float %33(i32 %26) #8
+  %35 = load double, double* %10, align 8
+  %36 = load i32, i32* %11, align 8
+  br label %37
+
+37:                                               ; preds = %28, %32
+  %38 = phi i32 [ %14, %28 ], [ %36, %32 ]
+  %39 = phi double [ %15, %28 ], [ %35, %32 ]
+  %40 = phi float [ %31, %28 ], [ %34, %32 ]
+  %41 = fpext float %40 to double
+  %42 = fsub double %39, %41
+  store double %42, double* %10, align 8
+  %43 = load i32, i32* %17, align 4
+  %44 = icmp ult i32 %38, %43
+  br i1 %44, label %45, label %46
+
+45:                                               ; preds = %37
+  store i32 %43, i32* %11, align 8
+  br label %46
+
+46:                                               ; preds = %13, %45, %37
+  %47 = phi i32 [ %14, %13 ], [ %43, %45 ], [ %38, %37 ]
+  %48 = phi double [ %15, %13 ], [ %42, %45 ], [ %42, %37 ]
+  %49 = add nuw nsw i64 %16, 1
+  %50 = icmp eq i64 %49, %12
+  br i1 %50, label %51, label %13
+
+51:                                               ; preds = %46
+  %52 = load i32, i32* %8, align 8
+  %53 = icmp ult i32 %52, 256
+  br i1 %53, label %54, label %60
+
+54:                                               ; preds = %3, %51
+  %55 = phi i32 [ %52, %51 ], [ 0, %3 ]
+  %56 = phi double [ %48, %51 ], [ 0.000000e+00, %3 ]
+  %57 = zext i32 %55 to i64
+  %58 = getelementptr inbounds [256 x float], [256 x float]* @kSLog2Table, i64 0, i64 %57
+  %59 = load float, float* %58, align 4
+  br label %65
+
+60:                                               ; preds = %51
+  %61 = load float (i32)*, float (i32)** @VP8LFastSLog2Slow, align 8
+  %62 = tail call float %61(i32 %52) #8
+  %63 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %2, i64 0, i32 0
+  %64 = load double, double* %63, align 8
+  br label %65
+
+65:                                               ; preds = %54, %60
+  %66 = phi double [ %56, %54 ], [ %64, %60 ]
+  %67 = phi float [ %59, %54 ], [ %62, %60 ]
+  %68 = fpext float %67 to double
+  %69 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %2, i64 0, i32 0
+  %70 = fadd double %66, %68
+  store double %70, double* %69, align 8
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @VP8LSubtractGreenFromBlueAndRed_C(i32* nocapture, i32) #2 {
+  %3 = icmp sgt i32 %1, 0
+  br i1 %3, label %4, label %58
+
+4:                                                ; preds = %2
+  %5 = zext i32 %1 to i64
+  %6 = icmp ult i32 %1, 8
+  br i1 %6, label %41, label %7
+
+7:                                                ; preds = %4
+  %8 = and i64 %5, 4294967288
+  br label %9
+
+9:                                                ; preds = %9, %7
+  %10 = phi i64 [ 0, %7 ], [ %37, %9 ]
+  %11 = getelementptr inbounds i32, i32* %0, i64 %10
+  %12 = bitcast i32* %11 to <4 x i32>*
+  %13 = load <4 x i32>, <4 x i32>* %12, align 4
+  %14 = getelementptr inbounds i32, i32* %11, i64 4
+  %15 = bitcast i32* %14 to <4 x i32>*
+  %16 = load <4 x i32>, <4 x i32>* %15, align 4
+  %17 = lshr <4 x i32> %13, <i32 8, i32 8, i32 8, i32 8>
+  %18 = lshr <4 x i32> %16, <i32 8, i32 8, i32 8, i32 8>
+  %19 = sub <4 x i32> %13, %17
+  %20 = sub <4 x i32> %16, %18
+  %21 = and <4 x i32> %19, <i32 255, i32 255, i32 255, i32 255>
+  %22 = and <4 x i32> %20, <i32 255, i32 255, i32 255, i32 255>
+  %23 = and <4 x i32> %13, <i32 -16711936, i32 -16711936, i32 -16711936, i32 -16711936>
+  %24 = and <4 x i32> %16, <i32 -16711936, i32 -16711936, i32 -16711936, i32 -16711936>
+  %25 = shl <4 x i32> %17, <i32 16, i32 16, i32 16, i32 16>
+  %26 = shl <4 x i32> %18, <i32 16, i32 16, i32 16, i32 16>
+  %27 = sub <4 x i32> %13, %25
+  %28 = sub <4 x i32> %16, %26
+  %29 = and <4 x i32> %27, <i32 16711680, i32 16711680, i32 16711680, i32 16711680>
+  %30 = and <4 x i32> %28, <i32 16711680, i32 16711680, i32 16711680, i32 16711680>
+  %31 = or <4 x i32> %21, %23
+  %32 = or <4 x i32> %22, %24
+  %33 = or <4 x i32> %31, %29
+  %34 = or <4 x i32> %32, %30
+  %35 = bitcast i32* %11 to <4 x i32>*
+  store <4 x i32> %33, <4 x i32>* %35, align 4
+  %36 = bitcast i32* %14 to <4 x i32>*
+  store <4 x i32> %34, <4 x i32>* %36, align 4
+  %37 = add i64 %10, 8
+  %38 = icmp eq i64 %37, %8
+  br i1 %38, label %39, label %9, !llvm.loop !2
+
+39:                                               ; preds = %9
+  %40 = icmp eq i64 %8, %5
+  br i1 %40, label %58, label %41
+
+41:                                               ; preds = %39, %4
+  %42 = phi i64 [ 0, %4 ], [ %8, %39 ]
+  br label %43
+
+43:                                               ; preds = %41, %43
+  %44 = phi i64 [ %56, %43 ], [ %42, %41 ]
+  %45 = getelementptr inbounds i32, i32* %0, i64 %44
+  %46 = load i32, i32* %45, align 4
+  %47 = lshr i32 %46, 8
+  %48 = sub i32 %46, %47
+  %49 = and i32 %48, 255
+  %50 = and i32 %46, -16711936
+  %51 = shl i32 %47, 16
+  %52 = sub i32 %46, %51
+  %53 = and i32 %52, 16711680
+  %54 = or i32 %49, %50
+  %55 = or i32 %54, %53
+  store i32 %55, i32* %45, align 4
+  %56 = add nuw nsw i64 %44, 1
+  %57 = icmp eq i64 %56, %5
+  br i1 %57, label %58, label %43, !llvm.loop !4
+
+58:                                               ; preds = %43, %39, %2
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @VP8LTransformColor_C(%struct.VP8LMultipliers* nocapture readonly, i32* nocapture, i32) #2 {
+  %4 = bitcast i32* %1 to i8*
+  %5 = icmp sgt i32 %2, 0
+  br i1 %5, label %6, label %99
+
+6:                                                ; preds = %3
+  %7 = getelementptr inbounds %struct.VP8LMultipliers, %struct.VP8LMultipliers* %0, i64 0, i32 0
+  %8 = getelementptr inbounds %struct.VP8LMultipliers, %struct.VP8LMultipliers* %0, i64 0, i32 1
+  %9 = getelementptr inbounds %struct.VP8LMultipliers, %struct.VP8LMultipliers* %0, i64 0, i32 2
+  %10 = zext i32 %2 to i64
+  %11 = icmp ult i32 %2, 4
+  br i1 %11, label %64, label %12
+
+12:                                               ; preds = %6
+  %13 = getelementptr i32, i32* %1, i64 %10
+  %14 = bitcast i32* %13 to i8*
+  %15 = getelementptr inbounds %struct.VP8LMultipliers, %struct.VP8LMultipliers* %0, i64 1, i32 0
+  %16 = icmp ugt i8* %15, %4
+  %17 = icmp ult i8* %9, %14
+  %18 = and i1 %16, %17
+  br i1 %18, label %64, label %19
+
+19:                                               ; preds = %12
+  %20 = and i64 %10, 4294967292
+  %21 = load i8, i8* %7, align 1, !alias.scope !6
+  %22 = insertelement <4 x i8> undef, i8 %21, i32 0
+  %23 = shufflevector <4 x i8> %22, <4 x i8> undef, <4 x i32> zeroinitializer
+  %24 = sext <4 x i8> %23 to <4 x i32>
+  %25 = load i8, i8* %8, align 1, !alias.scope !6
+  %26 = insertelement <4 x i8> undef, i8 %25, i32 0
+  %27 = shufflevector <4 x i8> %26, <4 x i8> undef, <4 x i32> zeroinitializer
+  %28 = sext <4 x i8> %27 to <4 x i32>
+  %29 = load i8, i8* %9, align 1, !alias.scope !6
+  %30 = insertelement <4 x i8> undef, i8 %29, i32 0
+  %31 = shufflevector <4 x i8> %30, <4 x i8> undef, <4 x i32> zeroinitializer
+  %32 = sext <4 x i8> %31 to <4 x i32>
+  br label %33
+
+33:                                               ; preds = %33, %19
+  %34 = phi i64 [ 0, %19 ], [ %60, %33 ]
+  %35 = getelementptr inbounds i32, i32* %1, i64 %34
+  %36 = bitcast i32* %35 to <4 x i32>*
+  %37 = load <4 x i32>, <4 x i32>* %36, align 4, !alias.scope !9, !noalias !6
+  %38 = lshr <4 x i32> %37, <i32 16, i32 16, i32 16, i32 16>
+  %39 = and <4 x i32> %38, <i32 255, i32 255, i32 255, i32 255>
+  %40 = shl <4 x i32> %37, <i32 16, i32 16, i32 16, i32 16>
+  %41 = ashr <4 x i32> %40, <i32 24, i32 24, i32 24, i32 24>
+  %42 = mul nsw <4 x i32> %41, %24
+  %43 = ashr <4 x i32> %42, <i32 5, i32 5, i32 5, i32 5>
+  %44 = sub nsw <4 x i32> %39, %43
+  %45 = mul nsw <4 x i32> %41, %28
+  %46 = lshr <4 x i32> %45, <i32 5, i32 5, i32 5, i32 5>
+  %47 = sub <4 x i32> %37, %46
+  %48 = shl <4 x i32> %38, <i32 24, i32 24, i32 24, i32 24>
+  %49 = ashr exact <4 x i32> %48, <i32 24, i32 24, i32 24, i32 24>
+  %50 = mul nsw <4 x i32> %49, %32
+  %51 = lshr <4 x i32> %50, <i32 5, i32 5, i32 5, i32 5>
+  %52 = sub <4 x i32> %47, %51
+  %53 = and <4 x i32> %52, <i32 255, i32 255, i32 255, i32 255>
+  %54 = and <4 x i32> %37, <i32 -16711936, i32 -16711936, i32 -16711936, i32 -16711936>
+  %55 = shl nsw <4 x i32> %44, <i32 16, i32 16, i32 16, i32 16>
+  %56 = and <4 x i32> %55, <i32 16711680, i32 16711680, i32 16711680, i32 16711680>
+  %57 = or <4 x i32> %56, %54
+  %58 = or <4 x i32> %57, %53
+  %59 = bitcast i32* %35 to <4 x i32>*
+  store <4 x i32> %58, <4 x i32>* %59, align 4, !alias.scope !9, !noalias !6
+  %60 = add i64 %34, 4
+  %61 = icmp eq i64 %60, %20
+  br i1 %61, label %62, label %33, !llvm.loop !11
+
+62:                                               ; preds = %33
+  %63 = icmp eq i64 %20, %10
+  br i1 %63, label %99, label %64
+
+64:                                               ; preds = %62, %12, %6
+  %65 = phi i64 [ 0, %12 ], [ 0, %6 ], [ %20, %62 ]
+  br label %66
+
+66:                                               ; preds = %64, %66
+  %67 = phi i64 [ %97, %66 ], [ %65, %64 ]
+  %68 = getelementptr inbounds i32, i32* %1, i64 %67
+  %69 = load i32, i32* %68, align 4
+  %70 = lshr i32 %69, 16
+  %71 = and i32 %70, 255
+  %72 = load i8, i8* %7, align 1
+  %73 = sext i8 %72 to i32
+  %74 = shl i32 %69, 16
+  %75 = ashr i32 %74, 24
+  %76 = mul nsw i32 %75, %73
+  %77 = ashr i32 %76, 5
+  %78 = sub nsw i32 %71, %77
+  %79 = load i8, i8* %8, align 1
+  %80 = sext i8 %79 to i32
+  %81 = mul nsw i32 %75, %80
+  %82 = lshr i32 %81, 5
+  %83 = sub i32 %69, %82
+  %84 = load i8, i8* %9, align 1
+  %85 = sext i8 %84 to i32
+  %86 = shl i32 %70, 24
+  %87 = ashr exact i32 %86, 24
+  %88 = mul nsw i32 %87, %85
+  %89 = lshr i32 %88, 5
+  %90 = sub i32 %83, %89
+  %91 = and i32 %90, 255
+  %92 = and i32 %69, -16711936
+  %93 = shl nsw i32 %78, 16
+  %94 = and i32 %93, 16711680
+  %95 = or i32 %94, %92
+  %96 = or i32 %95, %91
+  store i32 %96, i32* %68, align 4
+  %97 = add nuw nsw i64 %67, 1
+  %98 = icmp eq i64 %97, %10
+  br i1 %98, label %99, label %66, !llvm.loop !12
+
+99:                                               ; preds = %66, %62, %3
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @VP8LCollectColorRedTransforms_C(i32* nocapture readonly, i32, i32, i32, i32, i32* nocapture) #2 {
+  %7 = icmp sgt i32 %3, 0
+  br i1 %7, label %8, label %75
+
+8:                                                ; preds = %6
+  %9 = icmp sgt i32 %2, 0
+  %10 = shl i32 %4, 24
+  %11 = ashr exact i32 %10, 24
+  %12 = sext i32 %1 to i64
+  %13 = zext i32 %2 to i64
+  %14 = and i64 %13, 1
+  %15 = icmp eq i32 %2, 1
+  %16 = sub nsw i64 %13, %14
+  %17 = icmp eq i64 %14, 0
+  br label %18
+
+18:                                               ; preds = %8, %72
+  %19 = phi i32 [ %3, %8 ], [ %21, %72 ]
+  %20 = phi i32* [ %0, %8 ], [ %73, %72 ]
+  %21 = add nsw i32 %19, -1
+  br i1 %9, label %22, label %72
+
+22:                                               ; preds = %18
+  br i1 %15, label %56, label %23
+
+23:                                               ; preds = %22, %23
+  %24 = phi i64 [ %53, %23 ], [ 0, %22 ]
+  %25 = phi i64 [ %54, %23 ], [ %16, %22 ]
+  %26 = getelementptr inbounds i32, i32* %20, i64 %24
+  %27 = load i32, i32* %26, align 4
+  %28 = lshr i32 %27, 16
+  %29 = shl i32 %27, 16
+  %30 = ashr i32 %29, 24
+  %31 = mul nsw i32 %30, %11
+  %32 = lshr i32 %31, 5
+  %33 = sub nsw i32 %28, %32
+  %34 = and i32 %33, 255
+  %35 = zext i32 %34 to i64
+  %36 = getelementptr inbounds i32, i32* %5, i64 %35
+  %37 = load i32, i32* %36, align 4
+  %38 = add nsw i32 %37, 1
+  store i32 %38, i32* %36, align 4
+  %39 = or i64 %24, 1
+  %40 = getelementptr inbounds i32, i32* %20, i64 %39
+  %41 = load i32, i32* %40, align 4
+  %42 = lshr i32 %41, 16
+  %43 = shl i32 %41, 16
+  %44 = ashr i32 %43, 24
+  %45 = mul nsw i32 %44, %11
+  %46 = lshr i32 %45, 5
+  %47 = sub nsw i32 %42, %46
+  %48 = and i32 %47, 255
+  %49 = zext i32 %48 to i64
+  %50 = getelementptr inbounds i32, i32* %5, i64 %49
+  %51 = load i32, i32* %50, align 4
+  %52 = add nsw i32 %51, 1
+  store i32 %52, i32* %50, align 4
+  %53 = add nuw nsw i64 %24, 2
+  %54 = add i64 %25, -2
+  %55 = icmp eq i64 %54, 0
+  br i1 %55, label %56, label %23
+
+56:                                               ; preds = %23, %22
+  %57 = phi i64 [ 0, %22 ], [ %53, %23 ]
+  br i1 %17, label %72, label %58
+
+58:                                               ; preds = %56
+  %59 = getelementptr inbounds i32, i32* %20, i64 %57
+  %60 = load i32, i32* %59, align 4
+  %61 = lshr i32 %60, 16
+  %62 = shl i32 %60, 16
+  %63 = ashr i32 %62, 24
+  %64 = mul nsw i32 %63, %11
+  %65 = lshr i32 %64, 5
+  %66 = sub nsw i32 %61, %65
+  %67 = and i32 %66, 255
+  %68 = zext i32 %67 to i64
+  %69 = getelementptr inbounds i32, i32* %5, i64 %68
+  %70 = load i32, i32* %69, align 4
+  %71 = add nsw i32 %70, 1
+  store i32 %71, i32* %69, align 4
+  br label %72
+
+72:                                               ; preds = %58, %56, %18
+  %73 = getelementptr inbounds i32, i32* %20, i64 %12
+  %74 = icmp sgt i32 %21, 0
+  br i1 %74, label %18, label %75
+
+75:                                               ; preds = %72, %6
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @VP8LCollectColorBlueTransforms_C(i32* nocapture readonly, i32, i32, i32, i32, i32, i32* nocapture) #2 {
+  %8 = icmp sgt i32 %3, 0
+  br i1 %8, label %9, label %45
+
+9:                                                ; preds = %7
+  %10 = icmp sgt i32 %2, 0
+  %11 = shl i32 %4, 24
+  %12 = ashr exact i32 %11, 24
+  %13 = shl i32 %5, 24
+  %14 = ashr exact i32 %13, 24
+  %15 = sext i32 %1 to i64
+  %16 = zext i32 %2 to i64
+  br label %17
+
+17:                                               ; preds = %9, %42
+  %18 = phi i32 [ %3, %9 ], [ %20, %42 ]
+  %19 = phi i32* [ %0, %9 ], [ %43, %42 ]
+  %20 = add nsw i32 %18, -1
+  br i1 %10, label %21, label %42
+
+21:                                               ; preds = %17, %21
+  %22 = phi i64 [ %40, %21 ], [ 0, %17 ]
+  %23 = getelementptr inbounds i32, i32* %19, i64 %22
+  %24 = load i32, i32* %23, align 4
+  %25 = shl i32 %24, 16
+  %26 = ashr i32 %25, 24
+  %27 = mul nsw i32 %26, %12
+  %28 = lshr i32 %27, 5
+  %29 = sub i32 %24, %28
+  %30 = shl i32 %24, 8
+  %31 = ashr i32 %30, 24
+  %32 = mul nsw i32 %31, %14
+  %33 = lshr i32 %32, 5
+  %34 = sub i32 %29, %33
+  %35 = and i32 %34, 255
+  %36 = zext i32 %35 to i64
+  %37 = getelementptr inbounds i32, i32* %6, i64 %36
+  %38 = load i32, i32* %37, align 4
+  %39 = add nsw i32 %38, 1
+  store i32 %39, i32* %37, align 4
+  %40 = add nuw nsw i64 %22, 1
+  %41 = icmp eq i64 %40, %16
+  br i1 %41, label %42, label %21
+
+42:                                               ; preds = %21, %17
+  %43 = getelementptr inbounds i32, i32* %19, i64 %15
+  %44 = icmp sgt i32 %20, 0
+  br i1 %44, label %17, label %45
+
+45:                                               ; preds = %42, %7
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @VP8LBundleColorMap_C(i8* nocapture readonly, i32, i32, i32* nocapture) #2 {
+  %5 = bitcast i32* %3 to i8*
+  %6 = icmp sgt i32 %2, 0
+  br i1 %6, label %110, label %7
+
+7:                                                ; preds = %4
+  %8 = icmp sgt i32 %1, 0
+  br i1 %8, label %9, label %207
+
+9:                                                ; preds = %7
+  %10 = zext i32 %1 to i64
+  %11 = icmp ult i32 %1, 8
+  br i1 %11, label %12, label %33
+
+12:                                               ; preds = %108, %33, %9
+  %13 = phi i64 [ 0, %33 ], [ 0, %9 ], [ %41, %108 ]
+  %14 = xor i64 %13, -1
+  %15 = add nsw i64 %14, %10
+  %16 = and i64 %10, 3
+  %17 = icmp eq i64 %16, 0
+  br i1 %17, label %30, label %18
+
+18:                                               ; preds = %12, %18
+  %19 = phi i64 [ %27, %18 ], [ %13, %12 ]
+  %20 = phi i64 [ %28, %18 ], [ %16, %12 ]
+  %21 = getelementptr inbounds i8, i8* %0, i64 %19
+  %22 = load i8, i8* %21, align 1
+  %23 = zext i8 %22 to i32
+  %24 = shl nuw nsw i32 %23, 8
+  %25 = or i32 %24, -16777216
+  %26 = getelementptr inbounds i32, i32* %3, i64 %19
+  store i32 %25, i32* %26, align 4
+  %27 = add nuw nsw i64 %19, 1
+  %28 = add i64 %20, -1
+  %29 = icmp eq i64 %28, 0
+  br i1 %29, label %30, label %18, !llvm.loop !13
+
+30:                                               ; preds = %18, %12
+  %31 = phi i64 [ %13, %12 ], [ %27, %18 ]
+  %32 = icmp ult i64 %15, 3
+  br i1 %32, label %207, label %157
+
+33:                                               ; preds = %9
+  %34 = getelementptr i32, i32* %3, i64 %10
+  %35 = bitcast i32* %34 to i8*
+  %36 = getelementptr i8, i8* %0, i64 %10
+  %37 = icmp ugt i8* %36, %5
+  %38 = icmp ugt i8* %35, %0
+  %39 = and i1 %37, %38
+  br i1 %39, label %12, label %40
+
+40:                                               ; preds = %33
+  %41 = and i64 %10, 4294967288
+  %42 = add nsw i64 %41, -8
+  %43 = lshr exact i64 %42, 3
+  %44 = add nuw nsw i64 %43, 1
+  %45 = and i64 %44, 1
+  %46 = icmp eq i64 %42, 0
+  br i1 %46, label %88, label %47
+
+47:                                               ; preds = %40
+  %48 = sub nuw nsw i64 %44, %45
+  br label %49
+
+49:                                               ; preds = %49, %47
+  %50 = phi i64 [ 0, %47 ], [ %85, %49 ]
+  %51 = phi i64 [ %48, %47 ], [ %86, %49 ]
+  %52 = getelementptr inbounds i8, i8* %0, i64 %50
+  %53 = bitcast i8* %52 to <4 x i8>*
+  %54 = load <4 x i8>, <4 x i8>* %53, align 1, !alias.scope !15
+  %55 = getelementptr inbounds i8, i8* %52, i64 4
+  %56 = bitcast i8* %55 to <4 x i8>*
+  %57 = load <4 x i8>, <4 x i8>* %56, align 1, !alias.scope !15
+  %58 = zext <4 x i8> %54 to <4 x i32>
+  %59 = zext <4 x i8> %57 to <4 x i32>
+  %60 = shl nuw nsw <4 x i32> %58, <i32 8, i32 8, i32 8, i32 8>
+  %61 = shl nuw nsw <4 x i32> %59, <i32 8, i32 8, i32 8, i32 8>
+  %62 = or <4 x i32> %60, <i32 -16777216, i32 -16777216, i32 -16777216, i32 -16777216>
+  %63 = or <4 x i32> %61, <i32 -16777216, i32 -16777216, i32 -16777216, i32 -16777216>
+  %64 = getelementptr inbounds i32, i32* %3, i64 %50
+  %65 = bitcast i32* %64 to <4 x i32>*
+  store <4 x i32> %62, <4 x i32>* %65, align 4, !alias.scope !18, !noalias !15
+  %66 = getelementptr inbounds i32, i32* %64, i64 4
+  %67 = bitcast i32* %66 to <4 x i32>*
+  store <4 x i32> %63, <4 x i32>* %67, align 4, !alias.scope !18, !noalias !15
+  %68 = or i64 %50, 8
+  %69 = getelementptr inbounds i8, i8* %0, i64 %68
+  %70 = bitcast i8* %69 to <4 x i8>*
+  %71 = load <4 x i8>, <4 x i8>* %70, align 1, !alias.scope !15
+  %72 = getelementptr inbounds i8, i8* %69, i64 4
+  %73 = bitcast i8* %72 to <4 x i8>*
+  %74 = load <4 x i8>, <4 x i8>* %73, align 1, !alias.scope !15
+  %75 = zext <4 x i8> %71 to <4 x i32>
+  %76 = zext <4 x i8> %74 to <4 x i32>
+  %77 = shl nuw nsw <4 x i32> %75, <i32 8, i32 8, i32 8, i32 8>
+  %78 = shl nuw nsw <4 x i32> %76, <i32 8, i32 8, i32 8, i32 8>
+  %79 = or <4 x i32> %77, <i32 -16777216, i32 -16777216, i32 -16777216, i32 -16777216>
+  %80 = or <4 x i32> %78, <i32 -16777216, i32 -16777216, i32 -16777216, i32 -16777216>
+  %81 = getelementptr inbounds i32, i32* %3, i64 %68
+  %82 = bitcast i32* %81 to <4 x i32>*
+  store <4 x i32> %79, <4 x i32>* %82, align 4, !alias.scope !18, !noalias !15
+  %83 = getelementptr inbounds i32, i32* %81, i64 4
+  %84 = bitcast i32* %83 to <4 x i32>*
+  store <4 x i32> %80, <4 x i32>* %84, align 4, !alias.scope !18, !noalias !15
+  %85 = add i64 %50, 16
+  %86 = add i64 %51, -2
+  %87 = icmp eq i64 %86, 0
+  br i1 %87, label %88, label %49, !llvm.loop !20
+
+88:                                               ; preds = %49, %40
+  %89 = phi i64 [ 0, %40 ], [ %85, %49 ]
+  %90 = icmp eq i64 %45, 0
+  br i1 %90, label %108, label %91
+
+91:                                               ; preds = %88
+  %92 = getelementptr inbounds i8, i8* %0, i64 %89
+  %93 = bitcast i8* %92 to <4 x i8>*
+  %94 = load <4 x i8>, <4 x i8>* %93, align 1, !alias.scope !15
+  %95 = getelementptr inbounds i8, i8* %92, i64 4
+  %96 = bitcast i8* %95 to <4 x i8>*
+  %97 = load <4 x i8>, <4 x i8>* %96, align 1, !alias.scope !15
+  %98 = zext <4 x i8> %94 to <4 x i32>
+  %99 = zext <4 x i8> %97 to <4 x i32>
+  %100 = shl nuw nsw <4 x i32> %98, <i32 8, i32 8, i32 8, i32 8>
+  %101 = shl nuw nsw <4 x i32> %99, <i32 8, i32 8, i32 8, i32 8>
+  %102 = or <4 x i32> %100, <i32 -16777216, i32 -16777216, i32 -16777216, i32 -16777216>
+  %103 = or <4 x i32> %101, <i32 -16777216, i32 -16777216, i32 -16777216, i32 -16777216>
+  %104 = getelementptr inbounds i32, i32* %3, i64 %89
+  %105 = bitcast i32* %104 to <4 x i32>*
+  store <4 x i32> %102, <4 x i32>* %105, align 4, !alias.scope !18, !noalias !15
+  %106 = getelementptr inbounds i32, i32* %104, i64 4
+  %107 = bitcast i32* %106 to <4 x i32>*
+  store <4 x i32> %103, <4 x i32>* %107, align 4, !alias.scope !18, !noalias !15
+  br label %108
+
+108:                                              ; preds = %88, %91
+  %109 = icmp eq i64 %41, %10
+  br i1 %109, label %207, label %12
+
+110:                                              ; preds = %4
+  %111 = sub nsw i32 3, %2
+  %112 = shl nsw i32 -1, %2
+  %113 = xor i32 %112, -1
+  %114 = icmp sgt i32 %1, 0
+  br i1 %114, label %115, label %207
+
+115:                                              ; preds = %110
+  %116 = zext i32 %1 to i64
+  %117 = and i64 %116, 1
+  %118 = icmp eq i32 %1, 1
+  br i1 %118, label %188, label %119
+
+119:                                              ; preds = %115
+  %120 = sub nsw i64 %116, %117
+  br label %121
+
+121:                                              ; preds = %121, %119
+  %122 = phi i64 [ 0, %119 ], [ %154, %121 ]
+  %123 = phi i32 [ -16777216, %119 ], [ %150, %121 ]
+  %124 = phi i64 [ %120, %119 ], [ %155, %121 ]
+  %125 = trunc i64 %122 to i32
+  %126 = and i32 %125, %113
+  %127 = icmp eq i32 %126, 0
+  %128 = select i1 %127, i32 -16777216, i32 %123
+  %129 = getelementptr inbounds i8, i8* %0, i64 %122
+  %130 = load i8, i8* %129, align 1
+  %131 = zext i8 %130 to i32
+  %132 = shl i32 %126, %111
+  %133 = add nsw i32 %132, 8
+  %134 = shl i32 %131, %133
+  %135 = or i32 %134, %128
+  %136 = lshr i32 %125, %2
+  %137 = sext i32 %136 to i64
+  %138 = getelementptr inbounds i32, i32* %3, i64 %137
+  store i32 %135, i32* %138, align 4
+  %139 = or i64 %122, 1
+  %140 = trunc i64 %139 to i32
+  %141 = and i32 %140, %113
+  %142 = icmp eq i32 %141, 0
+  %143 = select i1 %142, i32 -16777216, i32 %135
+  %144 = getelementptr inbounds i8, i8* %0, i64 %139
+  %145 = load i8, i8* %144, align 1
+  %146 = zext i8 %145 to i32
+  %147 = shl i32 %141, %111
+  %148 = add nsw i32 %147, 8
+  %149 = shl i32 %146, %148
+  %150 = or i32 %149, %143
+  %151 = lshr i32 %140, %2
+  %152 = sext i32 %151 to i64
+  %153 = getelementptr inbounds i32, i32* %3, i64 %152
+  store i32 %150, i32* %153, align 4
+  %154 = add nuw nsw i64 %122, 2
+  %155 = add i64 %124, -2
+  %156 = icmp eq i64 %155, 0
+  br i1 %156, label %188, label %121
+
+157:                                              ; preds = %30, %157
+  %158 = phi i64 [ %186, %157 ], [ %31, %30 ]
+  %159 = getelementptr inbounds i8, i8* %0, i64 %158
+  %160 = load i8, i8* %159, align 1
+  %161 = zext i8 %160 to i32
+  %162 = shl nuw nsw i32 %161, 8
+  %163 = or i32 %162, -16777216
+  %164 = getelementptr inbounds i32, i32* %3, i64 %158
+  store i32 %163, i32* %164, align 4
+  %165 = add nuw nsw i64 %158, 1
+  %166 = getelementptr inbounds i8, i8* %0, i64 %165
+  %167 = load i8, i8* %166, align 1
+  %168 = zext i8 %167 to i32
+  %169 = shl nuw nsw i32 %168, 8
+  %170 = or i32 %169, -16777216
+  %171 = getelementptr inbounds i32, i32* %3, i64 %165
+  store i32 %170, i32* %171, align 4
+  %172 = add nuw nsw i64 %158, 2
+  %173 = getelementptr inbounds i8, i8* %0, i64 %172
+  %174 = load i8, i8* %173, align 1
+  %175 = zext i8 %174 to i32
+  %176 = shl nuw nsw i32 %175, 8
+  %177 = or i32 %176, -16777216
+  %178 = getelementptr inbounds i32, i32* %3, i64 %172
+  store i32 %177, i32* %178, align 4
+  %179 = add nuw nsw i64 %158, 3
+  %180 = getelementptr inbounds i8, i8* %0, i64 %179
+  %181 = load i8, i8* %180, align 1
+  %182 = zext i8 %181 to i32
+  %183 = shl nuw nsw i32 %182, 8
+  %184 = or i32 %183, -16777216
+  %185 = getelementptr inbounds i32, i32* %3, i64 %179
+  store i32 %184, i32* %185, align 4
+  %186 = add nuw nsw i64 %158, 4
+  %187 = icmp eq i64 %186, %10
+  br i1 %187, label %207, label %157, !llvm.loop !21
+
+188:                                              ; preds = %121, %115
+  %189 = phi i64 [ 0, %115 ], [ %154, %121 ]
+  %190 = phi i32 [ -16777216, %115 ], [ %150, %121 ]
+  %191 = icmp eq i64 %117, 0
+  br i1 %191, label %207, label %192
+
+192:                                              ; preds = %188
+  %193 = trunc i64 %189 to i32
+  %194 = and i32 %193, %113
+  %195 = icmp eq i32 %194, 0
+  %196 = select i1 %195, i32 -16777216, i32 %190
+  %197 = getelementptr inbounds i8, i8* %0, i64 %189
+  %198 = load i8, i8* %197, align 1
+  %199 = zext i8 %198 to i32
+  %200 = shl i32 %194, %111
+  %201 = add nsw i32 %200, 8
+  %202 = shl i32 %199, %201
+  %203 = or i32 %202, %196
+  %204 = lshr i32 %193, %2
+  %205 = sext i32 %204 to i64
+  %206 = getelementptr inbounds i32, i32* %3, i64 %205
+  store i32 %203, i32* %206, align 4
+  br label %207
+
+207:                                              ; preds = %30, %157, %192, %188, %108, %7, %110
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @VP8LHistogramAdd(%struct.VP8LHistogram*, %struct.VP8LHistogram*, %struct.VP8LHistogram*) local_unnamed_addr #1 {
+  %4 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 5
+  %5 = load i32, i32* %4, align 8
+  %6 = icmp sgt i32 %5, 0
+  %7 = shl i32 1, %5
+  %8 = add i32 %7, 280
+  %9 = select i1 %6, i32 %8, i32 280
+  %10 = icmp eq %struct.VP8LHistogram* %1, %2
+  %11 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 0
+  %12 = load i8, i8* %11, align 8
+  %13 = icmp ne i8 %12, 0
+  br i1 %10, label %166, label %14
+
+14:                                               ; preds = %3
+  %15 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 0
+  %16 = load i8, i8* %15, align 8
+  %17 = icmp ne i8 %16, 0
+  br i1 %13, label %18, label %34
+
+18:                                               ; preds = %14
+  br i1 %17, label %19, label %27
+
+19:                                               ; preds = %18
+  %20 = load void (i32*, i32*, i32*, i32)*, void (i32*, i32*, i32*, i32)** @VP8LAddVector, align 8
+  %21 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 0
+  %22 = load i32*, i32** %21, align 8
+  %23 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 0
+  %24 = load i32*, i32** %23, align 8
+  %25 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %2, i64 0, i32 0
+  %26 = load i32*, i32** %25, align 8
+  tail call void %20(i32* %22, i32* %24, i32* %26, i32 %9) #8
+  br label %45
+
+27:                                               ; preds = %18
+  %28 = bitcast %struct.VP8LHistogram* %2 to i8**
+  %29 = load i8*, i8** %28, align 8
+  %30 = bitcast %struct.VP8LHistogram* %0 to i8**
+  %31 = load i8*, i8** %30, align 8
+  %32 = sext i32 %9 to i64
+  %33 = shl nsw i64 %32, 2
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %29, i8* align 4 %31, i64 %33, i1 false)
+  br label %45
+
+34:                                               ; preds = %14
+  %35 = bitcast %struct.VP8LHistogram* %2 to i8**
+  %36 = load i8*, i8** %35, align 8
+  br i1 %17, label %37, label %42
+
+37:                                               ; preds = %34
+  %38 = bitcast %struct.VP8LHistogram* %1 to i8**
+  %39 = load i8*, i8** %38, align 8
+  %40 = sext i32 %9 to i64
+  %41 = shl nsw i64 %40, 2
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %36, i8* align 4 %39, i64 %41, i1 false)
+  br label %45
+
+42:                                               ; preds = %34
+  %43 = sext i32 %9 to i64
+  %44 = shl nsw i64 %43, 2
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %36, i8 0, i64 %44, i1 false)
+  br label %45
+
+45:                                               ; preds = %27, %19, %42, %37
+  %46 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 1
+  %47 = load i8, i8* %46, align 1
+  %48 = icmp eq i8 %47, 0
+  %49 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 1
+  %50 = load i8, i8* %49, align 1
+  %51 = icmp ne i8 %50, 0
+  br i1 %48, label %63, label %52
+
+52:                                               ; preds = %45
+  br i1 %51, label %53, label %58
+
+53:                                               ; preds = %52
+  %54 = load void (i32*, i32*, i32*, i32)*, void (i32*, i32*, i32*, i32)** @VP8LAddVector, align 8
+  %55 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 1, i64 0
+  %56 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 1, i64 0
+  %57 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %2, i64 0, i32 1, i64 0
+  tail call void %54(i32* %55, i32* %56, i32* %57, i32 256) #8
+  br label %70
+
+58:                                               ; preds = %52
+  %59 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %2, i64 0, i32 1, i64 0
+  %60 = bitcast i32* %59 to i8*
+  %61 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 1, i64 0
+  %62 = bitcast i32* %61 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %60, i8* align 8 %62, i64 1024, i1 false)
+  br label %70
+
+63:                                               ; preds = %45
+  %64 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %2, i64 0, i32 1, i64 0
+  %65 = bitcast i32* %64 to i8*
+  br i1 %51, label %66, label %69
+
+66:                                               ; preds = %63
+  %67 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 1, i64 0
+  %68 = bitcast i32* %67 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %65, i8* align 8 %68, i64 1024, i1 false)
+  br label %70
+
+69:                                               ; preds = %63
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %65, i8 0, i64 1024, i1 false)
+  br label %70
+
+70:                                               ; preds = %58, %53, %69, %66
+  %71 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 2
+  %72 = load i8, i8* %71, align 2
+  %73 = icmp eq i8 %72, 0
+  %74 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 2
+  %75 = load i8, i8* %74, align 2
+  %76 = icmp ne i8 %75, 0
+  br i1 %73, label %88, label %77
+
+77:                                               ; preds = %70
+  br i1 %76, label %78, label %83
+
+78:                                               ; preds = %77
+  %79 = load void (i32*, i32*, i32*, i32)*, void (i32*, i32*, i32*, i32)** @VP8LAddVector, align 8
+  %80 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 2, i64 0
+  %81 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 2, i64 0
+  %82 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %2, i64 0, i32 2, i64 0
+  tail call void %79(i32* %80, i32* %81, i32* %82, i32 256) #8
+  br label %95
+
+83:                                               ; preds = %77
+  %84 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %2, i64 0, i32 2, i64 0
+  %85 = bitcast i32* %84 to i8*
+  %86 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 2, i64 0
+  %87 = bitcast i32* %86 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %85, i8* align 8 %87, i64 1024, i1 false)
+  br label %95
+
+88:                                               ; preds = %70
+  %89 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %2, i64 0, i32 2, i64 0
+  %90 = bitcast i32* %89 to i8*
+  br i1 %76, label %91, label %94
+
+91:                                               ; preds = %88
+  %92 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 2, i64 0
+  %93 = bitcast i32* %92 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %90, i8* align 8 %93, i64 1024, i1 false)
+  br label %95
+
+94:                                               ; preds = %88
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %90, i8 0, i64 1024, i1 false)
+  br label %95
+
+95:                                               ; preds = %83, %78, %94, %91
+  %96 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 3
+  %97 = load i8, i8* %96, align 1
+  %98 = icmp eq i8 %97, 0
+  %99 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 3
+  %100 = load i8, i8* %99, align 1
+  %101 = icmp ne i8 %100, 0
+  br i1 %98, label %113, label %102
+
+102:                                              ; preds = %95
+  br i1 %101, label %103, label %108
+
+103:                                              ; preds = %102
+  %104 = load void (i32*, i32*, i32*, i32)*, void (i32*, i32*, i32*, i32)** @VP8LAddVector, align 8
+  %105 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 3, i64 0
+  %106 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 3, i64 0
+  %107 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %2, i64 0, i32 3, i64 0
+  tail call void %104(i32* %105, i32* %106, i32* %107, i32 256) #8
+  br label %120
+
+108:                                              ; preds = %102
+  %109 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %2, i64 0, i32 3, i64 0
+  %110 = bitcast i32* %109 to i8*
+  %111 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 3, i64 0
+  %112 = bitcast i32* %111 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %110, i8* align 8 %112, i64 1024, i1 false)
+  br label %120
+
+113:                                              ; preds = %95
+  %114 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %2, i64 0, i32 3, i64 0
+  %115 = bitcast i32* %114 to i8*
+  br i1 %101, label %116, label %119
+
+116:                                              ; preds = %113
+  %117 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 3, i64 0
+  %118 = bitcast i32* %117 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %115, i8* align 8 %118, i64 1024, i1 false)
+  br label %120
+
+119:                                              ; preds = %113
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %115, i8 0, i64 1024, i1 false)
+  br label %120
+
+120:                                              ; preds = %108, %103, %119, %116
+  %121 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 4
+  %122 = load i8, i8* %121, align 4
+  %123 = icmp eq i8 %122, 0
+  %124 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 4
+  %125 = load i8, i8* %124, align 4
+  %126 = icmp ne i8 %125, 0
+  br i1 %123, label %138, label %127
+
+127:                                              ; preds = %120
+  br i1 %126, label %128, label %133
+
+128:                                              ; preds = %127
+  %129 = load void (i32*, i32*, i32*, i32)*, void (i32*, i32*, i32*, i32)** @VP8LAddVector, align 8
+  %130 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 4, i64 0
+  %131 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 4, i64 0
+  %132 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %2, i64 0, i32 4, i64 0
+  tail call void %129(i32* %130, i32* %131, i32* %132, i32 40) #8
+  br label %145
+
+133:                                              ; preds = %127
+  %134 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %2, i64 0, i32 4, i64 0
+  %135 = bitcast i32* %134 to i8*
+  %136 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 4, i64 0
+  %137 = bitcast i32* %136 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %135, i8* align 8 %137, i64 160, i1 false)
+  br label %145
+
+138:                                              ; preds = %120
+  %139 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %2, i64 0, i32 4, i64 0
+  %140 = bitcast i32* %139 to i8*
+  br i1 %126, label %141, label %144
+
+141:                                              ; preds = %138
+  %142 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 4, i64 0
+  %143 = bitcast i32* %142 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %140, i8* align 8 %143, i64 160, i1 false)
+  br label %145
+
+144:                                              ; preds = %138
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %140, i8 0, i64 160, i1 false)
+  br label %145
+
+145:                                              ; preds = %141, %144, %128, %133
+  %146 = load i8, i8* %11, align 1
+  %147 = load i8, i8* %15, align 1
+  %148 = or i8 %147, %146
+  %149 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %2, i64 0, i32 11, i64 0
+  store i8 %148, i8* %149, align 1
+  %150 = load i8, i8* %46, align 1
+  %151 = load i8, i8* %49, align 1
+  %152 = or i8 %151, %150
+  %153 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %2, i64 0, i32 11, i64 1
+  store i8 %152, i8* %153, align 1
+  %154 = load i8, i8* %71, align 1
+  %155 = load i8, i8* %74, align 1
+  %156 = or i8 %155, %154
+  %157 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %2, i64 0, i32 11, i64 2
+  store i8 %156, i8* %157, align 1
+  %158 = load i8, i8* %96, align 1
+  %159 = load i8, i8* %99, align 1
+  %160 = or i8 %159, %158
+  %161 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %2, i64 0, i32 11, i64 3
+  store i8 %160, i8* %161, align 1
+  %162 = load i8, i8* %121, align 1
+  %163 = load i8, i8* %124, align 1
+  %164 = or i8 %163, %162
+  %165 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %2, i64 0, i32 11, i64 4
+  store i8 %164, i8* %165, align 1
+  br label %273
+
+166:                                              ; preds = %3
+  br i1 %13, label %167, label %184
+
+167:                                              ; preds = %166
+  %168 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 0
+  %169 = load i8, i8* %168, align 8
+  %170 = icmp eq i8 %169, 0
+  br i1 %170, label %177, label %171
+
+171:                                              ; preds = %167
+  %172 = load void (i32*, i32*, i32)*, void (i32*, i32*, i32)** @VP8LAddVectorEq, align 8
+  %173 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 0
+  %174 = load i32*, i32** %173, align 8
+  %175 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 0
+  %176 = load i32*, i32** %175, align 8
+  tail call void %172(i32* %174, i32* %176, i32 %9) #8
+  br label %184
+
+177:                                              ; preds = %167
+  %178 = bitcast %struct.VP8LHistogram* %1 to i8**
+  %179 = load i8*, i8** %178, align 8
+  %180 = bitcast %struct.VP8LHistogram* %0 to i8**
+  %181 = load i8*, i8** %180, align 8
+  %182 = sext i32 %9 to i64
+  %183 = shl nsw i64 %182, 2
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %179, i8* align 4 %181, i64 %183, i1 false)
+  br label %184
+
+184:                                              ; preds = %166, %177, %171
+  %185 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 1
+  %186 = load i8, i8* %185, align 1
+  %187 = icmp eq i8 %186, 0
+  br i1 %187, label %201, label %188
+
+188:                                              ; preds = %184
+  %189 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 1
+  %190 = load i8, i8* %189, align 1
+  %191 = icmp eq i8 %190, 0
+  br i1 %191, label %196, label %192
+
+192:                                              ; preds = %188
+  %193 = load void (i32*, i32*, i32)*, void (i32*, i32*, i32)** @VP8LAddVectorEq, align 8
+  %194 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 1, i64 0
+  %195 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 1, i64 0
+  tail call void %193(i32* %194, i32* %195, i32 256) #8
+  br label %201
+
+196:                                              ; preds = %188
+  %197 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 1, i64 0
+  %198 = bitcast i32* %197 to i8*
+  %199 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 1, i64 0
+  %200 = bitcast i32* %199 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %198, i8* align 8 %200, i64 1024, i1 false)
+  br label %201
+
+201:                                              ; preds = %184, %196, %192
+  %202 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 2
+  %203 = load i8, i8* %202, align 2
+  %204 = icmp eq i8 %203, 0
+  br i1 %204, label %218, label %205
+
+205:                                              ; preds = %201
+  %206 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 2
+  %207 = load i8, i8* %206, align 2
+  %208 = icmp eq i8 %207, 0
+  br i1 %208, label %213, label %209
+
+209:                                              ; preds = %205
+  %210 = load void (i32*, i32*, i32)*, void (i32*, i32*, i32)** @VP8LAddVectorEq, align 8
+  %211 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 2, i64 0
+  %212 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 2, i64 0
+  tail call void %210(i32* %211, i32* %212, i32 256) #8
+  br label %218
+
+213:                                              ; preds = %205
+  %214 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 2, i64 0
+  %215 = bitcast i32* %214 to i8*
+  %216 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 2, i64 0
+  %217 = bitcast i32* %216 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %215, i8* align 8 %217, i64 1024, i1 false)
+  br label %218
+
+218:                                              ; preds = %201, %213, %209
+  %219 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 3
+  %220 = load i8, i8* %219, align 1
+  %221 = icmp eq i8 %220, 0
+  br i1 %221, label %235, label %222
+
+222:                                              ; preds = %218
+  %223 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 3
+  %224 = load i8, i8* %223, align 1
+  %225 = icmp eq i8 %224, 0
+  br i1 %225, label %230, label %226
+
+226:                                              ; preds = %222
+  %227 = load void (i32*, i32*, i32)*, void (i32*, i32*, i32)** @VP8LAddVectorEq, align 8
+  %228 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 3, i64 0
+  %229 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 3, i64 0
+  tail call void %227(i32* %228, i32* %229, i32 256) #8
+  br label %235
+
+230:                                              ; preds = %222
+  %231 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 3, i64 0
+  %232 = bitcast i32* %231 to i8*
+  %233 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 3, i64 0
+  %234 = bitcast i32* %233 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %232, i8* align 8 %234, i64 1024, i1 false)
+  br label %235
+
+235:                                              ; preds = %218, %230, %226
+  %236 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 4
+  %237 = load i8, i8* %236, align 4
+  %238 = icmp eq i8 %237, 0
+  br i1 %238, label %252, label %239
+
+239:                                              ; preds = %235
+  %240 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 4
+  %241 = load i8, i8* %240, align 4
+  %242 = icmp eq i8 %241, 0
+  br i1 %242, label %247, label %243
+
+243:                                              ; preds = %239
+  %244 = load void (i32*, i32*, i32)*, void (i32*, i32*, i32)** @VP8LAddVectorEq, align 8
+  %245 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 4, i64 0
+  %246 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 4, i64 0
+  tail call void %244(i32* %245, i32* %246, i32 40) #8
+  br label %252
+
+247:                                              ; preds = %239
+  %248 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 4, i64 0
+  %249 = bitcast i32* %248 to i8*
+  %250 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 4, i64 0
+  %251 = bitcast i32* %250 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %249, i8* align 8 %251, i64 160, i1 false)
+  br label %252
+
+252:                                              ; preds = %235, %243, %247
+  %253 = load i8, i8* %11, align 1
+  %254 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 0
+  %255 = load i8, i8* %254, align 1
+  %256 = or i8 %255, %253
+  store i8 %256, i8* %254, align 1
+  %257 = load i8, i8* %185, align 1
+  %258 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 1
+  %259 = load i8, i8* %258, align 1
+  %260 = or i8 %259, %257
+  store i8 %260, i8* %258, align 1
+  %261 = load i8, i8* %202, align 1
+  %262 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 2
+  %263 = load i8, i8* %262, align 1
+  %264 = or i8 %263, %261
+  store i8 %264, i8* %262, align 1
+  %265 = load i8, i8* %219, align 1
+  %266 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 3
+  %267 = load i8, i8* %266, align 1
+  %268 = or i8 %267, %265
+  store i8 %268, i8* %266, align 1
+  %269 = load i8, i8* %236, align 1
+  %270 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 4
+  %271 = load i8, i8* %270, align 1
+  %272 = or i8 %271, %269
+  store i8 %272, i8* %270, align 1
+  br label %273
+
+273:                                              ; preds = %145, %252
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #3
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @VP8LEncDspInit() local_unnamed_addr #1 {
+  %1 = load volatile i32 (i32)*, i32 (i32)** @VP8LEncDspInit.VP8LEncDspInit_body_last_cpuinfo_used, align 8
+  %2 = load i32 (i32)*, i32 (i32)** @VP8GetCPUInfo, align 8
+  %3 = icmp eq i32 (i32)* %1, %2
+  br i1 %3, label %17, label %4
+
+4:                                                ; preds = %0
+  tail call void @VP8LDspInit() #8
+  store void (i32*, i32)* @VP8LSubtractGreenFromBlueAndRed_C, void (i32*, i32)** @VP8LSubtractGreenFromBlueAndRed, align 8
+  store void (%struct.VP8LMultipliers*, i32*, i32)* @VP8LTransformColor_C, void (%struct.VP8LMultipliers*, i32*, i32)** @VP8LTransformColor, align 8
+  store void (i32*, i32, i32, i32, i32, i32, i32*)* @VP8LCollectColorBlueTransforms_C, void (i32*, i32, i32, i32, i32, i32, i32*)** @VP8LCollectColorBlueTransforms, align 8
+  store void (i32*, i32, i32, i32, i32, i32*)* @VP8LCollectColorRedTransforms_C, void (i32*, i32, i32, i32, i32, i32*)** @VP8LCollectColorRedTransforms, align 8
+  store float (i32)* @FastLog2Slow_C, float (i32)** @VP8LFastLog2Slow, align 8
+  store float (i32)* @FastSLog2Slow_C, float (i32)** @VP8LFastSLog2Slow, align 8
+  store double (i32*, i32)* @ExtraCost_C, double (i32*, i32)** @VP8LExtraCost, align 8
+  store double (i32*, i32*, i32)* @ExtraCostCombined_C, double (i32*, i32*, i32)** @VP8LExtraCostCombined, align 8
+  store float (i32*, i32*)* @CombinedShannonEntropy_C, float (i32*, i32*)** @VP8LCombinedShannonEntropy, align 8
+  store void (i32*, i32, %struct.VP8LBitEntropy*, %struct.VP8LStreaks*)* @GetEntropyUnrefined_C, void (i32*, i32, %struct.VP8LBitEntropy*, %struct.VP8LStreaks*)** @VP8LGetEntropyUnrefined, align 8
+  store void (i32*, i32*, i32, %struct.VP8LBitEntropy*, %struct.VP8LStreaks*)* @GetCombinedEntropyUnrefined_C, void (i32*, i32*, i32, %struct.VP8LBitEntropy*, %struct.VP8LStreaks*)** @VP8LGetCombinedEntropyUnrefined, align 8
+  store void (i32*, i32*, i32*, i32)* @AddVector_C, void (i32*, i32*, i32*, i32)** @VP8LAddVector, align 8
+  store void (i32*, i32*, i32)* @AddVectorEq_C, void (i32*, i32*, i32)** @VP8LAddVectorEq, align 8
+  store i32 (i32*, i32*, i32)* @VectorMismatch_C, i32 (i32*, i32*, i32)** @VP8LVectorMismatch, align 8
+  store void (i8*, i32, i32, i32*)* @VP8LBundleColorMap_C, void (i8*, i32, i32, i32*)** @VP8LBundleColorMap, align 8
+  store <2 x void (i32*, i32*, i32, i32*)*> <void (i32*, i32*, i32, i32*)* @PredictorSub0_C, void (i32*, i32*, i32, i32*)* @PredictorSub1_C>, <2 x void (i32*, i32*, i32, i32*)*>* bitcast ([16 x void (i32*, i32*, i32, i32*)*]* @VP8LPredictorsSub to <2 x void (i32*, i32*, i32, i32*)*>*), align 16
+  store <2 x void (i32*, i32*, i32, i32*)*> <void (i32*, i32*, i32, i32*)* @PredictorSub2_C, void (i32*, i32*, i32, i32*)* @PredictorSub3_C>, <2 x void (i32*, i32*, i32, i32*)*>* bitcast (void (i32*, i32*, i32, i32*)** getelementptr inbounds ([16 x void (i32*, i32*, i32, i32*)*], [16 x void (i32*, i32*, i32, i32*)*]* @VP8LPredictorsSub, i64 0, i64 2) to <2 x void (i32*, i32*, i32, i32*)*>*), align 16
+  store <2 x void (i32*, i32*, i32, i32*)*> <void (i32*, i32*, i32, i32*)* @PredictorSub4_C, void (i32*, i32*, i32, i32*)* @PredictorSub5_C>, <2 x void (i32*, i32*, i32, i32*)*>* bitcast (void (i32*, i32*, i32, i32*)** getelementptr inbounds ([16 x void (i32*, i32*, i32, i32*)*], [16 x void (i32*, i32*, i32, i32*)*]* @VP8LPredictorsSub, i64 0, i64 4) to <2 x void (i32*, i32*, i32, i32*)*>*), align 16
+  store <2 x void (i32*, i32*, i32, i32*)*> <void (i32*, i32*, i32, i32*)* @PredictorSub6_C, void (i32*, i32*, i32, i32*)* @PredictorSub7_C>, <2 x void (i32*, i32*, i32, i32*)*>* bitcast (void (i32*, i32*, i32, i32*)** getelementptr inbounds ([16 x void (i32*, i32*, i32, i32*)*], [16 x void (i32*, i32*, i32, i32*)*]* @VP8LPredictorsSub, i64 0, i64 6) to <2 x void (i32*, i32*, i32, i32*)*>*), align 16
+  store <2 x void (i32*, i32*, i32, i32*)*> <void (i32*, i32*, i32, i32*)* @PredictorSub8_C, void (i32*, i32*, i32, i32*)* @PredictorSub9_C>, <2 x void (i32*, i32*, i32, i32*)*>* bitcast (void (i32*, i32*, i32, i32*)** getelementptr inbounds ([16 x void (i32*, i32*, i32, i32*)*], [16 x void (i32*, i32*, i32, i32*)*]* @VP8LPredictorsSub, i64 0, i64 8) to <2 x void (i32*, i32*, i32, i32*)*>*), align 16
+  store <2 x void (i32*, i32*, i32, i32*)*> <void (i32*, i32*, i32, i32*)* @PredictorSub10_C, void (i32*, i32*, i32, i32*)* @PredictorSub11_C>, <2 x void (i32*, i32*, i32, i32*)*>* bitcast (void (i32*, i32*, i32, i32*)** getelementptr inbounds ([16 x void (i32*, i32*, i32, i32*)*], [16 x void (i32*, i32*, i32, i32*)*]* @VP8LPredictorsSub, i64 0, i64 10) to <2 x void (i32*, i32*, i32, i32*)*>*), align 16
+  store <2 x void (i32*, i32*, i32, i32*)*> <void (i32*, i32*, i32, i32*)* @PredictorSub12_C, void (i32*, i32*, i32, i32*)* @PredictorSub13_C>, <2 x void (i32*, i32*, i32, i32*)*>* bitcast (void (i32*, i32*, i32, i32*)** getelementptr inbounds ([16 x void (i32*, i32*, i32, i32*)*], [16 x void (i32*, i32*, i32, i32*)*]* @VP8LPredictorsSub, i64 0, i64 12) to <2 x void (i32*, i32*, i32, i32*)*>*), align 16
+  store <2 x void (i32*, i32*, i32, i32*)*> <void (i32*, i32*, i32, i32*)* @PredictorSub0_C, void (i32*, i32*, i32, i32*)* @PredictorSub0_C>, <2 x void (i32*, i32*, i32, i32*)*>* bitcast (void (i32*, i32*, i32, i32*)** getelementptr inbounds ([16 x void (i32*, i32*, i32, i32*)*], [16 x void (i32*, i32*, i32, i32*)*]* @VP8LPredictorsSub, i64 0, i64 14) to <2 x void (i32*, i32*, i32, i32*)*>*), align 16
+  store <2 x void (i32*, i32*, i32, i32*)*> <void (i32*, i32*, i32, i32*)* @PredictorSub0_C, void (i32*, i32*, i32, i32*)* @PredictorSub1_C>, <2 x void (i32*, i32*, i32, i32*)*>* bitcast ([16 x void (i32*, i32*, i32, i32*)*]* @VP8LPredictorsSub_C to <2 x void (i32*, i32*, i32, i32*)*>*), align 16
+  store <2 x void (i32*, i32*, i32, i32*)*> <void (i32*, i32*, i32, i32*)* @PredictorSub2_C, void (i32*, i32*, i32, i32*)* @PredictorSub3_C>, <2 x void (i32*, i32*, i32, i32*)*>* bitcast (void (i32*, i32*, i32, i32*)** getelementptr inbounds ([16 x void (i32*, i32*, i32, i32*)*], [16 x void (i32*, i32*, i32, i32*)*]* @VP8LPredictorsSub_C, i64 0, i64 2) to <2 x void (i32*, i32*, i32, i32*)*>*), align 16
+  store <2 x void (i32*, i32*, i32, i32*)*> <void (i32*, i32*, i32, i32*)* @PredictorSub4_C, void (i32*, i32*, i32, i32*)* @PredictorSub5_C>, <2 x void (i32*, i32*, i32, i32*)*>* bitcast (void (i32*, i32*, i32, i32*)** getelementptr inbounds ([16 x void (i32*, i32*, i32, i32*)*], [16 x void (i32*, i32*, i32, i32*)*]* @VP8LPredictorsSub_C, i64 0, i64 4) to <2 x void (i32*, i32*, i32, i32*)*>*), align 16
+  store <2 x void (i32*, i32*, i32, i32*)*> <void (i32*, i32*, i32, i32*)* @PredictorSub6_C, void (i32*, i32*, i32, i32*)* @PredictorSub7_C>, <2 x void (i32*, i32*, i32, i32*)*>* bitcast (void (i32*, i32*, i32, i32*)** getelementptr inbounds ([16 x void (i32*, i32*, i32, i32*)*], [16 x void (i32*, i32*, i32, i32*)*]* @VP8LPredictorsSub_C, i64 0, i64 6) to <2 x void (i32*, i32*, i32, i32*)*>*), align 16
+  store <2 x void (i32*, i32*, i32, i32*)*> <void (i32*, i32*, i32, i32*)* @PredictorSub8_C, void (i32*, i32*, i32, i32*)* @PredictorSub9_C>, <2 x void (i32*, i32*, i32, i32*)*>* bitcast (void (i32*, i32*, i32, i32*)** getelementptr inbounds ([16 x void (i32*, i32*, i32, i32*)*], [16 x void (i32*, i32*, i32, i32*)*]* @VP8LPredictorsSub_C, i64 0, i64 8) to <2 x void (i32*, i32*, i32, i32*)*>*), align 16
+  store <2 x void (i32*, i32*, i32, i32*)*> <void (i32*, i32*, i32, i32*)* @PredictorSub10_C, void (i32*, i32*, i32, i32*)* @PredictorSub11_C>, <2 x void (i32*, i32*, i32, i32*)*>* bitcast (void (i32*, i32*, i32, i32*)** getelementptr inbounds ([16 x void (i32*, i32*, i32, i32*)*], [16 x void (i32*, i32*, i32, i32*)*]* @VP8LPredictorsSub_C, i64 0, i64 10) to <2 x void (i32*, i32*, i32, i32*)*>*), align 16
+  store <2 x void (i32*, i32*, i32, i32*)*> <void (i32*, i32*, i32, i32*)* @PredictorSub12_C, void (i32*, i32*, i32, i32*)* @PredictorSub13_C>, <2 x void (i32*, i32*, i32, i32*)*>* bitcast (void (i32*, i32*, i32, i32*)** getelementptr inbounds ([16 x void (i32*, i32*, i32, i32*)*], [16 x void (i32*, i32*, i32, i32*)*]* @VP8LPredictorsSub_C, i64 0, i64 12) to <2 x void (i32*, i32*, i32, i32*)*>*), align 16
+  store <2 x void (i32*, i32*, i32, i32*)*> <void (i32*, i32*, i32, i32*)* @PredictorSub0_C, void (i32*, i32*, i32, i32*)* @PredictorSub0_C>, <2 x void (i32*, i32*, i32, i32*)*>* bitcast (void (i32*, i32*, i32, i32*)** getelementptr inbounds ([16 x void (i32*, i32*, i32, i32*)*], [16 x void (i32*, i32*, i32, i32*)*]* @VP8LPredictorsSub_C, i64 0, i64 14) to <2 x void (i32*, i32*, i32, i32*)*>*), align 16
+  %5 = load i32 (i32)*, i32 (i32)** @VP8GetCPUInfo, align 8
+  %6 = icmp eq i32 (i32)* %5, null
+  br i1 %6, label %15, label %7
+
+7:                                                ; preds = %4
+  %8 = tail call i32 %5(i32 0) #8
+  %9 = icmp eq i32 %8, 0
+  br i1 %9, label %15, label %10
+
+10:                                               ; preds = %7
+  tail call void @VP8LEncDspInitSSE2() #8
+  %11 = load i32 (i32)*, i32 (i32)** @VP8GetCPUInfo, align 8
+  %12 = tail call i32 %11(i32 3) #8
+  %13 = icmp eq i32 %12, 0
+  br i1 %13, label %15, label %14
+
+14:                                               ; preds = %10
+  tail call void @VP8LEncDspInitSSE41() #8
+  br label %15
+
+15:                                               ; preds = %4, %7, %10, %14
+  %16 = load i64, i64* bitcast (i32 (i32)** @VP8GetCPUInfo to i64*), align 8
+  store volatile i64 %16, i64* bitcast (i32 (i32)** @VP8LEncDspInit.VP8LEncDspInit_body_last_cpuinfo_used to i64*), align 8
+  br label %17
+
+17:                                               ; preds = %0, %15
+  ret void
+}
+
+declare void @VP8LDspInit() local_unnamed_addr #4
+
+; Function Attrs: nofree nounwind ssp uwtable
+define internal float @FastLog2Slow_C(i32) #5 {
+  %2 = icmp ult i32 %0, 65536
+  br i1 %2, label %3, label %28
+
+3:                                                ; preds = %1, %3
+  %4 = phi i32 [ %8, %3 ], [ %0, %1 ]
+  %5 = phi i32 [ %7, %3 ], [ 0, %1 ]
+  %6 = phi i32 [ %9, %3 ], [ 1, %1 ]
+  %7 = add nuw nsw i32 %5, 1
+  %8 = lshr i32 %4, 1
+  %9 = shl i32 %6, 1
+  %10 = icmp ugt i32 %4, 511
+  br i1 %10, label %3, label %11
+
+11:                                               ; preds = %3
+  %12 = zext i32 %8 to i64
+  %13 = getelementptr inbounds [256 x float], [256 x float]* @kLog2Table, i64 0, i64 %12
+  %14 = load float, float* %13, align 4
+  %15 = sitofp i32 %7 to float
+  %16 = fadd float %14, %15
+  %17 = fpext float %16 to double
+  %18 = icmp ugt i32 %0, 4095
+  br i1 %18, label %19, label %32
+
+19:                                               ; preds = %11
+  %20 = add i32 %9, -1
+  %21 = and i32 %20, %0
+  %22 = mul i32 %21, 23
+  %23 = lshr i32 %22, 4
+  %24 = sitofp i32 %23 to double
+  %25 = uitofp i32 %0 to double
+  %26 = fdiv double %24, %25
+  %27 = fadd double %26, %17
+  br label %32
+
+28:                                               ; preds = %1
+  %29 = uitofp i32 %0 to double
+  %30 = tail call double @log(double %29) #8
+  %31 = fmul double %30, 0x3FF71547652B82FE
+  br label %32
+
+32:                                               ; preds = %11, %19, %28
+  %33 = phi double [ %31, %28 ], [ %27, %19 ], [ %17, %11 ]
+  %34 = fptrunc double %33 to float
+  ret float %34
+}
+
+; Function Attrs: nofree nounwind ssp uwtable
+define internal float @FastSLog2Slow_C(i32) #5 {
+  %2 = icmp ult i32 %0, 65536
+  br i1 %2, label %3, label %25
+
+3:                                                ; preds = %1, %3
+  %4 = phi i32 [ %8, %3 ], [ %0, %1 ]
+  %5 = phi i32 [ %7, %3 ], [ 0, %1 ]
+  %6 = phi i32 [ %9, %3 ], [ 1, %1 ]
+  %7 = add nuw nsw i32 %5, 1
+  %8 = lshr i32 %4, 1
+  %9 = shl i32 %6, 1
+  %10 = icmp ugt i32 %4, 511
+  br i1 %10, label %3, label %11
+
+11:                                               ; preds = %3
+  %12 = uitofp i32 %0 to float
+  %13 = add i32 %9, -1
+  %14 = and i32 %13, %0
+  %15 = mul i32 %14, 23
+  %16 = lshr i32 %15, 4
+  %17 = zext i32 %8 to i64
+  %18 = getelementptr inbounds [256 x float], [256 x float]* @kLog2Table, i64 0, i64 %17
+  %19 = load float, float* %18, align 4
+  %20 = sitofp i32 %7 to float
+  %21 = fadd float %19, %20
+  %22 = fmul float %21, %12
+  %23 = sitofp i32 %16 to float
+  %24 = fadd float %22, %23
+  br label %31
+
+25:                                               ; preds = %1
+  %26 = uitofp i32 %0 to double
+  %27 = fmul double %26, 0x3FF71547652B82FE
+  %28 = tail call double @log(double %26) #8
+  %29 = fmul double %27, %28
+  %30 = fptrunc double %29 to float
+  br label %31
+
+31:                                               ; preds = %25, %11
+  %32 = phi float [ %24, %11 ], [ %30, %25 ]
+  ret float %32
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define internal double @ExtraCost_C(i32* nocapture readonly, i32) #6 {
+  %3 = add i32 %1, -2
+  %4 = icmp sgt i32 %3, 2
+  br i1 %4, label %5, label %49
+
+5:                                                ; preds = %2
+  %6 = zext i32 %3 to i64
+  %7 = add nsw i64 %6, -2
+  %8 = and i64 %7, 1
+  %9 = icmp eq i32 %3, 3
+  br i1 %9, label %35, label %10
+
+10:                                               ; preds = %5
+  %11 = sub nsw i64 %7, %8
+  br label %12
+
+12:                                               ; preds = %12, %10
+  %13 = phi i64 [ 2, %10 ], [ %32, %12 ]
+  %14 = phi double [ 0.000000e+00, %10 ], [ %31, %12 ]
+  %15 = phi i64 [ %11, %10 ], [ %33, %12 ]
+  %16 = trunc i64 %13 to i32
+  %17 = lshr exact i32 %16, 1
+  %18 = add nuw nsw i64 %13, 2
+  %19 = getelementptr inbounds i32, i32* %0, i64 %18
+  %20 = load i32, i32* %19, align 4
+  %21 = mul i32 %20, %17
+  %22 = uitofp i32 %21 to double
+  %23 = fadd double %14, %22
+  %24 = trunc i64 %13 to i32
+  %25 = lshr exact i32 %24, 1
+  %26 = add nuw nsw i64 %13, 3
+  %27 = getelementptr inbounds i32, i32* %0, i64 %26
+  %28 = load i32, i32* %27, align 4
+  %29 = mul i32 %28, %25
+  %30 = uitofp i32 %29 to double
+  %31 = fadd double %23, %30
+  %32 = add nuw nsw i64 %13, 2
+  %33 = add i64 %15, -2
+  %34 = icmp eq i64 %33, 0
+  br i1 %34, label %35, label %12
+
+35:                                               ; preds = %12, %5
+  %36 = phi double [ undef, %5 ], [ %31, %12 ]
+  %37 = phi i64 [ 2, %5 ], [ %32, %12 ]
+  %38 = phi double [ 0.000000e+00, %5 ], [ %31, %12 ]
+  %39 = icmp eq i64 %8, 0
+  br i1 %39, label %49, label %40
+
+40:                                               ; preds = %35
+  %41 = add nuw nsw i64 %37, 2
+  %42 = getelementptr inbounds i32, i32* %0, i64 %41
+  %43 = load i32, i32* %42, align 4
+  %44 = trunc i64 %37 to i32
+  %45 = lshr i32 %44, 1
+  %46 = mul i32 %43, %45
+  %47 = uitofp i32 %46 to double
+  %48 = fadd double %38, %47
+  br label %49
+
+49:                                               ; preds = %40, %35, %2
+  %50 = phi double [ 0.000000e+00, %2 ], [ %36, %35 ], [ %48, %40 ]
+  ret double %50
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define internal double @ExtraCostCombined_C(i32* nocapture readonly, i32* nocapture readonly, i32) #6 {
+  %4 = add i32 %2, -2
+  %5 = icmp sgt i32 %4, 2
+  br i1 %5, label %6, label %59
+
+6:                                                ; preds = %3
+  %7 = zext i32 %4 to i64
+  %8 = add nsw i64 %7, -2
+  %9 = and i64 %8, 1
+  %10 = icmp eq i32 %4, 3
+  br i1 %10, label %42, label %11
+
+11:                                               ; preds = %6
+  %12 = sub nsw i64 %8, %9
+  br label %13
+
+13:                                               ; preds = %13, %11
+  %14 = phi i64 [ 2, %11 ], [ %39, %13 ]
+  %15 = phi double [ 0.000000e+00, %11 ], [ %38, %13 ]
+  %16 = phi i64 [ %12, %11 ], [ %40, %13 ]
+  %17 = add nuw nsw i64 %14, 2
+  %18 = getelementptr inbounds i32, i32* %0, i64 %17
+  %19 = load i32, i32* %18, align 4
+  %20 = getelementptr inbounds i32, i32* %1, i64 %17
+  %21 = load i32, i32* %20, align 4
+  %22 = add i32 %21, %19
+  %23 = trunc i64 %14 to i32
+  %24 = lshr exact i32 %23, 1
+  %25 = mul nsw i32 %22, %24
+  %26 = sitofp i32 %25 to double
+  %27 = fadd double %15, %26
+  %28 = add nuw nsw i64 %14, 3
+  %29 = getelementptr inbounds i32, i32* %0, i64 %28
+  %30 = load i32, i32* %29, align 4
+  %31 = getelementptr inbounds i32, i32* %1, i64 %28
+  %32 = load i32, i32* %31, align 4
+  %33 = add i32 %32, %30
+  %34 = trunc i64 %14 to i32
+  %35 = lshr exact i32 %34, 1
+  %36 = mul nsw i32 %33, %35
+  %37 = sitofp i32 %36 to double
+  %38 = fadd double %27, %37
+  %39 = add nuw nsw i64 %14, 2
+  %40 = add i64 %16, -2
+  %41 = icmp eq i64 %40, 0
+  br i1 %41, label %42, label %13
+
+42:                                               ; preds = %13, %6
+  %43 = phi double [ undef, %6 ], [ %38, %13 ]
+  %44 = phi i64 [ 2, %6 ], [ %39, %13 ]
+  %45 = phi double [ 0.000000e+00, %6 ], [ %38, %13 ]
+  %46 = icmp eq i64 %9, 0
+  br i1 %46, label %59, label %47
+
+47:                                               ; preds = %42
+  %48 = add nuw nsw i64 %44, 2
+  %49 = getelementptr inbounds i32, i32* %1, i64 %48
+  %50 = load i32, i32* %49, align 4
+  %51 = getelementptr inbounds i32, i32* %0, i64 %48
+  %52 = load i32, i32* %51, align 4
+  %53 = add i32 %50, %52
+  %54 = trunc i64 %44 to i32
+  %55 = lshr i32 %54, 1
+  %56 = mul nsw i32 %53, %55
+  %57 = sitofp i32 %56 to double
+  %58 = fadd double %45, %57
+  br label %59
+
+59:                                               ; preds = %47, %42, %3
+  %60 = phi double [ 0.000000e+00, %3 ], [ %43, %42 ], [ %58, %47 ]
+  ret double %60
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal float @CombinedShannonEntropy_C(i32* nocapture readonly, i32* nocapture readonly) #1 {
+  br label %3
+
+3:                                                ; preds = %57, %2
+  %4 = phi i64 [ 0, %2 ], [ %61, %57 ]
+  %5 = phi i32 [ 0, %2 ], [ %60, %57 ]
+  %6 = phi i32 [ 0, %2 ], [ %59, %57 ]
+  %7 = phi double [ 0.000000e+00, %2 ], [ %58, %57 ]
+  %8 = getelementptr inbounds i32, i32* %0, i64 %4
+  %9 = load i32, i32* %8, align 4
+  %10 = icmp eq i32 %9, 0
+  %11 = getelementptr inbounds i32, i32* %1, i64 %4
+  %12 = load i32, i32* %11, align 4
+  br i1 %10, label %41, label %13
+
+13:                                               ; preds = %3
+  %14 = add nsw i32 %12, %9
+  %15 = add nsw i32 %9, %6
+  %16 = icmp ult i32 %9, 256
+  br i1 %16, label %17, label %21
+
+17:                                               ; preds = %13
+  %18 = zext i32 %9 to i64
+  %19 = getelementptr inbounds [256 x float], [256 x float]* @kSLog2Table, i64 0, i64 %18
+  %20 = load float, float* %19, align 4
+  br label %24
+
+21:                                               ; preds = %13
+  %22 = load float (i32)*, float (i32)** @VP8LFastSLog2Slow, align 8
+  %23 = tail call float %22(i32 %9) #8
+  br label %24
+
+24:                                               ; preds = %17, %21
+  %25 = phi float [ %20, %17 ], [ %23, %21 ]
+  %26 = fpext float %25 to double
+  %27 = fsub double %7, %26
+  %28 = add nsw i32 %14, %5
+  %29 = icmp ult i32 %14, 256
+  br i1 %29, label %30, label %34
+
+30:                                               ; preds = %24
+  %31 = zext i32 %14 to i64
+  %32 = getelementptr inbounds [256 x float], [256 x float]* @kSLog2Table, i64 0, i64 %31
+  %33 = load float, float* %32, align 4
+  br label %37
+
+34:                                               ; preds = %24
+  %35 = load float (i32)*, float (i32)** @VP8LFastSLog2Slow, align 8
+  %36 = tail call float %35(i32 %14) #8
+  br label %37
+
+37:                                               ; preds = %30, %34
+  %38 = phi float [ %33, %30 ], [ %36, %34 ]
+  %39 = fpext float %38 to double
+  %40 = fsub double %27, %39
+  br label %57
+
+41:                                               ; preds = %3
+  %42 = icmp eq i32 %12, 0
+  br i1 %42, label %57, label %43
+
+43:                                               ; preds = %41
+  %44 = add nsw i32 %12, %5
+  %45 = icmp ult i32 %12, 256
+  br i1 %45, label %46, label %50
+
+46:                                               ; preds = %43
+  %47 = zext i32 %12 to i64
+  %48 = getelementptr inbounds [256 x float], [256 x float]* @kSLog2Table, i64 0, i64 %47
+  %49 = load float, float* %48, align 4
+  br label %53
+
+50:                                               ; preds = %43
+  %51 = load float (i32)*, float (i32)** @VP8LFastSLog2Slow, align 8
+  %52 = tail call float %51(i32 %12) #8
+  br label %53
+
+53:                                               ; preds = %46, %50
+  %54 = phi float [ %49, %46 ], [ %52, %50 ]
+  %55 = fpext float %54 to double
+  %56 = fsub double %7, %55
+  br label %57
+
+57:                                               ; preds = %41, %53, %37
+  %58 = phi double [ %40, %37 ], [ %56, %53 ], [ %7, %41 ]
+  %59 = phi i32 [ %15, %37 ], [ %6, %53 ], [ %6, %41 ]
+  %60 = phi i32 [ %28, %37 ], [ %44, %53 ], [ %5, %41 ]
+  %61 = add nuw nsw i64 %4, 1
+  %62 = icmp eq i64 %61, 256
+  br i1 %62, label %63, label %3
+
+63:                                               ; preds = %57
+  %64 = icmp ult i32 %59, 256
+  br i1 %64, label %65, label %69
+
+65:                                               ; preds = %63
+  %66 = zext i32 %59 to i64
+  %67 = getelementptr inbounds [256 x float], [256 x float]* @kSLog2Table, i64 0, i64 %66
+  %68 = load float, float* %67, align 4
+  br label %72
+
+69:                                               ; preds = %63
+  %70 = load float (i32)*, float (i32)** @VP8LFastSLog2Slow, align 8
+  %71 = tail call float %70(i32 %59) #8
+  br label %72
+
+72:                                               ; preds = %65, %69
+  %73 = phi float [ %68, %65 ], [ %71, %69 ]
+  %74 = icmp ult i32 %60, 256
+  br i1 %74, label %75, label %79
+
+75:                                               ; preds = %72
+  %76 = zext i32 %60 to i64
+  %77 = getelementptr inbounds [256 x float], [256 x float]* @kSLog2Table, i64 0, i64 %76
+  %78 = load float, float* %77, align 4
+  br label %82
+
+79:                                               ; preds = %72
+  %80 = load float (i32)*, float (i32)** @VP8LFastSLog2Slow, align 8
+  %81 = tail call float %80(i32 %60) #8
+  br label %82
+
+82:                                               ; preds = %75, %79
+  %83 = phi float [ %78, %75 ], [ %81, %79 ]
+  %84 = fadd float %73, %83
+  %85 = fpext float %84 to double
+  %86 = fadd double %58, %85
+  %87 = fptrunc double %86 to float
+  ret float %87
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @GetEntropyUnrefined_C(i32* nocapture readonly, i32, %struct.VP8LBitEntropy* nocapture, %struct.VP8LStreaks* nocapture) #1 {
+  %5 = load i32, i32* %0, align 4
+  %6 = bitcast %struct.VP8LStreaks* %3 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %6, i8 0, i64 24, i1 false)
+  %7 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %2, i64 0, i32 4
+  %8 = bitcast %struct.VP8LBitEntropy* %2 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %8, i8 0, i64 20, i1 false) #8
+  store i32 -1, i32* %7, align 4
+  %9 = icmp sgt i32 %1, 1
+  br i1 %9, label %10, label %68
+
+10:                                               ; preds = %4
+  %11 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %2, i64 0, i32 1
+  %12 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %2, i64 0, i32 2
+  %13 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %2, i64 0, i32 0
+  %14 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %2, i64 0, i32 3
+  %15 = zext i32 %1 to i64
+  br label %16
+
+16:                                               ; preds = %63, %10
+  %17 = phi i64 [ 1, %10 ], [ %66, %63 ]
+  %18 = phi i32 [ %5, %10 ], [ %65, %63 ]
+  %19 = phi i32 [ 0, %10 ], [ %64, %63 ]
+  %20 = getelementptr inbounds i32, i32* %0, i64 %17
+  %21 = load i32, i32* %20, align 4
+  %22 = icmp eq i32 %21, %18
+  br i1 %22, label %63, label %23
+
+23:                                               ; preds = %16
+  %24 = trunc i64 %17 to i32
+  %25 = sub nsw i32 %24, %19
+  %26 = icmp eq i32 %18, 0
+  br i1 %26, label %51, label %27
+
+27:                                               ; preds = %23
+  %28 = mul i32 %25, %18
+  %29 = load i32, i32* %11, align 8
+  %30 = add i32 %29, %28
+  store i32 %30, i32* %11, align 8
+  %31 = load i32, i32* %12, align 4
+  %32 = add nsw i32 %31, %25
+  store i32 %32, i32* %12, align 4
+  store i32 %19, i32* %7, align 4
+  %33 = icmp ult i32 %18, 256
+  br i1 %33, label %34, label %38
+
+34:                                               ; preds = %27
+  %35 = zext i32 %18 to i64
+  %36 = getelementptr inbounds [256 x float], [256 x float]* @kSLog2Table, i64 0, i64 %35
+  %37 = load float, float* %36, align 4
+  br label %41
+
+38:                                               ; preds = %27
+  %39 = load float (i32)*, float (i32)** @VP8LFastSLog2Slow, align 8
+  %40 = tail call float %39(i32 %18) #8
+  br label %41
+
+41:                                               ; preds = %38, %34
+  %42 = phi float [ %37, %34 ], [ %40, %38 ]
+  %43 = sitofp i32 %25 to float
+  %44 = fmul float %42, %43
+  %45 = fpext float %44 to double
+  %46 = load double, double* %13, align 8
+  %47 = fsub double %46, %45
+  store double %47, double* %13, align 8
+  %48 = load i32, i32* %14, align 8
+  %49 = icmp ult i32 %48, %18
+  br i1 %49, label %50, label %51
+
+50:                                               ; preds = %41
+  store i32 %18, i32* %14, align 8
+  br label %51
+
+51:                                               ; preds = %23, %41, %50
+  %52 = icmp sgt i32 %25, 3
+  %53 = zext i1 %52 to i32
+  %54 = icmp ne i32 %18, 0
+  %55 = zext i1 %54 to i64
+  %56 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %3, i64 0, i32 0, i64 %55
+  %57 = load i32, i32* %56, align 4
+  %58 = add nsw i32 %57, %53
+  store i32 %58, i32* %56, align 4
+  %59 = zext i1 %52 to i64
+  %60 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %3, i64 0, i32 1, i64 %55, i64 %59
+  %61 = load i32, i32* %60, align 4
+  %62 = add nsw i32 %61, %25
+  store i32 %62, i32* %60, align 4
+  br label %63
+
+63:                                               ; preds = %16, %51
+  %64 = phi i32 [ %19, %16 ], [ %24, %51 ]
+  %65 = phi i32 [ %18, %16 ], [ %21, %51 ]
+  %66 = add nuw nsw i64 %17, 1
+  %67 = icmp eq i64 %66, %15
+  br i1 %67, label %68, label %16
+
+68:                                               ; preds = %63, %4
+  %69 = phi i32 [ 0, %4 ], [ %64, %63 ]
+  %70 = phi i32 [ %5, %4 ], [ %65, %63 ]
+  %71 = phi i32 [ 1, %4 ], [ %1, %63 ]
+  %72 = sub nsw i32 %71, %69
+  %73 = icmp eq i32 %70, 0
+  br i1 %73, label %102, label %74
+
+74:                                               ; preds = %68
+  %75 = mul i32 %72, %70
+  %76 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %2, i64 0, i32 1
+  %77 = load i32, i32* %76, align 8
+  %78 = add i32 %77, %75
+  store i32 %78, i32* %76, align 8
+  %79 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %2, i64 0, i32 2
+  %80 = load i32, i32* %79, align 4
+  %81 = add nsw i32 %80, %72
+  store i32 %81, i32* %79, align 4
+  store i32 %69, i32* %7, align 4
+  %82 = icmp ult i32 %70, 256
+  br i1 %82, label %83, label %87
+
+83:                                               ; preds = %74
+  %84 = zext i32 %70 to i64
+  %85 = getelementptr inbounds [256 x float], [256 x float]* @kSLog2Table, i64 0, i64 %84
+  %86 = load float, float* %85, align 4
+  br label %90
+
+87:                                               ; preds = %74
+  %88 = load float (i32)*, float (i32)** @VP8LFastSLog2Slow, align 8
+  %89 = tail call float %88(i32 %70) #8
+  br label %90
+
+90:                                               ; preds = %87, %83
+  %91 = phi float [ %86, %83 ], [ %89, %87 ]
+  %92 = sitofp i32 %72 to float
+  %93 = fmul float %91, %92
+  %94 = fpext float %93 to double
+  %95 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %2, i64 0, i32 0
+  %96 = load double, double* %95, align 8
+  %97 = fsub double %96, %94
+  store double %97, double* %95, align 8
+  %98 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %2, i64 0, i32 3
+  %99 = load i32, i32* %98, align 8
+  %100 = icmp ult i32 %99, %70
+  br i1 %100, label %101, label %102
+
+101:                                              ; preds = %90
+  store i32 %70, i32* %98, align 8
+  br label %102
+
+102:                                              ; preds = %68, %90, %101
+  %103 = icmp sgt i32 %72, 3
+  %104 = zext i1 %103 to i32
+  %105 = icmp ne i32 %70, 0
+  %106 = zext i1 %105 to i64
+  %107 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %3, i64 0, i32 0, i64 %106
+  %108 = load i32, i32* %107, align 4
+  %109 = add nsw i32 %108, %104
+  store i32 %109, i32* %107, align 4
+  %110 = zext i1 %103 to i64
+  %111 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %3, i64 0, i32 1, i64 %106, i64 %110
+  %112 = load i32, i32* %111, align 4
+  %113 = add nsw i32 %112, %72
+  store i32 %113, i32* %111, align 4
+  %114 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %2, i64 0, i32 1
+  %115 = load i32, i32* %114, align 8
+  %116 = icmp ult i32 %115, 256
+  br i1 %116, label %117, label %121
+
+117:                                              ; preds = %102
+  %118 = zext i32 %115 to i64
+  %119 = getelementptr inbounds [256 x float], [256 x float]* @kSLog2Table, i64 0, i64 %118
+  %120 = load float, float* %119, align 4
+  br label %124
+
+121:                                              ; preds = %102
+  %122 = load float (i32)*, float (i32)** @VP8LFastSLog2Slow, align 8
+  %123 = tail call float %122(i32 %115) #8
+  br label %124
+
+124:                                              ; preds = %117, %121
+  %125 = phi float [ %120, %117 ], [ %123, %121 ]
+  %126 = fpext float %125 to double
+  %127 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %2, i64 0, i32 0
+  %128 = load double, double* %127, align 8
+  %129 = fadd double %128, %126
+  store double %129, double* %127, align 8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @GetCombinedEntropyUnrefined_C(i32* nocapture readonly, i32* nocapture readonly, i32, %struct.VP8LBitEntropy* nocapture, %struct.VP8LStreaks* nocapture) #1 {
+  %6 = load i32, i32* %0, align 4
+  %7 = load i32, i32* %1, align 4
+  %8 = add i32 %7, %6
+  %9 = bitcast %struct.VP8LStreaks* %4 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %9, i8 0, i64 24, i1 false)
+  %10 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %3, i64 0, i32 4
+  %11 = bitcast %struct.VP8LBitEntropy* %3 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %11, i8 0, i64 20, i1 false) #8
+  store i32 -1, i32* %10, align 4
+  %12 = icmp sgt i32 %2, 1
+  br i1 %12, label %13, label %74
+
+13:                                               ; preds = %5
+  %14 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %3, i64 0, i32 1
+  %15 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %3, i64 0, i32 2
+  %16 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %3, i64 0, i32 0
+  %17 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %3, i64 0, i32 3
+  %18 = zext i32 %2 to i64
+  br label %19
+
+19:                                               ; preds = %69, %13
+  %20 = phi i64 [ 1, %13 ], [ %72, %69 ]
+  %21 = phi i32 [ %8, %13 ], [ %71, %69 ]
+  %22 = phi i32 [ 0, %13 ], [ %70, %69 ]
+  %23 = getelementptr inbounds i32, i32* %0, i64 %20
+  %24 = load i32, i32* %23, align 4
+  %25 = getelementptr inbounds i32, i32* %1, i64 %20
+  %26 = load i32, i32* %25, align 4
+  %27 = add i32 %26, %24
+  %28 = icmp eq i32 %27, %21
+  br i1 %28, label %69, label %29
+
+29:                                               ; preds = %19
+  %30 = trunc i64 %20 to i32
+  %31 = sub nsw i32 %30, %22
+  %32 = icmp eq i32 %21, 0
+  br i1 %32, label %57, label %33
+
+33:                                               ; preds = %29
+  %34 = mul i32 %31, %21
+  %35 = load i32, i32* %14, align 8
+  %36 = add i32 %35, %34
+  store i32 %36, i32* %14, align 8
+  %37 = load i32, i32* %15, align 4
+  %38 = add nsw i32 %37, %31
+  store i32 %38, i32* %15, align 4
+  store i32 %22, i32* %10, align 4
+  %39 = icmp ult i32 %21, 256
+  br i1 %39, label %40, label %44
+
+40:                                               ; preds = %33
+  %41 = zext i32 %21 to i64
+  %42 = getelementptr inbounds [256 x float], [256 x float]* @kSLog2Table, i64 0, i64 %41
+  %43 = load float, float* %42, align 4
+  br label %47
+
+44:                                               ; preds = %33
+  %45 = load float (i32)*, float (i32)** @VP8LFastSLog2Slow, align 8
+  %46 = tail call float %45(i32 %21) #8
+  br label %47
+
+47:                                               ; preds = %44, %40
+  %48 = phi float [ %43, %40 ], [ %46, %44 ]
+  %49 = sitofp i32 %31 to float
+  %50 = fmul float %48, %49
+  %51 = fpext float %50 to double
+  %52 = load double, double* %16, align 8
+  %53 = fsub double %52, %51
+  store double %53, double* %16, align 8
+  %54 = load i32, i32* %17, align 8
+  %55 = icmp ult i32 %54, %21
+  br i1 %55, label %56, label %57
+
+56:                                               ; preds = %47
+  store i32 %21, i32* %17, align 8
+  br label %57
+
+57:                                               ; preds = %29, %47, %56
+  %58 = icmp sgt i32 %31, 3
+  %59 = zext i1 %58 to i32
+  %60 = icmp ne i32 %21, 0
+  %61 = zext i1 %60 to i64
+  %62 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %4, i64 0, i32 0, i64 %61
+  %63 = load i32, i32* %62, align 4
+  %64 = add nsw i32 %63, %59
+  store i32 %64, i32* %62, align 4
+  %65 = zext i1 %58 to i64
+  %66 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %4, i64 0, i32 1, i64 %61, i64 %65
+  %67 = load i32, i32* %66, align 4
+  %68 = add nsw i32 %67, %31
+  store i32 %68, i32* %66, align 4
+  br label %69
+
+69:                                               ; preds = %19, %57
+  %70 = phi i32 [ %22, %19 ], [ %30, %57 ]
+  %71 = phi i32 [ %21, %19 ], [ %27, %57 ]
+  %72 = add nuw nsw i64 %20, 1
+  %73 = icmp eq i64 %72, %18
+  br i1 %73, label %74, label %19
+
+74:                                               ; preds = %69, %5
+  %75 = phi i32 [ 0, %5 ], [ %70, %69 ]
+  %76 = phi i32 [ %8, %5 ], [ %71, %69 ]
+  %77 = phi i32 [ 1, %5 ], [ %2, %69 ]
+  %78 = sub nsw i32 %77, %75
+  %79 = icmp eq i32 %76, 0
+  br i1 %79, label %108, label %80
+
+80:                                               ; preds = %74
+  %81 = mul i32 %78, %76
+  %82 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %3, i64 0, i32 1
+  %83 = load i32, i32* %82, align 8
+  %84 = add i32 %83, %81
+  store i32 %84, i32* %82, align 8
+  %85 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %3, i64 0, i32 2
+  %86 = load i32, i32* %85, align 4
+  %87 = add nsw i32 %86, %78
+  store i32 %87, i32* %85, align 4
+  store i32 %75, i32* %10, align 4
+  %88 = icmp ult i32 %76, 256
+  br i1 %88, label %89, label %93
+
+89:                                               ; preds = %80
+  %90 = zext i32 %76 to i64
+  %91 = getelementptr inbounds [256 x float], [256 x float]* @kSLog2Table, i64 0, i64 %90
+  %92 = load float, float* %91, align 4
+  br label %96
+
+93:                                               ; preds = %80
+  %94 = load float (i32)*, float (i32)** @VP8LFastSLog2Slow, align 8
+  %95 = tail call float %94(i32 %76) #8
+  br label %96
+
+96:                                               ; preds = %93, %89
+  %97 = phi float [ %92, %89 ], [ %95, %93 ]
+  %98 = sitofp i32 %78 to float
+  %99 = fmul float %97, %98
+  %100 = fpext float %99 to double
+  %101 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %3, i64 0, i32 0
+  %102 = load double, double* %101, align 8
+  %103 = fsub double %102, %100
+  store double %103, double* %101, align 8
+  %104 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %3, i64 0, i32 3
+  %105 = load i32, i32* %104, align 8
+  %106 = icmp ult i32 %105, %76
+  br i1 %106, label %107, label %108
+
+107:                                              ; preds = %96
+  store i32 %76, i32* %104, align 8
+  br label %108
+
+108:                                              ; preds = %74, %96, %107
+  %109 = icmp sgt i32 %78, 3
+  %110 = zext i1 %109 to i32
+  %111 = icmp ne i32 %76, 0
+  %112 = zext i1 %111 to i64
+  %113 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %4, i64 0, i32 0, i64 %112
+  %114 = load i32, i32* %113, align 4
+  %115 = add nsw i32 %114, %110
+  store i32 %115, i32* %113, align 4
+  %116 = zext i1 %109 to i64
+  %117 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %4, i64 0, i32 1, i64 %112, i64 %116
+  %118 = load i32, i32* %117, align 4
+  %119 = add nsw i32 %118, %78
+  store i32 %119, i32* %117, align 4
+  %120 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %3, i64 0, i32 1
+  %121 = load i32, i32* %120, align 8
+  %122 = icmp ult i32 %121, 256
+  br i1 %122, label %123, label %127
+
+123:                                              ; preds = %108
+  %124 = zext i32 %121 to i64
+  %125 = getelementptr inbounds [256 x float], [256 x float]* @kSLog2Table, i64 0, i64 %124
+  %126 = load float, float* %125, align 4
+  br label %130
+
+127:                                              ; preds = %108
+  %128 = load float (i32)*, float (i32)** @VP8LFastSLog2Slow, align 8
+  %129 = tail call float %128(i32 %121) #8
+  br label %130
+
+130:                                              ; preds = %123, %127
+  %131 = phi float [ %126, %123 ], [ %129, %127 ]
+  %132 = fpext float %131 to double
+  %133 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %3, i64 0, i32 0
+  %134 = load double, double* %133, align 8
+  %135 = fadd double %134, %132
+  store double %135, double* %133, align 8
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define internal void @AddVector_C(i32* nocapture readonly, i32* nocapture readonly, i32* nocapture, i32) #2 {
+  %5 = icmp sgt i32 %3, 0
+  br i1 %5, label %6, label %148
+
+6:                                                ; preds = %4
+  %7 = zext i32 %3 to i64
+  %8 = icmp ult i32 %3, 8
+  br i1 %8, label %96, label %9
+
+9:                                                ; preds = %6
+  %10 = getelementptr i32, i32* %2, i64 %7
+  %11 = getelementptr i32, i32* %0, i64 %7
+  %12 = getelementptr i32, i32* %1, i64 %7
+  %13 = icmp ugt i32* %11, %2
+  %14 = icmp ugt i32* %10, %0
+  %15 = and i1 %13, %14
+  %16 = icmp ugt i32* %12, %2
+  %17 = icmp ugt i32* %10, %1
+  %18 = and i1 %16, %17
+  %19 = or i1 %15, %18
+  br i1 %19, label %96, label %20
+
+20:                                               ; preds = %9
+  %21 = and i64 %7, 4294967288
+  %22 = add nsw i64 %21, -8
+  %23 = lshr exact i64 %22, 3
+  %24 = add nuw nsw i64 %23, 1
+  %25 = and i64 %24, 1
+  %26 = icmp eq i64 %22, 0
+  br i1 %26, label %72, label %27
+
+27:                                               ; preds = %20
+  %28 = sub nuw nsw i64 %24, %25
+  br label %29
+
+29:                                               ; preds = %29, %27
+  %30 = phi i64 [ 0, %27 ], [ %69, %29 ]
+  %31 = phi i64 [ %28, %27 ], [ %70, %29 ]
+  %32 = getelementptr inbounds i32, i32* %0, i64 %30
+  %33 = bitcast i32* %32 to <4 x i32>*
+  %34 = load <4 x i32>, <4 x i32>* %33, align 4, !alias.scope !22
+  %35 = getelementptr inbounds i32, i32* %32, i64 4
+  %36 = bitcast i32* %35 to <4 x i32>*
+  %37 = load <4 x i32>, <4 x i32>* %36, align 4, !alias.scope !22
+  %38 = getelementptr inbounds i32, i32* %1, i64 %30
+  %39 = bitcast i32* %38 to <4 x i32>*
+  %40 = load <4 x i32>, <4 x i32>* %39, align 4, !alias.scope !25
+  %41 = getelementptr inbounds i32, i32* %38, i64 4
+  %42 = bitcast i32* %41 to <4 x i32>*
+  %43 = load <4 x i32>, <4 x i32>* %42, align 4, !alias.scope !25
+  %44 = add <4 x i32> %40, %34
+  %45 = add <4 x i32> %43, %37
+  %46 = getelementptr inbounds i32, i32* %2, i64 %30
+  %47 = bitcast i32* %46 to <4 x i32>*
+  store <4 x i32> %44, <4 x i32>* %47, align 4, !alias.scope !27, !noalias !29
+  %48 = getelementptr inbounds i32, i32* %46, i64 4
+  %49 = bitcast i32* %48 to <4 x i32>*
+  store <4 x i32> %45, <4 x i32>* %49, align 4, !alias.scope !27, !noalias !29
+  %50 = or i64 %30, 8
+  %51 = getelementptr inbounds i32, i32* %0, i64 %50
+  %52 = bitcast i32* %51 to <4 x i32>*
+  %53 = load <4 x i32>, <4 x i32>* %52, align 4, !alias.scope !22
+  %54 = getelementptr inbounds i32, i32* %51, i64 4
+  %55 = bitcast i32* %54 to <4 x i32>*
+  %56 = load <4 x i32>, <4 x i32>* %55, align 4, !alias.scope !22
+  %57 = getelementptr inbounds i32, i32* %1, i64 %50
+  %58 = bitcast i32* %57 to <4 x i32>*
+  %59 = load <4 x i32>, <4 x i32>* %58, align 4, !alias.scope !25
+  %60 = getelementptr inbounds i32, i32* %57, i64 4
+  %61 = bitcast i32* %60 to <4 x i32>*
+  %62 = load <4 x i32>, <4 x i32>* %61, align 4, !alias.scope !25
+  %63 = add <4 x i32> %59, %53
+  %64 = add <4 x i32> %62, %56
+  %65 = getelementptr inbounds i32, i32* %2, i64 %50
+  %66 = bitcast i32* %65 to <4 x i32>*
+  store <4 x i32> %63, <4 x i32>* %66, align 4, !alias.scope !27, !noalias !29
+  %67 = getelementptr inbounds i32, i32* %65, i64 4
+  %68 = bitcast i32* %67 to <4 x i32>*
+  store <4 x i32> %64, <4 x i32>* %68, align 4, !alias.scope !27, !noalias !29
+  %69 = add i64 %30, 16
+  %70 = add i64 %31, -2
+  %71 = icmp eq i64 %70, 0
+  br i1 %71, label %72, label %29, !llvm.loop !30
+
+72:                                               ; preds = %29, %20
+  %73 = phi i64 [ 0, %20 ], [ %69, %29 ]
+  %74 = icmp eq i64 %25, 0
+  br i1 %74, label %94, label %75
+
+75:                                               ; preds = %72
+  %76 = getelementptr inbounds i32, i32* %0, i64 %73
+  %77 = bitcast i32* %76 to <4 x i32>*
+  %78 = load <4 x i32>, <4 x i32>* %77, align 4, !alias.scope !22
+  %79 = getelementptr inbounds i32, i32* %76, i64 4
+  %80 = bitcast i32* %79 to <4 x i32>*
+  %81 = load <4 x i32>, <4 x i32>* %80, align 4, !alias.scope !22
+  %82 = getelementptr inbounds i32, i32* %1, i64 %73
+  %83 = bitcast i32* %82 to <4 x i32>*
+  %84 = load <4 x i32>, <4 x i32>* %83, align 4, !alias.scope !25
+  %85 = getelementptr inbounds i32, i32* %82, i64 4
+  %86 = bitcast i32* %85 to <4 x i32>*
+  %87 = load <4 x i32>, <4 x i32>* %86, align 4, !alias.scope !25
+  %88 = add <4 x i32> %84, %78
+  %89 = add <4 x i32> %87, %81
+  %90 = getelementptr inbounds i32, i32* %2, i64 %73
+  %91 = bitcast i32* %90 to <4 x i32>*
+  store <4 x i32> %88, <4 x i32>* %91, align 4, !alias.scope !27, !noalias !29
+  %92 = getelementptr inbounds i32, i32* %90, i64 4
+  %93 = bitcast i32* %92 to <4 x i32>*
+  store <4 x i32> %89, <4 x i32>* %93, align 4, !alias.scope !27, !noalias !29
+  br label %94
+
+94:                                               ; preds = %72, %75
+  %95 = icmp eq i64 %21, %7
+  br i1 %95, label %148, label %96
+
+96:                                               ; preds = %94, %9, %6
+  %97 = phi i64 [ 0, %9 ], [ 0, %6 ], [ %21, %94 ]
+  %98 = xor i64 %97, -1
+  %99 = add nsw i64 %98, %7
+  %100 = and i64 %7, 3
+  %101 = icmp eq i64 %100, 0
+  br i1 %101, label %114, label %102
+
+102:                                              ; preds = %96, %102
+  %103 = phi i64 [ %111, %102 ], [ %97, %96 ]
+  %104 = phi i64 [ %112, %102 ], [ %100, %96 ]
+  %105 = getelementptr inbounds i32, i32* %0, i64 %103
+  %106 = load i32, i32* %105, align 4
+  %107 = getelementptr inbounds i32, i32* %1, i64 %103
+  %108 = load i32, i32* %107, align 4
+  %109 = add i32 %108, %106
+  %110 = getelementptr inbounds i32, i32* %2, i64 %103
+  store i32 %109, i32* %110, align 4
+  %111 = add nuw nsw i64 %103, 1
+  %112 = add i64 %104, -1
+  %113 = icmp eq i64 %112, 0
+  br i1 %113, label %114, label %102, !llvm.loop !31
+
+114:                                              ; preds = %102, %96
+  %115 = phi i64 [ %97, %96 ], [ %111, %102 ]
+  %116 = icmp ult i64 %99, 3
+  br i1 %116, label %148, label %117
+
+117:                                              ; preds = %114, %117
+  %118 = phi i64 [ %146, %117 ], [ %115, %114 ]
+  %119 = getelementptr inbounds i32, i32* %0, i64 %118
+  %120 = load i32, i32* %119, align 4
+  %121 = getelementptr inbounds i32, i32* %1, i64 %118
+  %122 = load i32, i32* %121, align 4
+  %123 = add i32 %122, %120
+  %124 = getelementptr inbounds i32, i32* %2, i64 %118
+  store i32 %123, i32* %124, align 4
+  %125 = add nuw nsw i64 %118, 1
+  %126 = getelementptr inbounds i32, i32* %0, i64 %125
+  %127 = load i32, i32* %126, align 4
+  %128 = getelementptr inbounds i32, i32* %1, i64 %125
+  %129 = load i32, i32* %128, align 4
+  %130 = add i32 %129, %127
+  %131 = getelementptr inbounds i32, i32* %2, i64 %125
+  store i32 %130, i32* %131, align 4
+  %132 = add nuw nsw i64 %118, 2
+  %133 = getelementptr inbounds i32, i32* %0, i64 %132
+  %134 = load i32, i32* %133, align 4
+  %135 = getelementptr inbounds i32, i32* %1, i64 %132
+  %136 = load i32, i32* %135, align 4
+  %137 = add i32 %136, %134
+  %138 = getelementptr inbounds i32, i32* %2, i64 %132
+  store i32 %137, i32* %138, align 4
+  %139 = add nuw nsw i64 %118, 3
+  %140 = getelementptr inbounds i32, i32* %0, i64 %139
+  %141 = load i32, i32* %140, align 4
+  %142 = getelementptr inbounds i32, i32* %1, i64 %139
+  %143 = load i32, i32* %142, align 4
+  %144 = add i32 %143, %141
+  %145 = getelementptr inbounds i32, i32* %2, i64 %139
+  store i32 %144, i32* %145, align 4
+  %146 = add nuw nsw i64 %118, 4
+  %147 = icmp eq i64 %146, %7
+  br i1 %147, label %148, label %117, !llvm.loop !32
+
+148:                                              ; preds = %114, %117, %94, %4
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define internal void @AddVectorEq_C(i32* nocapture readonly, i32* nocapture, i32) #2 {
+  %4 = icmp sgt i32 %2, 0
+  br i1 %4, label %5, label %131
+
+5:                                                ; preds = %3
+  %6 = zext i32 %2 to i64
+  %7 = icmp ult i32 %2, 8
+  br i1 %7, label %84, label %8
+
+8:                                                ; preds = %5
+  %9 = getelementptr i32, i32* %1, i64 %6
+  %10 = getelementptr i32, i32* %0, i64 %6
+  %11 = icmp ugt i32* %10, %1
+  %12 = icmp ugt i32* %9, %0
+  %13 = and i1 %11, %12
+  br i1 %13, label %84, label %14
+
+14:                                               ; preds = %8
+  %15 = and i64 %6, 4294967288
+  %16 = add nsw i64 %15, -8
+  %17 = lshr exact i64 %16, 3
+  %18 = add nuw nsw i64 %17, 1
+  %19 = and i64 %18, 1
+  %20 = icmp eq i64 %16, 0
+  br i1 %20, label %62, label %21
+
+21:                                               ; preds = %14
+  %22 = sub nuw nsw i64 %18, %19
+  br label %23
+
+23:                                               ; preds = %23, %21
+  %24 = phi i64 [ 0, %21 ], [ %59, %23 ]
+  %25 = phi i64 [ %22, %21 ], [ %60, %23 ]
+  %26 = getelementptr inbounds i32, i32* %0, i64 %24
+  %27 = bitcast i32* %26 to <4 x i32>*
+  %28 = load <4 x i32>, <4 x i32>* %27, align 4, !alias.scope !33
+  %29 = getelementptr inbounds i32, i32* %26, i64 4
+  %30 = bitcast i32* %29 to <4 x i32>*
+  %31 = load <4 x i32>, <4 x i32>* %30, align 4, !alias.scope !33
+  %32 = getelementptr inbounds i32, i32* %1, i64 %24
+  %33 = bitcast i32* %32 to <4 x i32>*
+  %34 = load <4 x i32>, <4 x i32>* %33, align 4, !alias.scope !36, !noalias !33
+  %35 = getelementptr inbounds i32, i32* %32, i64 4
+  %36 = bitcast i32* %35 to <4 x i32>*
+  %37 = load <4 x i32>, <4 x i32>* %36, align 4, !alias.scope !36, !noalias !33
+  %38 = add <4 x i32> %34, %28
+  %39 = add <4 x i32> %37, %31
+  %40 = bitcast i32* %32 to <4 x i32>*
+  store <4 x i32> %38, <4 x i32>* %40, align 4, !alias.scope !36, !noalias !33
+  %41 = bitcast i32* %35 to <4 x i32>*
+  store <4 x i32> %39, <4 x i32>* %41, align 4, !alias.scope !36, !noalias !33
+  %42 = or i64 %24, 8
+  %43 = getelementptr inbounds i32, i32* %0, i64 %42
+  %44 = bitcast i32* %43 to <4 x i32>*
+  %45 = load <4 x i32>, <4 x i32>* %44, align 4, !alias.scope !33
+  %46 = getelementptr inbounds i32, i32* %43, i64 4
+  %47 = bitcast i32* %46 to <4 x i32>*
+  %48 = load <4 x i32>, <4 x i32>* %47, align 4, !alias.scope !33
+  %49 = getelementptr inbounds i32, i32* %1, i64 %42
+  %50 = bitcast i32* %49 to <4 x i32>*
+  %51 = load <4 x i32>, <4 x i32>* %50, align 4, !alias.scope !36, !noalias !33
+  %52 = getelementptr inbounds i32, i32* %49, i64 4
+  %53 = bitcast i32* %52 to <4 x i32>*
+  %54 = load <4 x i32>, <4 x i32>* %53, align 4, !alias.scope !36, !noalias !33
+  %55 = add <4 x i32> %51, %45
+  %56 = add <4 x i32> %54, %48
+  %57 = bitcast i32* %49 to <4 x i32>*
+  store <4 x i32> %55, <4 x i32>* %57, align 4, !alias.scope !36, !noalias !33
+  %58 = bitcast i32* %52 to <4 x i32>*
+  store <4 x i32> %56, <4 x i32>* %58, align 4, !alias.scope !36, !noalias !33
+  %59 = add i64 %24, 16
+  %60 = add i64 %25, -2
+  %61 = icmp eq i64 %60, 0
+  br i1 %61, label %62, label %23, !llvm.loop !38
+
+62:                                               ; preds = %23, %14
+  %63 = phi i64 [ 0, %14 ], [ %59, %23 ]
+  %64 = icmp eq i64 %19, 0
+  br i1 %64, label %82, label %65
+
+65:                                               ; preds = %62
+  %66 = getelementptr inbounds i32, i32* %0, i64 %63
+  %67 = bitcast i32* %66 to <4 x i32>*
+  %68 = load <4 x i32>, <4 x i32>* %67, align 4, !alias.scope !33
+  %69 = getelementptr inbounds i32, i32* %66, i64 4
+  %70 = bitcast i32* %69 to <4 x i32>*
+  %71 = load <4 x i32>, <4 x i32>* %70, align 4, !alias.scope !33
+  %72 = getelementptr inbounds i32, i32* %1, i64 %63
+  %73 = bitcast i32* %72 to <4 x i32>*
+  %74 = load <4 x i32>, <4 x i32>* %73, align 4, !alias.scope !36, !noalias !33
+  %75 = getelementptr inbounds i32, i32* %72, i64 4
+  %76 = bitcast i32* %75 to <4 x i32>*
+  %77 = load <4 x i32>, <4 x i32>* %76, align 4, !alias.scope !36, !noalias !33
+  %78 = add <4 x i32> %74, %68
+  %79 = add <4 x i32> %77, %71
+  %80 = bitcast i32* %72 to <4 x i32>*
+  store <4 x i32> %78, <4 x i32>* %80, align 4, !alias.scope !36, !noalias !33
+  %81 = bitcast i32* %75 to <4 x i32>*
+  store <4 x i32> %79, <4 x i32>* %81, align 4, !alias.scope !36, !noalias !33
+  br label %82
+
+82:                                               ; preds = %62, %65
+  %83 = icmp eq i64 %15, %6
+  br i1 %83, label %131, label %84
+
+84:                                               ; preds = %82, %8, %5
+  %85 = phi i64 [ 0, %8 ], [ 0, %5 ], [ %15, %82 ]
+  %86 = xor i64 %85, -1
+  %87 = add nsw i64 %86, %6
+  %88 = and i64 %6, 3
+  %89 = icmp eq i64 %88, 0
+  br i1 %89, label %101, label %90
+
+90:                                               ; preds = %84, %90
+  %91 = phi i64 [ %98, %90 ], [ %85, %84 ]
+  %92 = phi i64 [ %99, %90 ], [ %88, %84 ]
+  %93 = getelementptr inbounds i32, i32* %0, i64 %91
+  %94 = load i32, i32* %93, align 4
+  %95 = getelementptr inbounds i32, i32* %1, i64 %91
+  %96 = load i32, i32* %95, align 4
+  %97 = add i32 %96, %94
+  store i32 %97, i32* %95, align 4
+  %98 = add nuw nsw i64 %91, 1
+  %99 = add i64 %92, -1
+  %100 = icmp eq i64 %99, 0
+  br i1 %100, label %101, label %90, !llvm.loop !39
+
+101:                                              ; preds = %90, %84
+  %102 = phi i64 [ %85, %84 ], [ %98, %90 ]
+  %103 = icmp ult i64 %87, 3
+  br i1 %103, label %131, label %104
+
+104:                                              ; preds = %101, %104
+  %105 = phi i64 [ %129, %104 ], [ %102, %101 ]
+  %106 = getelementptr inbounds i32, i32* %0, i64 %105
+  %107 = load i32, i32* %106, align 4
+  %108 = getelementptr inbounds i32, i32* %1, i64 %105
+  %109 = load i32, i32* %108, align 4
+  %110 = add i32 %109, %107
+  store i32 %110, i32* %108, align 4
+  %111 = add nuw nsw i64 %105, 1
+  %112 = getelementptr inbounds i32, i32* %0, i64 %111
+  %113 = load i32, i32* %112, align 4
+  %114 = getelementptr inbounds i32, i32* %1, i64 %111
+  %115 = load i32, i32* %114, align 4
+  %116 = add i32 %115, %113
+  store i32 %116, i32* %114, align 4
+  %117 = add nuw nsw i64 %105, 2
+  %118 = getelementptr inbounds i32, i32* %0, i64 %117
+  %119 = load i32, i32* %118, align 4
+  %120 = getelementptr inbounds i32, i32* %1, i64 %117
+  %121 = load i32, i32* %120, align 4
+  %122 = add i32 %121, %119
+  store i32 %122, i32* %120, align 4
+  %123 = add nuw nsw i64 %105, 3
+  %124 = getelementptr inbounds i32, i32* %0, i64 %123
+  %125 = load i32, i32* %124, align 4
+  %126 = getelementptr inbounds i32, i32* %1, i64 %123
+  %127 = load i32, i32* %126, align 4
+  %128 = add i32 %127, %125
+  store i32 %128, i32* %126, align 4
+  %129 = add nuw nsw i64 %105, 4
+  %130 = icmp eq i64 %129, %6
+  br i1 %130, label %131, label %104, !llvm.loop !40
+
+131:                                              ; preds = %101, %104, %82, %3
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define internal i32 @VectorMismatch_C(i32* nocapture readonly, i32* nocapture readonly, i32) #6 {
+  %4 = icmp sgt i32 %2, 0
+  br i1 %4, label %5, label %21
+
+5:                                                ; preds = %3
+  %6 = zext i32 %2 to i64
+  br label %7
+
+7:                                                ; preds = %15, %5
+  %8 = phi i64 [ 0, %5 ], [ %16, %15 ]
+  %9 = phi i32 [ 0, %5 ], [ %17, %15 ]
+  %10 = getelementptr inbounds i32, i32* %0, i64 %8
+  %11 = load i32, i32* %10, align 4
+  %12 = getelementptr inbounds i32, i32* %1, i64 %8
+  %13 = load i32, i32* %12, align 4
+  %14 = icmp eq i32 %11, %13
+  br i1 %14, label %15, label %19
+
+15:                                               ; preds = %7
+  %16 = add nuw nsw i64 %8, 1
+  %17 = add nuw nsw i32 %9, 1
+  %18 = icmp eq i64 %16, %6
+  br i1 %18, label %21, label %7
+
+19:                                               ; preds = %7
+  %20 = trunc i64 %8 to i32
+  br label %21
+
+21:                                               ; preds = %15, %19, %3
+  %22 = phi i32 [ 0, %3 ], [ %20, %19 ], [ %17, %15 ]
+  ret i32 %22
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define internal void @PredictorSub0_C(i32* nocapture readonly, i32* nocapture readnone, i32, i32* nocapture) #2 {
+  %5 = icmp sgt i32 %2, 0
+  br i1 %5, label %6, label %83
+
+6:                                                ; preds = %4
+  %7 = zext i32 %2 to i64
+  %8 = icmp ult i32 %2, 8
+  br i1 %8, label %43, label %9
+
+9:                                                ; preds = %6
+  %10 = getelementptr i32, i32* %3, i64 %7
+  %11 = getelementptr i32, i32* %0, i64 %7
+  %12 = icmp ugt i32* %11, %3
+  %13 = icmp ugt i32* %10, %0
+  %14 = and i1 %12, %13
+  br i1 %14, label %43, label %15
+
+15:                                               ; preds = %9
+  %16 = and i64 %7, 4294967288
+  br label %17
+
+17:                                               ; preds = %17, %15
+  %18 = phi i64 [ 0, %15 ], [ %39, %17 ]
+  %19 = getelementptr inbounds i32, i32* %0, i64 %18
+  %20 = bitcast i32* %19 to <4 x i32>*
+  %21 = load <4 x i32>, <4 x i32>* %20, align 4, !alias.scope !41
+  %22 = getelementptr inbounds i32, i32* %19, i64 4
+  %23 = bitcast i32* %22 to <4 x i32>*
+  %24 = load <4 x i32>, <4 x i32>* %23, align 4, !alias.scope !41
+  %25 = or <4 x i32> %21, <i32 16711935, i32 16711935, i32 16711935, i32 16711935>
+  %26 = or <4 x i32> %24, <i32 16711935, i32 16711935, i32 16711935, i32 16711935>
+  %27 = add <4 x i32> %25, <i32 16777216, i32 16777216, i32 16777216, i32 16777216>
+  %28 = add <4 x i32> %26, <i32 16777216, i32 16777216, i32 16777216, i32 16777216>
+  %29 = and <4 x i32> %27, <i32 -16711936, i32 -16711936, i32 -16711936, i32 -16711936>
+  %30 = and <4 x i32> %28, <i32 -16711936, i32 -16711936, i32 -16711936, i32 -16711936>
+  %31 = and <4 x i32> %21, <i32 16711935, i32 16711935, i32 16711935, i32 16711935>
+  %32 = and <4 x i32> %24, <i32 16711935, i32 16711935, i32 16711935, i32 16711935>
+  %33 = or <4 x i32> %29, %31
+  %34 = or <4 x i32> %30, %32
+  %35 = getelementptr inbounds i32, i32* %3, i64 %18
+  %36 = bitcast i32* %35 to <4 x i32>*
+  store <4 x i32> %33, <4 x i32>* %36, align 4, !alias.scope !44, !noalias !41
+  %37 = getelementptr inbounds i32, i32* %35, i64 4
+  %38 = bitcast i32* %37 to <4 x i32>*
+  store <4 x i32> %34, <4 x i32>* %38, align 4, !alias.scope !44, !noalias !41
+  %39 = add i64 %18, 8
+  %40 = icmp eq i64 %39, %16
+  br i1 %40, label %41, label %17, !llvm.loop !46
+
+41:                                               ; preds = %17
+  %42 = icmp eq i64 %16, %7
+  br i1 %42, label %83, label %43
+
+43:                                               ; preds = %41, %9, %6
+  %44 = phi i64 [ 0, %9 ], [ 0, %6 ], [ %16, %41 ]
+  %45 = xor i64 %44, -1
+  %46 = and i64 %7, 1
+  %47 = icmp eq i64 %46, 0
+  br i1 %47, label %58, label %48
+
+48:                                               ; preds = %43
+  %49 = getelementptr inbounds i32, i32* %0, i64 %44
+  %50 = load i32, i32* %49, align 4
+  %51 = or i32 %50, 16711935
+  %52 = add i32 %51, 16777216
+  %53 = and i32 %52, -16711936
+  %54 = and i32 %50, 16711935
+  %55 = or i32 %53, %54
+  %56 = getelementptr inbounds i32, i32* %3, i64 %44
+  store i32 %55, i32* %56, align 4
+  %57 = or i64 %44, 1
+  br label %58
+
+58:                                               ; preds = %43, %48
+  %59 = phi i64 [ %44, %43 ], [ %57, %48 ]
+  %60 = sub nsw i64 0, %7
+  %61 = icmp eq i64 %45, %60
+  br i1 %61, label %83, label %62
+
+62:                                               ; preds = %58, %62
+  %63 = phi i64 [ %81, %62 ], [ %59, %58 ]
+  %64 = getelementptr inbounds i32, i32* %0, i64 %63
+  %65 = load i32, i32* %64, align 4
+  %66 = or i32 %65, 16711935
+  %67 = add i32 %66, 16777216
+  %68 = and i32 %67, -16711936
+  %69 = and i32 %65, 16711935
+  %70 = or i32 %68, %69
+  %71 = getelementptr inbounds i32, i32* %3, i64 %63
+  store i32 %70, i32* %71, align 4
+  %72 = add nuw nsw i64 %63, 1
+  %73 = getelementptr inbounds i32, i32* %0, i64 %72
+  %74 = load i32, i32* %73, align 4
+  %75 = or i32 %74, 16711935
+  %76 = add i32 %75, 16777216
+  %77 = and i32 %76, -16711936
+  %78 = and i32 %74, 16711935
+  %79 = or i32 %77, %78
+  %80 = getelementptr inbounds i32, i32* %3, i64 %72
+  store i32 %79, i32* %80, align 4
+  %81 = add nuw nsw i64 %63, 2
+  %82 = icmp eq i64 %81, %7
+  br i1 %82, label %83, label %62, !llvm.loop !47
+
+83:                                               ; preds = %58, %62, %41, %4
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define internal void @PredictorSub1_C(i32* nocapture readonly, i32* nocapture readnone, i32, i32* nocapture) #2 {
+  %5 = icmp sgt i32 %2, 0
+  br i1 %5, label %6, label %80
+
+6:                                                ; preds = %4
+  %7 = zext i32 %2 to i64
+  %8 = icmp ult i32 %2, 8
+  br i1 %8, label %59, label %9
+
+9:                                                ; preds = %6
+  %10 = getelementptr i32, i32* %3, i64 %7
+  %11 = getelementptr i32, i32* %0, i64 -1
+  %12 = getelementptr i32, i32* %0, i64 %7
+  %13 = icmp ugt i32* %12, %3
+  %14 = icmp ult i32* %11, %10
+  %15 = and i1 %13, %14
+  br i1 %15, label %59, label %16
+
+16:                                               ; preds = %9
+  %17 = and i64 %7, 4294967288
+  br label %18
+
+18:                                               ; preds = %18, %16
+  %19 = phi i64 [ 0, %16 ], [ %55, %18 ]
+  %20 = getelementptr inbounds i32, i32* %0, i64 %19
+  %21 = bitcast i32* %20 to <4 x i32>*
+  %22 = load <4 x i32>, <4 x i32>* %21, align 4, !alias.scope !48
+  %23 = getelementptr inbounds i32, i32* %20, i64 4
+  %24 = bitcast i32* %23 to <4 x i32>*
+  %25 = load <4 x i32>, <4 x i32>* %24, align 4, !alias.scope !48
+  %26 = add nsw i64 %19, -1
+  %27 = getelementptr inbounds i32, i32* %0, i64 %26
+  %28 = bitcast i32* %27 to <4 x i32>*
+  %29 = load <4 x i32>, <4 x i32>* %28, align 4, !alias.scope !48
+  %30 = getelementptr inbounds i32, i32* %27, i64 4
+  %31 = bitcast i32* %30 to <4 x i32>*
+  %32 = load <4 x i32>, <4 x i32>* %31, align 4, !alias.scope !48
+  %33 = or <4 x i32> %22, <i32 16711935, i32 16711935, i32 16711935, i32 16711935>
+  %34 = or <4 x i32> %25, <i32 16711935, i32 16711935, i32 16711935, i32 16711935>
+  %35 = and <4 x i32> %29, <i32 -16711936, i32 -16711936, i32 -16711936, i32 -16711936>
+  %36 = and <4 x i32> %32, <i32 -16711936, i32 -16711936, i32 -16711936, i32 -16711936>
+  %37 = sub <4 x i32> %33, %35
+  %38 = sub <4 x i32> %34, %36
+  %39 = or <4 x i32> %22, <i32 65280, i32 65280, i32 65280, i32 65280>
+  %40 = or <4 x i32> %25, <i32 65280, i32 65280, i32 65280, i32 65280>
+  %41 = and <4 x i32> %29, <i32 16711935, i32 16711935, i32 16711935, i32 16711935>
+  %42 = and <4 x i32> %32, <i32 16711935, i32 16711935, i32 16711935, i32 16711935>
+  %43 = sub <4 x i32> %39, %41
+  %44 = sub <4 x i32> %40, %42
+  %45 = and <4 x i32> %37, <i32 -16711936, i32 -16711936, i32 -16711936, i32 -16711936>
+  %46 = and <4 x i32> %38, <i32 -16711936, i32 -16711936, i32 -16711936, i32 -16711936>
+  %47 = and <4 x i32> %43, <i32 16711935, i32 16711935, i32 16711935, i32 16711935>
+  %48 = and <4 x i32> %44, <i32 16711935, i32 16711935, i32 16711935, i32 16711935>
+  %49 = or <4 x i32> %45, %47
+  %50 = or <4 x i32> %46, %48
+  %51 = getelementptr inbounds i32, i32* %3, i64 %19
+  %52 = bitcast i32* %51 to <4 x i32>*
+  store <4 x i32> %49, <4 x i32>* %52, align 4, !alias.scope !51, !noalias !48
+  %53 = getelementptr inbounds i32, i32* %51, i64 4
+  %54 = bitcast i32* %53 to <4 x i32>*
+  store <4 x i32> %50, <4 x i32>* %54, align 4, !alias.scope !51, !noalias !48
+  %55 = add i64 %19, 8
+  %56 = icmp eq i64 %55, %17
+  br i1 %56, label %57, label %18, !llvm.loop !53
+
+57:                                               ; preds = %18
+  %58 = icmp eq i64 %17, %7
+  br i1 %58, label %80, label %59
+
+59:                                               ; preds = %57, %9, %6
+  %60 = phi i64 [ 0, %9 ], [ 0, %6 ], [ %17, %57 ]
+  br label %61
+
+61:                                               ; preds = %59, %61
+  %62 = phi i64 [ %78, %61 ], [ %60, %59 ]
+  %63 = getelementptr inbounds i32, i32* %0, i64 %62
+  %64 = load i32, i32* %63, align 4
+  %65 = add nsw i64 %62, -1
+  %66 = getelementptr inbounds i32, i32* %0, i64 %65
+  %67 = load i32, i32* %66, align 4
+  %68 = or i32 %64, 16711935
+  %69 = and i32 %67, -16711936
+  %70 = sub i32 %68, %69
+  %71 = or i32 %64, 65280
+  %72 = and i32 %67, 16711935
+  %73 = sub i32 %71, %72
+  %74 = and i32 %70, -16711936
+  %75 = and i32 %73, 16711935
+  %76 = or i32 %74, %75
+  %77 = getelementptr inbounds i32, i32* %3, i64 %62
+  store i32 %76, i32* %77, align 4
+  %78 = add nuw nsw i64 %62, 1
+  %79 = icmp eq i64 %78, %7
+  br i1 %79, label %80, label %61, !llvm.loop !54
+
+80:                                               ; preds = %61, %57, %4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @PredictorSub2_C(i32* nocapture readonly, i32*, i32, i32* nocapture) #1 {
+  %5 = icmp sgt i32 %2, 0
+  br i1 %5, label %6, label %29
+
+6:                                                ; preds = %4
+  %7 = zext i32 %2 to i64
+  br label %8
+
+8:                                                ; preds = %8, %6
+  %9 = phi i64 [ 0, %6 ], [ %27, %8 ]
+  %10 = add nsw i64 %9, -1
+  %11 = getelementptr inbounds i32, i32* %0, i64 %10
+  %12 = load i32, i32* %11, align 4
+  %13 = getelementptr inbounds i32, i32* %1, i64 %9
+  %14 = tail call i32 @VP8LPredictor2_C(i32 %12, i32* %13) #8
+  %15 = getelementptr inbounds i32, i32* %0, i64 %9
+  %16 = load i32, i32* %15, align 4
+  %17 = or i32 %16, 16711935
+  %18 = and i32 %14, -16711936
+  %19 = sub i32 %17, %18
+  %20 = or i32 %16, 65280
+  %21 = and i32 %14, 16711935
+  %22 = sub i32 %20, %21
+  %23 = and i32 %19, -16711936
+  %24 = and i32 %22, 16711935
+  %25 = or i32 %23, %24
+  %26 = getelementptr inbounds i32, i32* %3, i64 %9
+  store i32 %25, i32* %26, align 4
+  %27 = add nuw nsw i64 %9, 1
+  %28 = icmp eq i64 %27, %7
+  br i1 %28, label %29, label %8
+
+29:                                               ; preds = %8, %4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @PredictorSub3_C(i32* nocapture readonly, i32*, i32, i32* nocapture) #1 {
+  %5 = icmp sgt i32 %2, 0
+  br i1 %5, label %6, label %29
+
+6:                                                ; preds = %4
+  %7 = zext i32 %2 to i64
+  br label %8
+
+8:                                                ; preds = %8, %6
+  %9 = phi i64 [ 0, %6 ], [ %27, %8 ]
+  %10 = add nsw i64 %9, -1
+  %11 = getelementptr inbounds i32, i32* %0, i64 %10
+  %12 = load i32, i32* %11, align 4
+  %13 = getelementptr inbounds i32, i32* %1, i64 %9
+  %14 = tail call i32 @VP8LPredictor3_C(i32 %12, i32* %13) #8
+  %15 = getelementptr inbounds i32, i32* %0, i64 %9
+  %16 = load i32, i32* %15, align 4
+  %17 = or i32 %16, 16711935
+  %18 = and i32 %14, -16711936
+  %19 = sub i32 %17, %18
+  %20 = or i32 %16, 65280
+  %21 = and i32 %14, 16711935
+  %22 = sub i32 %20, %21
+  %23 = and i32 %19, -16711936
+  %24 = and i32 %22, 16711935
+  %25 = or i32 %23, %24
+  %26 = getelementptr inbounds i32, i32* %3, i64 %9
+  store i32 %25, i32* %26, align 4
+  %27 = add nuw nsw i64 %9, 1
+  %28 = icmp eq i64 %27, %7
+  br i1 %28, label %29, label %8
+
+29:                                               ; preds = %8, %4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @PredictorSub4_C(i32* nocapture readonly, i32*, i32, i32* nocapture) #1 {
+  %5 = icmp sgt i32 %2, 0
+  br i1 %5, label %6, label %29
+
+6:                                                ; preds = %4
+  %7 = zext i32 %2 to i64
+  br label %8
+
+8:                                                ; preds = %8, %6
+  %9 = phi i64 [ 0, %6 ], [ %27, %8 ]
+  %10 = add nsw i64 %9, -1
+  %11 = getelementptr inbounds i32, i32* %0, i64 %10
+  %12 = load i32, i32* %11, align 4
+  %13 = getelementptr inbounds i32, i32* %1, i64 %9
+  %14 = tail call i32 @VP8LPredictor4_C(i32 %12, i32* %13) #8
+  %15 = getelementptr inbounds i32, i32* %0, i64 %9
+  %16 = load i32, i32* %15, align 4
+  %17 = or i32 %16, 16711935
+  %18 = and i32 %14, -16711936
+  %19 = sub i32 %17, %18
+  %20 = or i32 %16, 65280
+  %21 = and i32 %14, 16711935
+  %22 = sub i32 %20, %21
+  %23 = and i32 %19, -16711936
+  %24 = and i32 %22, 16711935
+  %25 = or i32 %23, %24
+  %26 = getelementptr inbounds i32, i32* %3, i64 %9
+  store i32 %25, i32* %26, align 4
+  %27 = add nuw nsw i64 %9, 1
+  %28 = icmp eq i64 %27, %7
+  br i1 %28, label %29, label %8
+
+29:                                               ; preds = %8, %4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @PredictorSub5_C(i32* nocapture readonly, i32*, i32, i32* nocapture) #1 {
+  %5 = icmp sgt i32 %2, 0
+  br i1 %5, label %6, label %29
+
+6:                                                ; preds = %4
+  %7 = zext i32 %2 to i64
+  br label %8
+
+8:                                                ; preds = %8, %6
+  %9 = phi i64 [ 0, %6 ], [ %27, %8 ]
+  %10 = add nsw i64 %9, -1
+  %11 = getelementptr inbounds i32, i32* %0, i64 %10
+  %12 = load i32, i32* %11, align 4
+  %13 = getelementptr inbounds i32, i32* %1, i64 %9
+  %14 = tail call i32 @VP8LPredictor5_C(i32 %12, i32* %13) #8
+  %15 = getelementptr inbounds i32, i32* %0, i64 %9
+  %16 = load i32, i32* %15, align 4
+  %17 = or i32 %16, 16711935
+  %18 = and i32 %14, -16711936
+  %19 = sub i32 %17, %18
+  %20 = or i32 %16, 65280
+  %21 = and i32 %14, 16711935
+  %22 = sub i32 %20, %21
+  %23 = and i32 %19, -16711936
+  %24 = and i32 %22, 16711935
+  %25 = or i32 %23, %24
+  %26 = getelementptr inbounds i32, i32* %3, i64 %9
+  store i32 %25, i32* %26, align 4
+  %27 = add nuw nsw i64 %9, 1
+  %28 = icmp eq i64 %27, %7
+  br i1 %28, label %29, label %8
+
+29:                                               ; preds = %8, %4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @PredictorSub6_C(i32* nocapture readonly, i32*, i32, i32* nocapture) #1 {
+  %5 = icmp sgt i32 %2, 0
+  br i1 %5, label %6, label %29
+
+6:                                                ; preds = %4
+  %7 = zext i32 %2 to i64
+  br label %8
+
+8:                                                ; preds = %8, %6
+  %9 = phi i64 [ 0, %6 ], [ %27, %8 ]
+  %10 = add nsw i64 %9, -1
+  %11 = getelementptr inbounds i32, i32* %0, i64 %10
+  %12 = load i32, i32* %11, align 4
+  %13 = getelementptr inbounds i32, i32* %1, i64 %9
+  %14 = tail call i32 @VP8LPredictor6_C(i32 %12, i32* %13) #8
+  %15 = getelementptr inbounds i32, i32* %0, i64 %9
+  %16 = load i32, i32* %15, align 4
+  %17 = or i32 %16, 16711935
+  %18 = and i32 %14, -16711936
+  %19 = sub i32 %17, %18
+  %20 = or i32 %16, 65280
+  %21 = and i32 %14, 16711935
+  %22 = sub i32 %20, %21
+  %23 = and i32 %19, -16711936
+  %24 = and i32 %22, 16711935
+  %25 = or i32 %23, %24
+  %26 = getelementptr inbounds i32, i32* %3, i64 %9
+  store i32 %25, i32* %26, align 4
+  %27 = add nuw nsw i64 %9, 1
+  %28 = icmp eq i64 %27, %7
+  br i1 %28, label %29, label %8
+
+29:                                               ; preds = %8, %4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @PredictorSub7_C(i32* nocapture readonly, i32*, i32, i32* nocapture) #1 {
+  %5 = icmp sgt i32 %2, 0
+  br i1 %5, label %6, label %29
+
+6:                                                ; preds = %4
+  %7 = zext i32 %2 to i64
+  br label %8
+
+8:                                                ; preds = %8, %6
+  %9 = phi i64 [ 0, %6 ], [ %27, %8 ]
+  %10 = add nsw i64 %9, -1
+  %11 = getelementptr inbounds i32, i32* %0, i64 %10
+  %12 = load i32, i32* %11, align 4
+  %13 = getelementptr inbounds i32, i32* %1, i64 %9
+  %14 = tail call i32 @VP8LPredictor7_C(i32 %12, i32* %13) #8
+  %15 = getelementptr inbounds i32, i32* %0, i64 %9
+  %16 = load i32, i32* %15, align 4
+  %17 = or i32 %16, 16711935
+  %18 = and i32 %14, -16711936
+  %19 = sub i32 %17, %18
+  %20 = or i32 %16, 65280
+  %21 = and i32 %14, 16711935
+  %22 = sub i32 %20, %21
+  %23 = and i32 %19, -16711936
+  %24 = and i32 %22, 16711935
+  %25 = or i32 %23, %24
+  %26 = getelementptr inbounds i32, i32* %3, i64 %9
+  store i32 %25, i32* %26, align 4
+  %27 = add nuw nsw i64 %9, 1
+  %28 = icmp eq i64 %27, %7
+  br i1 %28, label %29, label %8
+
+29:                                               ; preds = %8, %4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @PredictorSub8_C(i32* nocapture readonly, i32*, i32, i32* nocapture) #1 {
+  %5 = icmp sgt i32 %2, 0
+  br i1 %5, label %6, label %29
+
+6:                                                ; preds = %4
+  %7 = zext i32 %2 to i64
+  br label %8
+
+8:                                                ; preds = %8, %6
+  %9 = phi i64 [ 0, %6 ], [ %27, %8 ]
+  %10 = add nsw i64 %9, -1
+  %11 = getelementptr inbounds i32, i32* %0, i64 %10
+  %12 = load i32, i32* %11, align 4
+  %13 = getelementptr inbounds i32, i32* %1, i64 %9
+  %14 = tail call i32 @VP8LPredictor8_C(i32 %12, i32* %13) #8
+  %15 = getelementptr inbounds i32, i32* %0, i64 %9
+  %16 = load i32, i32* %15, align 4
+  %17 = or i32 %16, 16711935
+  %18 = and i32 %14, -16711936
+  %19 = sub i32 %17, %18
+  %20 = or i32 %16, 65280
+  %21 = and i32 %14, 16711935
+  %22 = sub i32 %20, %21
+  %23 = and i32 %19, -16711936
+  %24 = and i32 %22, 16711935
+  %25 = or i32 %23, %24
+  %26 = getelementptr inbounds i32, i32* %3, i64 %9
+  store i32 %25, i32* %26, align 4
+  %27 = add nuw nsw i64 %9, 1
+  %28 = icmp eq i64 %27, %7
+  br i1 %28, label %29, label %8
+
+29:                                               ; preds = %8, %4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @PredictorSub9_C(i32* nocapture readonly, i32*, i32, i32* nocapture) #1 {
+  %5 = icmp sgt i32 %2, 0
+  br i1 %5, label %6, label %29
+
+6:                                                ; preds = %4
+  %7 = zext i32 %2 to i64
+  br label %8
+
+8:                                                ; preds = %8, %6
+  %9 = phi i64 [ 0, %6 ], [ %27, %8 ]
+  %10 = add nsw i64 %9, -1
+  %11 = getelementptr inbounds i32, i32* %0, i64 %10
+  %12 = load i32, i32* %11, align 4
+  %13 = getelementptr inbounds i32, i32* %1, i64 %9
+  %14 = tail call i32 @VP8LPredictor9_C(i32 %12, i32* %13) #8
+  %15 = getelementptr inbounds i32, i32* %0, i64 %9
+  %16 = load i32, i32* %15, align 4
+  %17 = or i32 %16, 16711935
+  %18 = and i32 %14, -16711936
+  %19 = sub i32 %17, %18
+  %20 = or i32 %16, 65280
+  %21 = and i32 %14, 16711935
+  %22 = sub i32 %20, %21
+  %23 = and i32 %19, -16711936
+  %24 = and i32 %22, 16711935
+  %25 = or i32 %23, %24
+  %26 = getelementptr inbounds i32, i32* %3, i64 %9
+  store i32 %25, i32* %26, align 4
+  %27 = add nuw nsw i64 %9, 1
+  %28 = icmp eq i64 %27, %7
+  br i1 %28, label %29, label %8
+
+29:                                               ; preds = %8, %4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @PredictorSub10_C(i32* nocapture readonly, i32*, i32, i32* nocapture) #1 {
+  %5 = icmp sgt i32 %2, 0
+  br i1 %5, label %6, label %29
+
+6:                                                ; preds = %4
+  %7 = zext i32 %2 to i64
+  br label %8
+
+8:                                                ; preds = %8, %6
+  %9 = phi i64 [ 0, %6 ], [ %27, %8 ]
+  %10 = add nsw i64 %9, -1
+  %11 = getelementptr inbounds i32, i32* %0, i64 %10
+  %12 = load i32, i32* %11, align 4
+  %13 = getelementptr inbounds i32, i32* %1, i64 %9
+  %14 = tail call i32 @VP8LPredictor10_C(i32 %12, i32* %13) #8
+  %15 = getelementptr inbounds i32, i32* %0, i64 %9
+  %16 = load i32, i32* %15, align 4
+  %17 = or i32 %16, 16711935
+  %18 = and i32 %14, -16711936
+  %19 = sub i32 %17, %18
+  %20 = or i32 %16, 65280
+  %21 = and i32 %14, 16711935
+  %22 = sub i32 %20, %21
+  %23 = and i32 %19, -16711936
+  %24 = and i32 %22, 16711935
+  %25 = or i32 %23, %24
+  %26 = getelementptr inbounds i32, i32* %3, i64 %9
+  store i32 %25, i32* %26, align 4
+  %27 = add nuw nsw i64 %9, 1
+  %28 = icmp eq i64 %27, %7
+  br i1 %28, label %29, label %8
+
+29:                                               ; preds = %8, %4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @PredictorSub11_C(i32* nocapture readonly, i32*, i32, i32* nocapture) #1 {
+  %5 = icmp sgt i32 %2, 0
+  br i1 %5, label %6, label %29
+
+6:                                                ; preds = %4
+  %7 = zext i32 %2 to i64
+  br label %8
+
+8:                                                ; preds = %8, %6
+  %9 = phi i64 [ 0, %6 ], [ %27, %8 ]
+  %10 = add nsw i64 %9, -1
+  %11 = getelementptr inbounds i32, i32* %0, i64 %10
+  %12 = load i32, i32* %11, align 4
+  %13 = getelementptr inbounds i32, i32* %1, i64 %9
+  %14 = tail call i32 @VP8LPredictor11_C(i32 %12, i32* %13) #8
+  %15 = getelementptr inbounds i32, i32* %0, i64 %9
+  %16 = load i32, i32* %15, align 4
+  %17 = or i32 %16, 16711935
+  %18 = and i32 %14, -16711936
+  %19 = sub i32 %17, %18
+  %20 = or i32 %16, 65280
+  %21 = and i32 %14, 16711935
+  %22 = sub i32 %20, %21
+  %23 = and i32 %19, -16711936
+  %24 = and i32 %22, 16711935
+  %25 = or i32 %23, %24
+  %26 = getelementptr inbounds i32, i32* %3, i64 %9
+  store i32 %25, i32* %26, align 4
+  %27 = add nuw nsw i64 %9, 1
+  %28 = icmp eq i64 %27, %7
+  br i1 %28, label %29, label %8
+
+29:                                               ; preds = %8, %4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @PredictorSub12_C(i32* nocapture readonly, i32*, i32, i32* nocapture) #1 {
+  %5 = icmp sgt i32 %2, 0
+  br i1 %5, label %6, label %29
+
+6:                                                ; preds = %4
+  %7 = zext i32 %2 to i64
+  br label %8
+
+8:                                                ; preds = %8, %6
+  %9 = phi i64 [ 0, %6 ], [ %27, %8 ]
+  %10 = add nsw i64 %9, -1
+  %11 = getelementptr inbounds i32, i32* %0, i64 %10
+  %12 = load i32, i32* %11, align 4
+  %13 = getelementptr inbounds i32, i32* %1, i64 %9
+  %14 = tail call i32 @VP8LPredictor12_C(i32 %12, i32* %13) #8
+  %15 = getelementptr inbounds i32, i32* %0, i64 %9
+  %16 = load i32, i32* %15, align 4
+  %17 = or i32 %16, 16711935
+  %18 = and i32 %14, -16711936
+  %19 = sub i32 %17, %18
+  %20 = or i32 %16, 65280
+  %21 = and i32 %14, 16711935
+  %22 = sub i32 %20, %21
+  %23 = and i32 %19, -16711936
+  %24 = and i32 %22, 16711935
+  %25 = or i32 %23, %24
+  %26 = getelementptr inbounds i32, i32* %3, i64 %9
+  store i32 %25, i32* %26, align 4
+  %27 = add nuw nsw i64 %9, 1
+  %28 = icmp eq i64 %27, %7
+  br i1 %28, label %29, label %8
+
+29:                                               ; preds = %8, %4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @PredictorSub13_C(i32* nocapture readonly, i32*, i32, i32* nocapture) #1 {
+  %5 = icmp sgt i32 %2, 0
+  br i1 %5, label %6, label %29
+
+6:                                                ; preds = %4
+  %7 = zext i32 %2 to i64
+  br label %8
+
+8:                                                ; preds = %8, %6
+  %9 = phi i64 [ 0, %6 ], [ %27, %8 ]
+  %10 = add nsw i64 %9, -1
+  %11 = getelementptr inbounds i32, i32* %0, i64 %10
+  %12 = load i32, i32* %11, align 4
+  %13 = getelementptr inbounds i32, i32* %1, i64 %9
+  %14 = tail call i32 @VP8LPredictor13_C(i32 %12, i32* %13) #8
+  %15 = getelementptr inbounds i32, i32* %0, i64 %9
+  %16 = load i32, i32* %15, align 4
+  %17 = or i32 %16, 16711935
+  %18 = and i32 %14, -16711936
+  %19 = sub i32 %17, %18
+  %20 = or i32 %16, 65280
+  %21 = and i32 %14, 16711935
+  %22 = sub i32 %20, %21
+  %23 = and i32 %19, -16711936
+  %24 = and i32 %22, 16711935
+  %25 = or i32 %23, %24
+  %26 = getelementptr inbounds i32, i32* %3, i64 %9
+  store i32 %25, i32* %26, align 4
+  %27 = add nuw nsw i64 %9, 1
+  %28 = icmp eq i64 %27, %7
+  br i1 %28, label %29, label %8
+
+29:                                               ; preds = %8, %4
+  ret void
+}
+
+declare void @VP8LEncDspInitSSE2() local_unnamed_addr #4
+
+declare void @VP8LEncDspInitSSE41() local_unnamed_addr #4
+
+; Function Attrs: nofree nounwind
+declare double @log(double) local_unnamed_addr #7
+
+declare i32 @VP8LPredictor2_C(i32, i32*) local_unnamed_addr #4
+
+declare i32 @VP8LPredictor3_C(i32, i32*) local_unnamed_addr #4
+
+declare i32 @VP8LPredictor4_C(i32, i32*) local_unnamed_addr #4
+
+declare i32 @VP8LPredictor5_C(i32, i32*) local_unnamed_addr #4
+
+declare i32 @VP8LPredictor6_C(i32, i32*) local_unnamed_addr #4
+
+declare i32 @VP8LPredictor7_C(i32, i32*) local_unnamed_addr #4
+
+declare i32 @VP8LPredictor8_C(i32, i32*) local_unnamed_addr #4
+
+declare i32 @VP8LPredictor9_C(i32, i32*) local_unnamed_addr #4
+
+declare i32 @VP8LPredictor10_C(i32, i32*) local_unnamed_addr #4
+
+declare i32 @VP8LPredictor11_C(i32, i32*) local_unnamed_addr #4
+
+declare i32 @VP8LPredictor12_C(i32, i32*) local_unnamed_addr #4
+
+declare i32 @VP8LPredictor13_C(i32, i32*) local_unnamed_addr #4
+
+attributes #0 = { nofree norecurse nounwind ssp uwtable writeonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { nofree norecurse nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { argmemonly nounwind }
+attributes #4 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nofree nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { norecurse nounwind readonly ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { nofree nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = distinct !{!2, !3}
+!3 = !{!"llvm.loop.isvectorized", i32 1}
+!4 = distinct !{!4, !5, !3}
+!5 = !{!"llvm.loop.unroll.runtime.disable"}
+!6 = !{!7}
+!7 = distinct !{!7, !8}
+!8 = distinct !{!8, !"LVerDomain"}
+!9 = !{!10}
+!10 = distinct !{!10, !8}
+!11 = distinct !{!11, !3}
+!12 = distinct !{!12, !3}
+!13 = distinct !{!13, !14}
+!14 = !{!"llvm.loop.unroll.disable"}
+!15 = !{!16}
+!16 = distinct !{!16, !17}
+!17 = distinct !{!17, !"LVerDomain"}
+!18 = !{!19}
+!19 = distinct !{!19, !17}
+!20 = distinct !{!20, !3}
+!21 = distinct !{!21, !3}
+!22 = !{!23}
+!23 = distinct !{!23, !24}
+!24 = distinct !{!24, !"LVerDomain"}
+!25 = !{!26}
+!26 = distinct !{!26, !24}
+!27 = !{!28}
+!28 = distinct !{!28, !24}
+!29 = !{!23, !26}
+!30 = distinct !{!30, !3}
+!31 = distinct !{!31, !14}
+!32 = distinct !{!32, !3}
+!33 = !{!34}
+!34 = distinct !{!34, !35}
+!35 = distinct !{!35, !"LVerDomain"}
+!36 = !{!37}
+!37 = distinct !{!37, !35}
+!38 = distinct !{!38, !3}
+!39 = distinct !{!39, !14}
+!40 = distinct !{!40, !3}
+!41 = !{!42}
+!42 = distinct !{!42, !43}
+!43 = distinct !{!43, !"LVerDomain"}
+!44 = !{!45}
+!45 = distinct !{!45, !43}
+!46 = distinct !{!46, !3}
+!47 = distinct !{!47, !3}
+!48 = !{!49}
+!49 = distinct !{!49, !50}
+!50 = distinct !{!50, !"LVerDomain"}
+!51 = !{!52}
+!52 = distinct !{!52, !50}
+!53 = distinct !{!53, !3}
+!54 = distinct !{!54, !3}

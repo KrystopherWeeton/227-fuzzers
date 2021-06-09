@@ -1,0 +1,1451 @@
+; ModuleID = '../../third_party/webrtc/modules/audio_processing/aec3/suppression_filter.cc'
+source_filename = "../../third_party/webrtc/modules/audio_processing/aec3/suppression_filter.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.webrtc::SuppressionFilter" = type { i32, i32, i64, %"class.webrtc::Aec3Fft", %"class.std::__1::vector" }
+%"class.webrtc::Aec3Fft" = type { %"class.webrtc::OouraFft" }
+%"class.webrtc::OouraFft" = type { i8 }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"class.std::__1::vector.0"*, %"class.std::__1::vector.0"*, %"class.std::__1::__compressed_pair.3" }
+%"class.std::__1::vector.0" = type { %"class.std::__1::__vector_base.1" }
+%"class.std::__1::__vector_base.1" = type { %"struct.std::__1::array"*, %"struct.std::__1::array"*, %"class.std::__1::__compressed_pair" }
+%"struct.std::__1::array" = type { [64 x float] }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"struct.std::__1::array"* }
+%"class.std::__1::__compressed_pair.3" = type { %"struct.std::__1::__compressed_pair_elem.4" }
+%"struct.std::__1::__compressed_pair_elem.4" = type { %"class.std::__1::vector.0"* }
+%"class.std::__1::__vector_base_common" = type { i8 }
+%"struct.webrtc::FftData" = type { %"struct.std::__1::array.8", %"struct.std::__1::array.8" }
+%"struct.std::__1::array.8" = type { [65 x float] }
+%"class.rtc::ArrayView" = type { %"class.rtc::impl::ArrayViewBase" }
+%"class.rtc::impl::ArrayViewBase" = type { %"struct.webrtc::FftData"*, i64 }
+%"class.std::__1::vector.9" = type { %"class.std::__1::__vector_base.10" }
+%"class.std::__1::__vector_base.10" = type { %"class.std::__1::vector.11"*, %"class.std::__1::vector.11"*, %"class.std::__1::__compressed_pair.25" }
+%"class.std::__1::vector.11" = type { %"class.std::__1::__vector_base.12" }
+%"class.std::__1::__vector_base.12" = type { %"class.std::__1::vector.13"*, %"class.std::__1::vector.13"*, %"class.std::__1::__compressed_pair.20" }
+%"class.std::__1::vector.13" = type { %"class.std::__1::__vector_base.14" }
+%"class.std::__1::__vector_base.14" = type { float*, float*, %"class.std::__1::__compressed_pair.15" }
+%"class.std::__1::__compressed_pair.15" = type { %"struct.std::__1::__compressed_pair_elem.16" }
+%"struct.std::__1::__compressed_pair_elem.16" = type { float* }
+%"class.std::__1::__compressed_pair.20" = type { %"struct.std::__1::__compressed_pair_elem.21" }
+%"struct.std::__1::__compressed_pair_elem.21" = type { %"class.std::__1::vector.13"* }
+%"class.std::__1::__compressed_pair.25" = type { %"struct.std::__1::__compressed_pair_elem.26" }
+%"struct.std::__1::__compressed_pair_elem.26" = type { %"class.std::__1::vector.11"* }
+%"class.webrtc::aec3::VectorMath" = type { i32 }
+%"struct.std::__1::array.32" = type { [128 x float] }
+
+$_ZNSt3__16vectorINS0_INS_5arrayIfLm64EEENS_9allocatorIS2_EEEENS3_IS5_EEEC2EmRKS5_ = comdat any
+
+@_ZN6webrtc12_GLOBAL__N_112kSqrtHanningE = internal unnamed_addr constant [128 x float] [float 0.000000e+00, float 0x3F99215600000000, float 0x3FA91F6600000000, float 0x3FB2D520A0000000, float 0x3FB917A6C0000000, float 0x3FBF564E60000000, float 0x3FC2C81060000000, float 0x3FC5E21440000000, float 0x3FC8F8B840000000, float 0x3FCC0B8260000000, float 0x3FCF19F980000000, float 0x3FD111D260000000, float 0x3FD2940620000000, float 0x3FD4135CA0000000, float 0x3FD58F9A80000000, float 0x3FD7088540000000, float 0x3FD87DE2A0000000, float 0x3FD9EF7940000000, float 0x3FDB5D1000000000, float 0x3FDCC66EA0000000, float 0x3FDE2B5D40000000, float 0x3FDF8BA4E0000000, float 0x3FE07387A0000000, float 0x3FE11EB360000000, float 0x3FE1C73B40000000, float 0x3FE26D0540000000, float 0x3FE30FF800000000, float 0x3FE3AFFA20000000, float 0x3FE44CF320000000, float 0x3FE4E6CAC0000000, float 0x3FE57D6940000000, float 0x3FE610B760000000, float 0x3FE6A09E60000000, float 0x3FE72D0840000000, float 0x3FE7B5DF20000000, float 0x3FE83B0E00000000, float 0x3FE8BC8060000000, float 0x3FE93A2240000000, float 0x3FE9B3E040000000, float 0x3FEA29A7A0000000, float 0x3FEA9B6620000000, float 0x3FEB090A60000000, float 0x3FEB728340000000, float 0x3FEBD7C0A0000000, float 0x3FEC38B300000000, float 0x3FEC954B20000000, float 0x3FECED7B00000000, float 0x3FED4134E0000000, float 0x3FED906BC0000000, float 0x3FEDDB13C0000000, float 0x3FEE212100000000, float 0x3FEE6288E0000000, float 0x3FEE9F4160000000, float 0x3FEED740E0000000, float 0x3FEF0A7F00000000, float 0x3FEF38F3A0000000, float 0x3FEF6297C0000000, float 0x3FEF876500000000, float 0x3FEFA75580000000, float 0x3FEFC26480000000, float 0x3FEFD88DA0000000, float 0x3FEFE9CDA0000000, float 0x3FEFF621E0000000, float 0x3FEFFD8860000000, float 1.000000e+00, float 0x3FEFFD8860000000, float 0x3FEFF621E0000000, float 0x3FEFE9CDA0000000, float 0x3FEFD88DA0000000, float 0x3FEFC26480000000, float 0x3FEFA75580000000, float 0x3FEF876500000000, float 0x3FEF6297C0000000, float 0x3FEF38F3A0000000, float 0x3FEF0A7F00000000, float 0x3FEED740E0000000, float 0x3FEE9F4160000000, float 0x3FEE6288E0000000, float 0x3FEE212100000000, float 0x3FEDDB13C0000000, float 0x3FED906BC0000000, float 0x3FED4134E0000000, float 0x3FECED7B00000000, float 0x3FEC954B20000000, float 0x3FEC38B300000000, float 0x3FEBD7C0A0000000, float 0x3FEB728340000000, float 0x3FEB090A60000000, float 0x3FEA9B6620000000, float 0x3FEA29A7A0000000, float 0x3FE9B3E040000000, float 0x3FE93A2240000000, float 0x3FE8BC8060000000, float 0x3FE83B0E00000000, float 0x3FE7B5DF20000000, float 0x3FE72D0840000000, float 0x3FE6A09E60000000, float 0x3FE610B760000000, float 0x3FE57D6940000000, float 0x3FE4E6CAC0000000, float 0x3FE44CF320000000, float 0x3FE3AFFA20000000, float 0x3FE30FF800000000, float 0x3FE26D0540000000, float 0x3FE1C73B40000000, float 0x3FE11EB360000000, float 0x3FE07387A0000000, float 0x3FDF8BA4E0000000, float 0x3FDE2B5D40000000, float 0x3FDCC66EA0000000, float 0x3FDB5D1000000000, float 0x3FD9EF7940000000, float 0x3FD87DE2A0000000, float 0x3FD7088540000000, float 0x3FD58F9A80000000, float 0x3FD4135CA0000000, float 0x3FD2940620000000, float 0x3FD111D260000000, float 0x3FCF19F980000000, float 0x3FCC0B8260000000, float 0x3FC8F8B840000000, float 0x3FC5E21440000000, float 0x3FC2C81060000000, float 0x3FBF564E60000000, float 0x3FB917A6C0000000, float 0x3FB2D520A0000000, float 0x3FA91F6600000000, float 0x3F99215600000000], align 16
+
+@_ZN6webrtc17SuppressionFilterC1ENS_16Aec3OptimizationEim = hidden unnamed_addr alias void (%"class.webrtc::SuppressionFilter"*, i32, i32, i64), void (%"class.webrtc::SuppressionFilter"*, i32, i32, i64)* @_ZN6webrtc17SuppressionFilterC2ENS_16Aec3OptimizationEim
+@_ZN6webrtc17SuppressionFilterD1Ev = hidden unnamed_addr alias void (%"class.webrtc::SuppressionFilter"*), void (%"class.webrtc::SuppressionFilter"*)* @_ZN6webrtc17SuppressionFilterD2Ev
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN6webrtc17SuppressionFilterC2ENS_16Aec3OptimizationEim(%"class.webrtc::SuppressionFilter"*, i32, i32, i64) unnamed_addr #0 align 2 {
+  %5 = alloca %"class.std::__1::vector.0", align 8
+  %6 = getelementptr inbounds %"class.webrtc::SuppressionFilter", %"class.webrtc::SuppressionFilter"* %0, i64 0, i32 0
+  store i32 %1, i32* %6, align 8
+  %7 = getelementptr inbounds %"class.webrtc::SuppressionFilter", %"class.webrtc::SuppressionFilter"* %0, i64 0, i32 1
+  store i32 %2, i32* %7, align 4
+  %8 = getelementptr inbounds %"class.webrtc::SuppressionFilter", %"class.webrtc::SuppressionFilter"* %0, i64 0, i32 2
+  store i64 %3, i64* %8, align 8
+  %9 = getelementptr inbounds %"class.webrtc::SuppressionFilter", %"class.webrtc::SuppressionFilter"* %0, i64 0, i32 3
+  tail call void @_ZN6webrtc7Aec3FftC1Ev(%"class.webrtc::Aec3Fft"* %9) #10
+  %10 = getelementptr inbounds %"class.webrtc::SuppressionFilter", %"class.webrtc::SuppressionFilter"* %0, i64 0, i32 4
+  %11 = load i32, i32* %7, align 4
+  %12 = sdiv i32 %11, 16000
+  %13 = sext i32 %12 to i64
+  %14 = bitcast %"class.std::__1::vector.0"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %14) #10
+  %15 = load i64, i64* %8, align 8
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %14, i8 0, i64 24, i1 false) #10
+  %16 = icmp eq i64 %15, 0
+  br i1 %16, label %38, label %17
+
+17:                                               ; preds = %4
+  %18 = icmp ugt i64 %15, 72057594037927935
+  br i1 %18, label %19, label %21
+
+19:                                               ; preds = %17
+  %20 = bitcast %"class.std::__1::vector.0"* %5 to %"class.std::__1::__vector_base_common"*
+  call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"* nonnull %20) #11
+  unreachable
+
+21:                                               ; preds = %17
+  %22 = shl i64 %15, 8
+  %23 = tail call i8* @_Znwm(i64 %22) #12
+  %24 = bitcast i8* %23 to %"struct.std::__1::array"*
+  %25 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %5, i64 0, i32 0, i32 1
+  %26 = bitcast %"class.std::__1::vector.0"* %5 to i8**
+  store i8* %23, i8** %26, align 8
+  %27 = getelementptr inbounds %"struct.std::__1::array", %"struct.std::__1::array"* %24, i64 %15
+  %28 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %5, i64 0, i32 0, i32 2, i32 0, i32 0
+  store %"struct.std::__1::array"* %27, %"struct.std::__1::array"** %28, align 8
+  %29 = bitcast %"struct.std::__1::array"** %25 to i64*
+  %30 = ptrtoint i8* %23 to i64
+  %31 = add nsw i64 %15, -1
+  %32 = getelementptr %"struct.std::__1::array", %"struct.std::__1::array"* %24, i64 %31, i32 0, i64 0
+  %33 = ptrtoint float* %32 to i64
+  %34 = sub i64 256, %30
+  %35 = add i64 %34, %33
+  %36 = and i64 %35, -256
+  tail call void @llvm.memset.p0i8.i64(i8* nonnull align 4 %23, i8 0, i64 %36, i1 false) #10
+  %37 = ptrtoint %"struct.std::__1::array"* %27 to i64
+  store i64 %37, i64* %29, align 8
+  br label %38
+
+38:                                               ; preds = %4, %21
+  call void @_ZNSt3__16vectorINS0_INS_5arrayIfLm64EEENS_9allocatorIS2_EEEENS3_IS5_EEEC2EmRKS5_(%"class.std::__1::vector"* %10, i64 %13, %"class.std::__1::vector.0"* nonnull dereferenceable(24) %5)
+  %39 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %5, i64 0, i32 0, i32 0
+  %40 = load %"struct.std::__1::array"*, %"struct.std::__1::array"** %39, align 8
+  %41 = icmp eq %"struct.std::__1::array"* %40, null
+  br i1 %41, label %47, label %42
+
+42:                                               ; preds = %38
+  %43 = ptrtoint %"struct.std::__1::array"* %40 to i64
+  %44 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %5, i64 0, i32 0, i32 1
+  %45 = bitcast %"struct.std::__1::array"** %44 to i64*
+  store i64 %43, i64* %45, align 8
+  %46 = bitcast %"struct.std::__1::array"* %40 to i8*
+  call void @_ZdlPv(i8* %46) #12
+  br label %47
+
+47:                                               ; preds = %38, %42
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %14) #10
+  %48 = getelementptr inbounds %"class.webrtc::SuppressionFilter", %"class.webrtc::SuppressionFilter"* %0, i64 0, i32 4, i32 0, i32 1
+  %49 = bitcast %"class.std::__1::vector.0"** %48 to i64*
+  %50 = load i64, i64* %49, align 8
+  %51 = bitcast %"class.std::__1::vector"* %10 to i64*
+  %52 = load i64, i64* %51, align 8
+  %53 = icmp eq i64 %50, %52
+  br i1 %53, label %68, label %54
+
+54:                                               ; preds = %47
+  %55 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %10, i64 0, i32 0, i32 0
+  br label %56
+
+56:                                               ; preds = %54, %72
+  %57 = phi i64 [ %52, %54 ], [ %73, %72 ]
+  %58 = phi i64 [ %50, %54 ], [ %74, %72 ]
+  %59 = phi i64 [ 0, %54 ], [ %75, %72 ]
+  %60 = inttoptr i64 %57 to %"class.std::__1::vector.0"*
+  %61 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %60, i64 %59
+  %62 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %60, i64 %59, i32 0, i32 1
+  %63 = bitcast %"struct.std::__1::array"** %62 to i64*
+  %64 = load i64, i64* %63, align 8
+  %65 = bitcast %"class.std::__1::vector.0"* %61 to i64*
+  %66 = load i64, i64* %65, align 8
+  %67 = icmp eq i64 %64, %66
+  br i1 %67, label %72, label %79
+
+68:                                               ; preds = %72, %47
+  ret void
+
+69:                                               ; preds = %79
+  %70 = ptrtoint %"class.std::__1::vector.0"* %87 to i64
+  %71 = load i64, i64* %49, align 8
+  br label %72
+
+72:                                               ; preds = %69, %56
+  %73 = phi i64 [ %70, %69 ], [ %57, %56 ]
+  %74 = phi i64 [ %71, %69 ], [ %58, %56 ]
+  %75 = add nuw i64 %59, 1
+  %76 = sub i64 %74, %73
+  %77 = sdiv exact i64 %76, 24
+  %78 = icmp ult i64 %75, %77
+  br i1 %78, label %56, label %68
+
+79:                                               ; preds = %56, %79
+  %80 = phi %"class.std::__1::vector.0"* [ %87, %79 ], [ %60, %56 ]
+  %81 = phi i64 [ %86, %79 ], [ 0, %56 ]
+  %82 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %80, i64 %59, i32 0, i32 0
+  %83 = load %"struct.std::__1::array"*, %"struct.std::__1::array"** %82, align 8
+  %84 = getelementptr %"struct.std::__1::array", %"struct.std::__1::array"* %83, i64 %81
+  %85 = bitcast %"struct.std::__1::array"* %84 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 4 %85, i8 0, i64 256, i1 false)
+  %86 = add nuw i64 %81, 1
+  %87 = load %"class.std::__1::vector.0"*, %"class.std::__1::vector.0"** %55, align 8
+  %88 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %87, i64 %59
+  %89 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %87, i64 %59, i32 0, i32 1
+  %90 = bitcast %"struct.std::__1::array"** %89 to i64*
+  %91 = load i64, i64* %90, align 8
+  %92 = bitcast %"class.std::__1::vector.0"* %88 to i64*
+  %93 = load i64, i64* %92, align 8
+  %94 = sub i64 %91, %93
+  %95 = ashr exact i64 %94, 8
+  %96 = icmp ult i64 %86, %95
+  br i1 %96, label %79, label %69
+}
+
+declare void @_ZN6webrtc7Aec3FftC1Ev(%"class.webrtc::Aec3Fft"*) unnamed_addr #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZNSt3__16vectorINS0_INS_5arrayIfLm64EEENS_9allocatorIS2_EEEENS3_IS5_EEEC2EmRKS5_(%"class.std::__1::vector"*, i64, %"class.std::__1::vector.0"* dereferenceable(24)) unnamed_addr #0 comdat align 2 {
+  %4 = bitcast %"class.std::__1::vector"* %0 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %4, i8 0, i64 24, i1 false) #10
+  %5 = icmp eq i64 %1, 0
+  br i1 %5, label %63, label %6
+
+6:                                                ; preds = %3
+  %7 = icmp ugt i64 %1, 768614336404564650
+  br i1 %7, label %8, label %10
+
+8:                                                ; preds = %6
+  %9 = bitcast %"class.std::__1::vector"* %0 to %"class.std::__1::__vector_base_common"*
+  tail call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"* %9) #11
+  unreachable
+
+10:                                               ; preds = %6
+  %11 = mul i64 %1, 24
+  %12 = tail call i8* @_Znwm(i64 %11) #12
+  %13 = bitcast i8* %12 to %"class.std::__1::vector.0"*
+  %14 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 1
+  %15 = bitcast %"class.std::__1::vector.0"** %14 to i8**
+  store i8* %12, i8** %15, align 8
+  %16 = bitcast %"class.std::__1::vector"* %0 to i8**
+  store i8* %12, i8** %16, align 8
+  %17 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %13, i64 %1
+  %18 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 2, i32 0, i32 0
+  store %"class.std::__1::vector.0"* %17, %"class.std::__1::vector.0"** %18, align 8
+  %19 = bitcast %"class.std::__1::vector.0"** %14 to i64*
+  %20 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %2, i64 0, i32 0, i32 1
+  %21 = bitcast %"struct.std::__1::array"** %20 to i64*
+  %22 = bitcast %"class.std::__1::vector.0"* %2 to i64*
+  %23 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %2, i64 0, i32 0, i32 0
+  br label %24
+
+24:                                               ; preds = %58, %10
+  %25 = phi %"class.std::__1::vector.0"* [ %13, %10 ], [ %59, %58 ]
+  %26 = bitcast %"class.std::__1::vector.0"* %25 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %26, i8 0, i64 24, i1 false) #10
+  %27 = load i64, i64* %21, align 8
+  %28 = load i64, i64* %22, align 8
+  %29 = sub i64 %27, %28
+  %30 = ashr exact i64 %29, 8
+  %31 = icmp eq i64 %29, 0
+  br i1 %31, label %58, label %32
+
+32:                                               ; preds = %24
+  %33 = icmp ugt i64 %30, 72057594037927935
+  br i1 %33, label %34, label %36
+
+34:                                               ; preds = %32
+  %35 = bitcast %"class.std::__1::vector.0"* %25 to %"class.std::__1::__vector_base_common"*
+  tail call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"* %35) #11
+  unreachable
+
+36:                                               ; preds = %32
+  %37 = tail call i8* @_Znwm(i64 %29) #12
+  %38 = bitcast i8* %37 to %"struct.std::__1::array"*
+  %39 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %25, i64 0, i32 0, i32 1
+  %40 = bitcast %"struct.std::__1::array"** %39 to i8**
+  store i8* %37, i8** %40, align 8
+  %41 = bitcast %"class.std::__1::vector.0"* %25 to i8**
+  store i8* %37, i8** %41, align 8
+  %42 = getelementptr inbounds %"struct.std::__1::array", %"struct.std::__1::array"* %38, i64 %30
+  %43 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %25, i64 0, i32 0, i32 2, i32 0, i32 0
+  store %"struct.std::__1::array"* %42, %"struct.std::__1::array"** %43, align 8
+  %44 = load %"struct.std::__1::array"*, %"struct.std::__1::array"** %23, align 8
+  %45 = load i64, i64* %21, align 8
+  %46 = bitcast %"struct.std::__1::array"** %39 to i64*
+  %47 = ptrtoint i8* %37 to i64
+  %48 = ptrtoint %"struct.std::__1::array"* %44 to i64
+  %49 = sub i64 %45, %48
+  %50 = icmp sgt i64 %49, 0
+  br i1 %50, label %51, label %56
+
+51:                                               ; preds = %36
+  %52 = lshr exact i64 %49, 8
+  %53 = bitcast %"struct.std::__1::array"* %44 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 4 %37, i8* align 4 %53, i64 %49, i1 false) #10
+  %54 = getelementptr inbounds %"struct.std::__1::array", %"struct.std::__1::array"* %38, i64 %52
+  %55 = ptrtoint %"struct.std::__1::array"* %54 to i64
+  br label %56
+
+56:                                               ; preds = %51, %36
+  %57 = phi i64 [ %55, %51 ], [ %47, %36 ]
+  store i64 %57, i64* %46, align 8
+  br label %58
+
+58:                                               ; preds = %56, %24
+  %59 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %25, i64 1
+  %60 = icmp eq %"class.std::__1::vector.0"* %59, %17
+  br i1 %60, label %61, label %24
+
+61:                                               ; preds = %58
+  %62 = ptrtoint %"class.std::__1::vector.0"* %17 to i64
+  store i64 %62, i64* %19, align 8
+  br label %63
+
+63:                                               ; preds = %3, %61
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN6webrtc17SuppressionFilterD2Ev(%"class.webrtc::SuppressionFilter"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.webrtc::SuppressionFilter", %"class.webrtc::SuppressionFilter"* %0, i64 0, i32 4
+  %3 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %2, i64 0, i32 0, i32 0
+  %4 = load %"class.std::__1::vector.0"*, %"class.std::__1::vector.0"** %3, align 8
+  %5 = icmp eq %"class.std::__1::vector.0"* %4, null
+  br i1 %5, label %29, label %6
+
+6:                                                ; preds = %1
+  %7 = bitcast %"class.std::__1::vector.0"* %4 to i8*
+  %8 = getelementptr inbounds %"class.webrtc::SuppressionFilter", %"class.webrtc::SuppressionFilter"* %0, i64 0, i32 4, i32 0, i32 1
+  %9 = load %"class.std::__1::vector.0"*, %"class.std::__1::vector.0"** %8, align 8
+  %10 = icmp eq %"class.std::__1::vector.0"* %9, %4
+  br i1 %10, label %27, label %11
+
+11:                                               ; preds = %6, %22
+  %12 = phi %"class.std::__1::vector.0"* [ %13, %22 ], [ %9, %6 ]
+  %13 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %12, i64 -1
+  %14 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %13, i64 0, i32 0, i32 0
+  %15 = load %"struct.std::__1::array"*, %"struct.std::__1::array"** %14, align 8
+  %16 = icmp eq %"struct.std::__1::array"* %15, null
+  br i1 %16, label %22, label %17
+
+17:                                               ; preds = %11
+  %18 = ptrtoint %"struct.std::__1::array"* %15 to i64
+  %19 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %12, i64 -1, i32 0, i32 1
+  %20 = bitcast %"struct.std::__1::array"** %19 to i64*
+  store i64 %18, i64* %20, align 8
+  %21 = bitcast %"struct.std::__1::array"* %15 to i8*
+  tail call void @_ZdlPv(i8* %21) #12
+  br label %22
+
+22:                                               ; preds = %17, %11
+  %23 = icmp eq %"class.std::__1::vector.0"* %13, %4
+  br i1 %23, label %24, label %11
+
+24:                                               ; preds = %22
+  %25 = bitcast %"class.std::__1::vector"* %2 to i8**
+  %26 = load i8*, i8** %25, align 8
+  br label %27
+
+27:                                               ; preds = %24, %6
+  %28 = phi i8* [ %26, %24 ], [ %7, %6 ]
+  store %"class.std::__1::vector.0"* %4, %"class.std::__1::vector.0"** %8, align 8
+  tail call void @_ZdlPv(i8* %28) #12
+  br label %29
+
+29:                                               ; preds = %1, %27
+  %30 = getelementptr inbounds %"class.webrtc::SuppressionFilter", %"class.webrtc::SuppressionFilter"* %0, i64 0, i32 3, i32 0
+  tail call void @_ZN6webrtc8OouraFftD1Ev(%"class.webrtc::OouraFft"* %30) #10
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN6webrtc17SuppressionFilter9ApplyGainEN3rtc9ArrayViewIKNS_7FftDataELln4711EEES5_RKNSt3__15arrayIfLm65EEEfS5_PNS6_6vectorINSB_INSB_IfNS6_9allocatorIfEEEENSC_ISE_EEEENSC_ISG_EEEE(%"class.webrtc::SuppressionFilter"*, %"struct.webrtc::FftData"*, i64, %"struct.webrtc::FftData"*, i64, %"struct.std::__1::array.8"* nocapture readonly dereferenceable(260), float, %"class.rtc::ArrayView"* nocapture readonly byval(%"class.rtc::ArrayView") align 8, %"class.std::__1::vector.9"* nocapture readonly) local_unnamed_addr #3 align 2 {
+  %10 = alloca %"struct.std::__1::array.8", align 16
+  %11 = alloca %"class.webrtc::aec3::VectorMath", align 4
+  %12 = alloca %"struct.webrtc::FftData", align 4
+  %13 = alloca %"struct.std::__1::array.32", align 4
+  %14 = alloca %"struct.std::__1::array.32", align 4
+  %15 = bitcast %"struct.std::__1::array.8"* %10 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 260, i8* nonnull %15) #10
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %15, i8 -1, i64 260, i1 false)
+  %16 = bitcast %"struct.std::__1::array.8"* %5 to <4 x float>*
+  %17 = load <4 x float>, <4 x float>* %16, align 4
+  %18 = fmul <4 x float> %17, %17
+  %19 = fsub <4 x float> <float 1.000000e+00, float 1.000000e+00, float 1.000000e+00, float 1.000000e+00>, %18
+  %20 = bitcast %"struct.std::__1::array.8"* %10 to <4 x float>*
+  store <4 x float> %19, <4 x float>* %20, align 16
+  %21 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %5, i64 0, i32 0, i64 4
+  %22 = bitcast float* %21 to <4 x float>*
+  %23 = load <4 x float>, <4 x float>* %22, align 4
+  %24 = fmul <4 x float> %23, %23
+  %25 = fsub <4 x float> <float 1.000000e+00, float 1.000000e+00, float 1.000000e+00, float 1.000000e+00>, %24
+  %26 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 4
+  %27 = bitcast float* %26 to <4 x float>*
+  store <4 x float> %25, <4 x float>* %27, align 16
+  %28 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %5, i64 0, i32 0, i64 8
+  %29 = bitcast float* %28 to <4 x float>*
+  %30 = load <4 x float>, <4 x float>* %29, align 4
+  %31 = fmul <4 x float> %30, %30
+  %32 = fsub <4 x float> <float 1.000000e+00, float 1.000000e+00, float 1.000000e+00, float 1.000000e+00>, %31
+  %33 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 8
+  %34 = bitcast float* %33 to <4 x float>*
+  store <4 x float> %32, <4 x float>* %34, align 16
+  %35 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %5, i64 0, i32 0, i64 12
+  %36 = bitcast float* %35 to <4 x float>*
+  %37 = load <4 x float>, <4 x float>* %36, align 4
+  %38 = fmul <4 x float> %37, %37
+  %39 = fsub <4 x float> <float 1.000000e+00, float 1.000000e+00, float 1.000000e+00, float 1.000000e+00>, %38
+  %40 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 12
+  %41 = bitcast float* %40 to <4 x float>*
+  store <4 x float> %39, <4 x float>* %41, align 16
+  %42 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %5, i64 0, i32 0, i64 16
+  %43 = bitcast float* %42 to <4 x float>*
+  %44 = load <4 x float>, <4 x float>* %43, align 4
+  %45 = fmul <4 x float> %44, %44
+  %46 = fsub <4 x float> <float 1.000000e+00, float 1.000000e+00, float 1.000000e+00, float 1.000000e+00>, %45
+  %47 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 16
+  %48 = bitcast float* %47 to <4 x float>*
+  store <4 x float> %46, <4 x float>* %48, align 16
+  %49 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %5, i64 0, i32 0, i64 20
+  %50 = bitcast float* %49 to <4 x float>*
+  %51 = load <4 x float>, <4 x float>* %50, align 4
+  %52 = fmul <4 x float> %51, %51
+  %53 = fsub <4 x float> <float 1.000000e+00, float 1.000000e+00, float 1.000000e+00, float 1.000000e+00>, %52
+  %54 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 20
+  %55 = bitcast float* %54 to <4 x float>*
+  store <4 x float> %53, <4 x float>* %55, align 16
+  %56 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %5, i64 0, i32 0, i64 24
+  %57 = bitcast float* %56 to <4 x float>*
+  %58 = load <4 x float>, <4 x float>* %57, align 4
+  %59 = fmul <4 x float> %58, %58
+  %60 = fsub <4 x float> <float 1.000000e+00, float 1.000000e+00, float 1.000000e+00, float 1.000000e+00>, %59
+  %61 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 24
+  %62 = bitcast float* %61 to <4 x float>*
+  store <4 x float> %60, <4 x float>* %62, align 16
+  %63 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %5, i64 0, i32 0, i64 28
+  %64 = bitcast float* %63 to <4 x float>*
+  %65 = load <4 x float>, <4 x float>* %64, align 4
+  %66 = fmul <4 x float> %65, %65
+  %67 = fsub <4 x float> <float 1.000000e+00, float 1.000000e+00, float 1.000000e+00, float 1.000000e+00>, %66
+  %68 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 28
+  %69 = bitcast float* %68 to <4 x float>*
+  store <4 x float> %67, <4 x float>* %69, align 16
+  %70 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %5, i64 0, i32 0, i64 32
+  %71 = bitcast float* %70 to <4 x float>*
+  %72 = load <4 x float>, <4 x float>* %71, align 4
+  %73 = fmul <4 x float> %72, %72
+  %74 = fsub <4 x float> <float 1.000000e+00, float 1.000000e+00, float 1.000000e+00, float 1.000000e+00>, %73
+  %75 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 32
+  %76 = bitcast float* %75 to <4 x float>*
+  store <4 x float> %74, <4 x float>* %76, align 16
+  %77 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %5, i64 0, i32 0, i64 36
+  %78 = bitcast float* %77 to <4 x float>*
+  %79 = load <4 x float>, <4 x float>* %78, align 4
+  %80 = fmul <4 x float> %79, %79
+  %81 = fsub <4 x float> <float 1.000000e+00, float 1.000000e+00, float 1.000000e+00, float 1.000000e+00>, %80
+  %82 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 36
+  %83 = bitcast float* %82 to <4 x float>*
+  store <4 x float> %81, <4 x float>* %83, align 16
+  %84 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %5, i64 0, i32 0, i64 40
+  %85 = bitcast float* %84 to <4 x float>*
+  %86 = load <4 x float>, <4 x float>* %85, align 4
+  %87 = fmul <4 x float> %86, %86
+  %88 = fsub <4 x float> <float 1.000000e+00, float 1.000000e+00, float 1.000000e+00, float 1.000000e+00>, %87
+  %89 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 40
+  %90 = bitcast float* %89 to <4 x float>*
+  store <4 x float> %88, <4 x float>* %90, align 16
+  %91 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %5, i64 0, i32 0, i64 44
+  %92 = bitcast float* %91 to <4 x float>*
+  %93 = load <4 x float>, <4 x float>* %92, align 4
+  %94 = fmul <4 x float> %93, %93
+  %95 = fsub <4 x float> <float 1.000000e+00, float 1.000000e+00, float 1.000000e+00, float 1.000000e+00>, %94
+  %96 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 44
+  %97 = bitcast float* %96 to <4 x float>*
+  store <4 x float> %95, <4 x float>* %97, align 16
+  %98 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %5, i64 0, i32 0, i64 48
+  %99 = bitcast float* %98 to <4 x float>*
+  %100 = load <4 x float>, <4 x float>* %99, align 4
+  %101 = fmul <4 x float> %100, %100
+  %102 = fsub <4 x float> <float 1.000000e+00, float 1.000000e+00, float 1.000000e+00, float 1.000000e+00>, %101
+  %103 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 48
+  %104 = bitcast float* %103 to <4 x float>*
+  store <4 x float> %102, <4 x float>* %104, align 16
+  %105 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %5, i64 0, i32 0, i64 52
+  %106 = bitcast float* %105 to <4 x float>*
+  %107 = load <4 x float>, <4 x float>* %106, align 4
+  %108 = fmul <4 x float> %107, %107
+  %109 = fsub <4 x float> <float 1.000000e+00, float 1.000000e+00, float 1.000000e+00, float 1.000000e+00>, %108
+  %110 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 52
+  %111 = bitcast float* %110 to <4 x float>*
+  store <4 x float> %109, <4 x float>* %111, align 16
+  %112 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %5, i64 0, i32 0, i64 56
+  %113 = bitcast float* %112 to <4 x float>*
+  %114 = load <4 x float>, <4 x float>* %113, align 4
+  %115 = fmul <4 x float> %114, %114
+  %116 = fsub <4 x float> <float 1.000000e+00, float 1.000000e+00, float 1.000000e+00, float 1.000000e+00>, %115
+  %117 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 56
+  %118 = bitcast float* %117 to <4 x float>*
+  store <4 x float> %116, <4 x float>* %118, align 16
+  %119 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %5, i64 0, i32 0, i64 60
+  %120 = bitcast float* %119 to <4 x float>*
+  %121 = load <4 x float>, <4 x float>* %120, align 4
+  %122 = fmul <4 x float> %121, %121
+  %123 = fsub <4 x float> <float 1.000000e+00, float 1.000000e+00, float 1.000000e+00, float 1.000000e+00>, %122
+  %124 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 60
+  %125 = bitcast float* %124 to <4 x float>*
+  store <4 x float> %123, <4 x float>* %125, align 16
+  %126 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %5, i64 0, i32 0, i64 64
+  %127 = load float, float* %126, align 4
+  %128 = fmul float %127, %127
+  %129 = fsub float 1.000000e+00, %128
+  %130 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 64
+  store float %129, float* %130, align 16
+  %131 = bitcast %"class.webrtc::aec3::VectorMath"* %11 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %131) #10
+  %132 = getelementptr inbounds %"class.webrtc::SuppressionFilter", %"class.webrtc::SuppressionFilter"* %0, i64 0, i32 0
+  %133 = load i32, i32* %132, align 8
+  %134 = getelementptr inbounds %"class.webrtc::aec3::VectorMath", %"class.webrtc::aec3::VectorMath"* %11, i64 0, i32 0
+  store i32 %133, i32* %134, align 4
+  %135 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 0
+  switch i32 %133, label %204 [
+    i32 1, label %136
+    i32 2, label %203
+  ]
+
+136:                                              ; preds = %9
+  %137 = bitcast %"struct.std::__1::array.8"* %10 to <4 x float>*
+  %138 = load <4 x float>, <4 x float>* %137, align 16
+  %139 = tail call <4 x float> @llvm.sqrt.v4f32(<4 x float> %138) #10
+  store <4 x float> %139, <4 x float>* %137, align 16
+  %140 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 4
+  %141 = bitcast float* %140 to <4 x float>*
+  %142 = load <4 x float>, <4 x float>* %141, align 16
+  %143 = tail call <4 x float> @llvm.sqrt.v4f32(<4 x float> %142) #10
+  store <4 x float> %143, <4 x float>* %141, align 16
+  %144 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 8
+  %145 = bitcast float* %144 to <4 x float>*
+  %146 = load <4 x float>, <4 x float>* %145, align 16
+  %147 = tail call <4 x float> @llvm.sqrt.v4f32(<4 x float> %146) #10
+  store <4 x float> %147, <4 x float>* %145, align 16
+  %148 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 12
+  %149 = bitcast float* %148 to <4 x float>*
+  %150 = load <4 x float>, <4 x float>* %149, align 16
+  %151 = tail call <4 x float> @llvm.sqrt.v4f32(<4 x float> %150) #10
+  store <4 x float> %151, <4 x float>* %149, align 16
+  %152 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 16
+  %153 = bitcast float* %152 to <4 x float>*
+  %154 = load <4 x float>, <4 x float>* %153, align 16
+  %155 = tail call <4 x float> @llvm.sqrt.v4f32(<4 x float> %154) #10
+  store <4 x float> %155, <4 x float>* %153, align 16
+  %156 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 20
+  %157 = bitcast float* %156 to <4 x float>*
+  %158 = load <4 x float>, <4 x float>* %157, align 16
+  %159 = tail call <4 x float> @llvm.sqrt.v4f32(<4 x float> %158) #10
+  store <4 x float> %159, <4 x float>* %157, align 16
+  %160 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 24
+  %161 = bitcast float* %160 to <4 x float>*
+  %162 = load <4 x float>, <4 x float>* %161, align 16
+  %163 = tail call <4 x float> @llvm.sqrt.v4f32(<4 x float> %162) #10
+  store <4 x float> %163, <4 x float>* %161, align 16
+  %164 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 28
+  %165 = bitcast float* %164 to <4 x float>*
+  %166 = load <4 x float>, <4 x float>* %165, align 16
+  %167 = tail call <4 x float> @llvm.sqrt.v4f32(<4 x float> %166) #10
+  store <4 x float> %167, <4 x float>* %165, align 16
+  %168 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 32
+  %169 = bitcast float* %168 to <4 x float>*
+  %170 = load <4 x float>, <4 x float>* %169, align 16
+  %171 = tail call <4 x float> @llvm.sqrt.v4f32(<4 x float> %170) #10
+  store <4 x float> %171, <4 x float>* %169, align 16
+  %172 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 36
+  %173 = bitcast float* %172 to <4 x float>*
+  %174 = load <4 x float>, <4 x float>* %173, align 16
+  %175 = tail call <4 x float> @llvm.sqrt.v4f32(<4 x float> %174) #10
+  store <4 x float> %175, <4 x float>* %173, align 16
+  %176 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 40
+  %177 = bitcast float* %176 to <4 x float>*
+  %178 = load <4 x float>, <4 x float>* %177, align 16
+  %179 = tail call <4 x float> @llvm.sqrt.v4f32(<4 x float> %178) #10
+  store <4 x float> %179, <4 x float>* %177, align 16
+  %180 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 44
+  %181 = bitcast float* %180 to <4 x float>*
+  %182 = load <4 x float>, <4 x float>* %181, align 16
+  %183 = tail call <4 x float> @llvm.sqrt.v4f32(<4 x float> %182) #10
+  store <4 x float> %183, <4 x float>* %181, align 16
+  %184 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 48
+  %185 = bitcast float* %184 to <4 x float>*
+  %186 = load <4 x float>, <4 x float>* %185, align 16
+  %187 = tail call <4 x float> @llvm.sqrt.v4f32(<4 x float> %186) #10
+  store <4 x float> %187, <4 x float>* %185, align 16
+  %188 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 52
+  %189 = bitcast float* %188 to <4 x float>*
+  %190 = load <4 x float>, <4 x float>* %189, align 16
+  %191 = tail call <4 x float> @llvm.sqrt.v4f32(<4 x float> %190) #10
+  store <4 x float> %191, <4 x float>* %189, align 16
+  %192 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 56
+  %193 = bitcast float* %192 to <4 x float>*
+  %194 = load <4 x float>, <4 x float>* %193, align 16
+  %195 = tail call <4 x float> @llvm.sqrt.v4f32(<4 x float> %194) #10
+  store <4 x float> %195, <4 x float>* %193, align 16
+  %196 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 60
+  %197 = bitcast float* %196 to <4 x float>*
+  %198 = load <4 x float>, <4 x float>* %197, align 16
+  %199 = tail call <4 x float> @llvm.sqrt.v4f32(<4 x float> %198) #10
+  store <4 x float> %199, <4 x float>* %197, align 16
+  %200 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 64
+  %201 = load float, float* %200, align 16
+  %202 = tail call float @sqrtf(float %201) #10
+  store float %202, float* %200, align 16
+  br label %224
+
+203:                                              ; preds = %9
+  call void @_ZN6webrtc4aec310VectorMath8SqrtAVX2EN3rtc9ArrayViewIfLln4711EEE(%"class.webrtc::aec3::VectorMath"* nonnull %11, float* nonnull %135, i64 65) #10
+  br label %224
+
+204:                                              ; preds = %9
+  %205 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 65
+  br label %206
+
+206:                                              ; preds = %206, %204
+  %207 = phi float* [ %135, %204 ], [ %222, %206 ]
+  %208 = load float, float* %207, align 4
+  %209 = call float @sqrtf(float %208) #10
+  store float %209, float* %207, align 4
+  %210 = getelementptr inbounds float, float* %207, i64 1
+  %211 = load float, float* %210, align 4
+  %212 = call float @sqrtf(float %211) #10
+  store float %212, float* %210, align 4
+  %213 = getelementptr inbounds float, float* %207, i64 2
+  %214 = load float, float* %213, align 4
+  %215 = call float @sqrtf(float %214) #10
+  store float %215, float* %213, align 4
+  %216 = getelementptr inbounds float, float* %207, i64 3
+  %217 = load float, float* %216, align 4
+  %218 = call float @sqrtf(float %217) #10
+  store float %218, float* %216, align 4
+  %219 = getelementptr inbounds float, float* %207, i64 4
+  %220 = load float, float* %219, align 4
+  %221 = call float @sqrtf(float %220) #10
+  store float %221, float* %219, align 4
+  %222 = getelementptr inbounds float, float* %207, i64 5
+  %223 = icmp eq float* %222, %205
+  br i1 %223, label %224, label %206
+
+224:                                              ; preds = %206, %136, %203
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %131) #10
+  %225 = fmul float %6, %6
+  %226 = fsub float 1.000000e+00, %225
+  %227 = call float @sqrtf(float %226) #10
+  %228 = getelementptr inbounds %"class.webrtc::SuppressionFilter", %"class.webrtc::SuppressionFilter"* %0, i64 0, i32 2
+  %229 = load i64, i64* %228, align 8
+  %230 = icmp eq i64 %229, 0
+  br i1 %230, label %498, label %231
+
+231:                                              ; preds = %224
+  %232 = fmul float %227, 0x3FD99999A0000000
+  %233 = bitcast %"struct.webrtc::FftData"* %12 to i8*
+  %234 = getelementptr inbounds %"class.rtc::ArrayView", %"class.rtc::ArrayView"* %7, i64 0, i32 0, i32 0
+  %235 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1
+  %236 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %235, i64 0, i32 0, i64 0
+  %237 = bitcast %"struct.std::__1::array.8"* %235 to i8*
+  %238 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 64
+  %239 = bitcast %"struct.std::__1::array.32"* %13 to i8*
+  %240 = bitcast %"struct.webrtc::FftData"* %12 to i32*
+  %241 = bitcast %"struct.std::__1::array.32"* %13 to i32*
+  %242 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 64
+  %243 = bitcast float* %242 to i32*
+  %244 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 1
+  %245 = bitcast float* %244 to i32*
+  %246 = getelementptr inbounds %"class.webrtc::SuppressionFilter", %"class.webrtc::SuppressionFilter"* %0, i64 0, i32 3, i32 0
+  %247 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 0
+  %248 = getelementptr inbounds %"class.std::__1::vector.9", %"class.std::__1::vector.9"* %8, i64 0, i32 0, i32 0
+  %249 = getelementptr inbounds %"class.webrtc::SuppressionFilter", %"class.webrtc::SuppressionFilter"* %0, i64 0, i32 4, i32 0, i32 0
+  %250 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 64
+  %251 = bitcast float* %250 to i8*
+  %252 = getelementptr inbounds %"class.std::__1::vector.9", %"class.std::__1::vector.9"* %8, i64 0, i32 0, i32 1
+  %253 = bitcast %"class.std::__1::vector.11"** %252 to i64*
+  %254 = bitcast %"class.std::__1::vector.9"* %8 to i64*
+  %255 = bitcast %"struct.std::__1::array.32"* %14 to i8*
+  %256 = bitcast %"struct.std::__1::array.32"* %14 to i32*
+  %257 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 1
+  %258 = bitcast float* %257 to i32*
+  %259 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 0
+  %260 = fmul float %232, 1.562500e-02
+  %261 = load %"struct.webrtc::FftData"*, %"struct.webrtc::FftData"** %234, align 8
+  %262 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 2
+  %263 = bitcast float* %262 to i8*
+  %264 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 2
+  %265 = bitcast float* %264 to i8*
+  %266 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %5, i64 0, i32 0, i64 64
+  %267 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 64
+  %268 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 64
+  %269 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 64
+  %270 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 1
+  %271 = bitcast float* %270 to <4 x i32>*
+  %272 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 1
+  %273 = bitcast float* %272 to <4 x i32>*
+  %274 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 2
+  %275 = bitcast float* %274 to <8 x i32>*
+  %276 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 5
+  %277 = bitcast float* %276 to <4 x i32>*
+  %278 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 5
+  %279 = bitcast float* %278 to <4 x i32>*
+  %280 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 10
+  %281 = bitcast float* %280 to <8 x i32>*
+  %282 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 9
+  %283 = bitcast float* %282 to <4 x i32>*
+  %284 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 9
+  %285 = bitcast float* %284 to <4 x i32>*
+  %286 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 18
+  %287 = bitcast float* %286 to <8 x i32>*
+  %288 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 13
+  %289 = bitcast float* %288 to <4 x i32>*
+  %290 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 13
+  %291 = bitcast float* %290 to <4 x i32>*
+  %292 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 26
+  %293 = bitcast float* %292 to <8 x i32>*
+  %294 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 17
+  %295 = bitcast float* %294 to <4 x i32>*
+  %296 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 17
+  %297 = bitcast float* %296 to <4 x i32>*
+  %298 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 34
+  %299 = bitcast float* %298 to <8 x i32>*
+  %300 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 21
+  %301 = bitcast float* %300 to <4 x i32>*
+  %302 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 21
+  %303 = bitcast float* %302 to <4 x i32>*
+  %304 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 42
+  %305 = bitcast float* %304 to <8 x i32>*
+  %306 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 25
+  %307 = bitcast float* %306 to <4 x i32>*
+  %308 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 25
+  %309 = bitcast float* %308 to <4 x i32>*
+  %310 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 50
+  %311 = bitcast float* %310 to <8 x i32>*
+  %312 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 29
+  %313 = bitcast float* %312 to <4 x i32>*
+  %314 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 29
+  %315 = bitcast float* %314 to <4 x i32>*
+  %316 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 58
+  %317 = bitcast float* %316 to <8 x i32>*
+  %318 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 33
+  %319 = bitcast float* %318 to <4 x i32>*
+  %320 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 33
+  %321 = bitcast float* %320 to <4 x i32>*
+  %322 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 66
+  %323 = bitcast float* %322 to <8 x i32>*
+  %324 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 37
+  %325 = bitcast float* %324 to <4 x i32>*
+  %326 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 37
+  %327 = bitcast float* %326 to <4 x i32>*
+  %328 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 74
+  %329 = bitcast float* %328 to <8 x i32>*
+  %330 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 41
+  %331 = bitcast float* %330 to <4 x i32>*
+  %332 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 41
+  %333 = bitcast float* %332 to <4 x i32>*
+  %334 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 82
+  %335 = bitcast float* %334 to <8 x i32>*
+  %336 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 45
+  %337 = bitcast float* %336 to <4 x i32>*
+  %338 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 45
+  %339 = bitcast float* %338 to <4 x i32>*
+  %340 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 90
+  %341 = bitcast float* %340 to <8 x i32>*
+  %342 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 49
+  %343 = bitcast float* %342 to <4 x i32>*
+  %344 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 49
+  %345 = bitcast float* %344 to <4 x i32>*
+  %346 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 98
+  %347 = bitcast float* %346 to <8 x i32>*
+  %348 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 53
+  %349 = bitcast float* %348 to <4 x i32>*
+  %350 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 53
+  %351 = bitcast float* %350 to <4 x i32>*
+  %352 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 106
+  %353 = bitcast float* %352 to <8 x i32>*
+  %354 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 57
+  %355 = bitcast float* %354 to <4 x i32>*
+  %356 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 57
+  %357 = bitcast float* %356 to <4 x i32>*
+  %358 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 114
+  %359 = bitcast float* %358 to <8 x i32>*
+  %360 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 61
+  %361 = bitcast float* %360 to i32*
+  %362 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 122
+  %363 = bitcast float* %362 to i32*
+  %364 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 61
+  %365 = bitcast float* %364 to i32*
+  %366 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 123
+  %367 = bitcast float* %366 to i32*
+  %368 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 62
+  %369 = bitcast float* %368 to i32*
+  %370 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 124
+  %371 = bitcast float* %370 to i32*
+  %372 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 62
+  %373 = bitcast float* %372 to i32*
+  %374 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 125
+  %375 = bitcast float* %374 to i32*
+  %376 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 63
+  %377 = bitcast float* %376 to i32*
+  %378 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 126
+  %379 = bitcast float* %378 to i32*
+  %380 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 63
+  %381 = bitcast float* %380 to i32*
+  %382 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 127
+  %383 = bitcast float* %382 to i32*
+  %384 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 1
+  %385 = bitcast float* %384 to <4 x i32>*
+  %386 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 1
+  %387 = bitcast float* %386 to <4 x i32>*
+  %388 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 2
+  %389 = bitcast float* %388 to <8 x i32>*
+  %390 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 5
+  %391 = bitcast float* %390 to <4 x i32>*
+  %392 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 5
+  %393 = bitcast float* %392 to <4 x i32>*
+  %394 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 10
+  %395 = bitcast float* %394 to <8 x i32>*
+  %396 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 9
+  %397 = bitcast float* %396 to <4 x i32>*
+  %398 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 9
+  %399 = bitcast float* %398 to <4 x i32>*
+  %400 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 18
+  %401 = bitcast float* %400 to <8 x i32>*
+  %402 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 13
+  %403 = bitcast float* %402 to <4 x i32>*
+  %404 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 13
+  %405 = bitcast float* %404 to <4 x i32>*
+  %406 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 26
+  %407 = bitcast float* %406 to <8 x i32>*
+  %408 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 17
+  %409 = bitcast float* %408 to <4 x i32>*
+  %410 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 17
+  %411 = bitcast float* %410 to <4 x i32>*
+  %412 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 34
+  %413 = bitcast float* %412 to <8 x i32>*
+  %414 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 21
+  %415 = bitcast float* %414 to <4 x i32>*
+  %416 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 21
+  %417 = bitcast float* %416 to <4 x i32>*
+  %418 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 42
+  %419 = bitcast float* %418 to <8 x i32>*
+  %420 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 25
+  %421 = bitcast float* %420 to <4 x i32>*
+  %422 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 25
+  %423 = bitcast float* %422 to <4 x i32>*
+  %424 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 50
+  %425 = bitcast float* %424 to <8 x i32>*
+  %426 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 29
+  %427 = bitcast float* %426 to <4 x i32>*
+  %428 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 29
+  %429 = bitcast float* %428 to <4 x i32>*
+  %430 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 58
+  %431 = bitcast float* %430 to <8 x i32>*
+  %432 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 33
+  %433 = bitcast float* %432 to <4 x i32>*
+  %434 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 33
+  %435 = bitcast float* %434 to <4 x i32>*
+  %436 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 66
+  %437 = bitcast float* %436 to <8 x i32>*
+  %438 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 37
+  %439 = bitcast float* %438 to <4 x i32>*
+  %440 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 37
+  %441 = bitcast float* %440 to <4 x i32>*
+  %442 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 74
+  %443 = bitcast float* %442 to <8 x i32>*
+  %444 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 41
+  %445 = bitcast float* %444 to <4 x i32>*
+  %446 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 41
+  %447 = bitcast float* %446 to <4 x i32>*
+  %448 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 82
+  %449 = bitcast float* %448 to <8 x i32>*
+  %450 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 45
+  %451 = bitcast float* %450 to <4 x i32>*
+  %452 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 45
+  %453 = bitcast float* %452 to <4 x i32>*
+  %454 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 90
+  %455 = bitcast float* %454 to <8 x i32>*
+  %456 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 49
+  %457 = bitcast float* %456 to <4 x i32>*
+  %458 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 49
+  %459 = bitcast float* %458 to <4 x i32>*
+  %460 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 98
+  %461 = bitcast float* %460 to <8 x i32>*
+  %462 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 53
+  %463 = bitcast float* %462 to <4 x i32>*
+  %464 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 53
+  %465 = bitcast float* %464 to <4 x i32>*
+  %466 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 106
+  %467 = bitcast float* %466 to <8 x i32>*
+  %468 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 57
+  %469 = bitcast float* %468 to <4 x i32>*
+  %470 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 57
+  %471 = bitcast float* %470 to <4 x i32>*
+  %472 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 114
+  %473 = bitcast float* %472 to <8 x i32>*
+  %474 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 61
+  %475 = bitcast float* %474 to i32*
+  %476 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 122
+  %477 = bitcast float* %476 to i32*
+  %478 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 61
+  %479 = bitcast float* %478 to i32*
+  %480 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 123
+  %481 = bitcast float* %480 to i32*
+  %482 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 62
+  %483 = bitcast float* %482 to i32*
+  %484 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 124
+  %485 = bitcast float* %484 to i32*
+  %486 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 62
+  %487 = bitcast float* %486 to i32*
+  %488 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 125
+  %489 = bitcast float* %488 to i32*
+  %490 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 63
+  %491 = bitcast float* %490 to i32*
+  %492 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 126
+  %493 = bitcast float* %492 to i32*
+  %494 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 63
+  %495 = bitcast float* %494 to i32*
+  %496 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 127
+  %497 = bitcast float* %496 to i32*
+  br label %499
+
+498:                                              ; preds = %819, %224
+  call void @llvm.lifetime.end.p0i8(i64 260, i8* nonnull %15) #10
+  ret void
+
+499:                                              ; preds = %231, %819
+  %500 = phi i64 [ 0, %231 ], [ %820, %819 ]
+  call void @llvm.lifetime.start.p0i8(i64 520, i8* nonnull %233) #10
+  %501 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %261, i64 %500
+  %502 = bitcast %"struct.webrtc::FftData"* %501 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 4 %233, i8* align 4 %502, i64 260, i1 false) #10
+  %503 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %261, i64 %500, i32 1
+  %504 = bitcast %"struct.std::__1::array.8"* %503 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %237, i8* align 4 %504, i64 256, i1 false) #10
+  store float 0.000000e+00, float* %238, align 4
+  store float 0.000000e+00, float* %236, align 4
+  br label %505
+
+505:                                              ; preds = %505, %499
+  %506 = phi i64 [ 0, %499 ], [ %533, %505 ]
+  %507 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %5, i64 0, i32 0, i64 %506
+  %508 = bitcast float* %507 to <2 x float>*
+  %509 = load <2 x float>, <2 x float>* %508, align 4
+  %510 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 0, i32 0, i64 %506
+  %511 = bitcast float* %510 to <2 x float>*
+  %512 = load <2 x float>, <2 x float>* %511, align 4
+  %513 = fmul <2 x float> %509, %512
+  %514 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %12, i64 0, i32 1, i32 0, i64 %506
+  %515 = bitcast float* %514 to <2 x float>*
+  %516 = load <2 x float>, <2 x float>* %515, align 4
+  %517 = fmul <2 x float> %509, %516
+  %518 = getelementptr inbounds %"struct.std::__1::array.8", %"struct.std::__1::array.8"* %10, i64 0, i32 0, i64 %506
+  %519 = bitcast float* %518 to <2 x float>*
+  %520 = load <2 x float>, <2 x float>* %519, align 8
+  %521 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %1, i64 %500, i32 0, i32 0, i64 %506
+  %522 = bitcast float* %521 to <2 x float>*
+  %523 = load <2 x float>, <2 x float>* %522, align 4
+  %524 = fmul <2 x float> %520, %523
+  %525 = fadd <2 x float> %513, %524
+  %526 = bitcast float* %510 to <2 x float>*
+  store <2 x float> %525, <2 x float>* %526, align 4
+  %527 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %1, i64 %500, i32 1, i32 0, i64 %506
+  %528 = bitcast float* %527 to <2 x float>*
+  %529 = load <2 x float>, <2 x float>* %528, align 4
+  %530 = fmul <2 x float> %520, %529
+  %531 = fadd <2 x float> %517, %530
+  %532 = bitcast float* %514 to <2 x float>*
+  store <2 x float> %531, <2 x float>* %532, align 4
+  %533 = add i64 %506, 2
+  %534 = icmp eq i64 %533, 64
+  br i1 %534, label %535, label %505, !llvm.loop !2
+
+535:                                              ; preds = %505
+  %536 = load float, float* %266, align 4
+  %537 = load float, float* %267, align 4
+  %538 = fmul float %536, %537
+  %539 = load float, float* %268, align 4
+  %540 = fmul float %536, %539
+  %541 = load float, float* %269, align 16
+  %542 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %1, i64 %500, i32 0, i32 0, i64 64
+  %543 = load float, float* %542, align 4
+  %544 = fmul float %541, %543
+  %545 = fadd float %538, %544
+  store float %545, float* %267, align 4
+  %546 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %1, i64 %500, i32 1, i32 0, i64 64
+  %547 = load float, float* %546, align 4
+  %548 = fmul float %541, %547
+  %549 = fadd float %540, %548
+  store float %549, float* %268, align 4
+  call void @llvm.lifetime.start.p0i8(i64 512, i8* nonnull %239) #10
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 4 %263, i8 -1, i64 504, i1 false)
+  %550 = load i32, i32* %240, align 4
+  store i32 %550, i32* %241, align 4
+  %551 = load i32, i32* %243, align 4
+  store i32 %551, i32* %245, align 4
+  %552 = load <4 x i32>, <4 x i32>* %271, align 4
+  %553 = load <4 x i32>, <4 x i32>* %273, align 4
+  %554 = shufflevector <4 x i32> %552, <4 x i32> %553, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %554, <8 x i32>* %275, align 4
+  %555 = load <4 x i32>, <4 x i32>* %277, align 4
+  %556 = load <4 x i32>, <4 x i32>* %279, align 4
+  %557 = shufflevector <4 x i32> %555, <4 x i32> %556, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %557, <8 x i32>* %281, align 4
+  %558 = load <4 x i32>, <4 x i32>* %283, align 4
+  %559 = load <4 x i32>, <4 x i32>* %285, align 4
+  %560 = shufflevector <4 x i32> %558, <4 x i32> %559, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %560, <8 x i32>* %287, align 4
+  %561 = load <4 x i32>, <4 x i32>* %289, align 4
+  %562 = load <4 x i32>, <4 x i32>* %291, align 4
+  %563 = shufflevector <4 x i32> %561, <4 x i32> %562, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %563, <8 x i32>* %293, align 4
+  %564 = load <4 x i32>, <4 x i32>* %295, align 4
+  %565 = load <4 x i32>, <4 x i32>* %297, align 4
+  %566 = shufflevector <4 x i32> %564, <4 x i32> %565, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %566, <8 x i32>* %299, align 4
+  %567 = load <4 x i32>, <4 x i32>* %301, align 4
+  %568 = load <4 x i32>, <4 x i32>* %303, align 4
+  %569 = shufflevector <4 x i32> %567, <4 x i32> %568, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %569, <8 x i32>* %305, align 4
+  %570 = load <4 x i32>, <4 x i32>* %307, align 4
+  %571 = load <4 x i32>, <4 x i32>* %309, align 4
+  %572 = shufflevector <4 x i32> %570, <4 x i32> %571, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %572, <8 x i32>* %311, align 4
+  %573 = load <4 x i32>, <4 x i32>* %313, align 4
+  %574 = load <4 x i32>, <4 x i32>* %315, align 4
+  %575 = shufflevector <4 x i32> %573, <4 x i32> %574, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %575, <8 x i32>* %317, align 4
+  %576 = load <4 x i32>, <4 x i32>* %319, align 4
+  %577 = load <4 x i32>, <4 x i32>* %321, align 4
+  %578 = shufflevector <4 x i32> %576, <4 x i32> %577, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %578, <8 x i32>* %323, align 4
+  %579 = load <4 x i32>, <4 x i32>* %325, align 4
+  %580 = load <4 x i32>, <4 x i32>* %327, align 4
+  %581 = shufflevector <4 x i32> %579, <4 x i32> %580, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %581, <8 x i32>* %329, align 4
+  %582 = load <4 x i32>, <4 x i32>* %331, align 4
+  %583 = load <4 x i32>, <4 x i32>* %333, align 4
+  %584 = shufflevector <4 x i32> %582, <4 x i32> %583, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %584, <8 x i32>* %335, align 4
+  %585 = load <4 x i32>, <4 x i32>* %337, align 4
+  %586 = load <4 x i32>, <4 x i32>* %339, align 4
+  %587 = shufflevector <4 x i32> %585, <4 x i32> %586, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %587, <8 x i32>* %341, align 4
+  %588 = load <4 x i32>, <4 x i32>* %343, align 4
+  %589 = load <4 x i32>, <4 x i32>* %345, align 4
+  %590 = shufflevector <4 x i32> %588, <4 x i32> %589, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %590, <8 x i32>* %347, align 4
+  %591 = load <4 x i32>, <4 x i32>* %349, align 4
+  %592 = load <4 x i32>, <4 x i32>* %351, align 4
+  %593 = shufflevector <4 x i32> %591, <4 x i32> %592, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %593, <8 x i32>* %353, align 4
+  %594 = load <4 x i32>, <4 x i32>* %355, align 4
+  %595 = load <4 x i32>, <4 x i32>* %357, align 4
+  %596 = shufflevector <4 x i32> %594, <4 x i32> %595, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %596, <8 x i32>* %359, align 4
+  %597 = load i32, i32* %361, align 4
+  store i32 %597, i32* %363, align 4
+  %598 = load i32, i32* %365, align 4
+  store i32 %598, i32* %367, align 4
+  %599 = load i32, i32* %369, align 4
+  store i32 %599, i32* %371, align 4
+  %600 = load i32, i32* %373, align 4
+  store i32 %600, i32* %375, align 4
+  %601 = load i32, i32* %377, align 4
+  store i32 %601, i32* %379, align 4
+  %602 = load i32, i32* %381, align 4
+  store i32 %602, i32* %383, align 4
+  call void @_ZNK6webrtc8OouraFft10InverseFftEPf(%"class.webrtc::OouraFft"* %246, float* nonnull %247) #10
+  %603 = load %"class.std::__1::vector.11"*, %"class.std::__1::vector.11"** %248, align 8
+  %604 = getelementptr inbounds %"class.std::__1::vector.11", %"class.std::__1::vector.11"* %603, i64 0, i32 0, i32 0
+  %605 = load %"class.std::__1::vector.13"*, %"class.std::__1::vector.13"** %604, align 8
+  %606 = load %"class.std::__1::vector.0"*, %"class.std::__1::vector.0"** %249, align 8
+  %607 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %606, i64 0, i32 0, i32 0
+  %608 = load %"struct.std::__1::array"*, %"struct.std::__1::array"** %607, align 8
+  %609 = getelementptr inbounds %"class.std::__1::vector.13", %"class.std::__1::vector.13"* %605, i64 %500, i32 0, i32 0
+  br label %619
+
+610:                                              ; preds = %619
+  %611 = getelementptr inbounds %"struct.std::__1::array", %"struct.std::__1::array"* %608, i64 %500
+  %612 = bitcast %"struct.std::__1::array"* %611 to i8*
+  call void @llvm.memmove.p0i8.p0i8.i64(i8* align 4 %612, i8* align 4 %251, i64 256, i1 false) #10
+  %613 = load i64, i64* %253, align 8
+  %614 = load i64, i64* %254, align 8
+  %615 = sub i64 %613, %614
+  %616 = sdiv exact i64 %615, 24
+  %617 = icmp ugt i64 %616, 1
+  %618 = inttoptr i64 %614 to %"class.std::__1::vector.11"*
+  br i1 %617, label %647, label %769
+
+619:                                              ; preds = %619, %535
+  %620 = phi i64 [ 0, %535 ], [ %642, %619 ]
+  %621 = getelementptr inbounds %"struct.std::__1::array", %"struct.std::__1::array"* %608, i64 %500, i32 0, i64 %620
+  %622 = load float, float* %621, align 4
+  %623 = add nuw nsw i64 %620, 64
+  %624 = getelementptr inbounds [128 x float], [128 x float]* @_ZN6webrtc12_GLOBAL__N_112kSqrtHanningE, i64 0, i64 %623
+  %625 = load float, float* %624, align 4
+  %626 = fmul float %622, %625
+  %627 = load float*, float** %609, align 8
+  %628 = getelementptr inbounds float, float* %627, i64 %620
+  store float %626, float* %628, align 4
+  %629 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %13, i64 0, i32 0, i64 %620
+  %630 = load float, float* %629, align 4
+  %631 = getelementptr inbounds [128 x float], [128 x float]* @_ZN6webrtc12_GLOBAL__N_112kSqrtHanningE, i64 0, i64 %620
+  %632 = load float, float* %631, align 4
+  %633 = fmul float %630, %632
+  %634 = load float*, float** %609, align 8
+  %635 = getelementptr inbounds float, float* %634, i64 %620
+  %636 = load float, float* %635, align 4
+  %637 = fadd float %633, %636
+  store float %637, float* %635, align 4
+  %638 = load float*, float** %609, align 8
+  %639 = getelementptr inbounds float, float* %638, i64 %620
+  %640 = load float, float* %639, align 4
+  %641 = fmul float %640, 1.562500e-02
+  store float %641, float* %639, align 4
+  %642 = add nuw nsw i64 %620, 1
+  %643 = icmp eq i64 %642, 64
+  br i1 %643, label %610, label %619
+
+644:                                              ; preds = %653
+  %645 = inttoptr i64 %656 to %"class.std::__1::vector.11"*
+  %646 = icmp ugt i64 %658, 1
+  br i1 %646, label %684, label %769
+
+647:                                              ; preds = %610, %653
+  %648 = phi %"class.std::__1::vector.11"* [ %660, %653 ], [ %618, %610 ]
+  %649 = phi i64 [ %654, %653 ], [ 1, %610 ]
+  %650 = getelementptr inbounds %"class.std::__1::vector.11", %"class.std::__1::vector.11"* %648, i64 %649, i32 0, i32 0
+  %651 = load %"class.std::__1::vector.13"*, %"class.std::__1::vector.13"** %650, align 8
+  %652 = getelementptr inbounds %"class.std::__1::vector.13", %"class.std::__1::vector.13"* %651, i64 %500, i32 0, i32 0
+  br label %661
+
+653:                                              ; preds = %661
+  %654 = add nuw i64 %649, 1
+  %655 = load i64, i64* %253, align 8
+  %656 = load i64, i64* %254, align 8
+  %657 = sub i64 %655, %656
+  %658 = sdiv exact i64 %657, 24
+  %659 = icmp ult i64 %654, %658
+  %660 = inttoptr i64 %656 to %"class.std::__1::vector.11"*
+  br i1 %659, label %647, label %644
+
+661:                                              ; preds = %661, %647
+  %662 = phi i64 [ 0, %647 ], [ %682, %661 ]
+  %663 = load float*, float** %652, align 8
+  %664 = getelementptr inbounds float, float* %663, i64 %662
+  %665 = load float, float* %664, align 4
+  %666 = fmul float %665, %6
+  store float %666, float* %664, align 4
+  %667 = or i64 %662, 1
+  %668 = load float*, float** %652, align 8
+  %669 = getelementptr inbounds float, float* %668, i64 %667
+  %670 = load float, float* %669, align 4
+  %671 = fmul float %670, %6
+  store float %671, float* %669, align 4
+  %672 = or i64 %662, 2
+  %673 = load float*, float** %652, align 8
+  %674 = getelementptr inbounds float, float* %673, i64 %672
+  %675 = load float, float* %674, align 4
+  %676 = fmul float %675, %6
+  store float %676, float* %674, align 4
+  %677 = or i64 %662, 3
+  %678 = load float*, float** %652, align 8
+  %679 = getelementptr inbounds float, float* %678, i64 %677
+  %680 = load float, float* %679, align 4
+  %681 = fmul float %680, %6
+  store float %681, float* %679, align 4
+  %682 = add nuw nsw i64 %662, 4
+  %683 = icmp eq i64 %682, 64
+  br i1 %683, label %653, label %661
+
+684:                                              ; preds = %644
+  %685 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %3, i64 %500
+  %686 = bitcast %"struct.webrtc::FftData"* %685 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 4 %233, i8* align 4 %686, i64 260, i1 false) #10
+  %687 = getelementptr inbounds %"struct.webrtc::FftData", %"struct.webrtc::FftData"* %3, i64 %500, i32 1
+  %688 = bitcast %"struct.std::__1::array.8"* %687 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %237, i8* align 4 %688, i64 256, i1 false) #10
+  store float 0.000000e+00, float* %238, align 4
+  store float 0.000000e+00, float* %236, align 4
+  call void @llvm.lifetime.start.p0i8(i64 512, i8* nonnull %255) #10
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 4 %265, i8 -1, i64 504, i1 false)
+  %689 = load i32, i32* %240, align 4
+  store i32 %689, i32* %256, align 4
+  %690 = load i32, i32* %243, align 4
+  store i32 %690, i32* %258, align 4
+  %691 = load <4 x i32>, <4 x i32>* %385, align 4
+  %692 = load <4 x i32>, <4 x i32>* %387, align 4
+  %693 = shufflevector <4 x i32> %691, <4 x i32> %692, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %693, <8 x i32>* %389, align 4
+  %694 = load <4 x i32>, <4 x i32>* %391, align 4
+  %695 = load <4 x i32>, <4 x i32>* %393, align 4
+  %696 = shufflevector <4 x i32> %694, <4 x i32> %695, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %696, <8 x i32>* %395, align 4
+  %697 = load <4 x i32>, <4 x i32>* %397, align 4
+  %698 = load <4 x i32>, <4 x i32>* %399, align 4
+  %699 = shufflevector <4 x i32> %697, <4 x i32> %698, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %699, <8 x i32>* %401, align 4
+  %700 = load <4 x i32>, <4 x i32>* %403, align 4
+  %701 = load <4 x i32>, <4 x i32>* %405, align 4
+  %702 = shufflevector <4 x i32> %700, <4 x i32> %701, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %702, <8 x i32>* %407, align 4
+  %703 = load <4 x i32>, <4 x i32>* %409, align 4
+  %704 = load <4 x i32>, <4 x i32>* %411, align 4
+  %705 = shufflevector <4 x i32> %703, <4 x i32> %704, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %705, <8 x i32>* %413, align 4
+  %706 = load <4 x i32>, <4 x i32>* %415, align 4
+  %707 = load <4 x i32>, <4 x i32>* %417, align 4
+  %708 = shufflevector <4 x i32> %706, <4 x i32> %707, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %708, <8 x i32>* %419, align 4
+  %709 = load <4 x i32>, <4 x i32>* %421, align 4
+  %710 = load <4 x i32>, <4 x i32>* %423, align 4
+  %711 = shufflevector <4 x i32> %709, <4 x i32> %710, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %711, <8 x i32>* %425, align 4
+  %712 = load <4 x i32>, <4 x i32>* %427, align 4
+  %713 = load <4 x i32>, <4 x i32>* %429, align 4
+  %714 = shufflevector <4 x i32> %712, <4 x i32> %713, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %714, <8 x i32>* %431, align 4
+  %715 = load <4 x i32>, <4 x i32>* %433, align 4
+  %716 = load <4 x i32>, <4 x i32>* %435, align 4
+  %717 = shufflevector <4 x i32> %715, <4 x i32> %716, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %717, <8 x i32>* %437, align 4
+  %718 = load <4 x i32>, <4 x i32>* %439, align 4
+  %719 = load <4 x i32>, <4 x i32>* %441, align 4
+  %720 = shufflevector <4 x i32> %718, <4 x i32> %719, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %720, <8 x i32>* %443, align 4
+  %721 = load <4 x i32>, <4 x i32>* %445, align 4
+  %722 = load <4 x i32>, <4 x i32>* %447, align 4
+  %723 = shufflevector <4 x i32> %721, <4 x i32> %722, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %723, <8 x i32>* %449, align 4
+  %724 = load <4 x i32>, <4 x i32>* %451, align 4
+  %725 = load <4 x i32>, <4 x i32>* %453, align 4
+  %726 = shufflevector <4 x i32> %724, <4 x i32> %725, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %726, <8 x i32>* %455, align 4
+  %727 = load <4 x i32>, <4 x i32>* %457, align 4
+  %728 = load <4 x i32>, <4 x i32>* %459, align 4
+  %729 = shufflevector <4 x i32> %727, <4 x i32> %728, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %729, <8 x i32>* %461, align 4
+  %730 = load <4 x i32>, <4 x i32>* %463, align 4
+  %731 = load <4 x i32>, <4 x i32>* %465, align 4
+  %732 = shufflevector <4 x i32> %730, <4 x i32> %731, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %732, <8 x i32>* %467, align 4
+  %733 = load <4 x i32>, <4 x i32>* %469, align 4
+  %734 = load <4 x i32>, <4 x i32>* %471, align 4
+  %735 = shufflevector <4 x i32> %733, <4 x i32> %734, <8 x i32> <i32 0, i32 4, i32 1, i32 5, i32 2, i32 6, i32 3, i32 7>
+  store <8 x i32> %735, <8 x i32>* %473, align 4
+  %736 = load i32, i32* %475, align 4
+  store i32 %736, i32* %477, align 4
+  %737 = load i32, i32* %479, align 4
+  store i32 %737, i32* %481, align 4
+  %738 = load i32, i32* %483, align 4
+  store i32 %738, i32* %485, align 4
+  %739 = load i32, i32* %487, align 4
+  store i32 %739, i32* %489, align 4
+  %740 = load i32, i32* %491, align 4
+  store i32 %740, i32* %493, align 4
+  %741 = load i32, i32* %495, align 4
+  store i32 %741, i32* %497, align 4
+  call void @_ZNK6webrtc8OouraFft10InverseFftEPf(%"class.webrtc::OouraFft"* %246, float* nonnull %259) #10
+  %742 = load %"class.std::__1::vector.11"*, %"class.std::__1::vector.11"** %248, align 8
+  %743 = getelementptr inbounds %"class.std::__1::vector.11", %"class.std::__1::vector.11"* %742, i64 1, i32 0, i32 0
+  %744 = load %"class.std::__1::vector.13"*, %"class.std::__1::vector.13"** %743, align 8
+  %745 = getelementptr inbounds %"class.std::__1::vector.13", %"class.std::__1::vector.13"* %744, i64 %500, i32 0, i32 0
+  br label %750
+
+746:                                              ; preds = %750
+  call void @llvm.lifetime.end.p0i8(i64 512, i8* nonnull %255) #10
+  %747 = load i64, i64* %253, align 8
+  %748 = load i64, i64* %254, align 8
+  %749 = inttoptr i64 %748 to %"class.std::__1::vector.11"*
+  br label %769
+
+750:                                              ; preds = %750, %684
+  %751 = phi i64 [ 0, %684 ], [ %767, %750 ]
+  %752 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 %751
+  %753 = load float, float* %752, align 4
+  %754 = fmul float %260, %753
+  %755 = load float*, float** %745, align 8
+  %756 = getelementptr inbounds float, float* %755, i64 %751
+  %757 = load float, float* %756, align 4
+  %758 = fadd float %754, %757
+  store float %758, float* %756, align 4
+  %759 = or i64 %751, 1
+  %760 = getelementptr inbounds %"struct.std::__1::array.32", %"struct.std::__1::array.32"* %14, i64 0, i32 0, i64 %759
+  %761 = load float, float* %760, align 4
+  %762 = fmul float %260, %761
+  %763 = load float*, float** %745, align 8
+  %764 = getelementptr inbounds float, float* %763, i64 %759
+  %765 = load float, float* %764, align 4
+  %766 = fadd float %762, %765
+  store float %766, float* %764, align 4
+  %767 = add nuw nsw i64 %751, 2
+  %768 = icmp eq i64 %767, 64
+  br i1 %768, label %746, label %750
+
+769:                                              ; preds = %610, %746, %644
+  %770 = phi %"class.std::__1::vector.11"* [ %749, %746 ], [ %645, %644 ], [ %618, %610 ]
+  %771 = phi i64 [ %748, %746 ], [ %656, %644 ], [ %614, %610 ]
+  %772 = phi i64 [ %747, %746 ], [ %655, %644 ], [ %613, %610 ]
+  %773 = sub i64 %772, %771
+  %774 = sdiv exact i64 %773, 24
+  %775 = icmp ugt i64 %774, 1
+  br i1 %775, label %783, label %778
+
+776:                                              ; preds = %792
+  %777 = inttoptr i64 %795 to %"class.std::__1::vector.11"*
+  br label %778
+
+778:                                              ; preds = %776, %769
+  %779 = phi %"class.std::__1::vector.11"* [ %770, %769 ], [ %777, %776 ]
+  %780 = phi i64 [ %771, %769 ], [ %795, %776 ]
+  %781 = phi i64 [ %772, %769 ], [ %794, %776 ]
+  %782 = icmp eq i64 %781, %780
+  br i1 %782, label %819, label %823
+
+783:                                              ; preds = %769, %792
+  %784 = phi %"class.std::__1::vector.11"* [ %799, %792 ], [ %770, %769 ]
+  %785 = phi i64 [ %793, %792 ], [ 1, %769 ]
+  %786 = getelementptr inbounds %"class.std::__1::vector.11", %"class.std::__1::vector.11"* %784, i64 %785, i32 0, i32 0
+  %787 = load %"class.std::__1::vector.13"*, %"class.std::__1::vector.13"** %786, align 8
+  %788 = load %"class.std::__1::vector.0"*, %"class.std::__1::vector.0"** %249, align 8
+  %789 = getelementptr inbounds %"class.std::__1::vector.0", %"class.std::__1::vector.0"* %788, i64 %785, i32 0, i32 0
+  %790 = load %"struct.std::__1::array"*, %"struct.std::__1::array"** %789, align 8
+  %791 = getelementptr inbounds %"class.std::__1::vector.13", %"class.std::__1::vector.13"* %787, i64 %500, i32 0, i32 0
+  br label %800
+
+792:                                              ; preds = %800
+  %793 = add nuw i64 %785, 1
+  %794 = load i64, i64* %253, align 8
+  %795 = load i64, i64* %254, align 8
+  %796 = sub i64 %794, %795
+  %797 = sdiv exact i64 %796, 24
+  %798 = icmp ult i64 %793, %797
+  %799 = inttoptr i64 %795 to %"class.std::__1::vector.11"*
+  br i1 %798, label %783, label %776
+
+800:                                              ; preds = %800, %783
+  %801 = phi i64 [ 0, %783 ], [ %817, %800 ]
+  %802 = load float*, float** %791, align 8
+  %803 = getelementptr inbounds float, float* %802, i64 %801
+  %804 = getelementptr inbounds %"struct.std::__1::array", %"struct.std::__1::array"* %790, i64 %500, i32 0, i64 %801
+  %805 = bitcast float* %803 to i32*
+  %806 = load i32, i32* %805, align 4
+  %807 = bitcast float* %804 to i32*
+  %808 = load i32, i32* %807, align 4
+  store i32 %808, i32* %805, align 4
+  store i32 %806, i32* %807, align 4
+  %809 = or i64 %801, 1
+  %810 = load float*, float** %791, align 8
+  %811 = getelementptr inbounds float, float* %810, i64 %809
+  %812 = getelementptr inbounds %"struct.std::__1::array", %"struct.std::__1::array"* %790, i64 %500, i32 0, i64 %809
+  %813 = bitcast float* %811 to i32*
+  %814 = load i32, i32* %813, align 4
+  %815 = bitcast float* %812 to i32*
+  %816 = load i32, i32* %815, align 4
+  store i32 %816, i32* %813, align 4
+  store i32 %814, i32* %815, align 4
+  %817 = add nuw nsw i64 %801, 2
+  %818 = icmp eq i64 %817, 64
+  br i1 %818, label %792, label %800
+
+819:                                              ; preds = %829, %778
+  call void @llvm.lifetime.end.p0i8(i64 512, i8* nonnull %239) #10
+  call void @llvm.lifetime.end.p0i8(i64 520, i8* nonnull %233) #10
+  %820 = add nuw i64 %500, 1
+  %821 = load i64, i64* %228, align 8
+  %822 = icmp ult i64 %820, %821
+  br i1 %822, label %499, label %498
+
+823:                                              ; preds = %778, %829
+  %824 = phi %"class.std::__1::vector.11"* [ %836, %829 ], [ %779, %778 ]
+  %825 = phi i64 [ %830, %829 ], [ 0, %778 ]
+  %826 = getelementptr inbounds %"class.std::__1::vector.11", %"class.std::__1::vector.11"* %824, i64 %825, i32 0, i32 0
+  %827 = load %"class.std::__1::vector.13"*, %"class.std::__1::vector.13"** %826, align 8
+  %828 = getelementptr inbounds %"class.std::__1::vector.13", %"class.std::__1::vector.13"* %827, i64 %500, i32 0, i32 0
+  br label %837
+
+829:                                              ; preds = %837
+  %830 = add nuw i64 %825, 1
+  %831 = load i64, i64* %253, align 8
+  %832 = load i64, i64* %254, align 8
+  %833 = sub i64 %831, %832
+  %834 = sdiv exact i64 %833, 24
+  %835 = icmp ult i64 %830, %834
+  %836 = inttoptr i64 %832 to %"class.std::__1::vector.11"*
+  br i1 %835, label %823, label %819
+
+837:                                              ; preds = %837, %823
+  %838 = phi i64 [ 0, %823 ], [ %854, %837 ]
+  %839 = load float*, float** %828, align 8
+  %840 = getelementptr inbounds float, float* %839, i64 %838
+  %841 = load float, float* %840, align 4
+  %842 = fcmp ole float %841, -3.276800e+04
+  %843 = fcmp oge float %841, 3.276700e+04
+  %844 = select i1 %843, float 3.276700e+04, float %841
+  %845 = select i1 %842, float -3.276800e+04, float %844
+  store float %845, float* %840, align 4
+  %846 = or i64 %838, 1
+  %847 = load float*, float** %828, align 8
+  %848 = getelementptr inbounds float, float* %847, i64 %846
+  %849 = load float, float* %848, align 4
+  %850 = fcmp ole float %849, -3.276800e+04
+  %851 = fcmp oge float %849, 3.276700e+04
+  %852 = select i1 %851, float 3.276700e+04, float %849
+  %853 = select i1 %850, float -3.276800e+04, float %852
+  store float %853, float* %848, align 4
+  %854 = add nuw nsw i64 %838, 2
+  %855 = icmp eq i64 %854, 64
+  br i1 %855, label %829, label %837
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+; Function Attrs: nounwind
+declare void @_ZN6webrtc8OouraFftD1Ev(%"class.webrtc::OouraFft"*) unnamed_addr #4
+
+; Function Attrs: nofree nounwind
+declare float @sqrtf(float) local_unnamed_addr #5
+
+declare void @_ZN6webrtc4aec310VectorMath8SqrtAVX2EN3rtc9ArrayViewIfLln4711EEE(%"class.webrtc::aec3::VectorMath"*, float*, i64) local_unnamed_addr #1
+
+; Function Attrs: nounwind readnone speculatable
+declare <4 x float> @llvm.sqrt.v4f32(<4 x float>) #6
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memmove.p0i8.p0i8.i64(i8* nocapture, i8* nocapture readonly, i64, i1 immarg) #2
+
+declare void @_ZNK6webrtc8OouraFft10InverseFftEPf(%"class.webrtc::OouraFft"*, float*) local_unnamed_addr #1
+
+; Function Attrs: noreturn
+declare void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"*) local_unnamed_addr #7
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #8
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #9
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #2
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="128" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nofree nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nounwind readnone speculatable }
+attributes #7 = { noreturn "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #9 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #10 = { nounwind }
+attributes #11 = { noreturn nounwind }
+attributes #12 = { builtin nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = distinct !{!2, !3}
+!3 = !{!"llvm.loop.isvectorized", i32 1}

@@ -1,0 +1,3655 @@
+; ModuleID = '../../third_party/libwebp/src/enc/histogram_enc.c'
+source_filename = "../../third_party/libwebp/src/enc/histogram_enc.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%struct.VP8LPrefixCode = type { i8, i8 }
+%struct.VP8LBitEntropy = type { double, i32, i32, i32, i32 }
+%struct.VP8LStreaks = type { [2 x i32], [2 x [2 x i32]] }
+%struct.VP8LHistogram = type { i32*, [256 x i32], [256 x i32], [256 x i32], [40 x i32], i32, i32, double, double, double, double, [5 x i8] }
+%struct.VP8LHistogramSet = type { i32, i32, %struct.VP8LHistogram** }
+%struct.VP8LBackwardRefs = type { i32, i32, %struct.PixOrCopyBlock*, %struct.PixOrCopyBlock**, %struct.PixOrCopyBlock*, %struct.PixOrCopyBlock* }
+%struct.PixOrCopyBlock = type opaque
+%struct.VP8LRefsCursor = type { %struct.PixOrCopy*, %struct.PixOrCopyBlock*, %struct.PixOrCopy* }
+%struct.PixOrCopy = type { i8, i16, i32 }
+%struct.HistoQueue = type { %struct.HistogramPair*, i32, i32 }
+%struct.HistogramPair = type { i32, i32, double, double }
+%struct.anon = type { i16, i16 }
+
+@VP8LExtraCost = external local_unnamed_addr global double (i32*, i32)*, align 8
+@kPrefixEncodeCode = external local_unnamed_addr constant [512 x %struct.VP8LPrefixCode], align 16
+@VP8LGetEntropyUnrefined = external local_unnamed_addr global void (i32*, i32, %struct.VP8LBitEntropy*, %struct.VP8LStreaks*)*, align 8
+@VP8LExtraCostCombined = external local_unnamed_addr global double (i32*, i32*, i32)*, align 8
+@VP8LGetCombinedEntropyUnrefined = external local_unnamed_addr global void (i32*, i32*, i32, %struct.VP8LBitEntropy*, %struct.VP8LStreaks*)*, align 8
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden i32 @VP8LGetHistogramSize(i32) local_unnamed_addr #0 {
+  %2 = icmp sgt i32 %0, 0
+  %3 = shl i32 4, %0
+  %4 = add i32 %3, 4408
+  %5 = select i1 %2, i32 %4, i32 4408
+  ret i32 %5
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @VP8LFreeHistogram(%struct.VP8LHistogram*) local_unnamed_addr #2 {
+  %2 = bitcast %struct.VP8LHistogram* %0 to i8*
+  tail call void @WebPSafeFree(i8* %2) #6
+  ret void
+}
+
+declare void @WebPSafeFree(i8*) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @VP8LFreeHistogramSet(%struct.VP8LHistogramSet*) local_unnamed_addr #2 {
+  %2 = bitcast %struct.VP8LHistogramSet* %0 to i8*
+  tail call void @WebPSafeFree(i8* %2) #6
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @VP8LHistogramStoreRefs(%struct.VP8LBackwardRefs*, %struct.VP8LHistogram* nocapture) local_unnamed_addr #2 {
+  %3 = alloca %struct.VP8LRefsCursor, align 8
+  %4 = bitcast %struct.VP8LRefsCursor* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %4) #6
+  %5 = getelementptr inbounds %struct.VP8LRefsCursor, %struct.VP8LRefsCursor* %3, i64 0, i32 0
+  %6 = getelementptr inbounds %struct.VP8LRefsCursor, %struct.VP8LRefsCursor* %3, i64 0, i32 2
+  %7 = bitcast %struct.VP8LRefsCursor* %3 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %7, i8 -86, i64 24, i1 false)
+  call void @VP8LRefsCursorInit(%struct.VP8LRefsCursor* nonnull sret %3, %struct.VP8LBackwardRefs* %0) #6
+  %8 = load %struct.PixOrCopy*, %struct.PixOrCopy** %5, align 8
+  %9 = icmp eq %struct.PixOrCopy* %8, null
+  br i1 %9, label %21, label %10
+
+10:                                               ; preds = %2, %18
+  %11 = phi %struct.PixOrCopy* [ %19, %18 ], [ %8, %2 ]
+  call void @VP8LHistogramAddSinglePixOrCopy(%struct.VP8LHistogram* %1, %struct.PixOrCopy* nonnull %11, i32 (i32, i32)* null, i32 0)
+  %12 = load %struct.PixOrCopy*, %struct.PixOrCopy** %5, align 8
+  %13 = getelementptr inbounds %struct.PixOrCopy, %struct.PixOrCopy* %12, i64 1
+  store %struct.PixOrCopy* %13, %struct.PixOrCopy** %5, align 8
+  %14 = load %struct.PixOrCopy*, %struct.PixOrCopy** %6, align 8
+  %15 = icmp eq %struct.PixOrCopy* %13, %14
+  br i1 %15, label %16, label %18
+
+16:                                               ; preds = %10
+  call void @VP8LRefsCursorNextBlock(%struct.VP8LRefsCursor* nonnull %3) #6
+  %17 = load %struct.PixOrCopy*, %struct.PixOrCopy** %5, align 8
+  br label %18
+
+18:                                               ; preds = %10, %16
+  %19 = phi %struct.PixOrCopy* [ %13, %10 ], [ %17, %16 ]
+  %20 = icmp eq %struct.PixOrCopy* %19, null
+  br i1 %20, label %21, label %10
+
+21:                                               ; preds = %18, %2
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %4) #6
+  ret void
+}
+
+declare void @VP8LRefsCursorInit(%struct.VP8LRefsCursor* sret, %struct.VP8LBackwardRefs*) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @VP8LHistogramAddSinglePixOrCopy(%struct.VP8LHistogram* nocapture, %struct.PixOrCopy* nocapture readonly, i32 (i32, i32)*, i32) local_unnamed_addr #2 {
+  %5 = getelementptr inbounds %struct.PixOrCopy, %struct.PixOrCopy* %1, i64 0, i32 0
+  %6 = load i8, i8* %5, align 4
+  switch i8 %6, label %43 [
+    i8 0, label %7
+    i8 1, label %35
+  ]
+
+7:                                                ; preds = %4
+  %8 = getelementptr inbounds %struct.PixOrCopy, %struct.PixOrCopy* %1, i64 0, i32 2
+  %9 = load i32, i32* %8, align 4
+  %10 = lshr i32 %9, 24
+  %11 = zext i32 %10 to i64
+  %12 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 3, i64 %11
+  %13 = load i32, i32* %12, align 4
+  %14 = add i32 %13, 1
+  store i32 %14, i32* %12, align 4
+  %15 = load i32, i32* %8, align 4
+  %16 = lshr i32 %15, 16
+  %17 = and i32 %16, 255
+  %18 = zext i32 %17 to i64
+  %19 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 1, i64 %18
+  %20 = load i32, i32* %19, align 4
+  %21 = add i32 %20, 1
+  store i32 %21, i32* %19, align 4
+  %22 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 0
+  %23 = load i32*, i32** %22, align 8
+  %24 = load i32, i32* %8, align 4
+  %25 = lshr i32 %24, 8
+  %26 = and i32 %25, 255
+  %27 = zext i32 %26 to i64
+  %28 = getelementptr inbounds i32, i32* %23, i64 %27
+  %29 = load i32, i32* %28, align 4
+  %30 = add i32 %29, 1
+  store i32 %30, i32* %28, align 4
+  %31 = load i32, i32* %8, align 4
+  %32 = and i32 %31, 255
+  %33 = zext i32 %32 to i64
+  %34 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 2, i64 %33
+  br label %111
+
+35:                                               ; preds = %4
+  %36 = getelementptr inbounds %struct.PixOrCopy, %struct.PixOrCopy* %1, i64 0, i32 2
+  %37 = load i32, i32* %36, align 4
+  %38 = add i32 %37, 280
+  %39 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 0
+  %40 = load i32*, i32** %39, align 8
+  %41 = sext i32 %38 to i64
+  %42 = getelementptr inbounds i32, i32* %40, i64 %41
+  br label %111
+
+43:                                               ; preds = %4
+  %44 = getelementptr inbounds %struct.PixOrCopy, %struct.PixOrCopy* %1, i64 0, i32 1
+  %45 = load i16, i16* %44, align 2
+  %46 = icmp ult i16 %45, 512
+  br i1 %46, label %47, label %52
+
+47:                                               ; preds = %43
+  %48 = zext i16 %45 to i64
+  %49 = getelementptr inbounds [512 x %struct.VP8LPrefixCode], [512 x %struct.VP8LPrefixCode]* @kPrefixEncodeCode, i64 0, i64 %48, i32 0
+  %50 = load i8, i8* %49, align 2
+  %51 = sext i8 %50 to i32
+  br label %62
+
+52:                                               ; preds = %43
+  %53 = zext i16 %45 to i32
+  %54 = add nsw i32 %53, -1
+  %55 = tail call i32 @llvm.ctlz.i32(i32 %54, i1 true) #6, !range !2
+  %56 = xor i32 %55, 31
+  %57 = add nsw i32 %56, -1
+  %58 = lshr i32 %54, %57
+  %59 = and i32 %58, 1
+  %60 = shl nuw nsw i32 %56, 1
+  %61 = or i32 %59, %60
+  br label %62
+
+62:                                               ; preds = %47, %52
+  %63 = phi i32 [ %51, %47 ], [ %61, %52 ]
+  %64 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 0
+  %65 = load i32*, i32** %64, align 8
+  %66 = add nsw i32 %63, 256
+  %67 = sext i32 %66 to i64
+  %68 = getelementptr inbounds i32, i32* %65, i64 %67
+  %69 = load i32, i32* %68, align 4
+  %70 = add i32 %69, 1
+  store i32 %70, i32* %68, align 4
+  %71 = icmp eq i32 (i32, i32)* %2, null
+  %72 = getelementptr inbounds %struct.PixOrCopy, %struct.PixOrCopy* %1, i64 0, i32 2
+  %73 = load i32, i32* %72, align 4
+  br i1 %71, label %74, label %90
+
+74:                                               ; preds = %62
+  %75 = icmp slt i32 %73, 512
+  br i1 %75, label %76, label %81
+
+76:                                               ; preds = %74
+  %77 = sext i32 %73 to i64
+  %78 = getelementptr inbounds [512 x %struct.VP8LPrefixCode], [512 x %struct.VP8LPrefixCode]* @kPrefixEncodeCode, i64 0, i64 %77, i32 0
+  %79 = load i8, i8* %78, align 2
+  %80 = sext i8 %79 to i32
+  br label %107
+
+81:                                               ; preds = %74
+  %82 = add nsw i32 %73, -1
+  %83 = tail call i32 @llvm.ctlz.i32(i32 %82, i1 true) #6, !range !2
+  %84 = xor i32 %83, 31
+  %85 = add nsw i32 %84, -1
+  %86 = lshr i32 %82, %85
+  %87 = and i32 %86, 1
+  %88 = shl nuw nsw i32 %84, 1
+  %89 = or i32 %87, %88
+  br label %107
+
+90:                                               ; preds = %62
+  %91 = tail call i32 %2(i32 %3, i32 %73) #6
+  %92 = icmp slt i32 %91, 512
+  br i1 %92, label %93, label %98
+
+93:                                               ; preds = %90
+  %94 = sext i32 %91 to i64
+  %95 = getelementptr inbounds [512 x %struct.VP8LPrefixCode], [512 x %struct.VP8LPrefixCode]* @kPrefixEncodeCode, i64 0, i64 %94, i32 0
+  %96 = load i8, i8* %95, align 2
+  %97 = sext i8 %96 to i32
+  br label %107
+
+98:                                               ; preds = %90
+  %99 = add nsw i32 %91, -1
+  %100 = tail call i32 @llvm.ctlz.i32(i32 %99, i1 true) #6, !range !2
+  %101 = xor i32 %100, 31
+  %102 = add nsw i32 %101, -1
+  %103 = lshr i32 %99, %102
+  %104 = and i32 %103, 1
+  %105 = shl nuw nsw i32 %101, 1
+  %106 = or i32 %104, %105
+  br label %107
+
+107:                                              ; preds = %98, %93, %81, %76
+  %108 = phi i32 [ %80, %76 ], [ %89, %81 ], [ %97, %93 ], [ %106, %98 ]
+  %109 = sext i32 %108 to i64
+  %110 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 4, i64 %109
+  br label %111
+
+111:                                              ; preds = %35, %107, %7
+  %112 = phi i32* [ %42, %35 ], [ %110, %107 ], [ %34, %7 ]
+  %113 = load i32, i32* %112, align 4
+  %114 = add i32 %113, 1
+  store i32 %114, i32* %112, align 4
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @VP8LHistogramCreate(%struct.VP8LHistogram* nocapture, %struct.VP8LBackwardRefs*, i32) local_unnamed_addr #2 {
+  %4 = alloca %struct.VP8LRefsCursor, align 8
+  %5 = icmp sgt i32 %2, -1
+  %6 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 5
+  br i1 %5, label %9, label %7
+
+7:                                                ; preds = %3
+  %8 = load i32, i32* %6, align 8
+  br label %10
+
+9:                                                ; preds = %3
+  store i32 %2, i32* %6, align 8
+  br label %10
+
+10:                                               ; preds = %7, %9
+  %11 = phi i32 [ %8, %7 ], [ %2, %9 ]
+  %12 = bitcast %struct.VP8LHistogram* %0 to i64*
+  %13 = load i64, i64* %12, align 8
+  %14 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 5
+  %15 = icmp sgt i32 %11, 0
+  %16 = shl i32 4, %11
+  %17 = add i32 %16, 4408
+  %18 = select i1 %15, i32 %17, i32 4408
+  %19 = bitcast %struct.VP8LHistogram* %0 to i8*
+  %20 = sext i32 %18 to i64
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %19, i8 0, i64 %20, i1 false) #6
+  store i32 %11, i32* %14, align 8
+  store i64 %13, i64* %12, align 8
+  %21 = bitcast %struct.VP8LRefsCursor* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %21) #6
+  %22 = getelementptr inbounds %struct.VP8LRefsCursor, %struct.VP8LRefsCursor* %4, i64 0, i32 0
+  %23 = getelementptr inbounds %struct.VP8LRefsCursor, %struct.VP8LRefsCursor* %4, i64 0, i32 2
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %21, i8 -86, i64 24, i1 false) #6
+  call void @VP8LRefsCursorInit(%struct.VP8LRefsCursor* nonnull sret %4, %struct.VP8LBackwardRefs* %1) #6
+  %24 = load %struct.PixOrCopy*, %struct.PixOrCopy** %22, align 8
+  %25 = icmp eq %struct.PixOrCopy* %24, null
+  br i1 %25, label %37, label %26
+
+26:                                               ; preds = %10, %34
+  %27 = phi %struct.PixOrCopy* [ %35, %34 ], [ %24, %10 ]
+  call void @VP8LHistogramAddSinglePixOrCopy(%struct.VP8LHistogram* %0, %struct.PixOrCopy* nonnull %27, i32 (i32, i32)* null, i32 0) #6
+  %28 = load %struct.PixOrCopy*, %struct.PixOrCopy** %22, align 8
+  %29 = getelementptr inbounds %struct.PixOrCopy, %struct.PixOrCopy* %28, i64 1
+  store %struct.PixOrCopy* %29, %struct.PixOrCopy** %22, align 8
+  %30 = load %struct.PixOrCopy*, %struct.PixOrCopy** %23, align 8
+  %31 = icmp eq %struct.PixOrCopy* %29, %30
+  br i1 %31, label %32, label %34
+
+32:                                               ; preds = %26
+  call void @VP8LRefsCursorNextBlock(%struct.VP8LRefsCursor* nonnull %4) #6
+  %33 = load %struct.PixOrCopy*, %struct.PixOrCopy** %22, align 8
+  br label %34
+
+34:                                               ; preds = %32, %26
+  %35 = phi %struct.PixOrCopy* [ %29, %26 ], [ %33, %32 ]
+  %36 = icmp eq %struct.PixOrCopy* %35, null
+  br i1 %36, label %37, label %26
+
+37:                                               ; preds = %34, %10
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %21) #6
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @VP8LHistogramInit(%struct.VP8LHistogram* nocapture, i32, i32) local_unnamed_addr #2 {
+  %4 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 5
+  store i32 %1, i32* %4, align 8
+  %5 = icmp eq i32 %2, 0
+  br i1 %5, label %15, label %6
+
+6:                                                ; preds = %3
+  %7 = bitcast %struct.VP8LHistogram* %0 to i64*
+  %8 = load i64, i64* %7, align 8
+  %9 = icmp sgt i32 %1, 0
+  %10 = shl i32 4, %1
+  %11 = add i32 %10, 4408
+  %12 = select i1 %9, i32 %11, i32 4408
+  %13 = bitcast %struct.VP8LHistogram* %0 to i8*
+  %14 = sext i32 %12 to i64
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %13, i8 0, i64 %14, i1 false) #6
+  store i32 %1, i32* %4, align 8
+  store i64 %8, i64* %7, align 8
+  br label %18
+
+15:                                               ; preds = %3
+  %16 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 6
+  %17 = bitcast i32* %16 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 4 %17, i8 0, i64 41, i1 false)
+  br label %18
+
+18:                                               ; preds = %15, %6
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden %struct.VP8LHistogram* @VP8LAllocateHistogram(i32) local_unnamed_addr #2 {
+  %2 = icmp sgt i32 %0, 0
+  %3 = shl i32 4, %0
+  %4 = add i32 %3, 4408
+  %5 = select i1 %2, i32 %4, i32 4408
+  %6 = sext i32 %5 to i64
+  %7 = tail call i8* @WebPSafeMalloc(i64 %6, i64 1) #6
+  %8 = icmp eq i8* %7, null
+  br i1 %8, label %16, label %9
+
+9:                                                ; preds = %1
+  %10 = bitcast i8* %7 to %struct.VP8LHistogram*
+  %11 = getelementptr inbounds i8, i8* %7, i64 3288
+  %12 = bitcast i8* %7 to i8**
+  store i8* %11, i8** %12, align 8
+  %13 = getelementptr inbounds i8, i8* %7, i64 3240
+  %14 = bitcast i8* %13 to i32*
+  store i32 %0, i32* %14, align 8
+  %15 = getelementptr inbounds i8, i8* %7, i64 3244
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %15, i8 0, i64 41, i1 false) #6
+  br label %16
+
+16:                                               ; preds = %1, %9
+  %17 = phi %struct.VP8LHistogram* [ %10, %9 ], [ null, %1 ]
+  ret %struct.VP8LHistogram* %17
+}
+
+declare i8* @WebPSafeMalloc(i64, i64) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden %struct.VP8LHistogramSet* @VP8LAllocateHistogramSet(i32, i32) local_unnamed_addr #2 {
+  %3 = icmp sgt i32 %1, 0
+  %4 = shl i32 4, %1
+  %5 = add i32 %4, 4408
+  %6 = select i1 %3, i32 %5, i32 4408
+  %7 = sext i32 %0 to i64
+  %8 = sext i32 %6 to i64
+  %9 = add nsw i64 %8, 39
+  %10 = mul i64 %9, %7
+  %11 = add nsw i64 %10, 16
+  %12 = tail call i8* @WebPSafeMalloc(i64 %11, i64 1) #6
+  %13 = icmp eq i8* %12, null
+  br i1 %13, label %113, label %14
+
+14:                                               ; preds = %2
+  %15 = bitcast i8* %12 to %struct.VP8LHistogramSet*
+  %16 = getelementptr inbounds i8, i8* %12, i64 16
+  %17 = getelementptr inbounds i8, i8* %12, i64 8
+  %18 = bitcast i8* %17 to %struct.VP8LHistogram***
+  %19 = bitcast i8* %17 to i8**
+  store i8* %16, i8** %19, align 8
+  %20 = getelementptr inbounds i8, i8* %12, i64 4
+  %21 = bitcast i8* %20 to i32*
+  store i32 %0, i32* %21, align 4
+  %22 = bitcast i8* %12 to i32*
+  store i32 %0, i32* %22, align 8
+  %23 = icmp sgt i32 %0, 0
+  br i1 %23, label %24, label %113
+
+24:                                               ; preds = %14
+  %25 = shl nsw i64 %7, 3
+  %26 = getelementptr inbounds i8, i8* %16, i64 %25
+  %27 = bitcast i8* %16 to %struct.VP8LHistogram**
+  %28 = ptrtoint i8* %26 to i64
+  %29 = add i64 %28, 31
+  %30 = and i64 %29, -32
+  %31 = inttoptr i64 %30 to i8*
+  %32 = inttoptr i64 %30 to %struct.VP8LHistogram*
+  store %struct.VP8LHistogram* %32, %struct.VP8LHistogram** %27, align 8
+  %33 = getelementptr inbounds i8, i8* %31, i64 3288
+  %34 = inttoptr i64 %30 to i8**
+  store i8* %33, i8** %34, align 32
+  %35 = load i32, i32* %21, align 4
+  %36 = icmp sgt i32 %35, 1
+  br i1 %36, label %37, label %58
+
+37:                                               ; preds = %24, %37
+  %38 = phi i64 [ %53, %37 ], [ 1, %24 ]
+  %39 = phi i8* [ %45, %37 ], [ %31, %24 ]
+  %40 = getelementptr inbounds i8, i8* %39, i64 %8
+  %41 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %18, align 8
+  %42 = ptrtoint i8* %40 to i64
+  %43 = add i64 %42, 31
+  %44 = and i64 %43, -32
+  %45 = inttoptr i64 %44 to i8*
+  %46 = inttoptr i64 %44 to %struct.VP8LHistogram*
+  %47 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %41, i64 %38
+  store %struct.VP8LHistogram* %46, %struct.VP8LHistogram** %47, align 8
+  %48 = getelementptr inbounds i8, i8* %45, i64 3288
+  %49 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %18, align 8
+  %50 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %49, i64 %38
+  %51 = bitcast %struct.VP8LHistogram** %50 to i8***
+  %52 = load i8**, i8*** %51, align 8
+  store i8* %48, i8** %52, align 8
+  %53 = add nuw nsw i64 %38, 1
+  %54 = load i32, i32* %21, align 4
+  %55 = sext i32 %54 to i64
+  %56 = icmp slt i64 %53, %55
+  br i1 %56, label %37, label %57
+
+57:                                               ; preds = %37
+  br i1 %23, label %58, label %113
+
+58:                                               ; preds = %24, %57
+  %59 = zext i32 %0 to i64
+  %60 = add nsw i64 %59, -1
+  %61 = and i64 %59, 3
+  %62 = icmp ult i64 %60, 3
+  br i1 %62, label %98, label %63
+
+63:                                               ; preds = %58
+  %64 = sub nsw i64 %59, %61
+  br label %65
+
+65:                                               ; preds = %65, %63
+  %66 = phi i64 [ 0, %63 ], [ %95, %65 ]
+  %67 = phi i64 [ %64, %63 ], [ %96, %65 ]
+  %68 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %18, align 8
+  %69 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %68, i64 %66
+  %70 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %69, align 8
+  %71 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %70, i64 0, i32 5
+  store i32 %1, i32* %71, align 8
+  %72 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %70, i64 0, i32 6
+  %73 = bitcast i32* %72 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %73, i8 0, i64 41, i1 false) #6
+  %74 = or i64 %66, 1
+  %75 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %18, align 8
+  %76 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %75, i64 %74
+  %77 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %76, align 8
+  %78 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %77, i64 0, i32 5
+  store i32 %1, i32* %78, align 8
+  %79 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %77, i64 0, i32 6
+  %80 = bitcast i32* %79 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %80, i8 0, i64 41, i1 false) #6
+  %81 = or i64 %66, 2
+  %82 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %18, align 8
+  %83 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %82, i64 %81
+  %84 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %83, align 8
+  %85 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %84, i64 0, i32 5
+  store i32 %1, i32* %85, align 8
+  %86 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %84, i64 0, i32 6
+  %87 = bitcast i32* %86 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %87, i8 0, i64 41, i1 false) #6
+  %88 = or i64 %66, 3
+  %89 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %18, align 8
+  %90 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %89, i64 %88
+  %91 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %90, align 8
+  %92 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %91, i64 0, i32 5
+  store i32 %1, i32* %92, align 8
+  %93 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %91, i64 0, i32 6
+  %94 = bitcast i32* %93 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %94, i8 0, i64 41, i1 false) #6
+  %95 = add nuw nsw i64 %66, 4
+  %96 = add i64 %67, -4
+  %97 = icmp eq i64 %96, 0
+  br i1 %97, label %98, label %65
+
+98:                                               ; preds = %65, %58
+  %99 = phi i64 [ 0, %58 ], [ %95, %65 ]
+  %100 = icmp eq i64 %61, 0
+  br i1 %100, label %113, label %101
+
+101:                                              ; preds = %98, %101
+  %102 = phi i64 [ %110, %101 ], [ %99, %98 ]
+  %103 = phi i64 [ %111, %101 ], [ %61, %98 ]
+  %104 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %18, align 8
+  %105 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %104, i64 %102
+  %106 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %105, align 8
+  %107 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %106, i64 0, i32 5
+  store i32 %1, i32* %107, align 8
+  %108 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %106, i64 0, i32 6
+  %109 = bitcast i32* %108 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %109, i8 0, i64 41, i1 false) #6
+  %110 = add nuw nsw i64 %102, 1
+  %111 = add i64 %103, -1
+  %112 = icmp eq i64 %111, 0
+  br i1 %112, label %113, label %101, !llvm.loop !3
+
+113:                                              ; preds = %98, %101, %14, %57, %2
+  %114 = phi %struct.VP8LHistogramSet* [ null, %2 ], [ %15, %57 ], [ %15, %14 ], [ %15, %101 ], [ %15, %98 ]
+  ret %struct.VP8LHistogramSet* %114
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @VP8LHistogramSetClear(%struct.VP8LHistogramSet*) local_unnamed_addr #2 {
+  %2 = getelementptr inbounds %struct.VP8LHistogramSet, %struct.VP8LHistogramSet* %0, i64 0, i32 2
+  %3 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %2, align 8
+  %4 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %3, align 8
+  %5 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %4, i64 0, i32 5
+  %6 = load i32, i32* %5, align 8
+  %7 = getelementptr inbounds %struct.VP8LHistogramSet, %struct.VP8LHistogramSet* %0, i64 0, i32 1
+  %8 = load i32, i32* %7, align 4
+  %9 = icmp sgt i32 %6, 0
+  %10 = shl i32 4, %6
+  %11 = add i32 %10, 4408
+  %12 = select i1 %9, i32 %11, i32 4408
+  %13 = sext i32 %8 to i64
+  %14 = sext i32 %12 to i64
+  %15 = add nsw i64 %14, 39
+  %16 = mul i64 %15, %13
+  %17 = add nsw i64 %16, 16
+  %18 = bitcast %struct.VP8LHistogramSet* %0 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 1 %18, i8 0, i64 %17, i1 false)
+  %19 = getelementptr inbounds %struct.VP8LHistogramSet, %struct.VP8LHistogramSet* %0, i64 1
+  %20 = bitcast %struct.VP8LHistogram*** %2 to %struct.VP8LHistogramSet**
+  store %struct.VP8LHistogramSet* %19, %struct.VP8LHistogramSet** %20, align 8
+  store i32 %8, i32* %7, align 4
+  %21 = getelementptr inbounds %struct.VP8LHistogramSet, %struct.VP8LHistogramSet* %0, i64 0, i32 0
+  store i32 %8, i32* %21, align 8
+  %22 = icmp sgt i32 %8, 0
+  br i1 %22, label %23, label %103
+
+23:                                               ; preds = %1
+  %24 = bitcast %struct.VP8LHistogramSet* %19 to i8*
+  %25 = shl nsw i64 %13, 3
+  %26 = getelementptr inbounds i8, i8* %24, i64 %25
+  %27 = bitcast %struct.VP8LHistogramSet* %19 to %struct.VP8LHistogram**
+  %28 = ptrtoint i8* %26 to i64
+  %29 = add i64 %28, 31
+  %30 = and i64 %29, -32
+  %31 = inttoptr i64 %30 to i8*
+  %32 = inttoptr i64 %30 to %struct.VP8LHistogram*
+  store %struct.VP8LHistogram* %32, %struct.VP8LHistogram** %27, align 8
+  %33 = getelementptr inbounds i8, i8* %31, i64 3288
+  %34 = inttoptr i64 %30 to i8**
+  store i8* %33, i8** %34, align 32
+  %35 = load i32, i32* %7, align 4
+  %36 = icmp sgt i32 %35, 1
+  br i1 %36, label %37, label %58
+
+37:                                               ; preds = %23, %37
+  %38 = phi i64 [ %53, %37 ], [ 1, %23 ]
+  %39 = phi i8* [ %45, %37 ], [ %31, %23 ]
+  %40 = getelementptr inbounds i8, i8* %39, i64 %14
+  %41 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %2, align 8
+  %42 = ptrtoint i8* %40 to i64
+  %43 = add i64 %42, 31
+  %44 = and i64 %43, -32
+  %45 = inttoptr i64 %44 to i8*
+  %46 = inttoptr i64 %44 to %struct.VP8LHistogram*
+  %47 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %41, i64 %38
+  store %struct.VP8LHistogram* %46, %struct.VP8LHistogram** %47, align 8
+  %48 = getelementptr inbounds i8, i8* %45, i64 3288
+  %49 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %2, align 8
+  %50 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %49, i64 %38
+  %51 = bitcast %struct.VP8LHistogram** %50 to i8***
+  %52 = load i8**, i8*** %51, align 8
+  store i8* %48, i8** %52, align 8
+  %53 = add nuw nsw i64 %38, 1
+  %54 = load i32, i32* %7, align 4
+  %55 = sext i32 %54 to i64
+  %56 = icmp slt i64 %53, %55
+  br i1 %56, label %37, label %57
+
+57:                                               ; preds = %37
+  br i1 %22, label %58, label %103
+
+58:                                               ; preds = %23, %57
+  %59 = zext i32 %8 to i64
+  %60 = add nsw i64 %59, -1
+  %61 = and i64 %59, 3
+  %62 = icmp ult i64 %60, 3
+  br i1 %62, label %90, label %63
+
+63:                                               ; preds = %58
+  %64 = sub nsw i64 %59, %61
+  br label %65
+
+65:                                               ; preds = %65, %63
+  %66 = phi i64 [ 0, %63 ], [ %87, %65 ]
+  %67 = phi i64 [ %64, %63 ], [ %88, %65 ]
+  %68 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %2, align 8
+  %69 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %68, i64 %66
+  %70 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %69, align 8
+  %71 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %70, i64 0, i32 5
+  store i32 %6, i32* %71, align 8
+  %72 = or i64 %66, 1
+  %73 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %2, align 8
+  %74 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %73, i64 %72
+  %75 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %74, align 8
+  %76 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %75, i64 0, i32 5
+  store i32 %6, i32* %76, align 8
+  %77 = or i64 %66, 2
+  %78 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %2, align 8
+  %79 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %78, i64 %77
+  %80 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %79, align 8
+  %81 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %80, i64 0, i32 5
+  store i32 %6, i32* %81, align 8
+  %82 = or i64 %66, 3
+  %83 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %2, align 8
+  %84 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %83, i64 %82
+  %85 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %84, align 8
+  %86 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %85, i64 0, i32 5
+  store i32 %6, i32* %86, align 8
+  %87 = add nuw nsw i64 %66, 4
+  %88 = add i64 %67, -4
+  %89 = icmp eq i64 %88, 0
+  br i1 %89, label %90, label %65
+
+90:                                               ; preds = %65, %58
+  %91 = phi i64 [ 0, %58 ], [ %87, %65 ]
+  %92 = icmp eq i64 %61, 0
+  br i1 %92, label %103, label %93
+
+93:                                               ; preds = %90, %93
+  %94 = phi i64 [ %100, %93 ], [ %91, %90 ]
+  %95 = phi i64 [ %101, %93 ], [ %61, %90 ]
+  %96 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %2, align 8
+  %97 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %96, i64 %94
+  %98 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %97, align 8
+  %99 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %98, i64 0, i32 5
+  store i32 %6, i32* %99, align 8
+  %100 = add nuw nsw i64 %94, 1
+  %101 = add i64 %95, -1
+  %102 = icmp eq i64 %101, 0
+  br i1 %102, label %103, label %93, !llvm.loop !5
+
+103:                                              ; preds = %90, %93, %1, %57
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden double @VP8LBitsEntropy(i32*, i32) local_unnamed_addr #2 {
+  %3 = alloca %struct.VP8LBitEntropy, align 8
+  %4 = bitcast %struct.VP8LBitEntropy* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %4) #6
+  %5 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %3, i64 0, i32 0
+  store double 0xFFFFFFFFFFFFFFFF, double* %5, align 8
+  %6 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %3, i64 0, i32 1
+  %7 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %3, i64 0, i32 2
+  %8 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %3, i64 0, i32 3
+  %9 = bitcast i32* %6 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %9, i8 -86, i64 16, i1 false)
+  call void @VP8LBitsEntropyUnrefined(i32* %0, i32 %1, %struct.VP8LBitEntropy* nonnull %3) #6
+  %10 = load i32, i32* %7, align 4
+  %11 = icmp slt i32 %10, 5
+  br i1 %11, label %12, label %23
+
+12:                                               ; preds = %2
+  %13 = icmp slt i32 %10, 2
+  br i1 %13, label %37, label %14
+
+14:                                               ; preds = %12
+  switch i32 %10, label %22 [
+    i32 2, label %15
+    i32 3, label %23
+  ]
+
+15:                                               ; preds = %14
+  %16 = load i32, i32* %6, align 8
+  %17 = uitofp i32 %16 to double
+  %18 = fmul double %17, 0x3FEFAE147AE147AE
+  %19 = load double, double* %5, align 8
+  %20 = fmul double %19, 1.000000e-02
+  %21 = fadd double %18, %20
+  br label %37
+
+22:                                               ; preds = %14
+  br label %23
+
+23:                                               ; preds = %22, %14, %2
+  %24 = phi double [ 0x3FE6666666666666, %22 ], [ 0x3FEE666666666666, %14 ], [ 6.270000e-01, %2 ]
+  %25 = load i32, i32* %6, align 8
+  %26 = shl i32 %25, 1
+  %27 = load i32, i32* %8, align 8
+  %28 = sub i32 %26, %27
+  %29 = uitofp i32 %28 to double
+  %30 = fmul double %24, %29
+  %31 = fsub double 1.000000e+00, %24
+  %32 = load double, double* %5, align 8
+  %33 = fmul double %31, %32
+  %34 = fadd double %33, %30
+  %35 = fcmp olt double %32, %34
+  %36 = select i1 %35, double %34, double %32
+  br label %37
+
+37:                                               ; preds = %12, %15, %23
+  %38 = phi double [ %21, %15 ], [ %36, %23 ], [ 0.000000e+00, %12 ]
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %4) #6
+  ret double %38
+}
+
+declare void @VP8LBitsEntropyUnrefined(i32*, i32, %struct.VP8LBitEntropy*) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden double @VP8LHistogramEstimateBits(%struct.VP8LHistogram*) local_unnamed_addr #2 {
+  %2 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 0
+  %3 = load i32*, i32** %2, align 8
+  %4 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 5
+  %5 = load i32, i32* %4, align 8
+  %6 = icmp sgt i32 %5, 0
+  %7 = shl i32 1, %5
+  %8 = add i32 %7, 280
+  %9 = select i1 %6, i32 %8, i32 280
+  %10 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 0
+  %11 = tail call fastcc double @PopulationCost(i32* %3, i32 %9, i32* null, i8* %10)
+  %12 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 1, i64 0
+  %13 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 1
+  %14 = tail call fastcc double @PopulationCost(i32* %12, i32 256, i32* null, i8* %13)
+  %15 = fadd double %11, %14
+  %16 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 2, i64 0
+  %17 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 2
+  %18 = tail call fastcc double @PopulationCost(i32* %16, i32 256, i32* null, i8* %17)
+  %19 = fadd double %15, %18
+  %20 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 3, i64 0
+  %21 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 3
+  %22 = tail call fastcc double @PopulationCost(i32* %20, i32 256, i32* null, i8* %21)
+  %23 = fadd double %19, %22
+  %24 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 4, i64 0
+  %25 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 4
+  %26 = tail call fastcc double @PopulationCost(i32* %24, i32 40, i32* null, i8* %25)
+  %27 = fadd double %23, %26
+  %28 = load double (i32*, i32)*, double (i32*, i32)** @VP8LExtraCost, align 8
+  %29 = load i32*, i32** %2, align 8
+  %30 = getelementptr inbounds i32, i32* %29, i64 256
+  %31 = tail call double %28(i32* %30, i32 24) #6
+  %32 = fadd double %27, %31
+  %33 = load double (i32*, i32)*, double (i32*, i32)** @VP8LExtraCost, align 8
+  %34 = tail call double %33(i32* %24, i32 40) #6
+  %35 = fadd double %32, %34
+  ret double %35
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal fastcc double @PopulationCost(i32*, i32, i32*, i8* nocapture) unnamed_addr #2 {
+  %5 = alloca %struct.VP8LBitEntropy, align 8
+  %6 = alloca %struct.VP8LStreaks, align 4
+  %7 = bitcast %struct.VP8LBitEntropy* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %7) #6
+  %8 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %5, i64 0, i32 0
+  store double 0xFFFFFFFFFFFFFFFF, double* %8, align 8
+  %9 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %5, i64 0, i32 1
+  %10 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %5, i64 0, i32 2
+  %11 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %5, i64 0, i32 3
+  %12 = bitcast %struct.VP8LStreaks* %6 to i8*
+  %13 = bitcast i32* %9 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %13, i8 -86, i64 16, i1 false)
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %12) #6
+  %14 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %6, i64 0, i32 0, i64 0
+  %15 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %6, i64 0, i32 0, i64 1
+  %16 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %6, i64 0, i32 1, i64 0, i64 0
+  %17 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %6, i64 0, i32 1, i64 0, i64 1
+  %18 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %6, i64 0, i32 1, i64 1, i64 0
+  %19 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %6, i64 0, i32 1, i64 1, i64 1
+  %20 = bitcast %struct.VP8LStreaks* %6 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 4 %20, i8 -86, i64 24, i1 false)
+  %21 = load void (i32*, i32, %struct.VP8LBitEntropy*, %struct.VP8LStreaks*)*, void (i32*, i32, %struct.VP8LBitEntropy*, %struct.VP8LStreaks*)** @VP8LGetEntropyUnrefined, align 8
+  call void %21(i32* %0, i32 %1, %struct.VP8LBitEntropy* nonnull %5, %struct.VP8LStreaks* nonnull %6) #6
+  %22 = icmp eq i32* %2, null
+  %23 = load i32, i32* %10, align 4
+  br i1 %22, label %29, label %24
+
+24:                                               ; preds = %4
+  %25 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %5, i64 0, i32 4
+  %26 = icmp eq i32 %23, 1
+  %27 = load i32, i32* %25, align 4
+  %28 = select i1 %26, i32 %27, i32 -1
+  store i32 %28, i32* %2, align 4
+  br label %29
+
+29:                                               ; preds = %4, %24
+  %30 = load i32, i32* %18, align 4
+  %31 = load i32, i32* %19, align 4
+  %32 = or i32 %31, %30
+  %33 = icmp ne i32 %32, 0
+  %34 = zext i1 %33 to i8
+  store i8 %34, i8* %3, align 1
+  %35 = icmp slt i32 %23, 5
+  br i1 %35, label %36, label %47
+
+36:                                               ; preds = %29
+  %37 = icmp slt i32 %23, 2
+  br i1 %37, label %61, label %38
+
+38:                                               ; preds = %36
+  switch i32 %23, label %46 [
+    i32 2, label %39
+    i32 3, label %47
+  ]
+
+39:                                               ; preds = %38
+  %40 = load i32, i32* %9, align 8
+  %41 = uitofp i32 %40 to double
+  %42 = fmul double %41, 0x3FEFAE147AE147AE
+  %43 = load double, double* %8, align 8
+  %44 = fmul double %43, 1.000000e-02
+  %45 = fadd double %42, %44
+  br label %61
+
+46:                                               ; preds = %38
+  br label %47
+
+47:                                               ; preds = %46, %38, %29
+  %48 = phi double [ 0x3FE6666666666666, %46 ], [ 0x3FEE666666666666, %38 ], [ 6.270000e-01, %29 ]
+  %49 = load i32, i32* %9, align 8
+  %50 = shl i32 %49, 1
+  %51 = load i32, i32* %11, align 8
+  %52 = sub i32 %50, %51
+  %53 = uitofp i32 %52 to double
+  %54 = fmul double %48, %53
+  %55 = fsub double 1.000000e+00, %48
+  %56 = load double, double* %8, align 8
+  %57 = fmul double %55, %56
+  %58 = fadd double %57, %54
+  %59 = fcmp olt double %56, %58
+  %60 = select i1 %59, double %58, double %56
+  br label %61
+
+61:                                               ; preds = %36, %39, %47
+  %62 = phi double [ %45, %39 ], [ %60, %47 ], [ 0.000000e+00, %36 ]
+  %63 = load i32, i32* %14, align 4
+  %64 = sitofp i32 %63 to double
+  %65 = fmul double %64, 1.562500e+00
+  %66 = load i32, i32* %17, align 4
+  %67 = sitofp i32 %66 to double
+  %68 = fmul double %67, 2.343750e-01
+  %69 = fadd double %65, %68
+  %70 = fadd double %69, 4.790000e+01
+  %71 = load i32, i32* %15, align 4
+  %72 = sitofp i32 %71 to double
+  %73 = fmul double %72, 0x4004A00000000000
+  %74 = sitofp i32 %31 to double
+  %75 = fmul double %74, 7.031250e-01
+  %76 = fadd double %75, %73
+  %77 = fadd double %70, %76
+  %78 = load i32, i32* %16, align 4
+  %79 = sitofp i32 %78 to double
+  %80 = fmul double %79, 0x3FFCC00000000000
+  %81 = fadd double %80, %77
+  %82 = sitofp i32 %30 to double
+  %83 = fmul double %82, 3.281250e+00
+  %84 = fadd double %83, %81
+  %85 = fadd double %62, %84
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %12) #6
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %7) #6
+  ret double %85
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @VP8LGetHistoImageSymbols(i32, i32, %struct.VP8LBackwardRefs*, i32, i32, i32, i32, %struct.VP8LHistogramSet*, %struct.VP8LHistogram*, i16* nocapture) local_unnamed_addr #2 {
+  %11 = alloca %struct.HistoQueue, align 8
+  %12 = alloca %struct.HistoQueue, align 8
+  %13 = alloca double, align 8
+  %14 = alloca [64 x %struct.anon], align 16
+  %15 = alloca %struct.VP8LRefsCursor, align 8
+  %16 = alloca double, align 8
+  %17 = icmp eq i32 %5, 0
+  br i1 %17, label %26, label %18
+
+18:                                               ; preds = %10
+  %19 = shl i32 1, %5
+  %20 = add i32 %0, -1
+  %21 = add i32 %20, %19
+  %22 = lshr i32 %21, %5
+  %23 = add i32 %1, -1
+  %24 = add i32 %23, %19
+  %25 = lshr i32 %24, %5
+  br label %26
+
+26:                                               ; preds = %10, %18
+  %27 = phi i32 [ %22, %18 ], [ 1, %10 ]
+  %28 = phi i32 [ %25, %18 ], [ 1, %10 ]
+  %29 = mul nsw i32 %28, %27
+  %30 = icmp sgt i32 %6, 0
+  %31 = shl i32 4, %6
+  %32 = add i32 %31, 4408
+  %33 = select i1 %30, i32 %32, i32 4408
+  %34 = sext i32 %29 to i64
+  %35 = sext i32 %33 to i64
+  %36 = add nsw i64 %35, 39
+  %37 = mul i64 %36, %34
+  %38 = add nsw i64 %37, 16
+  %39 = tail call i8* @WebPSafeMalloc(i64 %38, i64 1) #6
+  %40 = icmp eq i8* %39, null
+  br i1 %40, label %139, label %41
+
+41:                                               ; preds = %26
+  %42 = bitcast i8* %39 to %struct.VP8LHistogramSet*
+  %43 = getelementptr inbounds i8, i8* %39, i64 16
+  %44 = getelementptr inbounds i8, i8* %39, i64 8
+  %45 = bitcast i8* %44 to %struct.VP8LHistogram***
+  %46 = bitcast i8* %44 to i8**
+  store i8* %43, i8** %46, align 8
+  %47 = getelementptr inbounds i8, i8* %39, i64 4
+  %48 = bitcast i8* %47 to i32*
+  store i32 %29, i32* %48, align 4
+  %49 = bitcast i8* %39 to i32*
+  store i32 %29, i32* %49, align 8
+  %50 = icmp sgt i32 %29, 0
+  br i1 %50, label %51, label %139
+
+51:                                               ; preds = %41
+  %52 = shl nsw i64 %34, 3
+  %53 = getelementptr inbounds i8, i8* %43, i64 %52
+  %54 = bitcast i8* %43 to %struct.VP8LHistogram**
+  %55 = ptrtoint i8* %53 to i64
+  %56 = add i64 %55, 31
+  %57 = and i64 %56, -32
+  %58 = inttoptr i64 %57 to i8*
+  %59 = inttoptr i64 %57 to %struct.VP8LHistogram*
+  store %struct.VP8LHistogram* %59, %struct.VP8LHistogram** %54, align 8
+  %60 = getelementptr inbounds i8, i8* %58, i64 3288
+  %61 = inttoptr i64 %57 to i8**
+  store i8* %60, i8** %61, align 32
+  %62 = load i32, i32* %48, align 4
+  %63 = icmp sgt i32 %62, 1
+  br i1 %63, label %64, label %84
+
+64:                                               ; preds = %51, %64
+  %65 = phi i64 [ %80, %64 ], [ 1, %51 ]
+  %66 = phi i8* [ %72, %64 ], [ %58, %51 ]
+  %67 = getelementptr inbounds i8, i8* %66, i64 %35
+  %68 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %45, align 8
+  %69 = ptrtoint i8* %67 to i64
+  %70 = add i64 %69, 31
+  %71 = and i64 %70, -32
+  %72 = inttoptr i64 %71 to i8*
+  %73 = inttoptr i64 %71 to %struct.VP8LHistogram*
+  %74 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %68, i64 %65
+  store %struct.VP8LHistogram* %73, %struct.VP8LHistogram** %74, align 8
+  %75 = getelementptr inbounds i8, i8* %72, i64 3288
+  %76 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %45, align 8
+  %77 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %76, i64 %65
+  %78 = bitcast %struct.VP8LHistogram** %77 to i8***
+  %79 = load i8**, i8*** %78, align 8
+  store i8* %75, i8** %79, align 8
+  %80 = add nuw nsw i64 %65, 1
+  %81 = load i32, i32* %48, align 4
+  %82 = sext i32 %81 to i64
+  %83 = icmp slt i64 %80, %82
+  br i1 %83, label %64, label %84
+
+84:                                               ; preds = %64, %51
+  %85 = zext i32 %29 to i64
+  %86 = add nsw i64 %85, -1
+  %87 = and i64 %85, 3
+  %88 = icmp ult i64 %86, 3
+  br i1 %88, label %124, label %89
+
+89:                                               ; preds = %84
+  %90 = sub nsw i64 %85, %87
+  br label %91
+
+91:                                               ; preds = %91, %89
+  %92 = phi i64 [ 0, %89 ], [ %121, %91 ]
+  %93 = phi i64 [ %90, %89 ], [ %122, %91 ]
+  %94 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %45, align 8
+  %95 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %94, i64 %92
+  %96 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %95, align 8
+  %97 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %96, i64 0, i32 5
+  store i32 %6, i32* %97, align 8
+  %98 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %96, i64 0, i32 6
+  %99 = bitcast i32* %98 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %99, i8 0, i64 41, i1 false) #6
+  %100 = or i64 %92, 1
+  %101 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %45, align 8
+  %102 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %101, i64 %100
+  %103 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %102, align 8
+  %104 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %103, i64 0, i32 5
+  store i32 %6, i32* %104, align 8
+  %105 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %103, i64 0, i32 6
+  %106 = bitcast i32* %105 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %106, i8 0, i64 41, i1 false) #6
+  %107 = or i64 %92, 2
+  %108 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %45, align 8
+  %109 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %108, i64 %107
+  %110 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %109, align 8
+  %111 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %110, i64 0, i32 5
+  store i32 %6, i32* %111, align 8
+  %112 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %110, i64 0, i32 6
+  %113 = bitcast i32* %112 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %113, i8 0, i64 41, i1 false) #6
+  %114 = or i64 %92, 3
+  %115 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %45, align 8
+  %116 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %115, i64 %114
+  %117 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %116, align 8
+  %118 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %117, i64 0, i32 5
+  store i32 %6, i32* %118, align 8
+  %119 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %117, i64 0, i32 6
+  %120 = bitcast i32* %119 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %120, i8 0, i64 41, i1 false) #6
+  %121 = add nuw nsw i64 %92, 4
+  %122 = add i64 %93, -4
+  %123 = icmp eq i64 %122, 0
+  br i1 %123, label %124, label %91
+
+124:                                              ; preds = %91, %84
+  %125 = phi i64 [ 0, %84 ], [ %121, %91 ]
+  %126 = icmp eq i64 %87, 0
+  br i1 %126, label %139, label %127
+
+127:                                              ; preds = %124, %127
+  %128 = phi i64 [ %136, %127 ], [ %125, %124 ]
+  %129 = phi i64 [ %137, %127 ], [ %87, %124 ]
+  %130 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %45, align 8
+  %131 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %130, i64 %128
+  %132 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %131, align 8
+  %133 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %132, i64 0, i32 5
+  store i32 %6, i32* %133, align 8
+  %134 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %132, i64 0, i32 6
+  %135 = bitcast i32* %134 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 4 %135, i8 0, i64 41, i1 false) #6
+  %136 = add nuw nsw i64 %128, 1
+  %137 = add i64 %129, -1
+  %138 = icmp eq i64 %137, 0
+  br i1 %138, label %139, label %127, !llvm.loop !6
+
+139:                                              ; preds = %124, %127, %26, %41
+  %140 = phi %struct.VP8LHistogramSet* [ null, %26 ], [ %42, %41 ], [ %42, %127 ], [ %42, %124 ]
+  %141 = icmp ne i32 %4, 0
+  %142 = select i1 %141, i32 4, i32 64
+  %143 = shl nsw i32 %29, 1
+  %144 = sext i32 %143 to i64
+  %145 = tail call i8* @WebPSafeMalloc(i64 %144, i64 8) #6
+  %146 = bitcast i8* %145 to i16*
+  %147 = getelementptr inbounds i16, i16* %146, i64 %34
+  %148 = icmp eq %struct.VP8LHistogramSet* %140, null
+  %149 = icmp eq i8* %145, null
+  %150 = or i1 %148, %149
+  br i1 %150, label %1573, label %151
+
+151:                                              ; preds = %139
+  %152 = shl i32 1, %5
+  %153 = add i32 %0, -1
+  %154 = add i32 %153, %152
+  %155 = lshr i32 %154, %5
+  %156 = getelementptr inbounds %struct.VP8LHistogramSet, %struct.VP8LHistogramSet* %140, i64 0, i32 2
+  %157 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %156, align 8
+  %158 = bitcast %struct.VP8LRefsCursor* %15 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %158) #6
+  %159 = getelementptr inbounds %struct.VP8LRefsCursor, %struct.VP8LRefsCursor* %15, i64 0, i32 0
+  %160 = getelementptr inbounds %struct.VP8LRefsCursor, %struct.VP8LRefsCursor* %15, i64 0, i32 2
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %158, i8 -86, i64 24, i1 false) #6
+  call void @VP8LRefsCursorInit(%struct.VP8LRefsCursor* nonnull sret %15, %struct.VP8LBackwardRefs* %2) #6
+  %161 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %156, align 8
+  %162 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %161, align 8
+  %163 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %162, i64 0, i32 5
+  %164 = load i32, i32* %163, align 8
+  %165 = getelementptr inbounds %struct.VP8LHistogramSet, %struct.VP8LHistogramSet* %140, i64 0, i32 1
+  %166 = load i32, i32* %165, align 4
+  %167 = icmp sgt i32 %164, 0
+  %168 = shl i32 4, %164
+  %169 = add i32 %168, 4408
+  %170 = select i1 %167, i32 %169, i32 4408
+  %171 = sext i32 %166 to i64
+  %172 = sext i32 %170 to i64
+  %173 = add nsw i64 %172, 39
+  %174 = mul i64 %173, %171
+  %175 = add nsw i64 %174, 16
+  call void @llvm.memset.p0i8.i64(i8* align 1 %39, i8 0, i64 %175, i1 false) #6
+  %176 = getelementptr inbounds %struct.VP8LHistogramSet, %struct.VP8LHistogramSet* %140, i64 1
+  %177 = bitcast %struct.VP8LHistogram*** %156 to %struct.VP8LHistogramSet**
+  store %struct.VP8LHistogramSet* %176, %struct.VP8LHistogramSet** %177, align 8
+  store i32 %166, i32* %165, align 4
+  %178 = getelementptr inbounds %struct.VP8LHistogramSet, %struct.VP8LHistogramSet* %140, i64 0, i32 0
+  store i32 %166, i32* %178, align 8
+  %179 = icmp sgt i32 %166, 0
+  br i1 %179, label %180, label %259
+
+180:                                              ; preds = %151
+  %181 = bitcast %struct.VP8LHistogramSet* %176 to i8*
+  %182 = shl nsw i64 %171, 3
+  %183 = getelementptr inbounds i8, i8* %181, i64 %182
+  %184 = bitcast %struct.VP8LHistogramSet* %176 to %struct.VP8LHistogram**
+  %185 = ptrtoint i8* %183 to i64
+  %186 = add i64 %185, 31
+  %187 = and i64 %186, -32
+  %188 = inttoptr i64 %187 to i8*
+  %189 = inttoptr i64 %187 to %struct.VP8LHistogram*
+  store %struct.VP8LHistogram* %189, %struct.VP8LHistogram** %184, align 8
+  %190 = getelementptr inbounds i8, i8* %188, i64 3288
+  %191 = inttoptr i64 %187 to i8**
+  store i8* %190, i8** %191, align 32
+  %192 = load i32, i32* %165, align 4
+  %193 = icmp sgt i32 %192, 1
+  br i1 %193, label %194, label %214
+
+194:                                              ; preds = %180, %194
+  %195 = phi i64 [ %210, %194 ], [ 1, %180 ]
+  %196 = phi i8* [ %202, %194 ], [ %188, %180 ]
+  %197 = getelementptr inbounds i8, i8* %196, i64 %172
+  %198 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %156, align 8
+  %199 = ptrtoint i8* %197 to i64
+  %200 = add i64 %199, 31
+  %201 = and i64 %200, -32
+  %202 = inttoptr i64 %201 to i8*
+  %203 = inttoptr i64 %201 to %struct.VP8LHistogram*
+  %204 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %198, i64 %195
+  store %struct.VP8LHistogram* %203, %struct.VP8LHistogram** %204, align 8
+  %205 = getelementptr inbounds i8, i8* %202, i64 3288
+  %206 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %156, align 8
+  %207 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %206, i64 %195
+  %208 = bitcast %struct.VP8LHistogram** %207 to i8***
+  %209 = load i8**, i8*** %208, align 8
+  store i8* %205, i8** %209, align 8
+  %210 = add nuw nsw i64 %195, 1
+  %211 = load i32, i32* %165, align 4
+  %212 = sext i32 %211 to i64
+  %213 = icmp slt i64 %210, %212
+  br i1 %213, label %194, label %214
+
+214:                                              ; preds = %194, %180
+  %215 = zext i32 %166 to i64
+  %216 = add nsw i64 %215, -1
+  %217 = and i64 %215, 3
+  %218 = icmp ult i64 %216, 3
+  br i1 %218, label %246, label %219
+
+219:                                              ; preds = %214
+  %220 = sub nsw i64 %215, %217
+  br label %221
+
+221:                                              ; preds = %221, %219
+  %222 = phi i64 [ 0, %219 ], [ %243, %221 ]
+  %223 = phi i64 [ %220, %219 ], [ %244, %221 ]
+  %224 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %156, align 8
+  %225 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %224, i64 %222
+  %226 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %225, align 8
+  %227 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %226, i64 0, i32 5
+  store i32 %164, i32* %227, align 8
+  %228 = or i64 %222, 1
+  %229 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %156, align 8
+  %230 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %229, i64 %228
+  %231 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %230, align 8
+  %232 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %231, i64 0, i32 5
+  store i32 %164, i32* %232, align 8
+  %233 = or i64 %222, 2
+  %234 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %156, align 8
+  %235 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %234, i64 %233
+  %236 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %235, align 8
+  %237 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %236, i64 0, i32 5
+  store i32 %164, i32* %237, align 8
+  %238 = or i64 %222, 3
+  %239 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %156, align 8
+  %240 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %239, i64 %238
+  %241 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %240, align 8
+  %242 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %241, i64 0, i32 5
+  store i32 %164, i32* %242, align 8
+  %243 = add nuw nsw i64 %222, 4
+  %244 = add i64 %223, -4
+  %245 = icmp eq i64 %244, 0
+  br i1 %245, label %246, label %221
+
+246:                                              ; preds = %221, %214
+  %247 = phi i64 [ 0, %214 ], [ %243, %221 ]
+  %248 = icmp eq i64 %217, 0
+  br i1 %248, label %259, label %249
+
+249:                                              ; preds = %246, %249
+  %250 = phi i64 [ %256, %249 ], [ %247, %246 ]
+  %251 = phi i64 [ %257, %249 ], [ %217, %246 ]
+  %252 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %156, align 8
+  %253 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %252, i64 %250
+  %254 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %253, align 8
+  %255 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %254, i64 0, i32 5
+  store i32 %164, i32* %255, align 8
+  %256 = add nuw nsw i64 %250, 1
+  %257 = add i64 %251, -1
+  %258 = icmp eq i64 %257, 0
+  br i1 %258, label %259, label %249, !llvm.loop !7
+
+259:                                              ; preds = %246, %249, %151
+  %260 = load %struct.PixOrCopy*, %struct.PixOrCopy** %159, align 8
+  %261 = icmp eq %struct.PixOrCopy* %260, null
+  br i1 %261, label %296, label %262
+
+262:                                              ; preds = %259, %293
+  %263 = phi %struct.PixOrCopy* [ %294, %293 ], [ %260, %259 ]
+  %264 = phi i32 [ %286, %293 ], [ 0, %259 ]
+  %265 = phi i32 [ %285, %293 ], [ 0, %259 ]
+  %266 = ashr i32 %265, %5
+  %267 = mul nsw i32 %266, %155
+  %268 = ashr i32 %264, %5
+  %269 = add nsw i32 %267, %268
+  %270 = sext i32 %269 to i64
+  %271 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %157, i64 %270
+  %272 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %271, align 8
+  call void @VP8LHistogramAddSinglePixOrCopy(%struct.VP8LHistogram* %272, %struct.PixOrCopy* nonnull %263, i32 (i32, i32)* null, i32 0) #6
+  %273 = getelementptr inbounds %struct.PixOrCopy, %struct.PixOrCopy* %263, i64 0, i32 1
+  %274 = load i16, i16* %273, align 2
+  %275 = zext i16 %274 to i32
+  %276 = add i32 %264, %275
+  %277 = icmp slt i32 %276, %0
+  br i1 %277, label %284, label %278
+
+278:                                              ; preds = %262, %278
+  %279 = phi i32 [ %281, %278 ], [ %276, %262 ]
+  %280 = phi i32 [ %282, %278 ], [ %265, %262 ]
+  %281 = sub nsw i32 %279, %0
+  %282 = add nsw i32 %280, 1
+  %283 = icmp slt i32 %281, %0
+  br i1 %283, label %284, label %278
+
+284:                                              ; preds = %278, %262
+  %285 = phi i32 [ %265, %262 ], [ %282, %278 ]
+  %286 = phi i32 [ %276, %262 ], [ %281, %278 ]
+  %287 = load %struct.PixOrCopy*, %struct.PixOrCopy** %159, align 8
+  %288 = getelementptr inbounds %struct.PixOrCopy, %struct.PixOrCopy* %287, i64 1
+  store %struct.PixOrCopy* %288, %struct.PixOrCopy** %159, align 8
+  %289 = load %struct.PixOrCopy*, %struct.PixOrCopy** %160, align 8
+  %290 = icmp eq %struct.PixOrCopy* %288, %289
+  br i1 %290, label %291, label %293
+
+291:                                              ; preds = %284
+  call void @VP8LRefsCursorNextBlock(%struct.VP8LRefsCursor* nonnull %15) #6
+  %292 = load %struct.PixOrCopy*, %struct.PixOrCopy** %159, align 8
+  br label %293
+
+293:                                              ; preds = %291, %284
+  %294 = phi %struct.PixOrCopy* [ %288, %284 ], [ %292, %291 ]
+  %295 = icmp eq %struct.PixOrCopy* %294, null
+  br i1 %295, label %296, label %262
+
+296:                                              ; preds = %293, %259
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %158) #6
+  %297 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %156, align 8
+  %298 = getelementptr inbounds %struct.VP8LHistogramSet, %struct.VP8LHistogramSet* %7, i64 0, i32 2
+  %299 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %300 = load i32, i32* %165, align 4
+  %301 = icmp sgt i32 %300, 0
+  br i1 %301, label %302, label %405
+
+302:                                              ; preds = %296
+  %303 = getelementptr inbounds %struct.VP8LHistogramSet, %struct.VP8LHistogramSet* %7, i64 0, i32 0
+  br label %304
+
+304:                                              ; preds = %396, %302
+  %305 = phi i32 [ %29, %302 ], [ %398, %396 ]
+  %306 = phi i64 [ 0, %302 ], [ %401, %396 ]
+  %307 = phi i32 [ 0, %302 ], [ %399, %396 ]
+  %308 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %297, i64 %306
+  %309 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %308, align 8
+  call fastcc void @UpdateHistogramCost(%struct.VP8LHistogram* %309) #6
+  %310 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %309, i64 0, i32 11, i64 0
+  %311 = load i8, i8* %310, align 8
+  %312 = icmp eq i8 %311, 0
+  br i1 %312, label %313, label %372
+
+313:                                              ; preds = %304
+  %314 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %309, i64 0, i32 11, i64 1
+  %315 = load i8, i8* %314, align 1
+  %316 = icmp eq i8 %315, 0
+  br i1 %316, label %317, label %372
+
+317:                                              ; preds = %313
+  %318 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %309, i64 0, i32 11, i64 2
+  %319 = load i8, i8* %318, align 2
+  %320 = icmp eq i8 %319, 0
+  br i1 %320, label %321, label %372
+
+321:                                              ; preds = %317
+  %322 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %309, i64 0, i32 11, i64 3
+  %323 = load i8, i8* %322, align 1
+  %324 = icmp eq i8 %323, 0
+  br i1 %324, label %325, label %372
+
+325:                                              ; preds = %321
+  %326 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %309, i64 0, i32 11, i64 4
+  %327 = load i8, i8* %326, align 4
+  %328 = icmp eq i8 %327, 0
+  br i1 %328, label %329, label %372
+
+329:                                              ; preds = %325
+  %330 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %331 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %330, i64 %306
+  store %struct.VP8LHistogram* null, %struct.VP8LHistogram** %331, align 8
+  %332 = add nsw i32 %305, -1
+  %333 = load i32, i32* %303, align 8
+  %334 = add nsw i32 %333, -1
+  %335 = zext i32 %334 to i64
+  %336 = icmp eq i64 %306, %335
+  %337 = icmp sgt i32 %333, 0
+  %338 = and i1 %337, %336
+  br i1 %338, label %339, label %351
+
+339:                                              ; preds = %329
+  %340 = sext i32 %333 to i64
+  %341 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  br label %342
+
+342:                                              ; preds = %348, %339
+  %343 = phi i64 [ %340, %339 ], [ %344, %348 ]
+  %344 = add nsw i64 %343, -1
+  %345 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %341, i64 %344
+  %346 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %345, align 8
+  %347 = icmp eq %struct.VP8LHistogram* %346, null
+  br i1 %347, label %348, label %351
+
+348:                                              ; preds = %342
+  %349 = trunc i64 %344 to i32
+  store i32 %349, i32* %303, align 8
+  %350 = icmp sgt i64 %344, 0
+  br i1 %350, label %342, label %351
+
+351:                                              ; preds = %348, %342, %329
+  %352 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %156, align 8
+  %353 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %352, i64 %306
+  store %struct.VP8LHistogram* null, %struct.VP8LHistogram** %353, align 8
+  %354 = load i32, i32* %178, align 8
+  %355 = add nsw i32 %354, -1
+  %356 = zext i32 %355 to i64
+  %357 = icmp eq i64 %306, %356
+  %358 = icmp sgt i32 %354, 0
+  %359 = and i1 %358, %357
+  br i1 %359, label %360, label %396
+
+360:                                              ; preds = %351
+  %361 = sext i32 %354 to i64
+  %362 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %156, align 8
+  br label %363
+
+363:                                              ; preds = %369, %360
+  %364 = phi i64 [ %361, %360 ], [ %365, %369 ]
+  %365 = add nsw i64 %364, -1
+  %366 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %362, i64 %365
+  %367 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %366, align 8
+  %368 = icmp eq %struct.VP8LHistogram* %367, null
+  br i1 %368, label %369, label %396
+
+369:                                              ; preds = %363
+  %370 = trunc i64 %365 to i32
+  store i32 %370, i32* %178, align 8
+  %371 = icmp sgt i64 %365, 0
+  br i1 %371, label %363, label %396
+
+372:                                              ; preds = %325, %321, %317, %313, %304
+  %373 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %299, i64 %306
+  %374 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %373, align 8
+  %375 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %374, i64 0, i32 0
+  %376 = load i32*, i32** %375, align 8
+  %377 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %374, i64 0, i32 5
+  %378 = load i32, i32* %377, align 8
+  %379 = icmp sgt i32 %378, 0
+  %380 = shl i32 1, %378
+  %381 = add i32 %380, 280
+  %382 = select i1 %379, i32 %381, i32 280
+  %383 = shl i32 4, %378
+  %384 = add i32 %383, 4408
+  %385 = select i1 %379, i32 %384, i32 4408
+  %386 = bitcast %struct.VP8LHistogram* %374 to i8*
+  %387 = bitcast %struct.VP8LHistogram* %309 to i8*
+  %388 = sext i32 %385 to i64
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %386, i8* align 8 %387, i64 %388, i1 false) #6
+  store i32* %376, i32** %375, align 8
+  %389 = bitcast i32* %376 to i8*
+  %390 = bitcast %struct.VP8LHistogram* %309 to i8**
+  %391 = load i8*, i8** %390, align 8
+  %392 = sext i32 %382 to i64
+  %393 = shl nsw i64 %392, 2
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %389, i8* align 4 %391, i64 %393, i1 false) #6
+  %394 = add nsw i32 %307, 1
+  %395 = trunc i32 %307 to i16
+  br label %396
+
+396:                                              ; preds = %363, %369, %351, %372
+  %397 = phi i16 [ %395, %372 ], [ -1, %351 ], [ -1, %369 ], [ -1, %363 ]
+  %398 = phi i32 [ %305, %372 ], [ %332, %351 ], [ %332, %369 ], [ %332, %363 ]
+  %399 = phi i32 [ %394, %372 ], [ %307, %351 ], [ %307, %369 ], [ %307, %363 ]
+  %400 = getelementptr inbounds i16, i16* %9, i64 %306
+  store i16 %397, i16* %400, align 2
+  %401 = add nuw nsw i64 %306, 1
+  %402 = load i32, i32* %165, align 4
+  %403 = sext i32 %402 to i64
+  %404 = icmp slt i64 %401, %403
+  br i1 %404, label %304, label %405
+
+405:                                              ; preds = %396, %296
+  %406 = phi i32 [ %29, %296 ], [ %398, %396 ]
+  %407 = shl nuw nsw i32 %142, 1
+  %408 = icmp sgt i32 %406, %407
+  %409 = icmp slt i32 %3, 100
+  %410 = and i1 %409, %408
+  br i1 %410, label %411, label %870
+
+411:                                              ; preds = %405
+  %412 = icmp slt i32 %3, 90
+  br i1 %412, label %413, label %425
+
+413:                                              ; preds = %411
+  %414 = icmp sgt i32 %29, 256
+  %415 = select i1 %414, double 8.000000e-02, double 1.600000e-01
+  %416 = icmp sgt i32 %29, 512
+  %417 = fmul double %415, 5.000000e-01
+  %418 = select i1 %416, double %417, double %415
+  %419 = icmp sgt i32 %29, 1024
+  %420 = fmul double %418, 5.000000e-01
+  %421 = select i1 %419, double %420, double %418
+  %422 = icmp slt i32 %3, 51
+  %423 = fmul double %421, 5.000000e-01
+  %424 = select i1 %422, double %423, double %421
+  br label %425
+
+425:                                              ; preds = %411, %413
+  %426 = phi double [ %424, %413 ], [ 1.600000e-01, %411 ]
+  %427 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %428 = getelementptr inbounds %struct.VP8LHistogramSet, %struct.VP8LHistogramSet* %7, i64 0, i32 0
+  %429 = load i32, i32* %428, align 8
+  %430 = icmp sgt i32 %429, 0
+  br i1 %430, label %431, label %527
+
+431:                                              ; preds = %425
+  %432 = zext i32 %429 to i64
+  br label %441
+
+433:                                              ; preds = %471
+  %434 = fsub double %472, %473
+  %435 = fcmp ogt double %434, 0.000000e+00
+  %436 = icmp eq i32 %4, 0
+  %437 = fsub double %474, %475
+  %438 = fcmp ogt double %437, 0.000000e+00
+  %439 = fsub double %476, %477
+  %440 = fcmp ogt double %439, 0.000000e+00
+  br label %480
+
+441:                                              ; preds = %471, %431
+  %442 = phi i64 [ 0, %431 ], [ %478, %471 ]
+  %443 = phi double [ 0x47D2CED32A16A1B1, %431 ], [ %477, %471 ]
+  %444 = phi double [ 0.000000e+00, %431 ], [ %476, %471 ]
+  %445 = phi double [ 0x47D2CED32A16A1B1, %431 ], [ %475, %471 ]
+  %446 = phi double [ 0.000000e+00, %431 ], [ %474, %471 ]
+  %447 = phi double [ 0x47D2CED32A16A1B1, %431 ], [ %473, %471 ]
+  %448 = phi double [ 0.000000e+00, %431 ], [ %472, %471 ]
+  %449 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %427, i64 %442
+  %450 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %449, align 8
+  %451 = icmp eq %struct.VP8LHistogram* %450, null
+  br i1 %451, label %471, label %452
+
+452:                                              ; preds = %441
+  %453 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %450, i64 0, i32 8
+  %454 = load double, double* %453, align 8
+  %455 = fcmp olt double %448, %454
+  %456 = select i1 %455, double %454, double %448
+  %457 = fcmp ogt double %447, %454
+  %458 = select i1 %457, double %454, double %447
+  %459 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %450, i64 0, i32 9
+  %460 = load double, double* %459, align 8
+  %461 = fcmp olt double %446, %460
+  %462 = select i1 %461, double %460, double %446
+  %463 = fcmp ogt double %445, %460
+  %464 = select i1 %463, double %460, double %445
+  %465 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %450, i64 0, i32 10
+  %466 = load double, double* %465, align 8
+  %467 = fcmp olt double %444, %466
+  %468 = select i1 %467, double %466, double %444
+  %469 = fcmp ogt double %443, %466
+  br i1 %469, label %470, label %471
+
+470:                                              ; preds = %452
+  br label %471
+
+471:                                              ; preds = %470, %452, %441
+  %472 = phi double [ %448, %441 ], [ %456, %452 ], [ %456, %470 ]
+  %473 = phi double [ %447, %441 ], [ %458, %452 ], [ %458, %470 ]
+  %474 = phi double [ %446, %441 ], [ %462, %452 ], [ %462, %470 ]
+  %475 = phi double [ %445, %441 ], [ %464, %452 ], [ %464, %470 ]
+  %476 = phi double [ %444, %441 ], [ %468, %452 ], [ %468, %470 ]
+  %477 = phi double [ %443, %441 ], [ %443, %452 ], [ %466, %470 ]
+  %478 = add nuw nsw i64 %442, 1
+  %479 = icmp eq i64 %478, %432
+  br i1 %479, label %433, label %441
+
+480:                                              ; preds = %522, %433
+  %481 = phi i64 [ 0, %433 ], [ %523, %522 ]
+  %482 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %427, i64 %481
+  %483 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %482, align 8
+  %484 = icmp eq %struct.VP8LHistogram* %483, null
+  br i1 %484, label %522, label %485
+
+485:                                              ; preds = %480
+  br i1 %435, label %486, label %493
+
+486:                                              ; preds = %485
+  %487 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %483, i64 0, i32 8
+  %488 = load double, double* %487, align 8
+  %489 = fsub double %488, %473
+  %490 = fmul double %489, 0x400FFFFF79C842FA
+  %491 = fdiv double %490, %434
+  %492 = fptosi double %491 to i32
+  br label %493
+
+493:                                              ; preds = %486, %485
+  %494 = phi i32 [ %492, %486 ], [ 0, %485 ]
+  br i1 %436, label %495, label %518
+
+495:                                              ; preds = %493
+  %496 = shl i32 %494, 2
+  br i1 %438, label %497, label %504
+
+497:                                              ; preds = %495
+  %498 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %483, i64 0, i32 9
+  %499 = load double, double* %498, align 8
+  %500 = fsub double %499, %475
+  %501 = fmul double %500, 0x400FFFFF79C842FA
+  %502 = fdiv double %501, %437
+  %503 = fptosi double %502 to i32
+  br label %504
+
+504:                                              ; preds = %497, %495
+  %505 = phi i32 [ %503, %497 ], [ 0, %495 ]
+  %506 = add nsw i32 %505, %496
+  %507 = shl i32 %506, 2
+  br i1 %440, label %508, label %515
+
+508:                                              ; preds = %504
+  %509 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %483, i64 0, i32 10
+  %510 = load double, double* %509, align 8
+  %511 = fsub double %510, %477
+  %512 = fmul double %511, 0x400FFFFF79C842FA
+  %513 = fdiv double %512, %439
+  %514 = fptosi double %513 to i32
+  br label %515
+
+515:                                              ; preds = %508, %504
+  %516 = phi i32 [ %514, %508 ], [ 0, %504 ]
+  %517 = add nsw i32 %516, %507
+  br label %518
+
+518:                                              ; preds = %515, %493
+  %519 = phi i32 [ %494, %493 ], [ %517, %515 ]
+  %520 = trunc i32 %519 to i16
+  %521 = getelementptr inbounds i16, i16* %146, i64 %481
+  store i16 %520, i16* %521, align 2
+  br label %522
+
+522:                                              ; preds = %518, %480
+  %523 = add nuw nsw i64 %481, 1
+  %524 = icmp eq i64 %523, %432
+  br i1 %524, label %525, label %480
+
+525:                                              ; preds = %522
+  %526 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  br label %527
+
+527:                                              ; preds = %525, %425
+  %528 = phi %struct.VP8LHistogram** [ %526, %525 ], [ %427, %425 ]
+  %529 = bitcast [64 x %struct.anon]* %14 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 256, i8* nonnull %529) #6
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %529, i8 -86, i64 256, i1 false) #6
+  %530 = zext i32 %142 to i64
+  br label %602
+
+531:                                              ; preds = %602
+  %532 = ptrtoint %struct.VP8LHistogram* %8 to i64
+  %533 = icmp sgt i32 %406, 0
+  br i1 %533, label %534, label %617
+
+534:                                              ; preds = %531
+  %535 = sext i32 %406 to i64
+  %536 = icmp ult i32 %406, 8
+  br i1 %536, label %537, label %539
+
+537:                                              ; preds = %600, %534
+  %538 = phi i64 [ 0, %534 ], [ %540, %600 ]
+  br label %624
+
+539:                                              ; preds = %534
+  %540 = and i64 %535, -8
+  %541 = add nsw i64 %540, -8
+  %542 = lshr exact i64 %541, 3
+  %543 = add nuw nsw i64 %542, 1
+  %544 = and i64 %543, 7
+  %545 = icmp ult i64 %541, 56
+  br i1 %545, label %586, label %546
+
+546:                                              ; preds = %539
+  %547 = sub nsw i64 %543, %544
+  br label %548
+
+548:                                              ; preds = %548, %546
+  %549 = phi i64 [ 0, %546 ], [ %582, %548 ]
+  %550 = phi <8 x i16> [ <i16 0, i16 1, i16 2, i16 3, i16 4, i16 5, i16 6, i16 7>, %546 ], [ %583, %548 ]
+  %551 = phi i64 [ %547, %546 ], [ %584, %548 ]
+  %552 = getelementptr inbounds i16, i16* %147, i64 %549
+  %553 = bitcast i16* %552 to <8 x i16>*
+  store <8 x i16> %550, <8 x i16>* %553, align 2
+  %554 = or i64 %549, 8
+  %555 = add <8 x i16> %550, <i16 8, i16 8, i16 8, i16 8, i16 8, i16 8, i16 8, i16 8>
+  %556 = getelementptr inbounds i16, i16* %147, i64 %554
+  %557 = bitcast i16* %556 to <8 x i16>*
+  store <8 x i16> %555, <8 x i16>* %557, align 2
+  %558 = or i64 %549, 16
+  %559 = add <8 x i16> %550, <i16 16, i16 16, i16 16, i16 16, i16 16, i16 16, i16 16, i16 16>
+  %560 = getelementptr inbounds i16, i16* %147, i64 %558
+  %561 = bitcast i16* %560 to <8 x i16>*
+  store <8 x i16> %559, <8 x i16>* %561, align 2
+  %562 = or i64 %549, 24
+  %563 = add <8 x i16> %550, <i16 24, i16 24, i16 24, i16 24, i16 24, i16 24, i16 24, i16 24>
+  %564 = getelementptr inbounds i16, i16* %147, i64 %562
+  %565 = bitcast i16* %564 to <8 x i16>*
+  store <8 x i16> %563, <8 x i16>* %565, align 2
+  %566 = or i64 %549, 32
+  %567 = add <8 x i16> %550, <i16 32, i16 32, i16 32, i16 32, i16 32, i16 32, i16 32, i16 32>
+  %568 = getelementptr inbounds i16, i16* %147, i64 %566
+  %569 = bitcast i16* %568 to <8 x i16>*
+  store <8 x i16> %567, <8 x i16>* %569, align 2
+  %570 = or i64 %549, 40
+  %571 = add <8 x i16> %550, <i16 40, i16 40, i16 40, i16 40, i16 40, i16 40, i16 40, i16 40>
+  %572 = getelementptr inbounds i16, i16* %147, i64 %570
+  %573 = bitcast i16* %572 to <8 x i16>*
+  store <8 x i16> %571, <8 x i16>* %573, align 2
+  %574 = or i64 %549, 48
+  %575 = add <8 x i16> %550, <i16 48, i16 48, i16 48, i16 48, i16 48, i16 48, i16 48, i16 48>
+  %576 = getelementptr inbounds i16, i16* %147, i64 %574
+  %577 = bitcast i16* %576 to <8 x i16>*
+  store <8 x i16> %575, <8 x i16>* %577, align 2
+  %578 = or i64 %549, 56
+  %579 = add <8 x i16> %550, <i16 56, i16 56, i16 56, i16 56, i16 56, i16 56, i16 56, i16 56>
+  %580 = getelementptr inbounds i16, i16* %147, i64 %578
+  %581 = bitcast i16* %580 to <8 x i16>*
+  store <8 x i16> %579, <8 x i16>* %581, align 2
+  %582 = add i64 %549, 64
+  %583 = add <8 x i16> %550, <i16 64, i16 64, i16 64, i16 64, i16 64, i16 64, i16 64, i16 64>
+  %584 = add i64 %551, -8
+  %585 = icmp eq i64 %584, 0
+  br i1 %585, label %586, label %548, !llvm.loop !8
+
+586:                                              ; preds = %548, %539
+  %587 = phi i64 [ 0, %539 ], [ %582, %548 ]
+  %588 = phi <8 x i16> [ <i16 0, i16 1, i16 2, i16 3, i16 4, i16 5, i16 6, i16 7>, %539 ], [ %583, %548 ]
+  %589 = icmp eq i64 %544, 0
+  br i1 %589, label %600, label %590
+
+590:                                              ; preds = %586, %590
+  %591 = phi i64 [ %596, %590 ], [ %587, %586 ]
+  %592 = phi <8 x i16> [ %597, %590 ], [ %588, %586 ]
+  %593 = phi i64 [ %598, %590 ], [ %544, %586 ]
+  %594 = getelementptr inbounds i16, i16* %147, i64 %591
+  %595 = bitcast i16* %594 to <8 x i16>*
+  store <8 x i16> %592, <8 x i16>* %595, align 2
+  %596 = add i64 %591, 8
+  %597 = add <8 x i16> %592, <i16 8, i16 8, i16 8, i16 8, i16 8, i16 8, i16 8, i16 8>
+  %598 = add i64 %593, -1
+  %599 = icmp eq i64 %598, 0
+  br i1 %599, label %600, label %590, !llvm.loop !10
+
+600:                                              ; preds = %590, %586
+  %601 = icmp eq i64 %540, %535
+  br i1 %601, label %617, label %537
+
+602:                                              ; preds = %602, %527
+  %603 = phi i64 [ 0, %527 ], [ %615, %602 ]
+  %604 = getelementptr inbounds [64 x %struct.anon], [64 x %struct.anon]* %14, i64 0, i64 %603, i32 0
+  store i16 -1, i16* %604, align 16
+  %605 = getelementptr inbounds [64 x %struct.anon], [64 x %struct.anon]* %14, i64 0, i64 %603, i32 1
+  store i16 0, i16* %605, align 2
+  %606 = or i64 %603, 1
+  %607 = getelementptr inbounds [64 x %struct.anon], [64 x %struct.anon]* %14, i64 0, i64 %606, i32 0
+  store i16 -1, i16* %607, align 4
+  %608 = getelementptr inbounds [64 x %struct.anon], [64 x %struct.anon]* %14, i64 0, i64 %606, i32 1
+  store i16 0, i16* %608, align 2
+  %609 = or i64 %603, 2
+  %610 = getelementptr inbounds [64 x %struct.anon], [64 x %struct.anon]* %14, i64 0, i64 %609, i32 0
+  store i16 -1, i16* %610, align 8
+  %611 = getelementptr inbounds [64 x %struct.anon], [64 x %struct.anon]* %14, i64 0, i64 %609, i32 1
+  store i16 0, i16* %611, align 2
+  %612 = or i64 %603, 3
+  %613 = getelementptr inbounds [64 x %struct.anon], [64 x %struct.anon]* %14, i64 0, i64 %612, i32 0
+  store i16 -1, i16* %613, align 4
+  %614 = getelementptr inbounds [64 x %struct.anon], [64 x %struct.anon]* %14, i64 0, i64 %612, i32 1
+  store i16 0, i16* %614, align 2
+  %615 = add nuw nsw i64 %603, 4
+  %616 = icmp eq i64 %615, %530
+  br i1 %616, label %531, label %602
+
+617:                                              ; preds = %624, %600, %531
+  %618 = load i32, i32* %428, align 8
+  %619 = icmp sgt i32 %618, 0
+  br i1 %619, label %620, label %795
+
+620:                                              ; preds = %617
+  %621 = icmp eq i32 %4, 0
+  %622 = bitcast double* %13 to i8*
+  %623 = bitcast double* %13 to i64*
+  br label %630
+
+624:                                              ; preds = %537, %624
+  %625 = phi i64 [ %628, %624 ], [ %538, %537 ]
+  %626 = trunc i64 %625 to i16
+  %627 = getelementptr inbounds i16, i16* %147, i64 %625
+  store i16 %626, i16* %627, align 2
+  %628 = add nuw nsw i64 %625, 1
+  %629 = icmp eq i64 %628, %535
+  br i1 %629, label %617, label %624, !llvm.loop !11
+
+630:                                              ; preds = %772, %620
+  %631 = phi i32 [ %406, %620 ], [ %773, %772 ]
+  %632 = phi i64 [ 0, %620 ], [ %775, %772 ]
+  %633 = phi i64 [ %532, %620 ], [ %774, %772 ]
+  %634 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %528, i64 %632
+  %635 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %634, align 8
+  %636 = icmp eq %struct.VP8LHistogram* %635, null
+  br i1 %636, label %772, label %637
+
+637:                                              ; preds = %630
+  %638 = getelementptr inbounds i16, i16* %146, i64 %632
+  %639 = load i16, i16* %638, align 2
+  %640 = zext i16 %639 to i64
+  %641 = getelementptr inbounds [64 x %struct.anon], [64 x %struct.anon]* %14, i64 0, i64 %640, i32 0
+  %642 = load i16, i16* %641, align 4
+  %643 = icmp eq i16 %642, -1
+  br i1 %643, label %644, label %646
+
+644:                                              ; preds = %637
+  %645 = trunc i64 %632 to i16
+  store i16 %645, i16* %641, align 4
+  br label %772
+
+646:                                              ; preds = %637
+  br i1 %621, label %685, label %647
+
+647:                                              ; preds = %646
+  %648 = sext i16 %642 to i64
+  %649 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %528, i64 %648
+  %650 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %649, align 8
+  call void @VP8LHistogramAdd(%struct.VP8LHistogram* nonnull %635, %struct.VP8LHistogram* %650, %struct.VP8LHistogram* %650) #6
+  %651 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %635, i64 0, i32 6
+  %652 = load i32, i32* %651, align 4
+  %653 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %650, i64 0, i32 6
+  %654 = load i32, i32* %653, align 4
+  %655 = icmp eq i32 %652, %654
+  %656 = select i1 %655, i32 %652, i32 -1
+  store i32 %656, i32* %653, align 4
+  %657 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %658 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %657, i64 %632
+  store %struct.VP8LHistogram* null, %struct.VP8LHistogram** %658, align 8
+  %659 = add nsw i32 %631, -1
+  %660 = load i32, i32* %428, align 8
+  %661 = add nsw i32 %660, -1
+  %662 = zext i32 %661 to i64
+  %663 = icmp eq i64 %632, %662
+  %664 = icmp sgt i32 %660, 0
+  %665 = and i1 %664, %663
+  br i1 %665, label %666, label %678
+
+666:                                              ; preds = %647
+  %667 = sext i32 %660 to i64
+  %668 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  br label %669
+
+669:                                              ; preds = %675, %666
+  %670 = phi i64 [ %667, %666 ], [ %671, %675 ]
+  %671 = add nsw i64 %670, -1
+  %672 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %668, i64 %671
+  %673 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %672, align 8
+  %674 = icmp eq %struct.VP8LHistogram* %673, null
+  br i1 %674, label %675, label %678
+
+675:                                              ; preds = %669
+  %676 = trunc i64 %671 to i32
+  store i32 %676, i32* %428, align 8
+  %677 = icmp sgt i64 %671, 0
+  br i1 %677, label %669, label %678
+
+678:                                              ; preds = %675, %669, %647
+  %679 = getelementptr inbounds i16, i16* %9, i64 %648
+  %680 = load i16, i16* %679, align 2
+  %681 = getelementptr inbounds i16, i16* %9, i64 %632
+  %682 = load i16, i16* %681, align 2
+  %683 = zext i16 %682 to i64
+  %684 = getelementptr inbounds i16, i16* %147, i64 %683
+  store i16 %680, i16* %684, align 2
+  br label %772
+
+685:                                              ; preds = %646
+  %686 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %635, i64 0, i32 7
+  %687 = load double, double* %686, align 8
+  %688 = fmul double %426, %687
+  %689 = fsub double -0.000000e+00, %688
+  %690 = sext i16 %642 to i64
+  %691 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %528, i64 %690
+  %692 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %691, align 8
+  %693 = inttoptr i64 %633 to %struct.VP8LHistogram*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %622) #6
+  store double 0.000000e+00, double* %13, align 8
+  %694 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %692, i64 0, i32 7
+  %695 = load double, double* %694, align 8
+  %696 = fadd double %687, %695
+  %697 = fsub double %696, %688
+  %698 = call fastcc i32 @GetCombinedHistogramEntropy(%struct.VP8LHistogram* %692, %struct.VP8LHistogram* nonnull %635, double %697, double* nonnull %13) #6
+  %699 = icmp eq i32 %698, 0
+  br i1 %699, label %700, label %702
+
+700:                                              ; preds = %685
+  %701 = load double, double* %13, align 8
+  br label %717
+
+702:                                              ; preds = %685
+  call void @VP8LHistogramAdd(%struct.VP8LHistogram* %692, %struct.VP8LHistogram* nonnull %635, %struct.VP8LHistogram* %693) #6
+  %703 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %692, i64 0, i32 6
+  %704 = load i32, i32* %703, align 4
+  %705 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %635, i64 0, i32 6
+  %706 = load i32, i32* %705, align 4
+  %707 = icmp eq i32 %704, %706
+  %708 = select i1 %707, i32 %704, i32 -1
+  %709 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %693, i64 0, i32 6
+  store i32 %708, i32* %709, align 4
+  %710 = load i64, i64* %623, align 8
+  %711 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %693, i64 0, i32 7
+  %712 = bitcast double* %711 to i64*
+  store i64 %710, i64* %712, align 8
+  %713 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %692, i64 0, i32 5
+  %714 = load i32, i32* %713, align 8
+  %715 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %693, i64 0, i32 5
+  store i32 %714, i32* %715, align 8
+  %716 = bitcast i64 %710 to double
+  br label %717
+
+717:                                              ; preds = %702, %700
+  %718 = phi double [ %701, %700 ], [ %716, %702 ]
+  %719 = fsub double %718, %696
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %622) #6
+  %720 = fcmp olt double %719, %689
+  br i1 %720, label %721, label %772
+
+721:                                              ; preds = %717
+  %722 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %693, i64 0, i32 6
+  %723 = load i32, i32* %722, align 4
+  %724 = icmp eq i32 %723, -1
+  br i1 %724, label %725, label %739
+
+725:                                              ; preds = %721
+  %726 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %634, align 8
+  %727 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %726, i64 0, i32 6
+  %728 = load i32, i32* %727, align 4
+  %729 = icmp eq i32 %728, -1
+  br i1 %729, label %730, label %735
+
+730:                                              ; preds = %725
+  %731 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %691, align 8
+  %732 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %731, i64 0, i32 6
+  %733 = load i32, i32* %732, align 4
+  %734 = icmp eq i32 %733, -1
+  br i1 %734, label %739, label %735
+
+735:                                              ; preds = %730, %725
+  %736 = getelementptr inbounds [64 x %struct.anon], [64 x %struct.anon]* %14, i64 0, i64 %640, i32 1
+  %737 = load i16, i16* %736, align 2
+  %738 = icmp ugt i16 %737, 31
+  br i1 %738, label %739, label %770
+
+739:                                              ; preds = %735, %730, %721
+  %740 = bitcast %struct.VP8LHistogram** %691 to i64*
+  %741 = load i64, i64* %740, align 8
+  store i64 %633, i64* %740, align 8
+  %742 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %743 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %742, i64 %632
+  store %struct.VP8LHistogram* null, %struct.VP8LHistogram** %743, align 8
+  %744 = add nsw i32 %631, -1
+  %745 = load i32, i32* %428, align 8
+  %746 = add nsw i32 %745, -1
+  %747 = zext i32 %746 to i64
+  %748 = icmp eq i64 %632, %747
+  %749 = icmp sgt i32 %745, 0
+  %750 = and i1 %749, %748
+  br i1 %750, label %751, label %763
+
+751:                                              ; preds = %739
+  %752 = sext i32 %745 to i64
+  %753 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  br label %754
+
+754:                                              ; preds = %760, %751
+  %755 = phi i64 [ %752, %751 ], [ %756, %760 ]
+  %756 = add nsw i64 %755, -1
+  %757 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %753, i64 %756
+  %758 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %757, align 8
+  %759 = icmp eq %struct.VP8LHistogram* %758, null
+  br i1 %759, label %760, label %763
+
+760:                                              ; preds = %754
+  %761 = trunc i64 %756 to i32
+  store i32 %761, i32* %428, align 8
+  %762 = icmp sgt i64 %756, 0
+  br i1 %762, label %754, label %763
+
+763:                                              ; preds = %760, %754, %739
+  %764 = getelementptr inbounds i16, i16* %9, i64 %690
+  %765 = load i16, i16* %764, align 2
+  %766 = getelementptr inbounds i16, i16* %9, i64 %632
+  %767 = load i16, i16* %766, align 2
+  %768 = zext i16 %767 to i64
+  %769 = getelementptr inbounds i16, i16* %147, i64 %768
+  store i16 %765, i16* %769, align 2
+  br label %772
+
+770:                                              ; preds = %735
+  %771 = add nuw nsw i16 %737, 1
+  store i16 %771, i16* %736, align 2
+  br label %772
+
+772:                                              ; preds = %770, %763, %717, %678, %644, %630
+  %773 = phi i32 [ %631, %630 ], [ %631, %644 ], [ %744, %763 ], [ %631, %770 ], [ %631, %717 ], [ %659, %678 ]
+  %774 = phi i64 [ %633, %630 ], [ %633, %644 ], [ %741, %763 ], [ %633, %770 ], [ %633, %717 ], [ %633, %678 ]
+  %775 = add nuw nsw i64 %632, 1
+  %776 = load i32, i32* %428, align 8
+  %777 = sext i32 %776 to i64
+  %778 = icmp slt i64 %775, %777
+  br i1 %778, label %630, label %779
+
+779:                                              ; preds = %772
+  %780 = icmp sgt i32 %776, 0
+  %781 = and i1 %141, %780
+  br i1 %781, label %782, label %795
+
+782:                                              ; preds = %779, %790
+  %783 = phi i32 [ %791, %790 ], [ %776, %779 ]
+  %784 = phi i64 [ %792, %790 ], [ 0, %779 ]
+  %785 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %528, i64 %784
+  %786 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %785, align 8
+  %787 = icmp eq %struct.VP8LHistogram* %786, null
+  br i1 %787, label %790, label %788
+
+788:                                              ; preds = %782
+  call fastcc void @UpdateHistogramCost(%struct.VP8LHistogram* nonnull %786) #6
+  %789 = load i32, i32* %428, align 8
+  br label %790
+
+790:                                              ; preds = %788, %782
+  %791 = phi i32 [ %783, %782 ], [ %789, %788 ]
+  %792 = add nuw nsw i64 %784, 1
+  %793 = sext i32 %791 to i64
+  %794 = icmp slt i64 %792, %793
+  br i1 %794, label %782, label %795
+
+795:                                              ; preds = %790, %617, %779
+  %796 = phi i32 [ %773, %779 ], [ %406, %617 ], [ %773, %790 ]
+  call void @llvm.lifetime.end.p0i8(i64 256, i8* nonnull %529) #6
+  %797 = zext i32 %406 to i64
+  br i1 %533, label %800, label %830
+
+798:                                              ; preds = %823
+  %799 = icmp eq i32 %824, 0
+  br i1 %799, label %830, label %827
+
+800:                                              ; preds = %795, %827
+  %801 = phi i64 [ %828, %827 ], [ 0, %795 ]
+  %802 = phi i32 [ %829, %827 ], [ 0, %795 ]
+  %803 = getelementptr inbounds i16, i16* %147, i64 %801
+  %804 = load i16, i16* %803, align 2
+  %805 = zext i16 %804 to i64
+  %806 = getelementptr inbounds i16, i16* %147, i64 %805
+  %807 = load i16, i16* %806, align 2
+  %808 = icmp eq i16 %804, %807
+  br i1 %808, label %823, label %809
+
+809:                                              ; preds = %800, %809
+  %810 = phi i16 [ %817, %809 ], [ %807, %800 ]
+  %811 = phi i16* [ %816, %809 ], [ %806, %800 ]
+  %812 = zext i16 %810 to i64
+  %813 = getelementptr inbounds i16, i16* %147, i64 %812
+  %814 = load i16, i16* %813, align 2
+  store i16 %814, i16* %811, align 2
+  %815 = zext i16 %814 to i64
+  %816 = getelementptr inbounds i16, i16* %147, i64 %815
+  %817 = load i16, i16* %816, align 2
+  %818 = icmp eq i16 %814, %817
+  br i1 %818, label %819, label %809
+
+819:                                              ; preds = %809
+  %820 = load i16, i16* %803, align 2
+  %821 = icmp eq i16 %814, %820
+  br i1 %821, label %823, label %822
+
+822:                                              ; preds = %819
+  store i16 %814, i16* %803, align 2
+  br label %823
+
+823:                                              ; preds = %822, %819, %800
+  %824 = phi i32 [ 1, %822 ], [ %802, %819 ], [ %802, %800 ]
+  %825 = add nuw nsw i64 %801, 1
+  %826 = icmp eq i64 %825, %797
+  br i1 %826, label %798, label %827
+
+827:                                              ; preds = %823, %798
+  %828 = phi i64 [ %825, %823 ], [ 0, %798 ]
+  %829 = phi i32 [ %824, %823 ], [ 0, %798 ]
+  br label %800
+
+830:                                              ; preds = %798, %795
+  %831 = getelementptr inbounds %struct.VP8LHistogramSet, %struct.VP8LHistogramSet* %7, i64 0, i32 1
+  %832 = load i32, i32* %831, align 4
+  %833 = sext i32 %832 to i64
+  %834 = shl nsw i64 %833, 1
+  call void @llvm.memset.p0i8.i64(i8* align 2 %145, i8 0, i64 %834, i1 false) #6
+  %835 = load i32, i32* %831, align 4
+  %836 = icmp sgt i32 %835, 0
+  br i1 %836, label %837, label %869
+
+837:                                              ; preds = %830, %863
+  %838 = phi i32 [ %864, %863 ], [ %835, %830 ]
+  %839 = phi i64 [ %866, %863 ], [ 0, %830 ]
+  %840 = phi i32 [ %865, %863 ], [ 0, %830 ]
+  %841 = getelementptr inbounds i16, i16* %9, i64 %839
+  %842 = load i16, i16* %841, align 2
+  %843 = icmp eq i16 %842, -1
+  br i1 %843, label %863, label %844
+
+844:                                              ; preds = %837
+  %845 = zext i16 %842 to i64
+  %846 = getelementptr inbounds i16, i16* %147, i64 %845
+  %847 = load i16, i16* %846, align 2
+  %848 = icmp eq i16 %847, 0
+  br i1 %848, label %849, label %851
+
+849:                                              ; preds = %844
+  %850 = load i16, i16* %146, align 2
+  br label %859
+
+851:                                              ; preds = %844
+  %852 = zext i16 %847 to i64
+  %853 = getelementptr inbounds i16, i16* %146, i64 %852
+  %854 = load i16, i16* %853, align 2
+  %855 = icmp eq i16 %854, 0
+  br i1 %855, label %856, label %859
+
+856:                                              ; preds = %851
+  %857 = add nsw i32 %840, 1
+  %858 = trunc i32 %857 to i16
+  store i16 %858, i16* %853, align 2
+  br label %859
+
+859:                                              ; preds = %856, %851, %849
+  %860 = phi i16 [ %858, %856 ], [ %854, %851 ], [ %850, %849 ]
+  %861 = phi i32 [ %857, %856 ], [ %840, %851 ], [ %840, %849 ]
+  store i16 %860, i16* %841, align 2
+  %862 = load i32, i32* %831, align 4
+  br label %863
+
+863:                                              ; preds = %859, %837
+  %864 = phi i32 [ %862, %859 ], [ %838, %837 ]
+  %865 = phi i32 [ %861, %859 ], [ %840, %837 ]
+  %866 = add nuw nsw i64 %839, 1
+  %867 = sext i32 %864 to i64
+  %868 = icmp slt i64 %866, %867
+  br i1 %868, label %837, label %869
+
+869:                                              ; preds = %863, %830
+  br i1 %141, label %1369, label %870
+
+870:                                              ; preds = %405, %869
+  %871 = phi i32 [ %796, %869 ], [ %406, %405 ]
+  %872 = sitofp i32 %3 to float
+  %873 = fdiv float %872, 1.000000e+02
+  %874 = fmul float %873, %873
+  %875 = fmul float %873, %874
+  %876 = fmul float %875, 9.900000e+01
+  %877 = fadd float %876, 1.000000e+00
+  %878 = fptosi float %877 to i32
+  %879 = sdiv i32 %871, 2
+  %880 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %881 = bitcast %struct.HistoQueue* %12 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %881) #6
+  %882 = getelementptr inbounds %struct.HistoQueue, %struct.HistoQueue* %12, i64 0, i32 0
+  %883 = getelementptr inbounds %struct.HistoQueue, %struct.HistoQueue* %12, i64 0, i32 1
+  %884 = getelementptr inbounds %struct.HistoQueue, %struct.HistoQueue* %12, i64 0, i32 2
+  %885 = icmp slt i32 %871, %878
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %881, i8 -86, i64 16, i1 false) #6
+  br i1 %885, label %886, label %887
+
+886:                                              ; preds = %870
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %881) #6
+  br label %1169
+
+887:                                              ; preds = %870
+  %888 = sext i32 %871 to i64
+  %889 = call i8* @WebPSafeMalloc(i64 %888, i64 4) #6
+  %890 = bitcast i8* %889 to i32*
+  %891 = icmp eq i8* %889, null
+  br i1 %891, label %892, label %893
+
+892:                                              ; preds = %887
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %881) #6
+  br label %1573
+
+893:                                              ; preds = %887
+  store i32 0, i32* %883, align 8
+  store i32 9, i32* %884, align 4
+  %894 = call i8* @WebPSafeMalloc(i64 10, i64 24) #6
+  %895 = bitcast %struct.HistoQueue* %12 to i8**
+  store i8* %894, i8** %895, align 8
+  %896 = icmp eq i8* %894, null
+  br i1 %896, label %1163, label %897
+
+897:                                              ; preds = %893
+  %898 = getelementptr inbounds %struct.VP8LHistogramSet, %struct.VP8LHistogramSet* %7, i64 0, i32 0
+  %899 = load i32, i32* %898, align 8
+  %900 = icmp sgt i32 %899, 0
+  br i1 %900, label %905, label %901
+
+901:                                              ; preds = %918, %897
+  %902 = icmp sgt i32 %871, 0
+  br i1 %902, label %903, label %1158
+
+903:                                              ; preds = %901
+  %904 = ptrtoint i8* %889 to i64
+  br label %924
+
+905:                                              ; preds = %897, %918
+  %906 = phi i32 [ %919, %918 ], [ %899, %897 ]
+  %907 = phi i64 [ %921, %918 ], [ 0, %897 ]
+  %908 = phi i32 [ %920, %918 ], [ 0, %897 ]
+  %909 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %880, i64 %907
+  %910 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %909, align 8
+  %911 = icmp eq %struct.VP8LHistogram* %910, null
+  br i1 %911, label %918, label %912
+
+912:                                              ; preds = %905
+  %913 = add nsw i32 %908, 1
+  %914 = sext i32 %908 to i64
+  %915 = getelementptr inbounds i32, i32* %890, i64 %914
+  %916 = trunc i64 %907 to i32
+  store i32 %916, i32* %915, align 4
+  %917 = load i32, i32* %898, align 8
+  br label %918
+
+918:                                              ; preds = %912, %905
+  %919 = phi i32 [ %906, %905 ], [ %917, %912 ]
+  %920 = phi i32 [ %908, %905 ], [ %913, %912 ]
+  %921 = add nuw nsw i64 %907, 1
+  %922 = sext i32 %919 to i64
+  %923 = icmp slt i64 %921, %922
+  br i1 %923, label %905, label %901
+
+924:                                              ; preds = %1148, %903
+  %925 = phi i32 [ %871, %903 ], [ %1149, %1148 ]
+  %926 = phi i32 [ 0, %903 ], [ %1150, %1148 ]
+  %927 = phi i32 [ 0, %903 ], [ %1151, %1148 ]
+  %928 = phi i32 [ 0, %903 ], [ %1153, %1148 ]
+  %929 = phi i32 [ 0, %903 ], [ %1152, %1148 ]
+  %930 = phi i32 [ 1, %903 ], [ %985, %1148 ]
+  %931 = icmp slt i32 %925, %878
+  br i1 %931, label %1155, label %932
+
+932:                                              ; preds = %924
+  %933 = add nsw i32 %929, 1
+  %934 = icmp slt i32 %933, %879
+  br i1 %934, label %935, label %1155
+
+935:                                              ; preds = %932
+  %936 = icmp eq i32 %927, 0
+  br i1 %936, label %941, label %937
+
+937:                                              ; preds = %935
+  %938 = load %struct.HistogramPair*, %struct.HistogramPair** %882, align 8
+  %939 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %938, i64 0, i32 2
+  %940 = load double, double* %939, align 8
+  br label %941
+
+941:                                              ; preds = %937, %935
+  %942 = phi double [ %940, %937 ], [ 0.000000e+00, %935 ]
+  %943 = add nsw i32 %925, -1
+  %944 = mul nsw i32 %943, %925
+  %945 = sdiv i32 %925, 2
+  %946 = icmp sgt i32 %925, 1
+  br i1 %946, label %947, label %982
+
+947:                                              ; preds = %941, %973
+  %948 = phi i32 [ %975, %973 ], [ 0, %941 ]
+  %949 = phi double [ %974, %973 ], [ %942, %941 ]
+  %950 = phi i32 [ %954, %973 ], [ %930, %941 ]
+  %951 = zext i32 %950 to i64
+  %952 = mul nuw nsw i64 %951, 48271
+  %953 = urem i64 %952, 2147483647
+  %954 = trunc i64 %953 to i32
+  %955 = urem i32 %954, %944
+  %956 = udiv i32 %955, %943
+  %957 = urem i32 %955, %943
+  %958 = icmp uge i32 %957, %956
+  %959 = zext i1 %958 to i32
+  %960 = add nuw nsw i32 %957, %959
+  %961 = zext i32 %956 to i64
+  %962 = getelementptr inbounds i32, i32* %890, i64 %961
+  %963 = load i32, i32* %962, align 4
+  %964 = zext i32 %960 to i64
+  %965 = getelementptr inbounds i32, i32* %890, i64 %964
+  %966 = load i32, i32* %965, align 4
+  %967 = call fastcc double @HistoQueuePush(%struct.HistoQueue* nonnull %12, %struct.VP8LHistogram** %880, i32 %963, i32 %966, double %949) #6
+  %968 = fcmp olt double %967, 0.000000e+00
+  br i1 %968, label %969, label %973
+
+969:                                              ; preds = %947
+  %970 = load i32, i32* %883, align 8
+  %971 = load i32, i32* %884, align 4
+  %972 = icmp eq i32 %970, %971
+  br i1 %972, label %980, label %973
+
+973:                                              ; preds = %969, %947
+  %974 = phi double [ %967, %969 ], [ %949, %947 ]
+  %975 = add nuw nsw i32 %948, 1
+  %976 = icmp slt i32 %975, %945
+  br i1 %976, label %947, label %977
+
+977:                                              ; preds = %973
+  %978 = trunc i64 %953 to i32
+  %979 = load i32, i32* %883, align 8
+  br label %982
+
+980:                                              ; preds = %969
+  %981 = trunc i64 %953 to i32
+  br label %982
+
+982:                                              ; preds = %980, %977, %941
+  %983 = phi i32 [ %979, %977 ], [ %926, %941 ], [ %970, %980 ]
+  %984 = phi i32 [ %979, %977 ], [ %927, %941 ], [ %970, %980 ]
+  %985 = phi i32 [ %978, %977 ], [ %930, %941 ], [ %981, %980 ]
+  %986 = icmp eq i32 %984, 0
+  br i1 %986, label %1148, label %987
+
+987:                                              ; preds = %982
+  %988 = load %struct.HistogramPair*, %struct.HistogramPair** %882, align 8
+  %989 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %988, i64 0, i32 0
+  %990 = load i32, i32* %989, align 8
+  %991 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %988, i64 0, i32 1
+  %992 = load i32, i32* %991, align 4
+  %993 = sext i32 %925 to i64
+  %994 = icmp eq i32 %925, 0
+  %995 = bitcast %struct.HistogramPair* %988 to i8*
+  br i1 %994, label %1015, label %996
+
+996:                                              ; preds = %987, %1011
+  %997 = phi i64 [ %1013, %1011 ], [ %993, %987 ]
+  %998 = phi i64 [ %1012, %1011 ], [ 0, %987 ]
+  %999 = add i64 %998, %997
+  %1000 = lshr i64 %999, 1
+  %1001 = shl i64 %1000, 2
+  %1002 = getelementptr inbounds i8, i8* %889, i64 %1001
+  %1003 = bitcast i8* %1002 to i32*
+  %1004 = load i32, i32* %1003, align 4
+  %1005 = sub nsw i32 %992, %1004
+  %1006 = icmp slt i32 %1005, 0
+  br i1 %1006, label %1011, label %1007
+
+1007:                                             ; preds = %996
+  %1008 = icmp eq i32 %1005, 0
+  br i1 %1008, label %1015, label %1009
+
+1009:                                             ; preds = %1007
+  %1010 = add nuw i64 %1000, 1
+  br label %1011
+
+1011:                                             ; preds = %1009, %996
+  %1012 = phi i64 [ %1010, %1009 ], [ %998, %996 ]
+  %1013 = phi i64 [ %997, %1009 ], [ %1000, %996 ]
+  %1014 = icmp ult i64 %1012, %1013
+  br i1 %1014, label %996, label %1015
+
+1015:                                             ; preds = %1011, %1007, %987
+  %1016 = phi i8* [ null, %987 ], [ null, %1011 ], [ %1002, %1007 ]
+  %1017 = getelementptr inbounds i8, i8* %1016, i64 4
+  %1018 = ptrtoint i8* %1016 to i64
+  %1019 = sub i64 %1018, %904
+  %1020 = lshr exact i64 %1019, 2
+  %1021 = xor i64 %1020, 4611686018427387903
+  %1022 = add nsw i64 %1021, %993
+  %1023 = shl i64 %1022, 2
+  call void @llvm.memmove.p0i8.p0i8.i64(i8* align 4 %1016, i8* align 4 %1017, i64 %1023, i1 false) #6
+  %1024 = sext i32 %992 to i64
+  %1025 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %880, i64 %1024
+  %1026 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1025, align 8
+  %1027 = sext i32 %990 to i64
+  %1028 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %880, i64 %1027
+  %1029 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1028, align 8
+  call void @VP8LHistogramAdd(%struct.VP8LHistogram* %1026, %struct.VP8LHistogram* %1029, %struct.VP8LHistogram* %1029) #6
+  %1030 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1026, i64 0, i32 6
+  %1031 = load i32, i32* %1030, align 4
+  %1032 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1029, i64 0, i32 6
+  %1033 = load i32, i32* %1032, align 4
+  %1034 = icmp eq i32 %1031, %1033
+  %1035 = select i1 %1034, i32 %1031, i32 -1
+  store i32 %1035, i32* %1032, align 4
+  %1036 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %988, i64 0, i32 3
+  %1037 = bitcast double* %1036 to i64*
+  %1038 = load i64, i64* %1037, align 8
+  %1039 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1028, align 8
+  %1040 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1039, i64 0, i32 7
+  %1041 = bitcast double* %1040 to i64*
+  store i64 %1038, i64* %1041, align 8
+  %1042 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %1043 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1042, i64 %1024
+  store %struct.VP8LHistogram* null, %struct.VP8LHistogram** %1043, align 8
+  %1044 = load i32, i32* %898, align 8
+  %1045 = add nsw i32 %1044, -1
+  %1046 = icmp eq i32 %1045, %992
+  %1047 = icmp sgt i32 %1044, 0
+  %1048 = and i1 %1047, %1046
+  br i1 %1048, label %1049, label %1061
+
+1049:                                             ; preds = %1015
+  %1050 = sext i32 %1044 to i64
+  %1051 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  br label %1052
+
+1052:                                             ; preds = %1058, %1049
+  %1053 = phi i64 [ %1050, %1049 ], [ %1054, %1058 ]
+  %1054 = add nsw i64 %1053, -1
+  %1055 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1051, i64 %1054
+  %1056 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1055, align 8
+  %1057 = icmp eq %struct.VP8LHistogram* %1056, null
+  br i1 %1057, label %1058, label %1061
+
+1058:                                             ; preds = %1052
+  %1059 = trunc i64 %1054 to i32
+  store i32 %1059, i32* %898, align 8
+  %1060 = icmp sgt i64 %1054, 0
+  br i1 %1060, label %1052, label %1061
+
+1061:                                             ; preds = %1058, %1052, %1015
+  %1062 = icmp sgt i32 %983, 0
+  br i1 %1062, label %1063, label %1148
+
+1063:                                             ; preds = %1061
+  %1064 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %988, i64 0, i32 2
+  br label %1065
+
+1065:                                             ; preds = %1143, %1063
+  %1066 = phi i32 [ %983, %1063 ], [ %1144, %1143 ]
+  %1067 = phi i32 [ 0, %1063 ], [ %1145, %1143 ]
+  %1068 = sext i32 %1067 to i64
+  %1069 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %988, i64 %1068
+  %1070 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %1069, i64 0, i32 0
+  %1071 = load i32, i32* %1070, align 8
+  %1072 = icmp eq i32 %1071, %990
+  %1073 = icmp eq i32 %1071, %992
+  %1074 = or i1 %1072, %1073
+  %1075 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %988, i64 %1068, i32 1
+  %1076 = load i32, i32* %1075, align 4
+  %1077 = icmp eq i32 %1076, %990
+  %1078 = icmp eq i32 %1076, %992
+  %1079 = or i1 %1077, %1078
+  %1080 = and i1 %1074, %1079
+  br i1 %1080, label %1081, label %1087
+
+1081:                                             ; preds = %1065
+  %1082 = add nsw i32 %1066, -1
+  %1083 = sext i32 %1082 to i64
+  %1084 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %988, i64 %1083
+  %1085 = bitcast %struct.HistogramPair* %1069 to i8*
+  %1086 = bitcast %struct.HistogramPair* %1084 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %1085, i8* align 8 %1086, i64 24, i1 false) #6
+  br label %1143
+
+1087:                                             ; preds = %1065
+  br i1 %1074, label %1088, label %1089
+
+1088:                                             ; preds = %1087
+  store i32 %990, i32* %1070, align 8
+  br label %1091
+
+1089:                                             ; preds = %1087
+  br i1 %1079, label %1090, label %1091
+
+1090:                                             ; preds = %1089
+  store i32 %990, i32* %1075, align 4
+  br label %1091
+
+1091:                                             ; preds = %1090, %1089, %1088
+  %1092 = phi i32 [ %1076, %1088 ], [ %990, %1090 ], [ %1076, %1089 ]
+  %1093 = phi i32 [ %990, %1088 ], [ %1071, %1090 ], [ %1071, %1089 ]
+  %1094 = phi i32 [ 1, %1088 ], [ 1, %1090 ], [ 0, %1089 ]
+  %1095 = icmp sgt i32 %1093, %1092
+  br i1 %1095, label %1096, label %1097
+
+1096:                                             ; preds = %1091
+  store i32 %1093, i32* %1075, align 4
+  store i32 %1092, i32* %1070, align 8
+  br label %1097
+
+1097:                                             ; preds = %1096, %1091
+  %1098 = phi i32 [ %1093, %1096 ], [ %1092, %1091 ]
+  %1099 = phi i32 [ %1092, %1096 ], [ %1093, %1091 ]
+  %1100 = icmp eq i32 %1094, 0
+  br i1 %1100, label %1101, label %1104
+
+1101:                                             ; preds = %1097
+  %1102 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %988, i64 %1068, i32 2
+  %1103 = load double, double* %1102, align 8
+  br label %1129
+
+1104:                                             ; preds = %1097
+  %1105 = sext i32 %1099 to i64
+  %1106 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %880, i64 %1105
+  %1107 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1106, align 8
+  %1108 = sext i32 %1098 to i64
+  %1109 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %880, i64 %1108
+  %1110 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1109, align 8
+  %1111 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1107, i64 0, i32 7
+  %1112 = load double, double* %1111, align 8
+  %1113 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1110, i64 0, i32 7
+  %1114 = load double, double* %1113, align 8
+  %1115 = fadd double %1112, %1114
+  %1116 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %988, i64 %1068, i32 3
+  store double 0.000000e+00, double* %1116, align 8
+  %1117 = fadd double %1115, 0.000000e+00
+  %1118 = call fastcc i32 @GetCombinedHistogramEntropy(%struct.VP8LHistogram* %1107, %struct.VP8LHistogram* %1110, double %1117, double* %1116) #6
+  %1119 = load double, double* %1116, align 8
+  %1120 = fsub double %1119, %1115
+  %1121 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %988, i64 %1068, i32 2
+  store double %1120, double* %1121, align 8
+  %1122 = fcmp ult double %1120, 0.000000e+00
+  br i1 %1122, label %1129, label %1123
+
+1123:                                             ; preds = %1104
+  %1124 = add nsw i32 %1066, -1
+  %1125 = sext i32 %1124 to i64
+  %1126 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %988, i64 %1125
+  %1127 = bitcast %struct.HistogramPair* %1069 to i8*
+  %1128 = bitcast %struct.HistogramPair* %1126 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %1127, i8* align 8 %1128, i64 24, i1 false) #6
+  br label %1143
+
+1129:                                             ; preds = %1104, %1101
+  %1130 = phi double [ %1103, %1101 ], [ %1120, %1104 ]
+  %1131 = load double, double* %1064, align 8
+  %1132 = fcmp olt double %1130, %1131
+  br i1 %1132, label %1133, label %1141
+
+1133:                                             ; preds = %1129
+  %1134 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %988, i64 %1068, i32 2
+  %1135 = load i32, i32* %989, align 8
+  %1136 = load i32, i32* %991, align 4
+  %1137 = load i64, i64* %1037, align 8
+  %1138 = bitcast %struct.HistogramPair* %1069 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %995, i8* align 8 %1138, i64 24, i1 false) #6
+  store i32 %1135, i32* %1070, align 8
+  store i32 %1136, i32* %1075, align 4
+  store double %1131, double* %1134, align 8
+  %1139 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %988, i64 %1068, i32 3
+  %1140 = bitcast double* %1139 to i64*
+  store i64 %1137, i64* %1140, align 8
+  br label %1141
+
+1141:                                             ; preds = %1133, %1129
+  %1142 = add nsw i32 %1067, 1
+  br label %1143
+
+1143:                                             ; preds = %1141, %1123, %1081
+  %1144 = phi i32 [ %1082, %1081 ], [ %1124, %1123 ], [ %1066, %1141 ]
+  %1145 = phi i32 [ %1067, %1081 ], [ %1067, %1123 ], [ %1142, %1141 ]
+  %1146 = icmp slt i32 %1145, %1144
+  br i1 %1146, label %1065, label %1147
+
+1147:                                             ; preds = %1143
+  store i32 %1144, i32* %883, align 8
+  br label %1148
+
+1148:                                             ; preds = %1147, %1061, %982
+  %1149 = phi i32 [ %925, %982 ], [ %943, %1147 ], [ %943, %1061 ]
+  %1150 = phi i32 [ %983, %982 ], [ %1144, %1147 ], [ %983, %1061 ]
+  %1151 = phi i32 [ 0, %982 ], [ %1144, %1147 ], [ %983, %1061 ]
+  %1152 = phi i32 [ %933, %982 ], [ 0, %1147 ], [ 0, %1061 ]
+  %1153 = add nuw nsw i32 %928, 1
+  %1154 = icmp eq i32 %1153, %871
+  br i1 %1154, label %1155, label %924
+
+1155:                                             ; preds = %1148, %932, %924
+  %1156 = phi i32 [ %925, %924 ], [ %1149, %1148 ], [ %925, %932 ]
+  %1157 = load i8*, i8** %895, align 8
+  br label %1158
+
+1158:                                             ; preds = %1155, %901
+  %1159 = phi i32 [ %1156, %1155 ], [ %871, %901 ]
+  %1160 = phi i8* [ %1157, %1155 ], [ %894, %901 ]
+  %1161 = icmp sle i32 %1159, %878
+  %1162 = zext i1 %1161 to i32
+  br label %1163
+
+1163:                                             ; preds = %893, %1158
+  %1164 = phi i32 [ -1431655766, %893 ], [ %1162, %1158 ]
+  %1165 = phi i8* [ null, %893 ], [ %1160, %1158 ]
+  %1166 = phi i1 [ true, %893 ], [ false, %1158 ]
+  call void @WebPSafeFree(i8* %1165) #6
+  call void @WebPSafeFree(i8* nonnull %889) #6
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %881) #6
+  br i1 %1166, label %1573, label %1167
+
+1167:                                             ; preds = %1163
+  %1168 = icmp eq i32 %1164, 0
+  br i1 %1168, label %1369, label %1169
+
+1169:                                             ; preds = %886, %1167
+  %1170 = getelementptr inbounds %struct.VP8LHistogramSet, %struct.VP8LHistogramSet* %7, i64 0, i32 0
+  %1171 = load i32, i32* %1170, align 8
+  %1172 = icmp sgt i32 %1171, 0
+  br i1 %1172, label %1173, label %1192
+
+1173:                                             ; preds = %1169, %1186
+  %1174 = phi i32 [ %1187, %1186 ], [ %1171, %1169 ]
+  %1175 = phi i64 [ %1189, %1186 ], [ 0, %1169 ]
+  %1176 = phi i32 [ %1188, %1186 ], [ 0, %1169 ]
+  %1177 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %1178 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1177, i64 %1175
+  %1179 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1178, align 8
+  %1180 = icmp eq %struct.VP8LHistogram* %1179, null
+  br i1 %1180, label %1186, label %1181
+
+1181:                                             ; preds = %1173
+  %1182 = add i32 %1176, 1
+  %1183 = zext i32 %1176 to i64
+  %1184 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1177, i64 %1183
+  store %struct.VP8LHistogram* %1179, %struct.VP8LHistogram** %1184, align 8
+  %1185 = load i32, i32* %1170, align 8
+  br label %1186
+
+1186:                                             ; preds = %1181, %1173
+  %1187 = phi i32 [ %1174, %1173 ], [ %1185, %1181 ]
+  %1188 = phi i32 [ %1176, %1173 ], [ %1182, %1181 ]
+  %1189 = add nuw nsw i64 %1175, 1
+  %1190 = sext i32 %1187 to i64
+  %1191 = icmp slt i64 %1189, %1190
+  br i1 %1191, label %1173, label %1192
+
+1192:                                             ; preds = %1186, %1169
+  %1193 = phi i32 [ 0, %1169 ], [ %1188, %1186 ]
+  store i32 %1193, i32* %1170, align 8
+  %1194 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %1195 = bitcast %struct.HistoQueue* %11 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %1195) #6
+  %1196 = getelementptr inbounds %struct.HistoQueue, %struct.HistoQueue* %11, i64 0, i32 0
+  %1197 = getelementptr inbounds %struct.HistoQueue, %struct.HistoQueue* %11, i64 0, i32 1
+  %1198 = getelementptr inbounds %struct.HistoQueue, %struct.HistoQueue* %11, i64 0, i32 2
+  %1199 = mul nsw i32 %1193, %1193
+  store i32 0, i32* %1197, align 8
+  store i32 %1199, i32* %1198, align 4
+  %1200 = add nuw nsw i32 %1199, 1
+  %1201 = zext i32 %1200 to i64
+  %1202 = call i8* @WebPSafeMalloc(i64 %1201, i64 24) #6
+  %1203 = bitcast %struct.HistoQueue* %11 to i8**
+  store i8* %1202, i8** %1203, align 8
+  %1204 = icmp eq i8* %1202, null
+  br i1 %1204, label %1572, label %1205
+
+1205:                                             ; preds = %1192
+  %1206 = icmp sgt i32 %1193, 0
+  br i1 %1206, label %1207, label %1367
+
+1207:                                             ; preds = %1205
+  %1208 = sext i32 %1193 to i64
+  %1209 = zext i32 %1193 to i64
+  br label %1213
+
+1210:                                             ; preds = %1239
+  %1211 = load i32, i32* %1197, align 8
+  %1212 = icmp sgt i32 %1211, 0
+  br i1 %1212, label %1247, label %1367
+
+1213:                                             ; preds = %1239, %1207
+  %1214 = phi i64 [ 0, %1207 ], [ %1220, %1239 ]
+  %1215 = phi i64 [ 1, %1207 ], [ %1240, %1239 ]
+  %1216 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %1217 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1216, i64 %1214
+  %1218 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1217, align 8
+  %1219 = icmp ne %struct.VP8LHistogram* %1218, null
+  %1220 = add nuw nsw i64 %1214, 1
+  %1221 = icmp slt i64 %1220, %1208
+  %1222 = and i1 %1221, %1219
+  br i1 %1222, label %1223, label %1239
+
+1223:                                             ; preds = %1213
+  %1224 = trunc i64 %1214 to i32
+  br label %1225
+
+1225:                                             ; preds = %1237, %1223
+  %1226 = phi %struct.VP8LHistogram** [ %1216, %1223 ], [ %1238, %1237 ]
+  %1227 = phi i64 [ %1215, %1223 ], [ %1235, %1237 ]
+  %1228 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1226, i64 %1227
+  %1229 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1228, align 8
+  %1230 = icmp eq %struct.VP8LHistogram* %1229, null
+  br i1 %1230, label %1234, label %1231
+
+1231:                                             ; preds = %1225
+  %1232 = trunc i64 %1227 to i32
+  %1233 = call fastcc double @HistoQueuePush(%struct.HistoQueue* nonnull %11, %struct.VP8LHistogram** %1194, i32 %1224, i32 %1232, double 0.000000e+00) #6
+  br label %1234
+
+1234:                                             ; preds = %1231, %1225
+  %1235 = add nuw nsw i64 %1227, 1
+  %1236 = icmp eq i64 %1235, %1209
+  br i1 %1236, label %1239, label %1237
+
+1237:                                             ; preds = %1234
+  %1238 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  br label %1225
+
+1239:                                             ; preds = %1234, %1213
+  %1240 = add nuw nsw i64 %1215, 1
+  %1241 = icmp eq i64 %1220, %1209
+  br i1 %1241, label %1210, label %1213
+
+1242:                                             ; preds = %1362
+  %1243 = load i32, i32* %1197, align 8
+  br label %1244
+
+1244:                                             ; preds = %1242, %1303
+  %1245 = phi i32 [ %1243, %1242 ], [ %1304, %1303 ]
+  %1246 = icmp sgt i32 %1245, 0
+  br i1 %1246, label %1247, label %1367
+
+1247:                                             ; preds = %1210, %1244
+  %1248 = phi i32 [ %1245, %1244 ], [ %1211, %1210 ]
+  %1249 = load %struct.HistogramPair*, %struct.HistogramPair** %1196, align 8
+  %1250 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %1249, i64 0, i32 0
+  %1251 = load i32, i32* %1250, align 8
+  %1252 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %1249, i64 0, i32 1
+  %1253 = load i32, i32* %1252, align 4
+  %1254 = sext i32 %1253 to i64
+  %1255 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1194, i64 %1254
+  %1256 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1255, align 8
+  %1257 = sext i32 %1251 to i64
+  %1258 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1194, i64 %1257
+  %1259 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1258, align 8
+  call void @VP8LHistogramAdd(%struct.VP8LHistogram* %1256, %struct.VP8LHistogram* %1259, %struct.VP8LHistogram* %1259) #6
+  %1260 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1256, i64 0, i32 6
+  %1261 = load i32, i32* %1260, align 4
+  %1262 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1259, i64 0, i32 6
+  %1263 = load i32, i32* %1262, align 4
+  %1264 = icmp eq i32 %1261, %1263
+  %1265 = select i1 %1264, i32 %1261, i32 -1
+  store i32 %1265, i32* %1262, align 4
+  %1266 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %1249, i64 0, i32 3
+  %1267 = bitcast double* %1266 to i64*
+  %1268 = load i64, i64* %1267, align 8
+  %1269 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1258, align 8
+  %1270 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1269, i64 0, i32 7
+  %1271 = bitcast double* %1270 to i64*
+  store i64 %1268, i64* %1271, align 8
+  %1272 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %1273 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1272, i64 %1254
+  store %struct.VP8LHistogram* null, %struct.VP8LHistogram** %1273, align 8
+  %1274 = load i32, i32* %1170, align 8
+  %1275 = add nsw i32 %1274, -1
+  %1276 = icmp eq i32 %1275, %1253
+  %1277 = icmp sgt i32 %1274, 0
+  %1278 = and i1 %1277, %1276
+  br i1 %1278, label %1279, label %1298
+
+1279:                                             ; preds = %1247
+  %1280 = sext i32 %1274 to i64
+  %1281 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %1282 = add nsw i64 %1280, -1
+  %1283 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1281, i64 %1282
+  %1284 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1283, align 8
+  %1285 = icmp eq %struct.VP8LHistogram* %1284, null
+  br i1 %1285, label %1291, label %1298
+
+1286:                                             ; preds = %1291
+  %1287 = add nsw i64 %1292, -1
+  %1288 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1281, i64 %1287
+  %1289 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1288, align 8
+  %1290 = icmp eq %struct.VP8LHistogram* %1289, null
+  br i1 %1290, label %1291, label %1295
+
+1291:                                             ; preds = %1279, %1286
+  %1292 = phi i64 [ %1287, %1286 ], [ %1282, %1279 ]
+  %1293 = trunc i64 %1292 to i32
+  store i32 %1293, i32* %1170, align 8
+  %1294 = icmp sgt i64 %1292, 0
+  br i1 %1294, label %1286, label %1295
+
+1295:                                             ; preds = %1286, %1291
+  %1296 = trunc i64 %1292 to i32
+  %1297 = icmp sgt i32 %1248, 0
+  br i1 %1297, label %1298, label %1303
+
+1298:                                             ; preds = %1279, %1295, %1247
+  %1299 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %1249, i64 0, i32 2
+  %1300 = bitcast %struct.HistogramPair* %1249 to i8*
+  br label %1309
+
+1301:                                             ; preds = %1345
+  store i32 %1346, i32* %1197, align 8
+  %1302 = load i32, i32* %1170, align 8
+  br label %1303
+
+1303:                                             ; preds = %1301, %1295
+  %1304 = phi i32 [ %1346, %1301 ], [ %1248, %1295 ]
+  %1305 = phi i32 [ %1302, %1301 ], [ %1296, %1295 ]
+  %1306 = icmp sgt i32 %1305, 0
+  br i1 %1306, label %1307, label %1244
+
+1307:                                             ; preds = %1303
+  %1308 = zext i32 %1251 to i64
+  br label %1349
+
+1309:                                             ; preds = %1345, %1298
+  %1310 = phi i32 [ %1248, %1298 ], [ %1346, %1345 ]
+  %1311 = phi i32 [ 0, %1298 ], [ %1347, %1345 ]
+  %1312 = sext i32 %1311 to i64
+  %1313 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %1249, i64 %1312
+  %1314 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %1313, i64 0, i32 0
+  %1315 = load i32, i32* %1314, align 8
+  %1316 = icmp eq i32 %1315, %1251
+  br i1 %1316, label %1325, label %1317
+
+1317:                                             ; preds = %1309
+  %1318 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %1249, i64 %1312, i32 1
+  %1319 = load i32, i32* %1318, align 4
+  %1320 = icmp eq i32 %1319, %1251
+  %1321 = icmp eq i32 %1315, %1253
+  %1322 = or i1 %1321, %1320
+  %1323 = icmp eq i32 %1319, %1253
+  %1324 = or i1 %1323, %1322
+  br i1 %1324, label %1325, label %1331
+
+1325:                                             ; preds = %1317, %1309
+  %1326 = add nsw i32 %1310, -1
+  %1327 = sext i32 %1326 to i64
+  %1328 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %1249, i64 %1327
+  %1329 = bitcast %struct.HistogramPair* %1313 to i8*
+  %1330 = bitcast %struct.HistogramPair* %1328 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %1329, i8* align 8 %1330, i64 24, i1 false) #6
+  br label %1345
+
+1331:                                             ; preds = %1317
+  %1332 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %1249, i64 %1312, i32 2
+  %1333 = load double, double* %1332, align 8
+  %1334 = load double, double* %1299, align 8
+  %1335 = fcmp olt double %1333, %1334
+  br i1 %1335, label %1336, label %1343
+
+1336:                                             ; preds = %1331
+  %1337 = load i32, i32* %1250, align 8
+  %1338 = load i32, i32* %1252, align 4
+  %1339 = load i64, i64* %1267, align 8
+  %1340 = bitcast %struct.HistogramPair* %1313 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %1300, i8* align 8 %1340, i64 24, i1 false) #6
+  store i32 %1337, i32* %1314, align 8
+  store i32 %1338, i32* %1318, align 4
+  store double %1334, double* %1332, align 8
+  %1341 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %1249, i64 %1312, i32 3
+  %1342 = bitcast double* %1341 to i64*
+  store i64 %1339, i64* %1342, align 8
+  br label %1343
+
+1343:                                             ; preds = %1336, %1331
+  %1344 = add nsw i32 %1311, 1
+  br label %1345
+
+1345:                                             ; preds = %1343, %1325
+  %1346 = phi i32 [ %1326, %1325 ], [ %1310, %1343 ]
+  %1347 = phi i32 [ %1311, %1325 ], [ %1344, %1343 ]
+  %1348 = icmp slt i32 %1347, %1346
+  br i1 %1348, label %1309, label %1301
+
+1349:                                             ; preds = %1362, %1307
+  %1350 = phi i32 [ %1305, %1307 ], [ %1363, %1362 ]
+  %1351 = phi i64 [ 0, %1307 ], [ %1364, %1362 ]
+  %1352 = icmp eq i64 %1351, %1308
+  br i1 %1352, label %1362, label %1353
+
+1353:                                             ; preds = %1349
+  %1354 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %1355 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1354, i64 %1351
+  %1356 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1355, align 8
+  %1357 = icmp eq %struct.VP8LHistogram* %1356, null
+  br i1 %1357, label %1362, label %1358
+
+1358:                                             ; preds = %1353
+  %1359 = trunc i64 %1351 to i32
+  %1360 = call fastcc double @HistoQueuePush(%struct.HistoQueue* nonnull %11, %struct.VP8LHistogram** %1354, i32 %1251, i32 %1359, double 0.000000e+00) #6
+  %1361 = load i32, i32* %1170, align 8
+  br label %1362
+
+1362:                                             ; preds = %1358, %1353, %1349
+  %1363 = phi i32 [ %1350, %1349 ], [ %1350, %1353 ], [ %1361, %1358 ]
+  %1364 = add nuw nsw i64 %1351, 1
+  %1365 = sext i32 %1363 to i64
+  %1366 = icmp slt i64 %1364, %1365
+  br i1 %1366, label %1349, label %1242
+
+1367:                                             ; preds = %1244, %1205, %1210
+  %1368 = load i8*, i8** %1203, align 8
+  call void @WebPSafeFree(i8* %1368) #6
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %1195) #6
+  br label %1369
+
+1369:                                             ; preds = %1367, %1167, %869
+  %1370 = getelementptr inbounds %struct.VP8LHistogramSet, %struct.VP8LHistogramSet* %7, i64 0, i32 0
+  %1371 = load i32, i32* %1370, align 8
+  %1372 = icmp sgt i32 %1371, 0
+  br i1 %1372, label %1373, label %1392
+
+1373:                                             ; preds = %1369, %1386
+  %1374 = phi i32 [ %1387, %1386 ], [ %1371, %1369 ]
+  %1375 = phi i64 [ %1389, %1386 ], [ 0, %1369 ]
+  %1376 = phi i32 [ %1388, %1386 ], [ 0, %1369 ]
+  %1377 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %1378 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1377, i64 %1375
+  %1379 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1378, align 8
+  %1380 = icmp eq %struct.VP8LHistogram* %1379, null
+  br i1 %1380, label %1386, label %1381
+
+1381:                                             ; preds = %1373
+  %1382 = add i32 %1376, 1
+  %1383 = zext i32 %1376 to i64
+  %1384 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1377, i64 %1383
+  store %struct.VP8LHistogram* %1379, %struct.VP8LHistogram** %1384, align 8
+  %1385 = load i32, i32* %1370, align 8
+  br label %1386
+
+1386:                                             ; preds = %1381, %1373
+  %1387 = phi i32 [ %1374, %1373 ], [ %1385, %1381 ]
+  %1388 = phi i32 [ %1376, %1373 ], [ %1382, %1381 ]
+  %1389 = add nuw nsw i64 %1375, 1
+  %1390 = sext i32 %1387 to i64
+  %1391 = icmp slt i64 %1389, %1390
+  br i1 %1391, label %1373, label %1392
+
+1392:                                             ; preds = %1386, %1369
+  %1393 = phi i32 [ 0, %1369 ], [ %1388, %1386 ]
+  store i32 %1393, i32* %1370, align 8
+  %1394 = bitcast i16* %9 to i8*
+  %1395 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %156, align 8
+  %1396 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %1397 = getelementptr inbounds %struct.VP8LHistogramSet, %struct.VP8LHistogramSet* %7, i64 0, i32 1
+  %1398 = load i32, i32* %1397, align 4
+  %1399 = icmp sgt i32 %1393, 1
+  %1400 = icmp sgt i32 %1398, 0
+  br i1 %1399, label %1405, label %1401
+
+1401:                                             ; preds = %1392
+  br i1 %1400, label %1402, label %1451
+
+1402:                                             ; preds = %1401
+  %1403 = zext i32 %1398 to i64
+  %1404 = shl nuw nsw i64 %1403, 1
+  call void @llvm.memset.p0i8.i64(i8* align 2 %1394, i8 0, i64 %1404, i1 false) #6
+  br label %1448
+
+1405:                                             ; preds = %1392
+  br i1 %1400, label %1406, label %1451
+
+1406:                                             ; preds = %1405
+  %1407 = bitcast double* %16 to i8*
+  %1408 = zext i32 %1398 to i64
+  %1409 = zext i32 %1393 to i64
+  br label %1410
+
+1410:                                             ; preds = %1443, %1406
+  %1411 = phi i64 [ 0, %1406 ], [ %1446, %1443 ]
+  %1412 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1395, i64 %1411
+  %1413 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1412, align 8
+  %1414 = icmp eq %struct.VP8LHistogram* %1413, null
+  br i1 %1414, label %1415, label %1419
+
+1415:                                             ; preds = %1410
+  %1416 = add nsw i64 %1411, -1
+  %1417 = getelementptr inbounds i16, i16* %9, i64 %1416
+  %1418 = load i16, i16* %1417, align 2
+  br label %1443
+
+1419:                                             ; preds = %1410, %1438
+  %1420 = phi %struct.VP8LHistogram* [ %1440, %1438 ], [ %1413, %1410 ]
+  %1421 = phi i64 [ %1436, %1438 ], [ 0, %1410 ]
+  %1422 = phi double [ %1439, %1438 ], [ 0x47D2CED32A16A1B1, %1410 ]
+  %1423 = phi i32 [ %1435, %1438 ], [ 0, %1410 ]
+  %1424 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1396, i64 %1421
+  %1425 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1424, align 8
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %1407) #6
+  %1426 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1425, i64 0, i32 7
+  %1427 = load double, double* %1426, align 8
+  %1428 = fsub double -0.000000e+00, %1427
+  store double %1428, double* %16, align 8
+  %1429 = call fastcc i32 @GetCombinedHistogramEntropy(%struct.VP8LHistogram* %1425, %struct.VP8LHistogram* %1420, double %1422, double* nonnull %16) #6
+  %1430 = load double, double* %16, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %1407) #6
+  %1431 = icmp eq i64 %1421, 0
+  %1432 = fcmp olt double %1430, %1422
+  %1433 = or i1 %1431, %1432
+  %1434 = trunc i64 %1421 to i32
+  %1435 = select i1 %1433, i32 %1434, i32 %1423
+  %1436 = add nuw nsw i64 %1421, 1
+  %1437 = icmp eq i64 %1436, %1409
+  br i1 %1437, label %1441, label %1438
+
+1438:                                             ; preds = %1419
+  %1439 = select i1 %1433, double %1430, double %1422
+  %1440 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1412, align 8
+  br label %1419
+
+1441:                                             ; preds = %1419
+  %1442 = trunc i32 %1435 to i16
+  br label %1443
+
+1443:                                             ; preds = %1441, %1415
+  %1444 = phi i16 [ %1442, %1441 ], [ %1418, %1415 ]
+  %1445 = getelementptr inbounds i16, i16* %9, i64 %1411
+  store i16 %1444, i16* %1445, align 2
+  %1446 = add nuw nsw i64 %1411, 1
+  %1447 = icmp eq i64 %1446, %1408
+  br i1 %1447, label %1448, label %1410
+
+1448:                                             ; preds = %1443, %1402
+  %1449 = load i32, i32* %1397, align 4
+  %1450 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  br label %1451
+
+1451:                                             ; preds = %1448, %1405, %1401
+  %1452 = phi %struct.VP8LHistogram** [ %1450, %1448 ], [ %1396, %1405 ], [ %1396, %1401 ]
+  %1453 = phi i32 [ %1449, %1448 ], [ %1398, %1405 ], [ %1398, %1401 ]
+  %1454 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1452, align 8
+  %1455 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1454, i64 0, i32 5
+  %1456 = load i32, i32* %1455, align 8
+  %1457 = icmp sgt i32 %1456, 0
+  %1458 = shl i32 4, %1456
+  %1459 = add i32 %1458, 4408
+  %1460 = select i1 %1457, i32 %1459, i32 4408
+  %1461 = sext i32 %1453 to i64
+  %1462 = sext i32 %1460 to i64
+  %1463 = add nsw i64 %1462, 39
+  %1464 = mul i64 %1463, %1461
+  %1465 = add nsw i64 %1464, 16
+  %1466 = bitcast %struct.VP8LHistogramSet* %7 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 1 %1466, i8 0, i64 %1465, i1 false) #6
+  %1467 = getelementptr inbounds %struct.VP8LHistogramSet, %struct.VP8LHistogramSet* %7, i64 1
+  %1468 = bitcast %struct.VP8LHistogram*** %298 to %struct.VP8LHistogramSet**
+  store %struct.VP8LHistogramSet* %1467, %struct.VP8LHistogramSet** %1468, align 8
+  store i32 %1453, i32* %1397, align 4
+  store i32 %1453, i32* %1370, align 8
+  %1469 = icmp sgt i32 %1453, 0
+  br i1 %1469, label %1470, label %1549
+
+1470:                                             ; preds = %1451
+  %1471 = bitcast %struct.VP8LHistogramSet* %1467 to i8*
+  %1472 = shl nsw i64 %1461, 3
+  %1473 = getelementptr inbounds i8, i8* %1471, i64 %1472
+  %1474 = bitcast %struct.VP8LHistogramSet* %1467 to %struct.VP8LHistogram**
+  %1475 = ptrtoint i8* %1473 to i64
+  %1476 = add i64 %1475, 31
+  %1477 = and i64 %1476, -32
+  %1478 = inttoptr i64 %1477 to i8*
+  %1479 = inttoptr i64 %1477 to %struct.VP8LHistogram*
+  store %struct.VP8LHistogram* %1479, %struct.VP8LHistogram** %1474, align 8
+  %1480 = getelementptr inbounds i8, i8* %1478, i64 3288
+  %1481 = inttoptr i64 %1477 to i8**
+  store i8* %1480, i8** %1481, align 32
+  %1482 = load i32, i32* %1397, align 4
+  %1483 = icmp sgt i32 %1482, 1
+  br i1 %1483, label %1484, label %1504
+
+1484:                                             ; preds = %1470, %1484
+  %1485 = phi i64 [ %1500, %1484 ], [ 1, %1470 ]
+  %1486 = phi i8* [ %1492, %1484 ], [ %1478, %1470 ]
+  %1487 = getelementptr inbounds i8, i8* %1486, i64 %1462
+  %1488 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %1489 = ptrtoint i8* %1487 to i64
+  %1490 = add i64 %1489, 31
+  %1491 = and i64 %1490, -32
+  %1492 = inttoptr i64 %1491 to i8*
+  %1493 = inttoptr i64 %1491 to %struct.VP8LHistogram*
+  %1494 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1488, i64 %1485
+  store %struct.VP8LHistogram* %1493, %struct.VP8LHistogram** %1494, align 8
+  %1495 = getelementptr inbounds i8, i8* %1492, i64 3288
+  %1496 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %1497 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1496, i64 %1485
+  %1498 = bitcast %struct.VP8LHistogram** %1497 to i8***
+  %1499 = load i8**, i8*** %1498, align 8
+  store i8* %1495, i8** %1499, align 8
+  %1500 = add nuw nsw i64 %1485, 1
+  %1501 = load i32, i32* %1397, align 4
+  %1502 = sext i32 %1501 to i64
+  %1503 = icmp slt i64 %1500, %1502
+  br i1 %1503, label %1484, label %1504
+
+1504:                                             ; preds = %1484, %1470
+  %1505 = zext i32 %1453 to i64
+  %1506 = add nsw i64 %1505, -1
+  %1507 = and i64 %1505, 3
+  %1508 = icmp ult i64 %1506, 3
+  br i1 %1508, label %1536, label %1509
+
+1509:                                             ; preds = %1504
+  %1510 = sub nsw i64 %1505, %1507
+  br label %1511
+
+1511:                                             ; preds = %1511, %1509
+  %1512 = phi i64 [ 0, %1509 ], [ %1533, %1511 ]
+  %1513 = phi i64 [ %1510, %1509 ], [ %1534, %1511 ]
+  %1514 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %1515 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1514, i64 %1512
+  %1516 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1515, align 8
+  %1517 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1516, i64 0, i32 5
+  store i32 %1456, i32* %1517, align 8
+  %1518 = or i64 %1512, 1
+  %1519 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %1520 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1519, i64 %1518
+  %1521 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1520, align 8
+  %1522 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1521, i64 0, i32 5
+  store i32 %1456, i32* %1522, align 8
+  %1523 = or i64 %1512, 2
+  %1524 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %1525 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1524, i64 %1523
+  %1526 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1525, align 8
+  %1527 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1526, i64 0, i32 5
+  store i32 %1456, i32* %1527, align 8
+  %1528 = or i64 %1512, 3
+  %1529 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %1530 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1529, i64 %1528
+  %1531 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1530, align 8
+  %1532 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1531, i64 0, i32 5
+  store i32 %1456, i32* %1532, align 8
+  %1533 = add nuw nsw i64 %1512, 4
+  %1534 = add i64 %1513, -4
+  %1535 = icmp eq i64 %1534, 0
+  br i1 %1535, label %1536, label %1511
+
+1536:                                             ; preds = %1511, %1504
+  %1537 = phi i64 [ 0, %1504 ], [ %1533, %1511 ]
+  %1538 = icmp eq i64 %1507, 0
+  br i1 %1538, label %1549, label %1539
+
+1539:                                             ; preds = %1536, %1539
+  %1540 = phi i64 [ %1546, %1539 ], [ %1537, %1536 ]
+  %1541 = phi i64 [ %1547, %1539 ], [ %1507, %1536 ]
+  %1542 = load %struct.VP8LHistogram**, %struct.VP8LHistogram*** %298, align 8
+  %1543 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1542, i64 %1540
+  %1544 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1543, align 8
+  %1545 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1544, i64 0, i32 5
+  store i32 %1456, i32* %1545, align 8
+  %1546 = add nuw nsw i64 %1540, 1
+  %1547 = add i64 %1541, -1
+  %1548 = icmp eq i64 %1547, 0
+  br i1 %1548, label %1549, label %1539, !llvm.loop !13
+
+1549:                                             ; preds = %1536, %1539, %1451
+  store i32 %1393, i32* %1370, align 8
+  br i1 %1400, label %1550, label %1573
+
+1550:                                             ; preds = %1549
+  %1551 = zext i32 %1398 to i64
+  br label %1552
+
+1552:                                             ; preds = %1569, %1550
+  %1553 = phi i64 [ 0, %1550 ], [ %1570, %1569 ]
+  %1554 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1395, i64 %1553
+  %1555 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1554, align 8
+  %1556 = icmp eq %struct.VP8LHistogram* %1555, null
+  br i1 %1556, label %1569, label %1557
+
+1557:                                             ; preds = %1552
+  %1558 = getelementptr inbounds i16, i16* %9, i64 %1553
+  %1559 = load i16, i16* %1558, align 2
+  %1560 = zext i16 %1559 to i64
+  %1561 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1396, i64 %1560
+  %1562 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %1561, align 8
+  call void @VP8LHistogramAdd(%struct.VP8LHistogram* nonnull %1555, %struct.VP8LHistogram* %1562, %struct.VP8LHistogram* %1562) #6
+  %1563 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1555, i64 0, i32 6
+  %1564 = load i32, i32* %1563, align 4
+  %1565 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1562, i64 0, i32 6
+  %1566 = load i32, i32* %1565, align 4
+  %1567 = icmp eq i32 %1564, %1566
+  %1568 = select i1 %1567, i32 %1564, i32 -1
+  store i32 %1568, i32* %1565, align 4
+  br label %1569
+
+1569:                                             ; preds = %1557, %1552
+  %1570 = add nuw nsw i64 %1553, 1
+  %1571 = icmp eq i64 %1570, %1551
+  br i1 %1571, label %1573, label %1552
+
+1572:                                             ; preds = %1192
+  call void @WebPSafeFree(i8* null) #6
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %1195) #6
+  br label %1573
+
+1573:                                             ; preds = %1569, %1572, %892, %1163, %1549, %139
+  %1574 = phi i32 [ 0, %139 ], [ 1, %1549 ], [ 0, %1163 ], [ 0, %892 ], [ 0, %1572 ], [ 1, %1569 ]
+  call void @WebPSafeFree(i8* %39) #6
+  call void @WebPSafeFree(i8* %145) #6
+  ret i32 %1574
+}
+
+declare void @VP8LRefsCursorNextBlock(%struct.VP8LRefsCursor*) local_unnamed_addr #3
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #1
+
+; Function Attrs: nounwind readnone speculatable
+declare i32 @llvm.ctlz.i32(i32, i1 immarg) #4
+
+; Function Attrs: nounwind ssp uwtable
+define internal fastcc void @UpdateHistogramCost(%struct.VP8LHistogram*) unnamed_addr #2 {
+  %2 = alloca i32, align 4
+  %3 = alloca i32, align 4
+  %4 = alloca i32, align 4
+  %5 = bitcast i32* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %5) #6
+  store i32 -1431655766, i32* %2, align 4
+  %6 = bitcast i32* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %6) #6
+  store i32 -1431655766, i32* %3, align 4
+  %7 = bitcast i32* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %7) #6
+  store i32 -1431655766, i32* %4, align 4
+  %8 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 3, i64 0
+  %9 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 3
+  %10 = call fastcc double @PopulationCost(i32* %8, i32 256, i32* nonnull %2, i8* %9)
+  %11 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 4, i64 0
+  %12 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 4
+  %13 = call fastcc double @PopulationCost(i32* %11, i32 40, i32* null, i8* %12)
+  %14 = load double (i32*, i32)*, double (i32*, i32)** @VP8LExtraCost, align 8
+  %15 = call double %14(i32* %11, i32 40) #6
+  %16 = fadd double %13, %15
+  %17 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 5
+  %18 = load i32, i32* %17, align 8
+  %19 = icmp sgt i32 %18, 0
+  %20 = shl i32 1, %18
+  %21 = add i32 %20, 280
+  %22 = select i1 %19, i32 %21, i32 280
+  %23 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 0
+  %24 = load i32*, i32** %23, align 8
+  %25 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 0
+  %26 = call fastcc double @PopulationCost(i32* %24, i32 %22, i32* null, i8* %25)
+  %27 = load double (i32*, i32)*, double (i32*, i32)** @VP8LExtraCost, align 8
+  %28 = load i32*, i32** %23, align 8
+  %29 = getelementptr inbounds i32, i32* %28, i64 256
+  %30 = call double %27(i32* %29, i32 24) #6
+  %31 = fadd double %26, %30
+  %32 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 8
+  store double %31, double* %32, align 8
+  %33 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 1, i64 0
+  %34 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 1
+  %35 = call fastcc double @PopulationCost(i32* %33, i32 256, i32* nonnull %3, i8* %34)
+  %36 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 9
+  store double %35, double* %36, align 8
+  %37 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 2, i64 0
+  %38 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 2
+  %39 = call fastcc double @PopulationCost(i32* %37, i32 256, i32* nonnull %4, i8* %38)
+  %40 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 10
+  store double %39, double* %40, align 8
+  %41 = load double, double* %32, align 8
+  %42 = load double, double* %36, align 8
+  %43 = fadd double %41, %42
+  %44 = fadd double %39, %43
+  %45 = fadd double %10, %44
+  %46 = fadd double %16, %45
+  %47 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 7
+  store double %46, double* %47, align 8
+  %48 = load i32, i32* %2, align 4
+  %49 = load i32, i32* %3, align 4
+  %50 = or i32 %49, %48
+  %51 = load i32, i32* %4, align 4
+  %52 = or i32 %50, %51
+  %53 = icmp eq i32 %52, -1
+  br i1 %53, label %59, label %54
+
+54:                                               ; preds = %1
+  %55 = shl i32 %48, 24
+  %56 = shl i32 %49, 16
+  %57 = or i32 %56, %55
+  %58 = or i32 %57, %51
+  br label %59
+
+59:                                               ; preds = %1, %54
+  %60 = phi i32 [ %58, %54 ], [ -1, %1 ]
+  %61 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 6
+  store i32 %60, i32* %61, align 4
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %7) #6
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %6) #6
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %5) #6
+  ret void
+}
+
+declare void @VP8LHistogramAdd(%struct.VP8LHistogram*, %struct.VP8LHistogram*, %struct.VP8LHistogram*) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define internal fastcc i32 @GetCombinedHistogramEntropy(%struct.VP8LHistogram*, %struct.VP8LHistogram*, double, double* nocapture) unnamed_addr #2 {
+  %5 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 5
+  %6 = load i32, i32* %5, align 8
+  %7 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 0
+  %8 = load i32*, i32** %7, align 8
+  %9 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 0
+  %10 = load i32*, i32** %9, align 8
+  %11 = icmp sgt i32 %6, 0
+  %12 = shl i32 1, %6
+  %13 = add i32 %12, 280
+  %14 = select i1 %11, i32 %13, i32 280
+  %15 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 0
+  %16 = load i8, i8* %15, align 8
+  %17 = zext i8 %16 to i32
+  %18 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 0
+  %19 = load i8, i8* %18, align 8
+  %20 = zext i8 %19 to i32
+  %21 = tail call fastcc double @GetCombinedEntropy(i32* %8, i32* %10, i32 %14, i32 %17, i32 %20, i32 0)
+  %22 = load double, double* %3, align 8
+  %23 = fadd double %21, %22
+  store double %23, double* %3, align 8
+  %24 = load double (i32*, i32*, i32)*, double (i32*, i32*, i32)** @VP8LExtraCostCombined, align 8
+  %25 = load i32*, i32** %7, align 8
+  %26 = getelementptr inbounds i32, i32* %25, i64 256
+  %27 = load i32*, i32** %9, align 8
+  %28 = getelementptr inbounds i32, i32* %27, i64 256
+  %29 = tail call double %24(i32* %26, i32* %28, i32 24) #6
+  %30 = load double, double* %3, align 8
+  %31 = fadd double %29, %30
+  store double %31, double* %3, align 8
+  %32 = fcmp ogt double %31, %2
+  br i1 %32, label %108, label %33
+
+33:                                               ; preds = %4
+  %34 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 6
+  %35 = load i32, i32* %34, align 4
+  %36 = icmp eq i32 %35, -1
+  br i1 %36, label %50, label %37
+
+37:                                               ; preds = %33
+  %38 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 6
+  %39 = load i32, i32* %38, align 4
+  %40 = icmp eq i32 %35, %39
+  br i1 %40, label %41, label %50
+
+41:                                               ; preds = %37
+  %42 = lshr i32 %35, 24
+  %43 = trunc i32 %42 to i8
+  switch i8 %43, label %50 [
+    i8 -1, label %44
+    i8 0, label %44
+  ]
+
+44:                                               ; preds = %41, %41
+  %45 = lshr i32 %35, 16
+  %46 = trunc i32 %45 to i8
+  switch i8 %46, label %50 [
+    i8 -1, label %47
+    i8 0, label %47
+  ]
+
+47:                                               ; preds = %44, %44
+  %48 = trunc i32 %35 to i8
+  switch i8 %48, label %50 [
+    i8 -1, label %49
+    i8 0, label %49
+  ]
+
+49:                                               ; preds = %47, %47
+  br label %50
+
+50:                                               ; preds = %49, %41, %44, %47, %33, %37
+  %51 = phi i32 [ 0, %37 ], [ 0, %33 ], [ 1, %49 ], [ 0, %47 ], [ 0, %44 ], [ 0, %41 ]
+  %52 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 1, i64 0
+  %53 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 1, i64 0
+  %54 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 1
+  %55 = load i8, i8* %54, align 1
+  %56 = zext i8 %55 to i32
+  %57 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 1
+  %58 = load i8, i8* %57, align 1
+  %59 = zext i8 %58 to i32
+  %60 = tail call fastcc double @GetCombinedEntropy(i32* %52, i32* %53, i32 256, i32 %56, i32 %59, i32 %51)
+  %61 = load double, double* %3, align 8
+  %62 = fadd double %60, %61
+  store double %62, double* %3, align 8
+  %63 = fcmp ogt double %62, %2
+  br i1 %63, label %108, label %64
+
+64:                                               ; preds = %50
+  %65 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 2, i64 0
+  %66 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 2, i64 0
+  %67 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 2
+  %68 = load i8, i8* %67, align 2
+  %69 = zext i8 %68 to i32
+  %70 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 2
+  %71 = load i8, i8* %70, align 2
+  %72 = zext i8 %71 to i32
+  %73 = tail call fastcc double @GetCombinedEntropy(i32* %65, i32* %66, i32 256, i32 %69, i32 %72, i32 %51)
+  %74 = load double, double* %3, align 8
+  %75 = fadd double %73, %74
+  store double %75, double* %3, align 8
+  %76 = fcmp ogt double %75, %2
+  br i1 %76, label %108, label %77
+
+77:                                               ; preds = %64
+  %78 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 3, i64 0
+  %79 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 3, i64 0
+  %80 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 3
+  %81 = load i8, i8* %80, align 1
+  %82 = zext i8 %81 to i32
+  %83 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 3
+  %84 = load i8, i8* %83, align 1
+  %85 = zext i8 %84 to i32
+  %86 = tail call fastcc double @GetCombinedEntropy(i32* %78, i32* %79, i32 256, i32 %82, i32 %85, i32 %51)
+  %87 = load double, double* %3, align 8
+  %88 = fadd double %86, %87
+  store double %88, double* %3, align 8
+  %89 = fcmp ogt double %88, %2
+  br i1 %89, label %108, label %90
+
+90:                                               ; preds = %77
+  %91 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 4, i64 0
+  %92 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 4, i64 0
+  %93 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %0, i64 0, i32 11, i64 4
+  %94 = load i8, i8* %93, align 4
+  %95 = zext i8 %94 to i32
+  %96 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %1, i64 0, i32 11, i64 4
+  %97 = load i8, i8* %96, align 4
+  %98 = zext i8 %97 to i32
+  %99 = tail call fastcc double @GetCombinedEntropy(i32* %91, i32* %92, i32 40, i32 %95, i32 %98, i32 0)
+  %100 = load double, double* %3, align 8
+  %101 = fadd double %99, %100
+  store double %101, double* %3, align 8
+  %102 = load double (i32*, i32*, i32)*, double (i32*, i32*, i32)** @VP8LExtraCostCombined, align 8
+  %103 = tail call double %102(i32* %91, i32* %92, i32 40) #6
+  %104 = load double, double* %3, align 8
+  %105 = fadd double %103, %104
+  store double %105, double* %3, align 8
+  %106 = fcmp ule double %105, %2
+  %107 = zext i1 %106 to i32
+  br label %108
+
+108:                                              ; preds = %90, %77, %64, %50, %4
+  %109 = phi i32 [ 0, %4 ], [ 0, %50 ], [ 0, %64 ], [ 0, %77 ], [ %107, %90 ]
+  ret i32 %109
+}
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define internal fastcc double @GetCombinedEntropy(i32*, i32*, i32, i32, i32, i32) unnamed_addr #5 {
+  %7 = alloca %struct.VP8LStreaks, align 4
+  %8 = alloca %struct.VP8LBitEntropy, align 8
+  %9 = bitcast %struct.VP8LStreaks* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %9) #6
+  %10 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %7, i64 0, i32 0, i64 0
+  %11 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %7, i64 0, i32 0, i64 1
+  %12 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %7, i64 0, i32 1, i64 0, i64 0
+  %13 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %7, i64 0, i32 1, i64 0, i64 1
+  %14 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %7, i64 0, i32 1, i64 1, i64 0
+  %15 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %7, i64 0, i32 1, i64 1, i64 1
+  %16 = icmp eq i32 %5, 0
+  %17 = bitcast %struct.VP8LStreaks* %7 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 4 %17, i8 -86, i64 24, i1 false)
+  br i1 %16, label %28, label %18
+
+18:                                               ; preds = %6
+  %19 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %7, i64 0, i32 0, i64 1
+  %20 = bitcast i32* %19 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 4 %20, i8 0, i64 20, i1 false)
+  store i32 1, i32* %14, align 4
+  store i32 1, i32* %10, align 4
+  %21 = add nsw i32 %2, -1
+  store i32 %21, i32* %13, align 4
+  %22 = sitofp i32 %21 to double
+  %23 = fmul double %22, 2.343750e-01
+  %24 = fadd double %23, 1.562500e+00
+  %25 = fadd double %24, 4.790000e+01
+  %26 = fadd double %25, 0.000000e+00
+  %27 = fadd double %26, 3.281250e+00
+  br label %106
+
+28:                                               ; preds = %6
+  %29 = bitcast %struct.VP8LBitEntropy* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %29) #6
+  %30 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %8, i64 0, i32 0
+  store double 0xFFFFFFFFFFFFFFFF, double* %30, align 8
+  %31 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %8, i64 0, i32 1
+  %32 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %8, i64 0, i32 2
+  %33 = getelementptr inbounds %struct.VP8LBitEntropy, %struct.VP8LBitEntropy* %8, i64 0, i32 3
+  %34 = icmp eq i32 %3, 0
+  %35 = icmp ne i32 %4, 0
+  %36 = bitcast i32* %31 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %36, i8 -86, i64 16, i1 false)
+  br i1 %34, label %42, label %37
+
+37:                                               ; preds = %28
+  br i1 %35, label %38, label %40
+
+38:                                               ; preds = %37
+  %39 = load void (i32*, i32*, i32, %struct.VP8LBitEntropy*, %struct.VP8LStreaks*)*, void (i32*, i32*, i32, %struct.VP8LBitEntropy*, %struct.VP8LStreaks*)** @VP8LGetCombinedEntropyUnrefined, align 8
+  call void %39(i32* %0, i32* %1, i32 %2, %struct.VP8LBitEntropy* nonnull %8, %struct.VP8LStreaks* nonnull %7) #6
+  br label %51
+
+40:                                               ; preds = %37
+  %41 = load void (i32*, i32, %struct.VP8LBitEntropy*, %struct.VP8LStreaks*)*, void (i32*, i32, %struct.VP8LBitEntropy*, %struct.VP8LStreaks*)** @VP8LGetEntropyUnrefined, align 8
+  call void %41(i32* %0, i32 %2, %struct.VP8LBitEntropy* nonnull %8, %struct.VP8LStreaks* nonnull %7) #6
+  br label %51
+
+42:                                               ; preds = %28
+  br i1 %35, label %43, label %45
+
+43:                                               ; preds = %42
+  %44 = load void (i32*, i32, %struct.VP8LBitEntropy*, %struct.VP8LStreaks*)*, void (i32*, i32, %struct.VP8LBitEntropy*, %struct.VP8LStreaks*)** @VP8LGetEntropyUnrefined, align 8
+  call void %44(i32* %1, i32 %2, %struct.VP8LBitEntropy* nonnull %8, %struct.VP8LStreaks* nonnull %7) #6
+  br label %51
+
+45:                                               ; preds = %42
+  %46 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %7, i64 0, i32 0, i64 1
+  %47 = bitcast i32* %46 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 4 %47, i8 0, i64 20, i1 false)
+  store i32 1, i32* %10, align 4
+  %48 = icmp sgt i32 %2, 3
+  %49 = zext i1 %48 to i64
+  %50 = getelementptr inbounds %struct.VP8LStreaks, %struct.VP8LStreaks* %7, i64 0, i32 1, i64 0, i64 %49
+  store i32 %2, i32* %50, align 4
+  call void @VP8LBitEntropyInit(%struct.VP8LBitEntropy* nonnull %8) #6
+  br label %51
+
+51:                                               ; preds = %43, %45, %38, %40
+  %52 = load i32, i32* %32, align 4
+  %53 = icmp slt i32 %52, 5
+  br i1 %53, label %54, label %65
+
+54:                                               ; preds = %51
+  %55 = icmp slt i32 %52, 2
+  br i1 %55, label %79, label %56
+
+56:                                               ; preds = %54
+  switch i32 %52, label %64 [
+    i32 2, label %57
+    i32 3, label %65
+  ]
+
+57:                                               ; preds = %56
+  %58 = load i32, i32* %31, align 8
+  %59 = uitofp i32 %58 to double
+  %60 = fmul double %59, 0x3FEFAE147AE147AE
+  %61 = load double, double* %30, align 8
+  %62 = fmul double %61, 1.000000e-02
+  %63 = fadd double %60, %62
+  br label %79
+
+64:                                               ; preds = %56
+  br label %65
+
+65:                                               ; preds = %64, %56, %51
+  %66 = phi double [ 0x3FE6666666666666, %64 ], [ 0x3FEE666666666666, %56 ], [ 6.270000e-01, %51 ]
+  %67 = load i32, i32* %31, align 8
+  %68 = shl i32 %67, 1
+  %69 = load i32, i32* %33, align 8
+  %70 = sub i32 %68, %69
+  %71 = uitofp i32 %70 to double
+  %72 = fmul double %66, %71
+  %73 = fsub double 1.000000e+00, %66
+  %74 = load double, double* %30, align 8
+  %75 = fmul double %73, %74
+  %76 = fadd double %75, %72
+  %77 = fcmp olt double %74, %76
+  %78 = select i1 %77, double %76, double %74
+  br label %79
+
+79:                                               ; preds = %54, %57, %65
+  %80 = phi double [ %63, %57 ], [ %78, %65 ], [ 0.000000e+00, %54 ]
+  %81 = load i32, i32* %10, align 4
+  %82 = sitofp i32 %81 to double
+  %83 = fmul double %82, 1.562500e+00
+  %84 = load i32, i32* %13, align 4
+  %85 = sitofp i32 %84 to double
+  %86 = fmul double %85, 2.343750e-01
+  %87 = fadd double %83, %86
+  %88 = fadd double %87, 4.790000e+01
+  %89 = load i32, i32* %11, align 4
+  %90 = sitofp i32 %89 to double
+  %91 = fmul double %90, 0x4004A00000000000
+  %92 = load i32, i32* %15, align 4
+  %93 = sitofp i32 %92 to double
+  %94 = fmul double %93, 7.031250e-01
+  %95 = fadd double %91, %94
+  %96 = fadd double %88, %95
+  %97 = load i32, i32* %12, align 4
+  %98 = sitofp i32 %97 to double
+  %99 = fmul double %98, 0x3FFCC00000000000
+  %100 = fadd double %99, %96
+  %101 = load i32, i32* %14, align 4
+  %102 = sitofp i32 %101 to double
+  %103 = fmul double %102, 3.281250e+00
+  %104 = fadd double %103, %100
+  %105 = fadd double %80, %104
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %29) #6
+  br label %106
+
+106:                                              ; preds = %79, %18
+  %107 = phi double [ %27, %18 ], [ %105, %79 ]
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %9) #6
+  ret double %107
+}
+
+declare void @VP8LBitEntropyInit(%struct.VP8LBitEntropy*) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define internal fastcc double @HistoQueuePush(%struct.HistoQueue* nocapture, %struct.VP8LHistogram** nocapture readonly, i32, i32, double) unnamed_addr #2 {
+  %6 = alloca %struct.HistogramPair, align 8
+  %7 = bitcast %struct.HistogramPair* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %7) #6
+  %8 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %6, i64 0, i32 0
+  store i32 -1431655766, i32* %8, align 8
+  %9 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %6, i64 0, i32 1
+  store i32 -1431655766, i32* %9, align 4
+  %10 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %6, i64 0, i32 2
+  %11 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %6, i64 0, i32 3
+  %12 = getelementptr inbounds %struct.HistoQueue, %struct.HistoQueue* %0, i64 0, i32 1
+  %13 = bitcast double* %10 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %13, i8 -1, i64 16, i1 false)
+  %14 = load i32, i32* %12, align 8
+  %15 = getelementptr inbounds %struct.HistoQueue, %struct.HistoQueue* %0, i64 0, i32 2
+  %16 = load i32, i32* %15, align 4
+  %17 = icmp eq i32 %14, %16
+  br i1 %17, label %70, label %18
+
+18:                                               ; preds = %5
+  %19 = icmp sgt i32 %2, %3
+  %20 = select i1 %19, i32 %2, i32 %3
+  %21 = select i1 %19, i32 %3, i32 %2
+  store i32 %21, i32* %8, align 8
+  store i32 %20, i32* %9, align 4
+  %22 = sext i32 %21 to i64
+  %23 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1, i64 %22
+  %24 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %23, align 8
+  %25 = sext i32 %20 to i64
+  %26 = getelementptr inbounds %struct.VP8LHistogram*, %struct.VP8LHistogram** %1, i64 %25
+  %27 = load %struct.VP8LHistogram*, %struct.VP8LHistogram** %26, align 8
+  %28 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %24, i64 0, i32 7
+  %29 = load double, double* %28, align 8
+  %30 = getelementptr inbounds %struct.VP8LHistogram, %struct.VP8LHistogram* %27, i64 0, i32 7
+  %31 = load double, double* %30, align 8
+  %32 = fadd double %29, %31
+  store double 0.000000e+00, double* %11, align 8
+  %33 = fadd double %32, %4
+  %34 = call fastcc i32 @GetCombinedHistogramEntropy(%struct.VP8LHistogram* %24, %struct.VP8LHistogram* %27, double %33, double* %11) #6
+  %35 = load double, double* %11, align 8
+  %36 = fsub double %35, %32
+  store double %36, double* %10, align 8
+  %37 = fcmp ult double %36, %4
+  br i1 %37, label %38, label %70
+
+38:                                               ; preds = %18
+  %39 = getelementptr inbounds %struct.HistoQueue, %struct.HistoQueue* %0, i64 0, i32 0
+  %40 = load %struct.HistogramPair*, %struct.HistogramPair** %39, align 8
+  %41 = load i32, i32* %12, align 8
+  %42 = add nsw i32 %41, 1
+  store i32 %42, i32* %12, align 8
+  %43 = sext i32 %41 to i64
+  %44 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %40, i64 %43
+  %45 = bitcast %struct.HistogramPair* %44 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %45, i8* nonnull align 8 %7, i64 24, i1 false)
+  %46 = load %struct.HistogramPair*, %struct.HistogramPair** %39, align 8
+  %47 = load i32, i32* %12, align 8
+  %48 = add nsw i32 %47, -1
+  %49 = sext i32 %48 to i64
+  %50 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %46, i64 %49
+  %51 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %46, i64 %49, i32 2
+  %52 = load double, double* %51, align 8
+  %53 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %46, i64 0, i32 2
+  %54 = load double, double* %53, align 8
+  %55 = fcmp olt double %52, %54
+  br i1 %55, label %56, label %70
+
+56:                                               ; preds = %38
+  %57 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %46, i64 0, i32 0
+  %58 = load i32, i32* %57, align 8
+  %59 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %46, i64 0, i32 1
+  %60 = load i32, i32* %59, align 4
+  %61 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %46, i64 0, i32 3
+  %62 = bitcast double* %61 to i64*
+  %63 = load i64, i64* %62, align 8
+  %64 = bitcast %struct.HistogramPair* %46 to i8*
+  %65 = bitcast %struct.HistogramPair* %50 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %64, i8* align 8 %65, i64 24, i1 false) #6
+  %66 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %50, i64 0, i32 0
+  store i32 %58, i32* %66, align 8
+  %67 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %46, i64 %49, i32 1
+  store i32 %60, i32* %67, align 4
+  store double %54, double* %51, align 8
+  %68 = getelementptr inbounds %struct.HistogramPair, %struct.HistogramPair* %46, i64 %49, i32 3
+  %69 = bitcast double* %68 to i64*
+  store i64 %63, i64* %69, align 8
+  br label %70
+
+70:                                               ; preds = %56, %38, %18, %5
+  %71 = phi double [ 0.000000e+00, %5 ], [ 0.000000e+00, %18 ], [ %36, %38 ], [ %36, %56 ]
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %7) #6
+  ret double %71
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memmove.p0i8.p0i8.i64(i8* nocapture, i8* nocapture readonly, i64, i1 immarg) #1
+
+attributes #0 = { norecurse nounwind readnone ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { argmemonly nounwind }
+attributes #2 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind readnone speculatable }
+attributes #5 = { inlinehint nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{i32 0, i32 33}
+!3 = distinct !{!3, !4}
+!4 = !{!"llvm.loop.unroll.disable"}
+!5 = distinct !{!5, !4}
+!6 = distinct !{!6, !4}
+!7 = distinct !{!7, !4}
+!8 = distinct !{!8, !9}
+!9 = !{!"llvm.loop.isvectorized", i32 1}
+!10 = distinct !{!10, !4}
+!11 = distinct !{!11, !12, !9}
+!12 = !{!"llvm.loop.unroll.runtime.disable"}
+!13 = distinct !{!13, !4}

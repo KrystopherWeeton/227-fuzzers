@@ -1,0 +1,1974 @@
+; ModuleID = '../../base/sampling_heap_profiler/poisson_allocation_sampler.cc'
+source_filename = "../../base/sampling_heap_profiler/poisson_allocation_sampler.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.base::PoissonAllocationSampler" = type { %"class.base::Lock", %"class.std::__1::vector" }
+%"class.base::Lock" = type { %"class.base::internal::LockImpl" }
+%"class.base::internal::LockImpl" = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.std::__1::__compressed_pair" }
+%"class.base::PoissonAllocationSampler::SamplesObserver" = type { i32 (...)** }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"class.base::PoissonAllocationSampler::SamplesObserver"** }
+%"struct.std::__1::atomic.12" = type { %"struct.std::__1::__atomic_base.13" }
+%"struct.std::__1::__atomic_base.13" = type { %"struct.std::__1::__cxx_atomic_impl.14" }
+%"struct.std::__1::__cxx_atomic_impl.14" = type { %"struct.std::__1::__cxx_atomic_base_impl.15" }
+%"struct.std::__1::__cxx_atomic_base_impl.15" = type { %"class.base::LockFreeAddressHashSet"* }
+%"class.base::LockFreeAddressHashSet" = type { %"class.std::__1::vector.1", i32, i64 }
+%"class.std::__1::vector.1" = type { %"class.std::__1::__vector_base.2" }
+%"class.std::__1::__vector_base.2" = type { %"struct.std::__1::atomic"*, %"struct.std::__1::atomic"*, %"class.std::__1::__compressed_pair.7" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { %"struct.base::LockFreeAddressHashSet::Node"* }
+%"struct.base::LockFreeAddressHashSet::Node" = type { %"struct.std::__1::atomic.3", %"struct.base::LockFreeAddressHashSet::Node"* }
+%"struct.std::__1::atomic.3" = type { %"struct.std::__1::__atomic_base.4" }
+%"struct.std::__1::__atomic_base.4" = type { %"struct.std::__1::__cxx_atomic_impl.5" }
+%"struct.std::__1::__cxx_atomic_impl.5" = type { %"struct.std::__1::__cxx_atomic_base_impl.6" }
+%"struct.std::__1::__cxx_atomic_base_impl.6" = type { i8* }
+%"class.std::__1::__compressed_pair.7" = type { %"struct.std::__1::__compressed_pair_elem.8" }
+%"struct.std::__1::__compressed_pair_elem.8" = type { %"struct.std::__1::atomic"* }
+%"struct.base::allocator::AllocatorDispatch" = type { i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i8*)*, i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i8*)*, i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i64, i8*)*, i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i64, i8*)*, i8* (%"struct.base::allocator::AllocatorDispatch"*, i8*, i64, i8*)*, void (%"struct.base::allocator::AllocatorDispatch"*, i8*, i8*)*, i64 (%"struct.base::allocator::AllocatorDispatch"*, i8*, i8*)*, i32 (%"struct.base::allocator::AllocatorDispatch"*, i64, i8**, i32, i8*)*, void (%"struct.base::allocator::AllocatorDispatch"*, i8**, i32, i8*)*, void (%"struct.base::allocator::AllocatorDispatch"*, i8*, i64, i8*)*, i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i64, i8*)*, i8* (%"struct.base::allocator::AllocatorDispatch"*, i8*, i64, i64, i8*)*, void (%"struct.base::allocator::AllocatorDispatch"*, i8*, i8*)*, %"struct.base::allocator::AllocatorDispatch"* }
+%"struct.std::__1::atomic.16" = type { %"struct.std::__1::__atomic_base.17" }
+%"struct.std::__1::__atomic_base.17" = type { %"struct.std::__1::__cxx_atomic_impl.18" }
+%"struct.std::__1::__cxx_atomic_impl.18" = type { %"struct.std::__1::__cxx_atomic_base_impl.19" }
+%"struct.std::__1::__cxx_atomic_base_impl.19" = type { i8 }
+%"class.base::NoDestructor" = type { [64 x i8] }
+%"class.base::PoissonAllocationSampler::ScopedMuteThreadSamples" = type { i8 }
+%"class.logging::CheckOpResult" = type { i8* }
+%"class.logging::CheckError" = type { %"class.logging::LogMessage"* }
+%"class.logging::LogMessage" = type opaque
+%"class.std::__1::basic_ostream" = type { i32 (...)**, %"class.std::__1::basic_ios.base" }
+%"class.std::__1::basic_ios.base" = type <{ %"class.std::__1::ios_base", %"class.std::__1::basic_ostream"*, i32 }>
+%"class.std::__1::ios_base" = type { i32 (...)**, i32, i64, i64, i32, i32, i8*, i8*, void (i32, %"class.std::__1::ios_base"*, i32)**, i32*, i64, i64, i64*, i64, i64, i8**, i64, i64 }
+%"class.std::__1::__vector_base_common" = type { i8 }
+
+$_ZZN7logging15CheckOpValueStrIPN4base24PoissonAllocationSamplerEEENSt3__19enable_ifIXaasr4base8internal23SupportsOstreamOperatorIRKT_EE5valuentsr3std11is_functionINS4_14remove_pointerIS6_E4typeEEE5valueEPcE4typeES8_ENUlRNS4_13basic_ostreamIcNS4_11char_traitsIcEEEEPKvE_8__invokeESJ_SL_ = comdat any
+
+$_ZNSt3__16vectorIPN4base24PoissonAllocationSampler15SamplesObserverENS_9allocatorIS4_EEE6assignIPS4_EENS_9enable_ifIXaasr27__is_cpp17_forward_iteratorIT_EE5valuesr16is_constructibleIS4_NS_15iterator_traitsISB_E9referenceEEE5valueEvE4typeESB_SB_ = comdat any
+
+@_ZN4base12_GLOBAL__N_124g_internal_reentry_guardE = internal thread_local unnamed_addr global i1 false, align 1
+@_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE = internal thread_local unnamed_addr global i64 0, align 8
+@_ZN4base12_GLOBAL__N_132g_accumulated_bytes_tls_snapshotE = internal thread_local unnamed_addr global i64 0, align 8
+@_ZN4base24PoissonAllocationSampler9instance_E = hidden global %"class.base::PoissonAllocationSampler"* null, align 8
+@.str = private unnamed_addr constant [21 x i8] c"nullptr == instance_\00", align 1
+@.str.1 = private unnamed_addr constant [64 x i8] c"../../base/sampling_heap_profiler/poisson_allocation_sampler.cc\00", align 1
+@_ZN4base12_GLOBAL__N_123g_sampled_addresses_setE = internal unnamed_addr global %"struct.std::__1::atomic.12" zeroinitializer, align 8
+@_ZGVZN4base24PoissonAllocationSampler4InitEvE9init_once = internal global i64 0, align 8
+@_ZGVZN4base24PoissonAllocationSampler25InstallAllocatorHooksOnceEvE14hook_installed = internal global i64 0, align 8
+@_ZN4base12_GLOBAL__N_120g_allocator_dispatchE = internal global %"struct.base::allocator::AllocatorDispatch" { i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i8*)* @_ZN4base12_GLOBAL__N_17AllocFnEPKNS_9allocator17AllocatorDispatchEmPv, i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i8*)* @_ZN4base12_GLOBAL__N_116AllocUncheckedFnEPKNS_9allocator17AllocatorDispatchEmPv, i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i64, i8*)* @_ZN4base12_GLOBAL__N_122AllocZeroInitializedFnEPKNS_9allocator17AllocatorDispatchEmmPv, i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i64, i8*)* @_ZN4base12_GLOBAL__N_114AllocAlignedFnEPKNS_9allocator17AllocatorDispatchEmmPv, i8* (%"struct.base::allocator::AllocatorDispatch"*, i8*, i64, i8*)* @_ZN4base12_GLOBAL__N_19ReallocFnEPKNS_9allocator17AllocatorDispatchEPvmS5_, void (%"struct.base::allocator::AllocatorDispatch"*, i8*, i8*)* @_ZN4base12_GLOBAL__N_16FreeFnEPKNS_9allocator17AllocatorDispatchEPvS5_, i64 (%"struct.base::allocator::AllocatorDispatch"*, i8*, i8*)* @_ZN4base12_GLOBAL__N_117GetSizeEstimateFnEPKNS_9allocator17AllocatorDispatchEPvS5_, i32 (%"struct.base::allocator::AllocatorDispatch"*, i64, i8**, i32, i8*)* @_ZN4base12_GLOBAL__N_113BatchMallocFnEPKNS_9allocator17AllocatorDispatchEmPPvjS5_, void (%"struct.base::allocator::AllocatorDispatch"*, i8**, i32, i8*)* @_ZN4base12_GLOBAL__N_111BatchFreeFnEPKNS_9allocator17AllocatorDispatchEPPvjS5_, void (%"struct.base::allocator::AllocatorDispatch"*, i8*, i64, i8*)* @_ZN4base12_GLOBAL__N_118FreeDefiniteSizeFnEPKNS_9allocator17AllocatorDispatchEPvmS5_, i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i64, i8*)* @_ZN4base12_GLOBAL__N_115AlignedMallocFnEPKNS_9allocator17AllocatorDispatchEmmPv, i8* (%"struct.base::allocator::AllocatorDispatch"*, i8*, i64, i64, i8*)* @_ZN4base12_GLOBAL__N_116AlignedReallocFnEPKNS_9allocator17AllocatorDispatchEPvmmS5_, void (%"struct.base::allocator::AllocatorDispatch"*, i8*, i8*)* @_ZN4base12_GLOBAL__N_113AlignedFreeFnEPKNS_9allocator17AllocatorDispatchEPvS5_, %"struct.base::allocator::AllocatorDispatch"* null }, align 8
+@_ZN4base12_GLOBAL__N_117g_hooks_installedE = internal global %"struct.std::__1::atomic.16" zeroinitializer, align 1
+@_ZN4base12_GLOBAL__N_124g_hooks_install_callbackE = internal unnamed_addr global void ()* null, align 8
+@.str.2 = private unnamed_addr constant [52 x i8] c"!g_hooks_install_callback && hooks_install_callback\00", align 1
+@_ZN4base12_GLOBAL__N_115g_deterministicE = internal unnamed_addr global i8 0, align 1
+@_ZN4base12_GLOBAL__N_135g_sampling_interval_initialized_tlsE = internal thread_local unnamed_addr global i1 false, align 1
+@_ZZN4base24PoissonAllocationSampler3GetEvE8instance = internal global %"class.base::NoDestructor" zeroinitializer, align 8
+@_ZGVZN4base24PoissonAllocationSampler3GetEvE8instance = internal global i64 0, align 8
+@_ZN4base12_GLOBAL__N_119g_sampling_intervalE.0.0 = internal unnamed_addr global i64 131072, align 8
+@_ZN4base12_GLOBAL__N_19g_runningE.0.0.0.0 = internal unnamed_addr global i8 0, align 1
+
+@_ZN4base24PoissonAllocationSampler23ScopedMuteThreadSamplesC1Ev = hidden unnamed_addr alias void (%"class.base::PoissonAllocationSampler::ScopedMuteThreadSamples"*), void (%"class.base::PoissonAllocationSampler::ScopedMuteThreadSamples"*)* @_ZN4base24PoissonAllocationSampler23ScopedMuteThreadSamplesC2Ev
+@_ZN4base24PoissonAllocationSampler23ScopedMuteThreadSamplesD1Ev = hidden unnamed_addr alias void (%"class.base::PoissonAllocationSampler::ScopedMuteThreadSamples"*), void (%"class.base::PoissonAllocationSampler::ScopedMuteThreadSamples"*)* @_ZN4base24PoissonAllocationSampler23ScopedMuteThreadSamplesD2Ev
+@_ZN4base24PoissonAllocationSamplerC1Ev = hidden unnamed_addr alias void (%"class.base::PoissonAllocationSampler"*), void (%"class.base::PoissonAllocationSampler"*)* @_ZN4base24PoissonAllocationSamplerC2Ev
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN4base24PoissonAllocationSampler23ScopedMuteThreadSamplesC2Ev(%"class.base::PoissonAllocationSampler::ScopedMuteThreadSamples"* nocapture readnone) unnamed_addr #0 align 2 {
+  store i1 true, i1* @_ZN4base12_GLOBAL__N_124g_internal_reentry_guardE, align 1
+  %2 = load i64, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  store i64 %2, i64* @_ZN4base12_GLOBAL__N_132g_accumulated_bytes_tls_snapshotE, align 8
+  %3 = add nsw i64 %2, -536870912
+  store i64 %3, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN4base24PoissonAllocationSampler23ScopedMuteThreadSamplesD2Ev(%"class.base::PoissonAllocationSampler::ScopedMuteThreadSamples"* nocapture readnone) unnamed_addr #0 align 2 {
+  store i1 false, i1* @_ZN4base12_GLOBAL__N_124g_internal_reentry_guardE, align 1
+  %2 = load i64, i64* @_ZN4base12_GLOBAL__N_132g_accumulated_bytes_tls_snapshotE, align 8
+  store i64 %2, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden zeroext i1 @_ZN4base24PoissonAllocationSampler23ScopedMuteThreadSamples7IsMutedEv() local_unnamed_addr #1 align 2 {
+  %1 = load i1, i1* @_ZN4base12_GLOBAL__N_124g_internal_reentry_guardE, align 1
+  ret i1 %1
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base24PoissonAllocationSamplerC2Ev(%"class.base::PoissonAllocationSampler"*) unnamed_addr #2 align 2 {
+  %2 = alloca %"class.logging::CheckOpResult", align 8
+  %3 = alloca %"class.logging::CheckOpResult", align 8
+  %4 = alloca %"class.logging::CheckError", align 8
+  %5 = getelementptr inbounds %"class.base::PoissonAllocationSampler", %"class.base::PoissonAllocationSampler"* %0, i64 0, i32 0, i32 0
+  tail call void @_ZN4base8internal8LockImplC1Ev(%"class.base::internal::LockImpl"* %5) #15
+  %6 = getelementptr inbounds %"class.base::PoissonAllocationSampler", %"class.base::PoissonAllocationSampler"* %0, i64 0, i32 1
+  %7 = bitcast %"class.std::__1::vector"* %6 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %7, i8 0, i64 24, i1 false) #15
+  %8 = bitcast %"class.logging::CheckOpResult"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %8) #15
+  %9 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %3, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %9, align 8
+  %10 = bitcast %"class.logging::CheckOpResult"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %10)
+  %11 = load %"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E, align 8
+  %12 = icmp eq %"class.base::PoissonAllocationSampler"* %11, null
+  br i1 %12, label %13, label %14
+
+13:                                               ; preds = %1
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* null, i8** %9, align 8
+  br label %23
+
+14:                                               ; preds = %1
+  %15 = tail call i8* @_ZN7logging15CheckOpValueStrEDn(i8* null) #15
+  %16 = tail call i8* @_ZN7logging14StreamValToStrEPKvPFvRNSt3__113basic_ostreamIcNS2_11char_traitsIcEEEES1_E(i8* bitcast (%"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E to i8*), void (%"class.std::__1::basic_ostream"*, i8*)* nonnull @_ZZN7logging15CheckOpValueStrIPN4base24PoissonAllocationSamplerEEENSt3__19enable_ifIXaasr4base8internal23SupportsOstreamOperatorIRKT_EE5valuentsr3std11is_functionINS4_14remove_pointerIS6_E4typeEEE5valueEPcE4typeES8_ENUlRNS4_13basic_ostreamIcNS4_11char_traitsIcEEEEPKvE_8__invokeESJ_SL_) #15
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %2, i8* getelementptr inbounds ([21 x i8], [21 x i8]* @.str, i64 0, i64 0), i8* %15, i8* %16) #15
+  %17 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %2, i64 0, i32 0
+  %18 = load i8*, i8** %17, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* %18, i8** %9, align 8
+  %19 = icmp eq i8* %18, null
+  br i1 %19, label %23, label %20
+
+20:                                               ; preds = %14
+  %21 = bitcast %"class.logging::CheckError"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %21) #15
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %4, i8* getelementptr inbounds ([64 x i8], [64 x i8]* @.str.1, i64 0, i64 0), i32 351, %"class.logging::CheckOpResult"* nonnull %3) #15
+  %22 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %4) #15
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %4) #15
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %21) #15
+  br label %23
+
+23:                                               ; preds = %13, %14, %20
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %8) #15
+  store %"class.base::PoissonAllocationSampler"* %0, %"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E, align 8
+  %24 = load atomic i8, i8* bitcast (i64* @_ZGVZN4base24PoissonAllocationSampler4InitEvE9init_once to i8*) acquire, align 8
+  %25 = icmp eq i8 %24, 0
+  br i1 %25, label %26, label %30, !prof !2
+
+26:                                               ; preds = %23
+  %27 = call i32 @__cxa_guard_acquire(i64* nonnull @_ZGVZN4base24PoissonAllocationSampler4InitEvE9init_once) #15
+  %28 = icmp eq i32 %27, 0
+  br i1 %28, label %30, label %29
+
+29:                                               ; preds = %26
+  call void @__cxa_guard_release(i64* nonnull @_ZGVZN4base24PoissonAllocationSampler4InitEvE9init_once) #15
+  br label %30
+
+30:                                               ; preds = %23, %26, %29
+  %31 = call i8* @_Znwm(i64 40) #16
+  %32 = bitcast i8* %31 to %"class.base::LockFreeAddressHashSet"*
+  call void @_ZN4base22LockFreeAddressHashSetC1Em(%"class.base::LockFreeAddressHashSet"* nonnull %32, i64 64) #15
+  %33 = ptrtoint i8* %31 to i64
+  store atomic i64 %33, i64* bitcast (%"struct.std::__1::atomic.12"* @_ZN4base12_GLOBAL__N_123g_sampled_addresses_setE to i64*) release, align 8
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #3
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #3
+
+declare void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* sret, i8*, i32, %"class.logging::CheckOpResult"*) local_unnamed_addr #4
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"*) local_unnamed_addr #4
+
+; Function Attrs: nounwind
+declare void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"*) unnamed_addr #5
+
+; Function Attrs: nofree nounwind ssp uwtable
+define hidden void @_ZN4base24PoissonAllocationSampler4InitEv() local_unnamed_addr #6 align 2 {
+  %1 = load atomic i8, i8* bitcast (i64* @_ZGVZN4base24PoissonAllocationSampler4InitEvE9init_once to i8*) acquire, align 8
+  %2 = icmp eq i8 %1, 0
+  br i1 %2, label %3, label %7, !prof !2
+
+3:                                                ; preds = %0
+  %4 = tail call i32 @__cxa_guard_acquire(i64* nonnull @_ZGVZN4base24PoissonAllocationSampler4InitEvE9init_once) #15
+  %5 = icmp eq i32 %4, 0
+  br i1 %5, label %7, label %6
+
+6:                                                ; preds = %3
+  tail call void @__cxa_guard_release(i64* nonnull @_ZGVZN4base24PoissonAllocationSampler4InitEvE9init_once) #15
+  br label %7
+
+7:                                                ; preds = %3, %6, %0
+  ret void
+}
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #7
+
+declare void @_ZN4base22LockFreeAddressHashSetC1Em(%"class.base::LockFreeAddressHashSet"*, i64) unnamed_addr #4
+
+; Function Attrs: nofree nounwind
+declare i32 @__cxa_guard_acquire(i64*) local_unnamed_addr #8
+
+; Function Attrs: nofree nounwind
+declare void @__cxa_guard_release(i64*) local_unnamed_addr #8
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base24PoissonAllocationSampler25InstallAllocatorHooksOnceEv() local_unnamed_addr #2 align 2 {
+  %1 = load atomic i8, i8* bitcast (i64* @_ZGVZN4base24PoissonAllocationSampler25InstallAllocatorHooksOnceEvE14hook_installed to i8*) acquire, align 8
+  %2 = icmp eq i8 %1, 0
+  br i1 %2, label %3, label %12, !prof !2
+
+3:                                                ; preds = %0
+  %4 = tail call i32 @__cxa_guard_acquire(i64* nonnull @_ZGVZN4base24PoissonAllocationSampler25InstallAllocatorHooksOnceEvE14hook_installed) #15
+  %5 = icmp eq i32 %4, 0
+  br i1 %5, label %12, label %6
+
+6:                                                ; preds = %3
+  tail call void @_ZN4base9allocator23InsertAllocatorDispatchEPNS0_17AllocatorDispatchE(%"struct.base::allocator::AllocatorDispatch"* nonnull @_ZN4base12_GLOBAL__N_120g_allocator_dispatchE) #15
+  tail call void @_ZN4base19PartitionAllocHooks16SetObserverHooksEPFvPvmPKcEPFvS1_E(void (i8*, i64, i8*)* nonnull @_ZN4base12_GLOBAL__N_118PartitionAllocHookEPvmPKc, void (i8*)* nonnull @_ZN4base12_GLOBAL__N_117PartitionFreeHookEPv) #15
+  %7 = cmpxchg i8* getelementptr inbounds (%"struct.std::__1::atomic.16", %"struct.std::__1::atomic.16"* @_ZN4base12_GLOBAL__N_117g_hooks_installedE, i64 0, i32 0, i32 0, i32 0, i32 0), i8 0, i8 1 seq_cst seq_cst
+  %8 = extractvalue { i8, i1 } %7, 1
+  br i1 %8, label %11, label %9
+
+9:                                                ; preds = %6
+  %10 = load void ()*, void ()** @_ZN4base12_GLOBAL__N_124g_hooks_install_callbackE, align 8
+  tail call void %10() #15
+  br label %11
+
+11:                                               ; preds = %6, %9
+  tail call void @__cxa_guard_release(i64* nonnull @_ZGVZN4base24PoissonAllocationSampler25InstallAllocatorHooksOnceEvE14hook_installed) #15
+  br label %12
+
+12:                                               ; preds = %3, %11, %0
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZN4base24PoissonAllocationSampler21InstallAllocatorHooksEv() local_unnamed_addr #2 align 2 {
+  tail call void @_ZN4base9allocator23InsertAllocatorDispatchEPNS0_17AllocatorDispatchE(%"struct.base::allocator::AllocatorDispatch"* nonnull @_ZN4base12_GLOBAL__N_120g_allocator_dispatchE) #15
+  tail call void @_ZN4base19PartitionAllocHooks16SetObserverHooksEPFvPvmPKcEPFvS1_E(void (i8*, i64, i8*)* nonnull @_ZN4base12_GLOBAL__N_118PartitionAllocHookEPvmPKc, void (i8*)* nonnull @_ZN4base12_GLOBAL__N_117PartitionFreeHookEPv) #15
+  %1 = cmpxchg i8* getelementptr inbounds (%"struct.std::__1::atomic.16", %"struct.std::__1::atomic.16"* @_ZN4base12_GLOBAL__N_117g_hooks_installedE, i64 0, i32 0, i32 0, i32 0, i32 0), i8 0, i8 1 seq_cst seq_cst
+  %2 = extractvalue { i8, i1 } %1, 1
+  br i1 %2, label %5, label %3
+
+3:                                                ; preds = %0
+  %4 = load void ()*, void ()** @_ZN4base12_GLOBAL__N_124g_hooks_install_callbackE, align 8
+  tail call void %4() #15
+  br label %5
+
+5:                                                ; preds = %0, %3
+  ret i1 true
+}
+
+declare void @_ZN4base9allocator23InsertAllocatorDispatchEPNS0_17AllocatorDispatchE(%"struct.base::allocator::AllocatorDispatch"*) local_unnamed_addr #4
+
+declare void @_ZN4base19PartitionAllocHooks16SetObserverHooksEPFvPvmPKcEPFvS1_E(void (i8*, i64, i8*)*, void (i8*)*) local_unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN4base12_GLOBAL__N_118PartitionAllocHookEPvmPKc(i8*, i64, i8*) #2 {
+  %4 = load i64, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %5 = add i64 %4, %1
+  store i64 %5, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %6 = icmp slt i64 %5, 0
+  br i1 %6, label %14, label %7, !prof !3
+
+7:                                                ; preds = %3
+  %8 = load atomic i8, i8* @_ZN4base12_GLOBAL__N_19g_runningE.0.0.0.0 monotonic, align 1
+  %9 = and i8 %8, 1
+  %10 = icmp eq i8 %9, 0
+  br i1 %10, label %11, label %12, !prof !4
+
+11:                                               ; preds = %7
+  store i1 false, i1* @_ZN4base12_GLOBAL__N_135g_sampling_interval_initialized_tlsE, align 1
+  store i64 0, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  br label %14
+
+12:                                               ; preds = %7
+  %13 = load %"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E, align 8
+  tail call void @_ZN4base24PoissonAllocationSampler13DoRecordAllocElmPvNS0_13AllocatorTypeEPKc(%"class.base::PoissonAllocationSampler"* %13, i64 %5, i64 %1, i8* %0, i32 1, i8* %2) #15
+  br label %14
+
+14:                                               ; preds = %3, %11, %12
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN4base12_GLOBAL__N_117PartitionFreeHookEPv(i8*) #2 {
+  %2 = icmp eq i8* %0, null
+  br i1 %2, label %34, label %3, !prof !4
+
+3:                                                ; preds = %1
+  %4 = load atomic i64, i64* bitcast (%"struct.std::__1::atomic.12"* @_ZN4base12_GLOBAL__N_123g_sampled_addresses_setE to i64*) acquire, align 8
+  %5 = inttoptr i64 %4 to %"class.base::LockFreeAddressHashSet"*
+  %6 = ptrtoint i8* %0 to i64
+  %7 = mul i64 %6, 5475737090898469947
+  %8 = lshr i64 %7, 32
+  %9 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %5, i64 0, i32 2
+  %10 = load i64, i64* %9, align 8
+  %11 = and i64 %10, %8
+  %12 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %5, i64 0, i32 0, i32 0, i32 0
+  %13 = load %"struct.std::__1::atomic"*, %"struct.std::__1::atomic"** %12, align 8
+  %14 = getelementptr inbounds %"struct.std::__1::atomic", %"struct.std::__1::atomic"* %13, i64 %11, i32 0
+  %15 = bitcast %"struct.std::__1::__atomic_base"* %14 to i64*
+  %16 = load atomic i64, i64* %15 acquire, align 8
+  %17 = inttoptr i64 %16 to %"struct.base::LockFreeAddressHashSet::Node"*
+  %18 = icmp eq i64 %16, 0
+  br i1 %18, label %29, label %19
+
+19:                                               ; preds = %3, %25
+  %20 = phi %"struct.base::LockFreeAddressHashSet::Node"* [ %27, %25 ], [ %17, %3 ]
+  %21 = bitcast %"struct.base::LockFreeAddressHashSet::Node"* %20 to i64*
+  %22 = load atomic i64, i64* %21 monotonic, align 8
+  %23 = inttoptr i64 %22 to i8*
+  %24 = icmp eq i8* %23, %0
+  br i1 %24, label %29, label %25
+
+25:                                               ; preds = %19
+  %26 = getelementptr inbounds %"struct.base::LockFreeAddressHashSet::Node", %"struct.base::LockFreeAddressHashSet::Node"* %20, i64 0, i32 1
+  %27 = load %"struct.base::LockFreeAddressHashSet::Node"*, %"struct.base::LockFreeAddressHashSet::Node"** %26, align 8
+  %28 = icmp eq %"struct.base::LockFreeAddressHashSet::Node"* %27, null
+  br i1 %28, label %34, label %19
+
+29:                                               ; preds = %19, %3
+  %30 = phi %"struct.base::LockFreeAddressHashSet::Node"* [ %17, %3 ], [ %20, %19 ]
+  %31 = icmp eq %"struct.base::LockFreeAddressHashSet::Node"* %30, null
+  br i1 %31, label %34, label %32, !prof !3
+
+32:                                               ; preds = %29
+  %33 = load %"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E, align 8
+  tail call void @_ZN4base24PoissonAllocationSampler12DoRecordFreeEPv(%"class.base::PoissonAllocationSampler"* %33, i8* nonnull %0) #15
+  br label %34
+
+34:                                               ; preds = %25, %1, %29, %32
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base24PoissonAllocationSampler23SetHooksInstallCallbackEPFvvE(void ()*) local_unnamed_addr #2 align 2 {
+  %2 = alloca %"class.logging::CheckError", align 8
+  %3 = load void ()*, void ()** @_ZN4base12_GLOBAL__N_124g_hooks_install_callbackE, align 8
+  %4 = icmp eq void ()* %3, null
+  %5 = icmp ne void ()* %0, null
+  %6 = and i1 %5, %4
+  br i1 %6, label %10, label %7
+
+7:                                                ; preds = %1
+  %8 = bitcast %"class.logging::CheckError"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %8) #15
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %2, i8* getelementptr inbounds ([64 x i8], [64 x i8]* @.str.1, i64 0, i64 0), i32 399, i8* getelementptr inbounds ([52 x i8], [52 x i8]* @.str.2, i64 0, i64 0)) #15
+  %9 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %2) #15
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %2) #15
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %8) #15
+  br label %10
+
+10:                                               ; preds = %1, %7
+  store void ()* %0, void ()** @_ZN4base12_GLOBAL__N_124g_hooks_install_callbackE, align 8
+  %11 = cmpxchg i8* getelementptr inbounds (%"struct.std::__1::atomic.16", %"struct.std::__1::atomic.16"* @_ZN4base12_GLOBAL__N_117g_hooks_installedE, i64 0, i32 0, i32 0, i32 0, i32 0), i8 0, i8 1 seq_cst seq_cst
+  %12 = extractvalue { i8, i1 } %11, 1
+  br i1 %12, label %15, label %13
+
+13:                                               ; preds = %10
+  %14 = load void ()*, void ()** @_ZN4base12_GLOBAL__N_124g_hooks_install_callbackE, align 8
+  call void %14() #15
+  br label %15
+
+15:                                               ; preds = %10, %13
+  ret void
+}
+
+declare void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* sret, i8*, i32, i8*) local_unnamed_addr #4
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN4base24PoissonAllocationSampler19SetSamplingIntervalEm(%"class.base::PoissonAllocationSampler"* nocapture readnone, i64) local_unnamed_addr #0 align 2 {
+  store atomic i64 %1, i64* @_ZN4base12_GLOBAL__N_119g_sampling_intervalE.0.0 seq_cst, align 8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i64 @_ZN4base24PoissonAllocationSampler21GetNextSampleIntervalEm(i64) local_unnamed_addr #2 align 2 {
+  %2 = load i8, i8* @_ZN4base12_GLOBAL__N_115g_deterministicE, align 1, !range !5
+  %3 = icmp eq i8 %2, 0
+  br i1 %3, label %4, label %17, !prof !3
+
+4:                                                ; preds = %1
+  %5 = tail call double @_ZN4base10RandDoubleEv() #15
+  %6 = tail call double @log(double %5) #15
+  %7 = uitofp i64 %0 to double
+  %8 = fmul double %6, %7
+  %9 = fsub double -0.000000e+00, %8
+  %10 = mul i64 %0, 20
+  %11 = fcmp ogt double %8, -8.000000e+00
+  br i1 %11, label %17, label %12, !prof !4
+
+12:                                               ; preds = %4
+  %13 = uitofp i64 %10 to double
+  %14 = fcmp ogt double %9, %13
+  br i1 %14, label %17, label %15, !prof !4
+
+15:                                               ; preds = %12
+  %16 = fptoui double %9 to i64
+  br label %17
+
+17:                                               ; preds = %15, %4, %12, %1
+  %18 = phi i64 [ %0, %1 ], [ %16, %15 ], [ 8, %4 ], [ %10, %12 ]
+  ret i64 %18
+}
+
+declare double @_ZN4base10RandDoubleEv() local_unnamed_addr #4
+
+; Function Attrs: nofree nounwind
+declare double @log(double) local_unnamed_addr #9
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base24PoissonAllocationSampler11RecordAllocEPvmNS0_13AllocatorTypeEPKc(i8*, i64, i32, i8*) local_unnamed_addr #2 align 2 {
+  %5 = load i64, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %6 = add i64 %5, %1
+  store i64 %6, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %7 = icmp slt i64 %6, 0
+  br i1 %7, label %15, label %8, !prof !3
+
+8:                                                ; preds = %4
+  %9 = load atomic i8, i8* @_ZN4base12_GLOBAL__N_19g_runningE.0.0.0.0 monotonic, align 1
+  %10 = and i8 %9, 1
+  %11 = icmp eq i8 %10, 0
+  br i1 %11, label %12, label %13, !prof !4
+
+12:                                               ; preds = %8
+  store i1 false, i1* @_ZN4base12_GLOBAL__N_135g_sampling_interval_initialized_tlsE, align 1
+  store i64 0, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  br label %15
+
+13:                                               ; preds = %8
+  %14 = load %"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E, align 8
+  tail call void @_ZN4base24PoissonAllocationSampler13DoRecordAllocElmPvNS0_13AllocatorTypeEPKc(%"class.base::PoissonAllocationSampler"* %14, i64 %6, i64 %1, i8* %0, i32 %2, i8* %3)
+  br label %15
+
+15:                                               ; preds = %4, %13, %12
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base24PoissonAllocationSampler13DoRecordAllocElmPvNS0_13AllocatorTypeEPKc(%"class.base::PoissonAllocationSampler"*, i64, i64, i8*, i32, i8*) local_unnamed_addr #2 align 2 {
+  %7 = alloca %"class.std::__1::vector", align 8
+  %8 = icmp eq i8* %3, null
+  br i1 %8, label %161, label %9, !prof !4
+
+9:                                                ; preds = %6
+  %10 = load atomic i64, i64* @_ZN4base12_GLOBAL__N_119g_sampling_intervalE.0.0 monotonic, align 8
+  %11 = load i1, i1* @_ZN4base12_GLOBAL__N_135g_sampling_interval_initialized_tlsE, align 1
+  br i1 %11, label %33, label %12, !prof !3
+
+12:                                               ; preds = %9
+  store i1 true, i1* @_ZN4base12_GLOBAL__N_135g_sampling_interval_initialized_tlsE, align 1
+  %13 = load i8, i8* @_ZN4base12_GLOBAL__N_115g_deterministicE, align 1, !range !5
+  %14 = icmp eq i8 %13, 0
+  br i1 %14, label %15, label %28, !prof !3
+
+15:                                               ; preds = %12
+  %16 = tail call double @_ZN4base10RandDoubleEv() #15
+  %17 = tail call double @log(double %16) #15
+  %18 = uitofp i64 %10 to double
+  %19 = fmul double %17, %18
+  %20 = fsub double -0.000000e+00, %19
+  %21 = mul i64 %10, 20
+  %22 = fcmp ogt double %19, -8.000000e+00
+  br i1 %22, label %28, label %23, !prof !4
+
+23:                                               ; preds = %15
+  %24 = uitofp i64 %21 to double
+  %25 = fcmp ogt double %20, %24
+  br i1 %25, label %28, label %26, !prof !4
+
+26:                                               ; preds = %23
+  %27 = fptoui double %20 to i64
+  br label %28
+
+28:                                               ; preds = %12, %15, %23, %26
+  %29 = phi i64 [ %10, %12 ], [ %27, %26 ], [ 8, %15 ], [ %21, %23 ]
+  %30 = sub i64 %1, %29
+  %31 = icmp slt i64 %30, 0
+  br i1 %31, label %32, label %33
+
+32:                                               ; preds = %28
+  store i64 %30, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  br label %161
+
+33:                                               ; preds = %9, %28
+  %34 = phi i64 [ %30, %28 ], [ %1, %9 ]
+  %35 = udiv i64 %34, %10
+  %36 = urem i64 %34, %10
+  %37 = uitofp i64 %10 to double
+  %38 = mul i64 %10, 20
+  %39 = uitofp i64 %38 to double
+  br label %40
+
+40:                                               ; preds = %55, %33
+  %41 = phi i64 [ %35, %33 ], [ %58, %55 ]
+  %42 = phi i64 [ %36, %33 ], [ %57, %55 ]
+  %43 = load i8, i8* @_ZN4base12_GLOBAL__N_115g_deterministicE, align 1, !range !5
+  %44 = icmp eq i8 %43, 0
+  br i1 %44, label %45, label %55, !prof !3
+
+45:                                               ; preds = %40
+  %46 = tail call double @_ZN4base10RandDoubleEv() #15
+  %47 = tail call double @log(double %46) #15
+  %48 = fmul double %47, %37
+  %49 = fsub double -0.000000e+00, %48
+  %50 = fcmp ogt double %48, -8.000000e+00
+  br i1 %50, label %55, label %51, !prof !4
+
+51:                                               ; preds = %45
+  %52 = fcmp ogt double %49, %39
+  br i1 %52, label %55, label %53, !prof !4
+
+53:                                               ; preds = %51
+  %54 = fptoui double %49 to i64
+  br label %55
+
+55:                                               ; preds = %40, %45, %51, %53
+  %56 = phi i64 [ %10, %40 ], [ %54, %53 ], [ 8, %45 ], [ %38, %51 ]
+  %57 = sub i64 %42, %56
+  %58 = add i64 %41, 1
+  %59 = icmp sgt i64 %57, -1
+  br i1 %59, label %40, label %60
+
+60:                                               ; preds = %55
+  store i64 %57, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %61 = load i1, i1* @_ZN4base12_GLOBAL__N_124g_internal_reentry_guardE, align 1
+  br i1 %61, label %161, label %62, !prof !4
+
+62:                                               ; preds = %60
+  store i1 true, i1* @_ZN4base12_GLOBAL__N_124g_internal_reentry_guardE, align 1
+  store i64 %57, i64* @_ZN4base12_GLOBAL__N_132g_accumulated_bytes_tls_snapshotE, align 8
+  %63 = add nsw i64 %57, -536870912
+  store i64 %63, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %64 = bitcast %"class.std::__1::vector"* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %64) #15
+  %65 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %7, i64 0, i32 0, i32 0
+  %66 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %7, i64 0, i32 0, i32 1
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %64, i8 0, i64 24, i1 false) #15
+  %67 = getelementptr inbounds %"class.base::PoissonAllocationSampler", %"class.base::PoissonAllocationSampler"* %0, i64 0, i32 0, i32 0, i32 0
+  %68 = tail call i32 @pthread_mutex_trylock(%union.pthread_mutex_t* %67) #15
+  %69 = icmp eq i32 %68, 0
+  br i1 %69, label %72, label %70, !prof !3
+
+70:                                               ; preds = %62
+  %71 = getelementptr inbounds %"class.base::PoissonAllocationSampler", %"class.base::PoissonAllocationSampler"* %0, i64 0, i32 0, i32 0
+  tail call void @_ZN4base8internal8LockImpl24LockInternalWithTrackingEv(%"class.base::internal::LockImpl"* %71) #15
+  br label %72
+
+72:                                               ; preds = %62, %70
+  %73 = load atomic i64, i64* bitcast (%"struct.std::__1::atomic.12"* @_ZN4base12_GLOBAL__N_123g_sampled_addresses_setE to i64*) acquire, align 8
+  %74 = inttoptr i64 %73 to %"class.base::LockFreeAddressHashSet"*
+  %75 = ptrtoint i8* %3 to i64
+  %76 = mul i64 %75, 5475737090898469947
+  %77 = lshr i64 %76, 32
+  %78 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %74, i64 0, i32 2
+  %79 = load i64, i64* %78, align 8
+  %80 = and i64 %79, %77
+  %81 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %74, i64 0, i32 0, i32 0, i32 0
+  %82 = load %"struct.std::__1::atomic"*, %"struct.std::__1::atomic"** %81, align 8
+  %83 = getelementptr inbounds %"struct.std::__1::atomic", %"struct.std::__1::atomic"* %82, i64 %80, i32 0
+  %84 = bitcast %"struct.std::__1::__atomic_base"* %83 to i64*
+  %85 = load atomic i64, i64* %84 acquire, align 8
+  %86 = inttoptr i64 %85 to %"struct.base::LockFreeAddressHashSet::Node"*
+  %87 = icmp eq i64 %85, 0
+  br i1 %87, label %98, label %88
+
+88:                                               ; preds = %72, %94
+  %89 = phi %"struct.base::LockFreeAddressHashSet::Node"* [ %96, %94 ], [ %86, %72 ]
+  %90 = bitcast %"struct.base::LockFreeAddressHashSet::Node"* %89 to i64*
+  %91 = load atomic i64, i64* %90 monotonic, align 8
+  %92 = inttoptr i64 %91 to i8*
+  %93 = icmp eq i8* %92, %3
+  br i1 %93, label %98, label %94
+
+94:                                               ; preds = %88
+  %95 = getelementptr inbounds %"struct.base::LockFreeAddressHashSet::Node", %"struct.base::LockFreeAddressHashSet::Node"* %89, i64 0, i32 1
+  %96 = load %"struct.base::LockFreeAddressHashSet::Node"*, %"struct.base::LockFreeAddressHashSet::Node"** %95, align 8
+  %97 = icmp eq %"struct.base::LockFreeAddressHashSet::Node"* %96, null
+  br i1 %97, label %101, label %88
+
+98:                                               ; preds = %88, %72
+  %99 = phi %"struct.base::LockFreeAddressHashSet::Node"* [ %86, %72 ], [ %89, %88 ]
+  %100 = icmp eq %"struct.base::LockFreeAddressHashSet::Node"* %99, null
+  br i1 %100, label %101, label %139
+
+101:                                              ; preds = %94, %98
+  %102 = load atomic i64, i64* bitcast (%"struct.std::__1::atomic.12"* @_ZN4base12_GLOBAL__N_123g_sampled_addresses_setE to i64*) acquire, align 8
+  %103 = inttoptr i64 %102 to %"class.base::LockFreeAddressHashSet"*
+  tail call void @_ZN4base22LockFreeAddressHashSet6InsertEPv(%"class.base::LockFreeAddressHashSet"* %103, i8* nonnull %3) #15
+  %104 = load atomic i64, i64* bitcast (%"struct.std::__1::atomic.12"* @_ZN4base12_GLOBAL__N_123g_sampled_addresses_setE to i64*) acquire, align 8
+  %105 = inttoptr i64 %104 to %"class.base::LockFreeAddressHashSet"*
+  %106 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %105, i64 0, i32 1
+  %107 = load i32, i32* %106, align 8
+  %108 = sext i32 %107 to i64
+  %109 = uitofp i64 %108 to float
+  %110 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %105, i64 0, i32 0, i32 0, i32 1
+  %111 = bitcast %"struct.std::__1::atomic"** %110 to i64*
+  %112 = load i64, i64* %111, align 8
+  %113 = inttoptr i64 %104 to i64*
+  %114 = load i64, i64* %113, align 8
+  %115 = sub i64 %112, %114
+  %116 = ashr exact i64 %115, 3
+  %117 = uitofp i64 %116 to float
+  %118 = fdiv float %109, %117
+  %119 = fcmp olt float %118, 1.000000e+00
+  br i1 %119, label %125, label %120
+
+120:                                              ; preds = %101
+  %121 = ashr exact i64 %115, 2
+  %122 = tail call i8* @_Znwm(i64 40) #16
+  %123 = bitcast i8* %122 to %"class.base::LockFreeAddressHashSet"*
+  tail call void @_ZN4base22LockFreeAddressHashSetC1Em(%"class.base::LockFreeAddressHashSet"* nonnull %123, i64 %121) #15
+  tail call void @_ZN4base22LockFreeAddressHashSet4CopyERKS0_(%"class.base::LockFreeAddressHashSet"* nonnull %123, %"class.base::LockFreeAddressHashSet"* dereferenceable(40) %105) #15
+  %124 = ptrtoint i8* %122 to i64
+  store atomic i64 %124, i64* bitcast (%"struct.std::__1::atomic.12"* @_ZN4base12_GLOBAL__N_123g_sampled_addresses_setE to i64*) release, align 8
+  br label %125
+
+125:                                              ; preds = %101, %120
+  %126 = getelementptr inbounds %"class.base::PoissonAllocationSampler", %"class.base::PoissonAllocationSampler"* %0, i64 0, i32 1
+  %127 = icmp eq %"class.std::__1::vector"* %7, %126
+  br i1 %127, label %133, label %128
+
+128:                                              ; preds = %125
+  %129 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %126, i64 0, i32 0, i32 0
+  %130 = load %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %129, align 8
+  %131 = getelementptr inbounds %"class.base::PoissonAllocationSampler", %"class.base::PoissonAllocationSampler"* %0, i64 0, i32 1, i32 0, i32 1
+  %132 = load %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %131, align 8
+  call void @_ZNSt3__16vectorIPN4base24PoissonAllocationSampler15SamplesObserverENS_9allocatorIS4_EEE6assignIPS4_EENS_9enable_ifIXaasr27__is_cpp17_forward_iteratorIT_EE5valuesr16is_constructibleIS4_NS_15iterator_traitsISB_E9referenceEEE5valueEvE4typeESB_SB_(%"class.std::__1::vector"* nonnull %7, %"class.base::PoissonAllocationSampler::SamplesObserver"** %130, %"class.base::PoissonAllocationSampler::SamplesObserver"** %132) #15
+  br label %133
+
+133:                                              ; preds = %125, %128
+  %134 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %67) #15
+  %135 = mul i64 %58, %10
+  %136 = load %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %65, align 8
+  %137 = load %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %66, align 8
+  %138 = icmp eq %"class.base::PoissonAllocationSampler::SamplesObserver"** %136, %137
+  br i1 %138, label %152, label %141
+
+139:                                              ; preds = %98
+  %140 = tail call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %67) #15
+  br label %150
+
+141:                                              ; preds = %133, %141
+  %142 = phi %"class.base::PoissonAllocationSampler::SamplesObserver"** [ %148, %141 ], [ %136, %133 ]
+  %143 = load %"class.base::PoissonAllocationSampler::SamplesObserver"*, %"class.base::PoissonAllocationSampler::SamplesObserver"** %142, align 8
+  %144 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"* %143 to void (%"class.base::PoissonAllocationSampler::SamplesObserver"*, i8*, i64, i64, i32, i8*)***
+  %145 = load void (%"class.base::PoissonAllocationSampler::SamplesObserver"*, i8*, i64, i64, i32, i8*)**, void (%"class.base::PoissonAllocationSampler::SamplesObserver"*, i8*, i64, i64, i32, i8*)*** %144, align 8
+  %146 = getelementptr inbounds void (%"class.base::PoissonAllocationSampler::SamplesObserver"*, i8*, i64, i64, i32, i8*)*, void (%"class.base::PoissonAllocationSampler::SamplesObserver"*, i8*, i64, i64, i32, i8*)** %145, i64 2
+  %147 = load void (%"class.base::PoissonAllocationSampler::SamplesObserver"*, i8*, i64, i64, i32, i8*)*, void (%"class.base::PoissonAllocationSampler::SamplesObserver"*, i8*, i64, i64, i32, i8*)** %146, align 8
+  call void %147(%"class.base::PoissonAllocationSampler::SamplesObserver"* %143, i8* nonnull %3, i64 %2, i64 %135, i32 %4, i8* %5) #15
+  %148 = getelementptr inbounds %"class.base::PoissonAllocationSampler::SamplesObserver"*, %"class.base::PoissonAllocationSampler::SamplesObserver"** %142, i64 1
+  %149 = icmp eq %"class.base::PoissonAllocationSampler::SamplesObserver"** %148, %137
+  br i1 %149, label %150, label %141
+
+150:                                              ; preds = %141, %139
+  %151 = load %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %65, align 8
+  br label %152
+
+152:                                              ; preds = %150, %133
+  %153 = phi %"class.base::PoissonAllocationSampler::SamplesObserver"** [ %151, %150 ], [ %136, %133 ]
+  %154 = icmp eq %"class.base::PoissonAllocationSampler::SamplesObserver"** %153, null
+  br i1 %154, label %159, label %155
+
+155:                                              ; preds = %152
+  %156 = ptrtoint %"class.base::PoissonAllocationSampler::SamplesObserver"** %153 to i64
+  %157 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"*** %66 to i64*
+  store i64 %156, i64* %157, align 8
+  %158 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"** %153 to i8*
+  call void @_ZdlPv(i8* %158) #16
+  br label %159
+
+159:                                              ; preds = %152, %155
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %64) #15
+  store i1 false, i1* @_ZN4base12_GLOBAL__N_124g_internal_reentry_guardE, align 1
+  %160 = load i64, i64* @_ZN4base12_GLOBAL__N_132g_accumulated_bytes_tls_snapshotE, align 8
+  store i64 %160, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  br label %161
+
+161:                                              ; preds = %32, %60, %159, %6
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden dereferenceable(40) %"class.base::LockFreeAddressHashSet"* @_ZN4base24PoissonAllocationSampler21sampled_addresses_setEv() local_unnamed_addr #0 align 2 {
+  %1 = load atomic i64, i64* bitcast (%"struct.std::__1::atomic.12"* @_ZN4base12_GLOBAL__N_123g_sampled_addresses_setE to i64*) acquire, align 8
+  %2 = inttoptr i64 %1 to %"class.base::LockFreeAddressHashSet"*
+  ret %"class.base::LockFreeAddressHashSet"* %2
+}
+
+declare void @_ZN4base22LockFreeAddressHashSet6InsertEPv(%"class.base::LockFreeAddressHashSet"*, i8*) local_unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base24PoissonAllocationSampler23BalanceAddressesHashSetEv(%"class.base::PoissonAllocationSampler"* nocapture readnone) local_unnamed_addr #2 align 2 {
+  %2 = load atomic i64, i64* bitcast (%"struct.std::__1::atomic.12"* @_ZN4base12_GLOBAL__N_123g_sampled_addresses_setE to i64*) acquire, align 8
+  %3 = inttoptr i64 %2 to %"class.base::LockFreeAddressHashSet"*
+  %4 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %3, i64 0, i32 1
+  %5 = load i32, i32* %4, align 8
+  %6 = sext i32 %5 to i64
+  %7 = uitofp i64 %6 to float
+  %8 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %3, i64 0, i32 0, i32 0, i32 1
+  %9 = bitcast %"struct.std::__1::atomic"** %8 to i64*
+  %10 = load i64, i64* %9, align 8
+  %11 = inttoptr i64 %2 to i64*
+  %12 = load i64, i64* %11, align 8
+  %13 = sub i64 %10, %12
+  %14 = ashr exact i64 %13, 3
+  %15 = uitofp i64 %14 to float
+  %16 = fdiv float %7, %15
+  %17 = fcmp olt float %16, 1.000000e+00
+  br i1 %17, label %23, label %18
+
+18:                                               ; preds = %1
+  %19 = ashr exact i64 %13, 2
+  %20 = tail call i8* @_Znwm(i64 40) #16
+  %21 = bitcast i8* %20 to %"class.base::LockFreeAddressHashSet"*
+  tail call void @_ZN4base22LockFreeAddressHashSetC1Em(%"class.base::LockFreeAddressHashSet"* nonnull %21, i64 %19) #15
+  tail call void @_ZN4base22LockFreeAddressHashSet4CopyERKS0_(%"class.base::LockFreeAddressHashSet"* nonnull %21, %"class.base::LockFreeAddressHashSet"* dereferenceable(40) %3) #15
+  %22 = ptrtoint i8* %20 to i64
+  store atomic i64 %22, i64* bitcast (%"struct.std::__1::atomic.12"* @_ZN4base12_GLOBAL__N_123g_sampled_addresses_setE to i64*) release, align 8
+  br label %23
+
+23:                                               ; preds = %1, %18
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base24PoissonAllocationSampler12DoRecordFreeEPv(%"class.base::PoissonAllocationSampler"*, i8*) local_unnamed_addr #2 align 2 {
+  %3 = alloca %"class.std::__1::vector", align 8
+  %4 = load i1, i1* @_ZN4base12_GLOBAL__N_124g_internal_reentry_guardE, align 1
+  br i1 %4, label %80, label %5, !prof !4
+
+5:                                                ; preds = %2
+  store i1 true, i1* @_ZN4base12_GLOBAL__N_124g_internal_reentry_guardE, align 1
+  %6 = load i64, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  store i64 %6, i64* @_ZN4base12_GLOBAL__N_132g_accumulated_bytes_tls_snapshotE, align 8
+  %7 = add nsw i64 %6, -536870912
+  store i64 %7, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %8 = bitcast %"class.std::__1::vector"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %8) #15
+  %9 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %3, i64 0, i32 0, i32 0
+  %10 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %3, i64 0, i32 0, i32 1
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %8, i8 0, i64 24, i1 false) #15
+  %11 = getelementptr inbounds %"class.base::PoissonAllocationSampler", %"class.base::PoissonAllocationSampler"* %0, i64 0, i32 0, i32 0, i32 0
+  %12 = tail call i32 @pthread_mutex_trylock(%union.pthread_mutex_t* %11) #15
+  %13 = icmp eq i32 %12, 0
+  br i1 %13, label %16, label %14, !prof !3
+
+14:                                               ; preds = %5
+  %15 = getelementptr inbounds %"class.base::PoissonAllocationSampler", %"class.base::PoissonAllocationSampler"* %0, i64 0, i32 0, i32 0
+  tail call void @_ZN4base8internal8LockImpl24LockInternalWithTrackingEv(%"class.base::internal::LockImpl"* %15) #15
+  br label %16
+
+16:                                               ; preds = %5, %14
+  %17 = getelementptr inbounds %"class.base::PoissonAllocationSampler", %"class.base::PoissonAllocationSampler"* %0, i64 0, i32 1
+  %18 = icmp eq %"class.std::__1::vector"* %3, %17
+  br i1 %18, label %24, label %19
+
+19:                                               ; preds = %16
+  %20 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %17, i64 0, i32 0, i32 0
+  %21 = load %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %20, align 8
+  %22 = getelementptr inbounds %"class.base::PoissonAllocationSampler", %"class.base::PoissonAllocationSampler"* %0, i64 0, i32 1, i32 0, i32 1
+  %23 = load %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %22, align 8
+  call void @_ZNSt3__16vectorIPN4base24PoissonAllocationSampler15SamplesObserverENS_9allocatorIS4_EEE6assignIPS4_EENS_9enable_ifIXaasr27__is_cpp17_forward_iteratorIT_EE5valuesr16is_constructibleIS4_NS_15iterator_traitsISB_E9referenceEEE5valueEvE4typeESB_SB_(%"class.std::__1::vector"* nonnull %3, %"class.base::PoissonAllocationSampler::SamplesObserver"** %21, %"class.base::PoissonAllocationSampler::SamplesObserver"** %23) #15
+  br label %24
+
+24:                                               ; preds = %16, %19
+  %25 = load atomic i64, i64* bitcast (%"struct.std::__1::atomic.12"* @_ZN4base12_GLOBAL__N_123g_sampled_addresses_setE to i64*) acquire, align 8
+  %26 = inttoptr i64 %25 to %"class.base::LockFreeAddressHashSet"*
+  %27 = ptrtoint i8* %1 to i64
+  %28 = mul i64 %27, 5475737090898469947
+  %29 = lshr i64 %28, 32
+  %30 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %26, i64 0, i32 2
+  %31 = load i64, i64* %30, align 8
+  %32 = and i64 %31, %29
+  %33 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %26, i64 0, i32 0, i32 0, i32 0
+  %34 = load %"struct.std::__1::atomic"*, %"struct.std::__1::atomic"** %33, align 8
+  %35 = getelementptr inbounds %"struct.std::__1::atomic", %"struct.std::__1::atomic"* %34, i64 %32, i32 0
+  %36 = bitcast %"struct.std::__1::__atomic_base"* %35 to i64*
+  %37 = load atomic i64, i64* %36 acquire, align 8
+  %38 = inttoptr i64 %37 to %"struct.base::LockFreeAddressHashSet::Node"*
+  %39 = icmp eq i64 %37, 0
+  br i1 %39, label %50, label %40
+
+40:                                               ; preds = %24, %46
+  %41 = phi %"struct.base::LockFreeAddressHashSet::Node"* [ %48, %46 ], [ %38, %24 ]
+  %42 = bitcast %"struct.base::LockFreeAddressHashSet::Node"* %41 to i64*
+  %43 = load atomic i64, i64* %42 monotonic, align 8
+  %44 = inttoptr i64 %43 to i8*
+  %45 = icmp eq i8* %44, %1
+  br i1 %45, label %50, label %46
+
+46:                                               ; preds = %40
+  %47 = getelementptr inbounds %"struct.base::LockFreeAddressHashSet::Node", %"struct.base::LockFreeAddressHashSet::Node"* %41, i64 0, i32 1
+  %48 = load %"struct.base::LockFreeAddressHashSet::Node"*, %"struct.base::LockFreeAddressHashSet::Node"** %47, align 8
+  %49 = icmp eq %"struct.base::LockFreeAddressHashSet::Node"* %48, null
+  br i1 %49, label %50, label %40
+
+50:                                               ; preds = %40, %46, %24
+  %51 = phi %"struct.base::LockFreeAddressHashSet::Node"* [ %38, %24 ], [ null, %46 ], [ %41, %40 ]
+  %52 = bitcast %"struct.base::LockFreeAddressHashSet::Node"* %51 to i64*
+  store atomic i64 0, i64* %52 monotonic, align 8
+  %53 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %26, i64 0, i32 1
+  %54 = load i32, i32* %53, align 8
+  %55 = add nsw i32 %54, -1
+  store i32 %55, i32* %53, align 8
+  %56 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %11) #15
+  %57 = load %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %9, align 8
+  %58 = load %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %10, align 8
+  %59 = icmp eq %"class.base::PoissonAllocationSampler::SamplesObserver"** %57, %58
+  br i1 %59, label %62, label %71
+
+60:                                               ; preds = %71
+  %61 = load %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %9, align 8
+  br label %62
+
+62:                                               ; preds = %60, %50
+  %63 = phi %"class.base::PoissonAllocationSampler::SamplesObserver"** [ %61, %60 ], [ %57, %50 ]
+  %64 = icmp eq %"class.base::PoissonAllocationSampler::SamplesObserver"** %63, null
+  br i1 %64, label %69, label %65
+
+65:                                               ; preds = %62
+  %66 = ptrtoint %"class.base::PoissonAllocationSampler::SamplesObserver"** %63 to i64
+  %67 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"*** %10 to i64*
+  store i64 %66, i64* %67, align 8
+  %68 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"** %63 to i8*
+  call void @_ZdlPv(i8* %68) #16
+  br label %69
+
+69:                                               ; preds = %62, %65
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %8) #15
+  store i1 false, i1* @_ZN4base12_GLOBAL__N_124g_internal_reentry_guardE, align 1
+  %70 = load i64, i64* @_ZN4base12_GLOBAL__N_132g_accumulated_bytes_tls_snapshotE, align 8
+  store i64 %70, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  br label %80
+
+71:                                               ; preds = %50, %71
+  %72 = phi %"class.base::PoissonAllocationSampler::SamplesObserver"** [ %78, %71 ], [ %57, %50 ]
+  %73 = load %"class.base::PoissonAllocationSampler::SamplesObserver"*, %"class.base::PoissonAllocationSampler::SamplesObserver"** %72, align 8
+  %74 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"* %73 to void (%"class.base::PoissonAllocationSampler::SamplesObserver"*, i8*)***
+  %75 = load void (%"class.base::PoissonAllocationSampler::SamplesObserver"*, i8*)**, void (%"class.base::PoissonAllocationSampler::SamplesObserver"*, i8*)*** %74, align 8
+  %76 = getelementptr inbounds void (%"class.base::PoissonAllocationSampler::SamplesObserver"*, i8*)*, void (%"class.base::PoissonAllocationSampler::SamplesObserver"*, i8*)** %75, i64 3
+  %77 = load void (%"class.base::PoissonAllocationSampler::SamplesObserver"*, i8*)*, void (%"class.base::PoissonAllocationSampler::SamplesObserver"*, i8*)** %76, align 8
+  call void %77(%"class.base::PoissonAllocationSampler::SamplesObserver"* %73, i8* %1) #15
+  %78 = getelementptr inbounds %"class.base::PoissonAllocationSampler::SamplesObserver"*, %"class.base::PoissonAllocationSampler::SamplesObserver"** %72, i64 1
+  %79 = icmp eq %"class.base::PoissonAllocationSampler::SamplesObserver"** %78, %58
+  br i1 %79, label %60, label %71
+
+80:                                               ; preds = %2, %69
+  ret void
+}
+
+declare void @_ZN4base22LockFreeAddressHashSet4CopyERKS0_(%"class.base::LockFreeAddressHashSet"*, %"class.base::LockFreeAddressHashSet"* dereferenceable(40)) local_unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define hidden %"class.base::PoissonAllocationSampler"* @_ZN4base24PoissonAllocationSampler3GetEv() local_unnamed_addr #2 align 2 {
+  %1 = load atomic i8, i8* bitcast (i64* @_ZGVZN4base24PoissonAllocationSampler3GetEvE8instance to i8*) acquire, align 8
+  %2 = icmp eq i8 %1, 0
+  br i1 %2, label %3, label %7, !prof !2
+
+3:                                                ; preds = %0
+  %4 = tail call i32 @__cxa_guard_acquire(i64* nonnull @_ZGVZN4base24PoissonAllocationSampler3GetEvE8instance) #15
+  %5 = icmp eq i32 %4, 0
+  br i1 %5, label %7, label %6
+
+6:                                                ; preds = %3
+  tail call void @_ZN4base24PoissonAllocationSamplerC2Ev(%"class.base::PoissonAllocationSampler"* bitcast (%"class.base::NoDestructor"* @_ZZN4base24PoissonAllocationSampler3GetEvE8instance to %"class.base::PoissonAllocationSampler"*)) #15
+  tail call void @__cxa_guard_release(i64* nonnull @_ZGVZN4base24PoissonAllocationSampler3GetEvE8instance) #15
+  br label %7
+
+7:                                                ; preds = %3, %6, %0
+  ret %"class.base::PoissonAllocationSampler"* bitcast (%"class.base::NoDestructor"* @_ZZN4base24PoissonAllocationSampler3GetEvE8instance to %"class.base::PoissonAllocationSampler"*)
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable writeonly
+define hidden void @_ZN4base24PoissonAllocationSampler25SuppressRandomnessForTestEb(%"class.base::PoissonAllocationSampler"* nocapture readnone, i1 zeroext) local_unnamed_addr #10 align 2 {
+  %3 = zext i1 %1 to i8
+  store i8 %3, i8* @_ZN4base12_GLOBAL__N_115g_deterministicE, align 1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base24PoissonAllocationSampler18AddSamplesObserverEPNS0_15SamplesObserverE(%"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler::SamplesObserver"*) local_unnamed_addr #2 align 2 {
+  %3 = ptrtoint %"class.base::PoissonAllocationSampler::SamplesObserver"* %1 to i64
+  store i1 true, i1* @_ZN4base12_GLOBAL__N_124g_internal_reentry_guardE, align 1
+  %4 = load i64, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  store i64 %4, i64* @_ZN4base12_GLOBAL__N_132g_accumulated_bytes_tls_snapshotE, align 8
+  %5 = add nsw i64 %4, -536870912
+  store i64 %5, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %6 = getelementptr inbounds %"class.base::PoissonAllocationSampler", %"class.base::PoissonAllocationSampler"* %0, i64 0, i32 0, i32 0, i32 0
+  %7 = tail call i32 @pthread_mutex_trylock(%union.pthread_mutex_t* %6) #15
+  %8 = icmp eq i32 %7, 0
+  br i1 %8, label %11, label %9, !prof !3
+
+9:                                                ; preds = %2
+  %10 = getelementptr inbounds %"class.base::PoissonAllocationSampler", %"class.base::PoissonAllocationSampler"* %0, i64 0, i32 0, i32 0
+  tail call void @_ZN4base8internal8LockImpl24LockInternalWithTrackingEv(%"class.base::internal::LockImpl"* %10) #15
+  br label %11
+
+11:                                               ; preds = %2, %9
+  %12 = getelementptr inbounds %"class.base::PoissonAllocationSampler", %"class.base::PoissonAllocationSampler"* %0, i64 0, i32 1
+  %13 = getelementptr inbounds %"class.base::PoissonAllocationSampler", %"class.base::PoissonAllocationSampler"* %0, i64 0, i32 1, i32 0, i32 1
+  %14 = load %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %13, align 8
+  %15 = getelementptr inbounds %"class.base::PoissonAllocationSampler", %"class.base::PoissonAllocationSampler"* %0, i64 0, i32 1, i32 0, i32 2, i32 0, i32 0
+  %16 = load %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %15, align 8
+  %17 = icmp eq %"class.base::PoissonAllocationSampler::SamplesObserver"** %14, %16
+  %18 = ptrtoint %"class.base::PoissonAllocationSampler::SamplesObserver"** %16 to i64
+  br i1 %17, label %24, label %19
+
+19:                                               ; preds = %11
+  %20 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"** %14 to i64*
+  store i64 %3, i64* %20, align 8
+  %21 = getelementptr inbounds %"class.base::PoissonAllocationSampler::SamplesObserver"*, %"class.base::PoissonAllocationSampler::SamplesObserver"** %14, i64 1
+  %22 = ptrtoint %"class.base::PoissonAllocationSampler::SamplesObserver"** %21 to i64
+  %23 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"*** %13 to i64*
+  store i64 %22, i64* %23, align 8
+  br label %81
+
+24:                                               ; preds = %11
+  %25 = ptrtoint %"class.base::PoissonAllocationSampler::SamplesObserver"** %14 to i64
+  %26 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"*** %13 to i64*
+  %27 = bitcast %"class.std::__1::vector"* %12 to i64*
+  %28 = load i64, i64* %27, align 8
+  %29 = sub i64 %25, %28
+  %30 = ashr exact i64 %29, 3
+  %31 = add nsw i64 %30, 1
+  %32 = icmp ugt i64 %31, 2305843009213693951
+  br i1 %32, label %33, label %35
+
+33:                                               ; preds = %24
+  %34 = bitcast %"class.std::__1::vector"* %12 to %"class.std::__1::__vector_base_common"*
+  tail call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"* %34) #17
+  unreachable
+
+35:                                               ; preds = %24
+  %36 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"*** %15 to i64*
+  %37 = sub i64 %18, %28
+  %38 = ashr exact i64 %37, 3
+  %39 = icmp ult i64 %38, 1152921504606846975
+  br i1 %39, label %40, label %48
+
+40:                                               ; preds = %35
+  %41 = ashr exact i64 %37, 2
+  %42 = icmp ult i64 %41, %31
+  %43 = select i1 %42, i64 %31, i64 %41
+  %44 = icmp eq i64 %43, 0
+  br i1 %44, label %53, label %45
+
+45:                                               ; preds = %40
+  %46 = icmp ugt i64 %43, 2305843009213693951
+  br i1 %46, label %47, label %48
+
+47:                                               ; preds = %45
+  tail call void @abort() #17
+  unreachable
+
+48:                                               ; preds = %45, %35
+  %49 = phi i64 [ %43, %45 ], [ 2305843009213693951, %35 ]
+  %50 = shl i64 %49, 3
+  %51 = tail call i8* @_Znwm(i64 %50) #16
+  %52 = bitcast i8* %51 to %"class.base::PoissonAllocationSampler::SamplesObserver"**
+  br label %53
+
+53:                                               ; preds = %48, %40
+  %54 = phi i64 [ %49, %48 ], [ 0, %40 ]
+  %55 = phi %"class.base::PoissonAllocationSampler::SamplesObserver"** [ %52, %48 ], [ null, %40 ]
+  %56 = getelementptr inbounds %"class.base::PoissonAllocationSampler::SamplesObserver"*, %"class.base::PoissonAllocationSampler::SamplesObserver"** %55, i64 %30
+  %57 = getelementptr inbounds %"class.base::PoissonAllocationSampler::SamplesObserver"*, %"class.base::PoissonAllocationSampler::SamplesObserver"** %55, i64 %54
+  %58 = ptrtoint %"class.base::PoissonAllocationSampler::SamplesObserver"** %57 to i64
+  %59 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"** %56 to i64*
+  store i64 %3, i64* %59, align 8
+  %60 = getelementptr inbounds %"class.base::PoissonAllocationSampler::SamplesObserver"*, %"class.base::PoissonAllocationSampler::SamplesObserver"** %56, i64 1
+  %61 = ptrtoint %"class.base::PoissonAllocationSampler::SamplesObserver"** %60 to i64
+  %62 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %12, i64 0, i32 0, i32 0
+  %63 = load %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %62, align 8
+  %64 = load i64, i64* %26, align 8
+  %65 = ptrtoint %"class.base::PoissonAllocationSampler::SamplesObserver"** %63 to i64
+  %66 = sub i64 %64, %65
+  %67 = ashr exact i64 %66, 3
+  %68 = sub nsw i64 0, %67
+  %69 = getelementptr inbounds %"class.base::PoissonAllocationSampler::SamplesObserver"*, %"class.base::PoissonAllocationSampler::SamplesObserver"** %56, i64 %68
+  %70 = ptrtoint %"class.base::PoissonAllocationSampler::SamplesObserver"** %69 to i64
+  %71 = icmp sgt i64 %66, 0
+  br i1 %71, label %72, label %76
+
+72:                                               ; preds = %53
+  %73 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"** %69 to i8*
+  %74 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"** %63 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %73, i8* align 8 %74, i64 %66, i1 false) #15
+  %75 = load %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %62, align 8
+  br label %76
+
+76:                                               ; preds = %72, %53
+  %77 = phi %"class.base::PoissonAllocationSampler::SamplesObserver"** [ %63, %53 ], [ %75, %72 ]
+  store i64 %70, i64* %27, align 8
+  store i64 %61, i64* %26, align 8
+  store i64 %58, i64* %36, align 8
+  %78 = icmp eq %"class.base::PoissonAllocationSampler::SamplesObserver"** %77, null
+  br i1 %78, label %81, label %79
+
+79:                                               ; preds = %76
+  %80 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"** %77 to i8*
+  tail call void @_ZdlPv(i8* %80) #16
+  br label %81
+
+81:                                               ; preds = %19, %76, %79
+  %82 = load atomic i8, i8* bitcast (i64* @_ZGVZN4base24PoissonAllocationSampler25InstallAllocatorHooksOnceEvE14hook_installed to i8*) acquire, align 8
+  %83 = icmp eq i8 %82, 0
+  br i1 %83, label %84, label %93, !prof !2
+
+84:                                               ; preds = %81
+  %85 = tail call i32 @__cxa_guard_acquire(i64* nonnull @_ZGVZN4base24PoissonAllocationSampler25InstallAllocatorHooksOnceEvE14hook_installed) #15
+  %86 = icmp eq i32 %85, 0
+  br i1 %86, label %93, label %87
+
+87:                                               ; preds = %84
+  tail call void @_ZN4base9allocator23InsertAllocatorDispatchEPNS0_17AllocatorDispatchE(%"struct.base::allocator::AllocatorDispatch"* nonnull @_ZN4base12_GLOBAL__N_120g_allocator_dispatchE) #15
+  tail call void @_ZN4base19PartitionAllocHooks16SetObserverHooksEPFvPvmPKcEPFvS1_E(void (i8*, i64, i8*)* nonnull @_ZN4base12_GLOBAL__N_118PartitionAllocHookEPvmPKc, void (i8*)* nonnull @_ZN4base12_GLOBAL__N_117PartitionFreeHookEPv) #15
+  %88 = cmpxchg i8* getelementptr inbounds (%"struct.std::__1::atomic.16", %"struct.std::__1::atomic.16"* @_ZN4base12_GLOBAL__N_117g_hooks_installedE, i64 0, i32 0, i32 0, i32 0, i32 0), i8 0, i8 1 seq_cst seq_cst
+  %89 = extractvalue { i8, i1 } %88, 1
+  br i1 %89, label %92, label %90
+
+90:                                               ; preds = %87
+  %91 = load void ()*, void ()** @_ZN4base12_GLOBAL__N_124g_hooks_install_callbackE, align 8
+  tail call void %91() #15
+  br label %92
+
+92:                                               ; preds = %90, %87
+  tail call void @__cxa_guard_release(i64* nonnull @_ZGVZN4base24PoissonAllocationSampler25InstallAllocatorHooksOnceEvE14hook_installed) #15
+  br label %93
+
+93:                                               ; preds = %81, %84, %92
+  %94 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %12, i64 0, i32 0, i32 0
+  %95 = load %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %94, align 8
+  %96 = load %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %13, align 8
+  %97 = icmp ne %"class.base::PoissonAllocationSampler::SamplesObserver"** %95, %96
+  %98 = zext i1 %97 to i8
+  store atomic i8 %98, i8* @_ZN4base12_GLOBAL__N_19g_runningE.0.0.0.0 seq_cst, align 1
+  %99 = tail call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %6) #15
+  store i1 false, i1* @_ZN4base12_GLOBAL__N_124g_internal_reentry_guardE, align 1
+  %100 = load i64, i64* @_ZN4base12_GLOBAL__N_132g_accumulated_bytes_tls_snapshotE, align 8
+  store i64 %100, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN4base24PoissonAllocationSampler21RemoveSamplesObserverEPNS0_15SamplesObserverE(%"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler::SamplesObserver"*) local_unnamed_addr #2 align 2 {
+  store i1 true, i1* @_ZN4base12_GLOBAL__N_124g_internal_reentry_guardE, align 1
+  %3 = load i64, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  store i64 %3, i64* @_ZN4base12_GLOBAL__N_132g_accumulated_bytes_tls_snapshotE, align 8
+  %4 = add nsw i64 %3, -536870912
+  store i64 %4, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %5 = getelementptr inbounds %"class.base::PoissonAllocationSampler", %"class.base::PoissonAllocationSampler"* %0, i64 0, i32 0, i32 0, i32 0
+  %6 = tail call i32 @pthread_mutex_trylock(%union.pthread_mutex_t* %5) #15
+  %7 = icmp eq i32 %6, 0
+  br i1 %7, label %10, label %8, !prof !3
+
+8:                                                ; preds = %2
+  %9 = getelementptr inbounds %"class.base::PoissonAllocationSampler", %"class.base::PoissonAllocationSampler"* %0, i64 0, i32 0, i32 0
+  tail call void @_ZN4base8internal8LockImpl24LockInternalWithTrackingEv(%"class.base::internal::LockImpl"* %9) #15
+  br label %10
+
+10:                                               ; preds = %2, %8
+  %11 = getelementptr inbounds %"class.base::PoissonAllocationSampler", %"class.base::PoissonAllocationSampler"* %0, i64 0, i32 1, i32 0, i32 0
+  %12 = load %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %11, align 8
+  %13 = getelementptr inbounds %"class.base::PoissonAllocationSampler", %"class.base::PoissonAllocationSampler"* %0, i64 0, i32 1, i32 0, i32 1
+  %14 = load %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %13, align 8
+  %15 = icmp eq %"class.base::PoissonAllocationSampler::SamplesObserver"** %12, %14
+  %16 = ptrtoint %"class.base::PoissonAllocationSampler::SamplesObserver"** %14 to i64
+  br i1 %15, label %24, label %17
+
+17:                                               ; preds = %10, %21
+  %18 = phi %"class.base::PoissonAllocationSampler::SamplesObserver"** [ %22, %21 ], [ %12, %10 ]
+  %19 = load %"class.base::PoissonAllocationSampler::SamplesObserver"*, %"class.base::PoissonAllocationSampler::SamplesObserver"** %18, align 8
+  %20 = icmp eq %"class.base::PoissonAllocationSampler::SamplesObserver"* %19, %1
+  br i1 %20, label %24, label %21
+
+21:                                               ; preds = %17
+  %22 = getelementptr inbounds %"class.base::PoissonAllocationSampler::SamplesObserver"*, %"class.base::PoissonAllocationSampler::SamplesObserver"** %18, i64 1
+  %23 = icmp eq %"class.base::PoissonAllocationSampler::SamplesObserver"** %22, %14
+  br i1 %23, label %24, label %17
+
+24:                                               ; preds = %17, %21, %10
+  %25 = phi %"class.base::PoissonAllocationSampler::SamplesObserver"** [ %12, %10 ], [ %14, %21 ], [ %18, %17 ]
+  %26 = getelementptr inbounds %"class.base::PoissonAllocationSampler::SamplesObserver"*, %"class.base::PoissonAllocationSampler::SamplesObserver"** %25, i64 1
+  %27 = ptrtoint %"class.base::PoissonAllocationSampler::SamplesObserver"** %26 to i64
+  %28 = sub i64 %16, %27
+  %29 = ashr exact i64 %28, 3
+  %30 = icmp eq i64 %28, 0
+  br i1 %30, label %35, label %31
+
+31:                                               ; preds = %24
+  %32 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"** %25 to i8*
+  %33 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"** %26 to i8*
+  tail call void @llvm.memmove.p0i8.p0i8.i64(i8* align 8 %32, i8* align 8 %33, i64 %28, i1 false) #15
+  %34 = load %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %11, align 8
+  br label %35
+
+35:                                               ; preds = %24, %31
+  %36 = phi %"class.base::PoissonAllocationSampler::SamplesObserver"** [ %12, %24 ], [ %34, %31 ]
+  %37 = getelementptr inbounds %"class.base::PoissonAllocationSampler::SamplesObserver"*, %"class.base::PoissonAllocationSampler::SamplesObserver"** %25, i64 %29
+  store %"class.base::PoissonAllocationSampler::SamplesObserver"** %37, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %13, align 8
+  %38 = icmp ne %"class.base::PoissonAllocationSampler::SamplesObserver"** %36, %37
+  %39 = zext i1 %38 to i8
+  store atomic i8 %39, i8* @_ZN4base12_GLOBAL__N_19g_runningE.0.0.0.0 seq_cst, align 1
+  %40 = tail call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %5) #15
+  store i1 false, i1* @_ZN4base12_GLOBAL__N_124g_internal_reentry_guardE, align 1
+  %41 = load i64, i64* @_ZN4base12_GLOBAL__N_132g_accumulated_bytes_tls_snapshotE, align 8
+  store i64 %41, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  ret void
+}
+
+declare void @_ZN4base8internal8LockImplC1Ev(%"class.base::internal::LockImpl"*) unnamed_addr #4
+
+declare i8* @_ZN7logging15CheckOpValueStrEDn(i8*) local_unnamed_addr #4
+
+declare void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"*, i8*, i8*, i8*) unnamed_addr #4
+
+declare i8* @_ZN7logging14StreamValToStrEPKvPFvRNSt3__113basic_ostreamIcNS2_11char_traitsIcEEEES1_E(i8*, void (%"class.std::__1::basic_ostream"*, i8*)*) local_unnamed_addr #4
+
+; Function Attrs: inlinehint nounwind ssp uwtable
+define linkonce_odr hidden void @_ZZN7logging15CheckOpValueStrIPN4base24PoissonAllocationSamplerEEENSt3__19enable_ifIXaasr4base8internal23SupportsOstreamOperatorIRKT_EE5valuentsr3std11is_functionINS4_14remove_pointerIS6_E4typeEEE5valueEPcE4typeES8_ENUlRNS4_13basic_ostreamIcNS4_11char_traitsIcEEEEPKvE_8__invokeESJ_SL_(%"class.std::__1::basic_ostream"* dereferenceable(160), i8*) #11 comdat align 2 {
+  %3 = bitcast i8* %1 to i8**
+  %4 = load i8*, i8** %3, align 8
+  %5 = tail call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEPKv(%"class.std::__1::basic_ostream"* %0, i8* %4) #15
+  ret void
+}
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEPKv(%"class.std::__1::basic_ostream"*, i8*) local_unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define internal i8* @_ZN4base12_GLOBAL__N_17AllocFnEPKNS_9allocator17AllocatorDispatchEmPv(%"struct.base::allocator::AllocatorDispatch"* nocapture readonly, i64, i8*) #2 {
+  %4 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %0, i64 0, i32 13
+  %5 = load %"struct.base::allocator::AllocatorDispatch"*, %"struct.base::allocator::AllocatorDispatch"** %4, align 8
+  %6 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %5, i64 0, i32 0
+  %7 = load i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i8*)*, i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i8*)** %6, align 8
+  %8 = tail call i8* %7(%"struct.base::allocator::AllocatorDispatch"* %5, i64 %1, i8* %2) #15
+  %9 = load i64, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %10 = add i64 %9, %1
+  store i64 %10, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %11 = icmp slt i64 %10, 0
+  br i1 %11, label %19, label %12, !prof !3
+
+12:                                               ; preds = %3
+  %13 = load atomic i8, i8* @_ZN4base12_GLOBAL__N_19g_runningE.0.0.0.0 monotonic, align 1
+  %14 = and i8 %13, 1
+  %15 = icmp eq i8 %14, 0
+  br i1 %15, label %16, label %17, !prof !4
+
+16:                                               ; preds = %12
+  store i1 false, i1* @_ZN4base12_GLOBAL__N_135g_sampling_interval_initialized_tlsE, align 1
+  store i64 0, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  br label %19
+
+17:                                               ; preds = %12
+  %18 = load %"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E, align 8
+  tail call void @_ZN4base24PoissonAllocationSampler13DoRecordAllocElmPvNS0_13AllocatorTypeEPKc(%"class.base::PoissonAllocationSampler"* %18, i64 %10, i64 %1, i8* %8, i32 0, i8* null) #15
+  br label %19
+
+19:                                               ; preds = %3, %16, %17
+  ret i8* %8
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal i8* @_ZN4base12_GLOBAL__N_116AllocUncheckedFnEPKNS_9allocator17AllocatorDispatchEmPv(%"struct.base::allocator::AllocatorDispatch"* nocapture readonly, i64, i8*) #2 {
+  %4 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %0, i64 0, i32 13
+  %5 = load %"struct.base::allocator::AllocatorDispatch"*, %"struct.base::allocator::AllocatorDispatch"** %4, align 8
+  %6 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %5, i64 0, i32 1
+  %7 = load i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i8*)*, i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i8*)** %6, align 8
+  %8 = tail call i8* %7(%"struct.base::allocator::AllocatorDispatch"* %5, i64 %1, i8* %2) #15
+  %9 = load i64, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %10 = add i64 %9, %1
+  store i64 %10, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %11 = icmp slt i64 %10, 0
+  br i1 %11, label %19, label %12, !prof !3
+
+12:                                               ; preds = %3
+  %13 = load atomic i8, i8* @_ZN4base12_GLOBAL__N_19g_runningE.0.0.0.0 monotonic, align 1
+  %14 = and i8 %13, 1
+  %15 = icmp eq i8 %14, 0
+  br i1 %15, label %16, label %17, !prof !4
+
+16:                                               ; preds = %12
+  store i1 false, i1* @_ZN4base12_GLOBAL__N_135g_sampling_interval_initialized_tlsE, align 1
+  store i64 0, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  br label %19
+
+17:                                               ; preds = %12
+  %18 = load %"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E, align 8
+  tail call void @_ZN4base24PoissonAllocationSampler13DoRecordAllocElmPvNS0_13AllocatorTypeEPKc(%"class.base::PoissonAllocationSampler"* %18, i64 %10, i64 %1, i8* %8, i32 0, i8* null) #15
+  br label %19
+
+19:                                               ; preds = %3, %16, %17
+  ret i8* %8
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal i8* @_ZN4base12_GLOBAL__N_122AllocZeroInitializedFnEPKNS_9allocator17AllocatorDispatchEmmPv(%"struct.base::allocator::AllocatorDispatch"* nocapture readonly, i64, i64, i8*) #2 {
+  %5 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %0, i64 0, i32 13
+  %6 = load %"struct.base::allocator::AllocatorDispatch"*, %"struct.base::allocator::AllocatorDispatch"** %5, align 8
+  %7 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %6, i64 0, i32 2
+  %8 = load i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i64, i8*)*, i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i64, i8*)** %7, align 8
+  %9 = tail call i8* %8(%"struct.base::allocator::AllocatorDispatch"* %6, i64 %1, i64 %2, i8* %3) #15
+  %10 = mul i64 %2, %1
+  %11 = load i64, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %12 = add i64 %11, %10
+  store i64 %12, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %13 = icmp slt i64 %12, 0
+  br i1 %13, label %21, label %14, !prof !3
+
+14:                                               ; preds = %4
+  %15 = load atomic i8, i8* @_ZN4base12_GLOBAL__N_19g_runningE.0.0.0.0 monotonic, align 1
+  %16 = and i8 %15, 1
+  %17 = icmp eq i8 %16, 0
+  br i1 %17, label %18, label %19, !prof !4
+
+18:                                               ; preds = %14
+  store i1 false, i1* @_ZN4base12_GLOBAL__N_135g_sampling_interval_initialized_tlsE, align 1
+  store i64 0, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  br label %21
+
+19:                                               ; preds = %14
+  %20 = load %"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E, align 8
+  tail call void @_ZN4base24PoissonAllocationSampler13DoRecordAllocElmPvNS0_13AllocatorTypeEPKc(%"class.base::PoissonAllocationSampler"* %20, i64 %12, i64 %10, i8* %9, i32 0, i8* null) #15
+  br label %21
+
+21:                                               ; preds = %4, %18, %19
+  ret i8* %9
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal i8* @_ZN4base12_GLOBAL__N_114AllocAlignedFnEPKNS_9allocator17AllocatorDispatchEmmPv(%"struct.base::allocator::AllocatorDispatch"* nocapture readonly, i64, i64, i8*) #2 {
+  %5 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %0, i64 0, i32 13
+  %6 = load %"struct.base::allocator::AllocatorDispatch"*, %"struct.base::allocator::AllocatorDispatch"** %5, align 8
+  %7 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %6, i64 0, i32 3
+  %8 = load i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i64, i8*)*, i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i64, i8*)** %7, align 8
+  %9 = tail call i8* %8(%"struct.base::allocator::AllocatorDispatch"* %6, i64 %1, i64 %2, i8* %3) #15
+  %10 = load i64, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %11 = add i64 %10, %2
+  store i64 %11, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %12 = icmp slt i64 %11, 0
+  br i1 %12, label %20, label %13, !prof !3
+
+13:                                               ; preds = %4
+  %14 = load atomic i8, i8* @_ZN4base12_GLOBAL__N_19g_runningE.0.0.0.0 monotonic, align 1
+  %15 = and i8 %14, 1
+  %16 = icmp eq i8 %15, 0
+  br i1 %16, label %17, label %18, !prof !4
+
+17:                                               ; preds = %13
+  store i1 false, i1* @_ZN4base12_GLOBAL__N_135g_sampling_interval_initialized_tlsE, align 1
+  store i64 0, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  br label %20
+
+18:                                               ; preds = %13
+  %19 = load %"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E, align 8
+  tail call void @_ZN4base24PoissonAllocationSampler13DoRecordAllocElmPvNS0_13AllocatorTypeEPKc(%"class.base::PoissonAllocationSampler"* %19, i64 %11, i64 %2, i8* %9, i32 0, i8* null) #15
+  br label %20
+
+20:                                               ; preds = %4, %17, %18
+  ret i8* %9
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal i8* @_ZN4base12_GLOBAL__N_19ReallocFnEPKNS_9allocator17AllocatorDispatchEPvmS5_(%"struct.base::allocator::AllocatorDispatch"* nocapture readonly, i8*, i64, i8*) #2 {
+  %5 = icmp eq i8* %1, null
+  br i1 %5, label %37, label %6, !prof !4
+
+6:                                                ; preds = %4
+  %7 = load atomic i64, i64* bitcast (%"struct.std::__1::atomic.12"* @_ZN4base12_GLOBAL__N_123g_sampled_addresses_setE to i64*) acquire, align 8
+  %8 = inttoptr i64 %7 to %"class.base::LockFreeAddressHashSet"*
+  %9 = ptrtoint i8* %1 to i64
+  %10 = mul i64 %9, 5475737090898469947
+  %11 = lshr i64 %10, 32
+  %12 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %8, i64 0, i32 2
+  %13 = load i64, i64* %12, align 8
+  %14 = and i64 %13, %11
+  %15 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %8, i64 0, i32 0, i32 0, i32 0
+  %16 = load %"struct.std::__1::atomic"*, %"struct.std::__1::atomic"** %15, align 8
+  %17 = getelementptr inbounds %"struct.std::__1::atomic", %"struct.std::__1::atomic"* %16, i64 %14, i32 0
+  %18 = bitcast %"struct.std::__1::__atomic_base"* %17 to i64*
+  %19 = load atomic i64, i64* %18 acquire, align 8
+  %20 = inttoptr i64 %19 to %"struct.base::LockFreeAddressHashSet::Node"*
+  %21 = icmp eq i64 %19, 0
+  br i1 %21, label %32, label %22
+
+22:                                               ; preds = %6, %28
+  %23 = phi %"struct.base::LockFreeAddressHashSet::Node"* [ %30, %28 ], [ %20, %6 ]
+  %24 = bitcast %"struct.base::LockFreeAddressHashSet::Node"* %23 to i64*
+  %25 = load atomic i64, i64* %24 monotonic, align 8
+  %26 = inttoptr i64 %25 to i8*
+  %27 = icmp eq i8* %26, %1
+  br i1 %27, label %32, label %28
+
+28:                                               ; preds = %22
+  %29 = getelementptr inbounds %"struct.base::LockFreeAddressHashSet::Node", %"struct.base::LockFreeAddressHashSet::Node"* %23, i64 0, i32 1
+  %30 = load %"struct.base::LockFreeAddressHashSet::Node"*, %"struct.base::LockFreeAddressHashSet::Node"** %29, align 8
+  %31 = icmp eq %"struct.base::LockFreeAddressHashSet::Node"* %30, null
+  br i1 %31, label %37, label %22
+
+32:                                               ; preds = %22, %6
+  %33 = phi %"struct.base::LockFreeAddressHashSet::Node"* [ %20, %6 ], [ %23, %22 ]
+  %34 = icmp eq %"struct.base::LockFreeAddressHashSet::Node"* %33, null
+  br i1 %34, label %37, label %35, !prof !3
+
+35:                                               ; preds = %32
+  %36 = load %"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E, align 8
+  tail call void @_ZN4base24PoissonAllocationSampler12DoRecordFreeEPv(%"class.base::PoissonAllocationSampler"* %36, i8* nonnull %1) #15
+  br label %37
+
+37:                                               ; preds = %28, %4, %32, %35
+  %38 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %0, i64 0, i32 13
+  %39 = load %"struct.base::allocator::AllocatorDispatch"*, %"struct.base::allocator::AllocatorDispatch"** %38, align 8
+  %40 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %39, i64 0, i32 4
+  %41 = load i8* (%"struct.base::allocator::AllocatorDispatch"*, i8*, i64, i8*)*, i8* (%"struct.base::allocator::AllocatorDispatch"*, i8*, i64, i8*)** %40, align 8
+  %42 = tail call i8* %41(%"struct.base::allocator::AllocatorDispatch"* %39, i8* %1, i64 %2, i8* %3) #15
+  %43 = load i64, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %44 = add i64 %43, %2
+  store i64 %44, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %45 = icmp slt i64 %44, 0
+  br i1 %45, label %53, label %46, !prof !3
+
+46:                                               ; preds = %37
+  %47 = load atomic i8, i8* @_ZN4base12_GLOBAL__N_19g_runningE.0.0.0.0 monotonic, align 1
+  %48 = and i8 %47, 1
+  %49 = icmp eq i8 %48, 0
+  br i1 %49, label %50, label %51, !prof !4
+
+50:                                               ; preds = %46
+  store i1 false, i1* @_ZN4base12_GLOBAL__N_135g_sampling_interval_initialized_tlsE, align 1
+  store i64 0, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  br label %53
+
+51:                                               ; preds = %46
+  %52 = load %"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E, align 8
+  tail call void @_ZN4base24PoissonAllocationSampler13DoRecordAllocElmPvNS0_13AllocatorTypeEPKc(%"class.base::PoissonAllocationSampler"* %52, i64 %44, i64 %2, i8* %42, i32 0, i8* null) #15
+  br label %53
+
+53:                                               ; preds = %37, %50, %51
+  ret i8* %42
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN4base12_GLOBAL__N_16FreeFnEPKNS_9allocator17AllocatorDispatchEPvS5_(%"struct.base::allocator::AllocatorDispatch"* nocapture readonly, i8*, i8*) #2 {
+  %4 = icmp eq i8* %1, null
+  br i1 %4, label %36, label %5, !prof !4
+
+5:                                                ; preds = %3
+  %6 = load atomic i64, i64* bitcast (%"struct.std::__1::atomic.12"* @_ZN4base12_GLOBAL__N_123g_sampled_addresses_setE to i64*) acquire, align 8
+  %7 = inttoptr i64 %6 to %"class.base::LockFreeAddressHashSet"*
+  %8 = ptrtoint i8* %1 to i64
+  %9 = mul i64 %8, 5475737090898469947
+  %10 = lshr i64 %9, 32
+  %11 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %7, i64 0, i32 2
+  %12 = load i64, i64* %11, align 8
+  %13 = and i64 %12, %10
+  %14 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %7, i64 0, i32 0, i32 0, i32 0
+  %15 = load %"struct.std::__1::atomic"*, %"struct.std::__1::atomic"** %14, align 8
+  %16 = getelementptr inbounds %"struct.std::__1::atomic", %"struct.std::__1::atomic"* %15, i64 %13, i32 0
+  %17 = bitcast %"struct.std::__1::__atomic_base"* %16 to i64*
+  %18 = load atomic i64, i64* %17 acquire, align 8
+  %19 = inttoptr i64 %18 to %"struct.base::LockFreeAddressHashSet::Node"*
+  %20 = icmp eq i64 %18, 0
+  br i1 %20, label %31, label %21
+
+21:                                               ; preds = %5, %27
+  %22 = phi %"struct.base::LockFreeAddressHashSet::Node"* [ %29, %27 ], [ %19, %5 ]
+  %23 = bitcast %"struct.base::LockFreeAddressHashSet::Node"* %22 to i64*
+  %24 = load atomic i64, i64* %23 monotonic, align 8
+  %25 = inttoptr i64 %24 to i8*
+  %26 = icmp eq i8* %25, %1
+  br i1 %26, label %31, label %27
+
+27:                                               ; preds = %21
+  %28 = getelementptr inbounds %"struct.base::LockFreeAddressHashSet::Node", %"struct.base::LockFreeAddressHashSet::Node"* %22, i64 0, i32 1
+  %29 = load %"struct.base::LockFreeAddressHashSet::Node"*, %"struct.base::LockFreeAddressHashSet::Node"** %28, align 8
+  %30 = icmp eq %"struct.base::LockFreeAddressHashSet::Node"* %29, null
+  br i1 %30, label %36, label %21
+
+31:                                               ; preds = %21, %5
+  %32 = phi %"struct.base::LockFreeAddressHashSet::Node"* [ %19, %5 ], [ %22, %21 ]
+  %33 = icmp eq %"struct.base::LockFreeAddressHashSet::Node"* %32, null
+  br i1 %33, label %36, label %34, !prof !3
+
+34:                                               ; preds = %31
+  %35 = load %"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E, align 8
+  tail call void @_ZN4base24PoissonAllocationSampler12DoRecordFreeEPv(%"class.base::PoissonAllocationSampler"* %35, i8* nonnull %1) #15
+  br label %36
+
+36:                                               ; preds = %27, %3, %31, %34
+  %37 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %0, i64 0, i32 13
+  %38 = load %"struct.base::allocator::AllocatorDispatch"*, %"struct.base::allocator::AllocatorDispatch"** %37, align 8
+  %39 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %38, i64 0, i32 5
+  %40 = load void (%"struct.base::allocator::AllocatorDispatch"*, i8*, i8*)*, void (%"struct.base::allocator::AllocatorDispatch"*, i8*, i8*)** %39, align 8
+  tail call void %40(%"struct.base::allocator::AllocatorDispatch"* %38, i8* %1, i8* %2) #15
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal i64 @_ZN4base12_GLOBAL__N_117GetSizeEstimateFnEPKNS_9allocator17AllocatorDispatchEPvS5_(%"struct.base::allocator::AllocatorDispatch"* nocapture readonly, i8*, i8*) #2 {
+  %4 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %0, i64 0, i32 13
+  %5 = load %"struct.base::allocator::AllocatorDispatch"*, %"struct.base::allocator::AllocatorDispatch"** %4, align 8
+  %6 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %5, i64 0, i32 6
+  %7 = load i64 (%"struct.base::allocator::AllocatorDispatch"*, i8*, i8*)*, i64 (%"struct.base::allocator::AllocatorDispatch"*, i8*, i8*)** %6, align 8
+  %8 = tail call i64 %7(%"struct.base::allocator::AllocatorDispatch"* %5, i8* %1, i8* %2) #15
+  ret i64 %8
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal i32 @_ZN4base12_GLOBAL__N_113BatchMallocFnEPKNS_9allocator17AllocatorDispatchEmPPvjS5_(%"struct.base::allocator::AllocatorDispatch"* nocapture readonly, i64, i8**, i32, i8*) #2 {
+  %6 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %0, i64 0, i32 13
+  %7 = load %"struct.base::allocator::AllocatorDispatch"*, %"struct.base::allocator::AllocatorDispatch"** %6, align 8
+  %8 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %7, i64 0, i32 7
+  %9 = load i32 (%"struct.base::allocator::AllocatorDispatch"*, i64, i8**, i32, i8*)*, i32 (%"struct.base::allocator::AllocatorDispatch"*, i64, i8**, i32, i8*)** %8, align 8
+  %10 = tail call i32 %9(%"struct.base::allocator::AllocatorDispatch"* %7, i64 %1, i8** %2, i32 %3, i8* %4) #15
+  %11 = icmp eq i32 %10, 0
+  br i1 %11, label %31, label %12
+
+12:                                               ; preds = %5
+  %13 = zext i32 %10 to i64
+  br label %14
+
+14:                                               ; preds = %28, %12
+  %15 = phi i64 [ 0, %12 ], [ %29, %28 ]
+  %16 = getelementptr inbounds i8*, i8** %2, i64 %15
+  %17 = load i8*, i8** %16, align 8
+  %18 = load i64, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %19 = add i64 %18, %1
+  store i64 %19, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %20 = icmp slt i64 %19, 0
+  br i1 %20, label %28, label %21, !prof !3
+
+21:                                               ; preds = %14
+  %22 = load atomic i8, i8* @_ZN4base12_GLOBAL__N_19g_runningE.0.0.0.0 monotonic, align 1
+  %23 = and i8 %22, 1
+  %24 = icmp eq i8 %23, 0
+  br i1 %24, label %25, label %26, !prof !4
+
+25:                                               ; preds = %21
+  store i1 false, i1* @_ZN4base12_GLOBAL__N_135g_sampling_interval_initialized_tlsE, align 1
+  store i64 0, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  br label %28
+
+26:                                               ; preds = %21
+  %27 = load %"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E, align 8
+  tail call void @_ZN4base24PoissonAllocationSampler13DoRecordAllocElmPvNS0_13AllocatorTypeEPKc(%"class.base::PoissonAllocationSampler"* %27, i64 %19, i64 %1, i8* %17, i32 0, i8* null) #15
+  br label %28
+
+28:                                               ; preds = %14, %25, %26
+  %29 = add nuw nsw i64 %15, 1
+  %30 = icmp eq i64 %29, %13
+  br i1 %30, label %31, label %14
+
+31:                                               ; preds = %28, %5
+  ret i32 %10
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN4base12_GLOBAL__N_111BatchFreeFnEPKNS_9allocator17AllocatorDispatchEPPvjS5_(%"struct.base::allocator::AllocatorDispatch"* nocapture readonly, i8**, i32, i8*) #2 {
+  %5 = icmp eq i32 %2, 0
+  br i1 %5, label %8, label %6
+
+6:                                                ; preds = %4
+  %7 = zext i32 %2 to i64
+  br label %13
+
+8:                                                ; preds = %49, %4
+  %9 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %0, i64 0, i32 13
+  %10 = load %"struct.base::allocator::AllocatorDispatch"*, %"struct.base::allocator::AllocatorDispatch"** %9, align 8
+  %11 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %10, i64 0, i32 8
+  %12 = load void (%"struct.base::allocator::AllocatorDispatch"*, i8**, i32, i8*)*, void (%"struct.base::allocator::AllocatorDispatch"*, i8**, i32, i8*)** %11, align 8
+  tail call void %12(%"struct.base::allocator::AllocatorDispatch"* %10, i8** %1, i32 %2, i8* %3) #15
+  ret void
+
+13:                                               ; preds = %49, %6
+  %14 = phi i64 [ 0, %6 ], [ %50, %49 ]
+  %15 = getelementptr inbounds i8*, i8** %1, i64 %14
+  %16 = load i8*, i8** %15, align 8
+  %17 = icmp eq i8* %16, null
+  br i1 %17, label %49, label %18, !prof !4
+
+18:                                               ; preds = %13
+  %19 = load atomic i64, i64* bitcast (%"struct.std::__1::atomic.12"* @_ZN4base12_GLOBAL__N_123g_sampled_addresses_setE to i64*) acquire, align 8
+  %20 = inttoptr i64 %19 to %"class.base::LockFreeAddressHashSet"*
+  %21 = ptrtoint i8* %16 to i64
+  %22 = mul i64 %21, 5475737090898469947
+  %23 = lshr i64 %22, 32
+  %24 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %20, i64 0, i32 2
+  %25 = load i64, i64* %24, align 8
+  %26 = and i64 %25, %23
+  %27 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %20, i64 0, i32 0, i32 0, i32 0
+  %28 = load %"struct.std::__1::atomic"*, %"struct.std::__1::atomic"** %27, align 8
+  %29 = getelementptr inbounds %"struct.std::__1::atomic", %"struct.std::__1::atomic"* %28, i64 %26, i32 0
+  %30 = bitcast %"struct.std::__1::__atomic_base"* %29 to i64*
+  %31 = load atomic i64, i64* %30 acquire, align 8
+  %32 = inttoptr i64 %31 to %"struct.base::LockFreeAddressHashSet::Node"*
+  %33 = icmp eq i64 %31, 0
+  br i1 %33, label %44, label %34
+
+34:                                               ; preds = %18, %40
+  %35 = phi %"struct.base::LockFreeAddressHashSet::Node"* [ %42, %40 ], [ %32, %18 ]
+  %36 = bitcast %"struct.base::LockFreeAddressHashSet::Node"* %35 to i64*
+  %37 = load atomic i64, i64* %36 monotonic, align 8
+  %38 = inttoptr i64 %37 to i8*
+  %39 = icmp eq i8* %16, %38
+  br i1 %39, label %44, label %40
+
+40:                                               ; preds = %34
+  %41 = getelementptr inbounds %"struct.base::LockFreeAddressHashSet::Node", %"struct.base::LockFreeAddressHashSet::Node"* %35, i64 0, i32 1
+  %42 = load %"struct.base::LockFreeAddressHashSet::Node"*, %"struct.base::LockFreeAddressHashSet::Node"** %41, align 8
+  %43 = icmp eq %"struct.base::LockFreeAddressHashSet::Node"* %42, null
+  br i1 %43, label %49, label %34
+
+44:                                               ; preds = %34, %18
+  %45 = phi %"struct.base::LockFreeAddressHashSet::Node"* [ %32, %18 ], [ %35, %34 ]
+  %46 = icmp eq %"struct.base::LockFreeAddressHashSet::Node"* %45, null
+  br i1 %46, label %49, label %47, !prof !3
+
+47:                                               ; preds = %44
+  %48 = load %"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E, align 8
+  tail call void @_ZN4base24PoissonAllocationSampler12DoRecordFreeEPv(%"class.base::PoissonAllocationSampler"* %48, i8* nonnull %16) #15
+  br label %49
+
+49:                                               ; preds = %40, %13, %44, %47
+  %50 = add nuw nsw i64 %14, 1
+  %51 = icmp eq i64 %50, %7
+  br i1 %51, label %8, label %13
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN4base12_GLOBAL__N_118FreeDefiniteSizeFnEPKNS_9allocator17AllocatorDispatchEPvmS5_(%"struct.base::allocator::AllocatorDispatch"* nocapture readonly, i8*, i64, i8*) #2 {
+  %5 = icmp eq i8* %1, null
+  br i1 %5, label %37, label %6, !prof !4
+
+6:                                                ; preds = %4
+  %7 = load atomic i64, i64* bitcast (%"struct.std::__1::atomic.12"* @_ZN4base12_GLOBAL__N_123g_sampled_addresses_setE to i64*) acquire, align 8
+  %8 = inttoptr i64 %7 to %"class.base::LockFreeAddressHashSet"*
+  %9 = ptrtoint i8* %1 to i64
+  %10 = mul i64 %9, 5475737090898469947
+  %11 = lshr i64 %10, 32
+  %12 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %8, i64 0, i32 2
+  %13 = load i64, i64* %12, align 8
+  %14 = and i64 %13, %11
+  %15 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %8, i64 0, i32 0, i32 0, i32 0
+  %16 = load %"struct.std::__1::atomic"*, %"struct.std::__1::atomic"** %15, align 8
+  %17 = getelementptr inbounds %"struct.std::__1::atomic", %"struct.std::__1::atomic"* %16, i64 %14, i32 0
+  %18 = bitcast %"struct.std::__1::__atomic_base"* %17 to i64*
+  %19 = load atomic i64, i64* %18 acquire, align 8
+  %20 = inttoptr i64 %19 to %"struct.base::LockFreeAddressHashSet::Node"*
+  %21 = icmp eq i64 %19, 0
+  br i1 %21, label %32, label %22
+
+22:                                               ; preds = %6, %28
+  %23 = phi %"struct.base::LockFreeAddressHashSet::Node"* [ %30, %28 ], [ %20, %6 ]
+  %24 = bitcast %"struct.base::LockFreeAddressHashSet::Node"* %23 to i64*
+  %25 = load atomic i64, i64* %24 monotonic, align 8
+  %26 = inttoptr i64 %25 to i8*
+  %27 = icmp eq i8* %26, %1
+  br i1 %27, label %32, label %28
+
+28:                                               ; preds = %22
+  %29 = getelementptr inbounds %"struct.base::LockFreeAddressHashSet::Node", %"struct.base::LockFreeAddressHashSet::Node"* %23, i64 0, i32 1
+  %30 = load %"struct.base::LockFreeAddressHashSet::Node"*, %"struct.base::LockFreeAddressHashSet::Node"** %29, align 8
+  %31 = icmp eq %"struct.base::LockFreeAddressHashSet::Node"* %30, null
+  br i1 %31, label %37, label %22
+
+32:                                               ; preds = %22, %6
+  %33 = phi %"struct.base::LockFreeAddressHashSet::Node"* [ %20, %6 ], [ %23, %22 ]
+  %34 = icmp eq %"struct.base::LockFreeAddressHashSet::Node"* %33, null
+  br i1 %34, label %37, label %35, !prof !3
+
+35:                                               ; preds = %32
+  %36 = load %"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E, align 8
+  tail call void @_ZN4base24PoissonAllocationSampler12DoRecordFreeEPv(%"class.base::PoissonAllocationSampler"* %36, i8* nonnull %1) #15
+  br label %37
+
+37:                                               ; preds = %28, %4, %32, %35
+  %38 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %0, i64 0, i32 13
+  %39 = load %"struct.base::allocator::AllocatorDispatch"*, %"struct.base::allocator::AllocatorDispatch"** %38, align 8
+  %40 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %39, i64 0, i32 9
+  %41 = load void (%"struct.base::allocator::AllocatorDispatch"*, i8*, i64, i8*)*, void (%"struct.base::allocator::AllocatorDispatch"*, i8*, i64, i8*)** %40, align 8
+  tail call void %41(%"struct.base::allocator::AllocatorDispatch"* %39, i8* %1, i64 %2, i8* %3) #15
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal i8* @_ZN4base12_GLOBAL__N_115AlignedMallocFnEPKNS_9allocator17AllocatorDispatchEmmPv(%"struct.base::allocator::AllocatorDispatch"* nocapture readonly, i64, i64, i8*) #2 {
+  %5 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %0, i64 0, i32 13
+  %6 = load %"struct.base::allocator::AllocatorDispatch"*, %"struct.base::allocator::AllocatorDispatch"** %5, align 8
+  %7 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %6, i64 0, i32 10
+  %8 = load i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i64, i8*)*, i8* (%"struct.base::allocator::AllocatorDispatch"*, i64, i64, i8*)** %7, align 8
+  %9 = tail call i8* %8(%"struct.base::allocator::AllocatorDispatch"* %6, i64 %1, i64 %2, i8* %3) #15
+  %10 = load i64, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %11 = add i64 %10, %1
+  store i64 %11, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %12 = icmp slt i64 %11, 0
+  br i1 %12, label %20, label %13, !prof !3
+
+13:                                               ; preds = %4
+  %14 = load atomic i8, i8* @_ZN4base12_GLOBAL__N_19g_runningE.0.0.0.0 monotonic, align 1
+  %15 = and i8 %14, 1
+  %16 = icmp eq i8 %15, 0
+  br i1 %16, label %17, label %18, !prof !4
+
+17:                                               ; preds = %13
+  store i1 false, i1* @_ZN4base12_GLOBAL__N_135g_sampling_interval_initialized_tlsE, align 1
+  store i64 0, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  br label %20
+
+18:                                               ; preds = %13
+  %19 = load %"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E, align 8
+  tail call void @_ZN4base24PoissonAllocationSampler13DoRecordAllocElmPvNS0_13AllocatorTypeEPKc(%"class.base::PoissonAllocationSampler"* %19, i64 %11, i64 %1, i8* %9, i32 0, i8* null) #15
+  br label %20
+
+20:                                               ; preds = %4, %17, %18
+  ret i8* %9
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal i8* @_ZN4base12_GLOBAL__N_116AlignedReallocFnEPKNS_9allocator17AllocatorDispatchEPvmmS5_(%"struct.base::allocator::AllocatorDispatch"* nocapture readonly, i8*, i64, i64, i8*) #2 {
+  %6 = icmp eq i8* %1, null
+  br i1 %6, label %38, label %7, !prof !4
+
+7:                                                ; preds = %5
+  %8 = load atomic i64, i64* bitcast (%"struct.std::__1::atomic.12"* @_ZN4base12_GLOBAL__N_123g_sampled_addresses_setE to i64*) acquire, align 8
+  %9 = inttoptr i64 %8 to %"class.base::LockFreeAddressHashSet"*
+  %10 = ptrtoint i8* %1 to i64
+  %11 = mul i64 %10, 5475737090898469947
+  %12 = lshr i64 %11, 32
+  %13 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %9, i64 0, i32 2
+  %14 = load i64, i64* %13, align 8
+  %15 = and i64 %14, %12
+  %16 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %9, i64 0, i32 0, i32 0, i32 0
+  %17 = load %"struct.std::__1::atomic"*, %"struct.std::__1::atomic"** %16, align 8
+  %18 = getelementptr inbounds %"struct.std::__1::atomic", %"struct.std::__1::atomic"* %17, i64 %15, i32 0
+  %19 = bitcast %"struct.std::__1::__atomic_base"* %18 to i64*
+  %20 = load atomic i64, i64* %19 acquire, align 8
+  %21 = inttoptr i64 %20 to %"struct.base::LockFreeAddressHashSet::Node"*
+  %22 = icmp eq i64 %20, 0
+  br i1 %22, label %33, label %23
+
+23:                                               ; preds = %7, %29
+  %24 = phi %"struct.base::LockFreeAddressHashSet::Node"* [ %31, %29 ], [ %21, %7 ]
+  %25 = bitcast %"struct.base::LockFreeAddressHashSet::Node"* %24 to i64*
+  %26 = load atomic i64, i64* %25 monotonic, align 8
+  %27 = inttoptr i64 %26 to i8*
+  %28 = icmp eq i8* %27, %1
+  br i1 %28, label %33, label %29
+
+29:                                               ; preds = %23
+  %30 = getelementptr inbounds %"struct.base::LockFreeAddressHashSet::Node", %"struct.base::LockFreeAddressHashSet::Node"* %24, i64 0, i32 1
+  %31 = load %"struct.base::LockFreeAddressHashSet::Node"*, %"struct.base::LockFreeAddressHashSet::Node"** %30, align 8
+  %32 = icmp eq %"struct.base::LockFreeAddressHashSet::Node"* %31, null
+  br i1 %32, label %38, label %23
+
+33:                                               ; preds = %23, %7
+  %34 = phi %"struct.base::LockFreeAddressHashSet::Node"* [ %21, %7 ], [ %24, %23 ]
+  %35 = icmp eq %"struct.base::LockFreeAddressHashSet::Node"* %34, null
+  br i1 %35, label %38, label %36, !prof !3
+
+36:                                               ; preds = %33
+  %37 = load %"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E, align 8
+  tail call void @_ZN4base24PoissonAllocationSampler12DoRecordFreeEPv(%"class.base::PoissonAllocationSampler"* %37, i8* nonnull %1) #15
+  br label %38
+
+38:                                               ; preds = %29, %5, %33, %36
+  %39 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %0, i64 0, i32 13
+  %40 = load %"struct.base::allocator::AllocatorDispatch"*, %"struct.base::allocator::AllocatorDispatch"** %39, align 8
+  %41 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %40, i64 0, i32 11
+  %42 = load i8* (%"struct.base::allocator::AllocatorDispatch"*, i8*, i64, i64, i8*)*, i8* (%"struct.base::allocator::AllocatorDispatch"*, i8*, i64, i64, i8*)** %41, align 8
+  %43 = tail call i8* %42(%"struct.base::allocator::AllocatorDispatch"* %40, i8* %1, i64 %2, i64 %3, i8* %4) #15
+  %44 = load i64, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %45 = add i64 %44, %2
+  store i64 %45, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  %46 = icmp slt i64 %45, 0
+  br i1 %46, label %54, label %47, !prof !3
+
+47:                                               ; preds = %38
+  %48 = load atomic i8, i8* @_ZN4base12_GLOBAL__N_19g_runningE.0.0.0.0 monotonic, align 1
+  %49 = and i8 %48, 1
+  %50 = icmp eq i8 %49, 0
+  br i1 %50, label %51, label %52, !prof !4
+
+51:                                               ; preds = %47
+  store i1 false, i1* @_ZN4base12_GLOBAL__N_135g_sampling_interval_initialized_tlsE, align 1
+  store i64 0, i64* @_ZN4base12_GLOBAL__N_123g_accumulated_bytes_tlsE, align 8
+  br label %54
+
+52:                                               ; preds = %47
+  %53 = load %"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E, align 8
+  tail call void @_ZN4base24PoissonAllocationSampler13DoRecordAllocElmPvNS0_13AllocatorTypeEPKc(%"class.base::PoissonAllocationSampler"* %53, i64 %45, i64 %2, i8* %43, i32 0, i8* null) #15
+  br label %54
+
+54:                                               ; preds = %38, %51, %52
+  ret i8* %43
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN4base12_GLOBAL__N_113AlignedFreeFnEPKNS_9allocator17AllocatorDispatchEPvS5_(%"struct.base::allocator::AllocatorDispatch"* nocapture readonly, i8*, i8*) #2 {
+  %4 = icmp eq i8* %1, null
+  br i1 %4, label %36, label %5, !prof !4
+
+5:                                                ; preds = %3
+  %6 = load atomic i64, i64* bitcast (%"struct.std::__1::atomic.12"* @_ZN4base12_GLOBAL__N_123g_sampled_addresses_setE to i64*) acquire, align 8
+  %7 = inttoptr i64 %6 to %"class.base::LockFreeAddressHashSet"*
+  %8 = ptrtoint i8* %1 to i64
+  %9 = mul i64 %8, 5475737090898469947
+  %10 = lshr i64 %9, 32
+  %11 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %7, i64 0, i32 2
+  %12 = load i64, i64* %11, align 8
+  %13 = and i64 %12, %10
+  %14 = getelementptr inbounds %"class.base::LockFreeAddressHashSet", %"class.base::LockFreeAddressHashSet"* %7, i64 0, i32 0, i32 0, i32 0
+  %15 = load %"struct.std::__1::atomic"*, %"struct.std::__1::atomic"** %14, align 8
+  %16 = getelementptr inbounds %"struct.std::__1::atomic", %"struct.std::__1::atomic"* %15, i64 %13, i32 0
+  %17 = bitcast %"struct.std::__1::__atomic_base"* %16 to i64*
+  %18 = load atomic i64, i64* %17 acquire, align 8
+  %19 = inttoptr i64 %18 to %"struct.base::LockFreeAddressHashSet::Node"*
+  %20 = icmp eq i64 %18, 0
+  br i1 %20, label %31, label %21
+
+21:                                               ; preds = %5, %27
+  %22 = phi %"struct.base::LockFreeAddressHashSet::Node"* [ %29, %27 ], [ %19, %5 ]
+  %23 = bitcast %"struct.base::LockFreeAddressHashSet::Node"* %22 to i64*
+  %24 = load atomic i64, i64* %23 monotonic, align 8
+  %25 = inttoptr i64 %24 to i8*
+  %26 = icmp eq i8* %25, %1
+  br i1 %26, label %31, label %27
+
+27:                                               ; preds = %21
+  %28 = getelementptr inbounds %"struct.base::LockFreeAddressHashSet::Node", %"struct.base::LockFreeAddressHashSet::Node"* %22, i64 0, i32 1
+  %29 = load %"struct.base::LockFreeAddressHashSet::Node"*, %"struct.base::LockFreeAddressHashSet::Node"** %28, align 8
+  %30 = icmp eq %"struct.base::LockFreeAddressHashSet::Node"* %29, null
+  br i1 %30, label %36, label %21
+
+31:                                               ; preds = %21, %5
+  %32 = phi %"struct.base::LockFreeAddressHashSet::Node"* [ %19, %5 ], [ %22, %21 ]
+  %33 = icmp eq %"struct.base::LockFreeAddressHashSet::Node"* %32, null
+  br i1 %33, label %36, label %34, !prof !3
+
+34:                                               ; preds = %31
+  %35 = load %"class.base::PoissonAllocationSampler"*, %"class.base::PoissonAllocationSampler"** @_ZN4base24PoissonAllocationSampler9instance_E, align 8
+  tail call void @_ZN4base24PoissonAllocationSampler12DoRecordFreeEPv(%"class.base::PoissonAllocationSampler"* %35, i8* nonnull %1) #15
+  br label %36
+
+36:                                               ; preds = %27, %3, %31, %34
+  %37 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %0, i64 0, i32 13
+  %38 = load %"struct.base::allocator::AllocatorDispatch"*, %"struct.base::allocator::AllocatorDispatch"** %37, align 8
+  %39 = getelementptr inbounds %"struct.base::allocator::AllocatorDispatch", %"struct.base::allocator::AllocatorDispatch"* %38, i64 0, i32 12
+  %40 = load void (%"struct.base::allocator::AllocatorDispatch"*, i8*, i8*)*, void (%"struct.base::allocator::AllocatorDispatch"*, i8*, i8*)** %39, align 8
+  tail call void %40(%"struct.base::allocator::AllocatorDispatch"* %38, i8* %1, i8* %2) #15
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #3
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #12
+
+declare void @_ZN4base8internal8LockImpl24LockInternalWithTrackingEv(%"class.base::internal::LockImpl"*) local_unnamed_addr #4
+
+; Function Attrs: nounwind
+declare i32 @pthread_mutex_trylock(%union.pthread_mutex_t*) local_unnamed_addr #5
+
+; Function Attrs: nounwind
+declare i32 @pthread_mutex_unlock(%union.pthread_mutex_t*) local_unnamed_addr #5
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZNSt3__16vectorIPN4base24PoissonAllocationSampler15SamplesObserverENS_9allocatorIS4_EEE6assignIPS4_EENS_9enable_ifIXaasr27__is_cpp17_forward_iteratorIT_EE5valuesr16is_constructibleIS4_NS_15iterator_traitsISB_E9referenceEEE5valueEvE4typeESB_SB_(%"class.std::__1::vector"*, %"class.base::PoissonAllocationSampler::SamplesObserver"**, %"class.base::PoissonAllocationSampler::SamplesObserver"**) local_unnamed_addr #2 comdat align 2 {
+  %4 = ptrtoint %"class.base::PoissonAllocationSampler::SamplesObserver"** %2 to i64
+  %5 = ptrtoint %"class.base::PoissonAllocationSampler::SamplesObserver"** %1 to i64
+  %6 = sub i64 %4, %5
+  %7 = ashr exact i64 %6, 3
+  %8 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 2, i32 0, i32 0
+  %9 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"*** %8 to i64*
+  %10 = load i64, i64* %9, align 8
+  %11 = bitcast %"class.std::__1::vector"* %0 to i64*
+  %12 = load i64, i64* %11, align 8
+  %13 = sub i64 %10, %12
+  %14 = ashr exact i64 %13, 3
+  %15 = icmp ugt i64 %7, %14
+  %16 = inttoptr i64 %12 to %"class.base::PoissonAllocationSampler::SamplesObserver"**
+  br i1 %15, label %49, label %17
+
+17:                                               ; preds = %3
+  %18 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 1
+  %19 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"*** %18 to i64*
+  %20 = load i64, i64* %19, align 8
+  %21 = sub i64 %20, %12
+  %22 = ashr exact i64 %21, 3
+  %23 = icmp ugt i64 %7, %22
+  %24 = getelementptr inbounds %"class.base::PoissonAllocationSampler::SamplesObserver"*, %"class.base::PoissonAllocationSampler::SamplesObserver"** %1, i64 %22
+  %25 = select i1 %23, %"class.base::PoissonAllocationSampler::SamplesObserver"** %24, %"class.base::PoissonAllocationSampler::SamplesObserver"** %2
+  %26 = ptrtoint %"class.base::PoissonAllocationSampler::SamplesObserver"** %25 to i64
+  %27 = sub i64 %26, %5
+  %28 = ashr exact i64 %27, 3
+  %29 = icmp eq i64 %27, 0
+  br i1 %29, label %33, label %30
+
+30:                                               ; preds = %17
+  %31 = inttoptr i64 %12 to i8*
+  %32 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"** %1 to i8*
+  tail call void @llvm.memmove.p0i8.p0i8.i64(i8* align 8 %31, i8* align 8 %32, i64 %27, i1 false) #15
+  br label %33
+
+33:                                               ; preds = %17, %30
+  br i1 %23, label %34, label %47
+
+34:                                               ; preds = %33
+  %35 = load i64, i64* %19, align 8
+  %36 = sub i64 %4, %26
+  %37 = icmp sgt i64 %36, 0
+  br i1 %37, label %38, label %45
+
+38:                                               ; preds = %34
+  %39 = lshr exact i64 %36, 3
+  %40 = inttoptr i64 %35 to i8*
+  %41 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"** %25 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %40, i8* align 8 %41, i64 %36, i1 false) #15
+  %42 = inttoptr i64 %35 to %"class.base::PoissonAllocationSampler::SamplesObserver"**
+  %43 = getelementptr inbounds %"class.base::PoissonAllocationSampler::SamplesObserver"*, %"class.base::PoissonAllocationSampler::SamplesObserver"** %42, i64 %39
+  %44 = ptrtoint %"class.base::PoissonAllocationSampler::SamplesObserver"** %43 to i64
+  br label %45
+
+45:                                               ; preds = %34, %38
+  %46 = phi i64 [ %44, %38 ], [ %35, %34 ]
+  store i64 %46, i64* %19, align 8
+  br label %90
+
+47:                                               ; preds = %33
+  %48 = getelementptr inbounds %"class.base::PoissonAllocationSampler::SamplesObserver"*, %"class.base::PoissonAllocationSampler::SamplesObserver"** %16, i64 %28
+  store %"class.base::PoissonAllocationSampler::SamplesObserver"** %48, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %18, align 8
+  br label %90
+
+49:                                               ; preds = %3
+  %50 = icmp eq i64 %12, 0
+  br i1 %50, label %56, label %51
+
+51:                                               ; preds = %49
+  %52 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 1
+  %53 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"*** %52 to i64*
+  store i64 %12, i64* %53, align 8
+  %54 = inttoptr i64 %12 to i8*
+  tail call void @_ZdlPv(i8* %54) #16
+  %55 = bitcast %"class.std::__1::vector"* %0 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %55, i8 0, i64 24, i1 false) #15
+  br label %56
+
+56:                                               ; preds = %49, %51
+  %57 = phi i64 [ %10, %49 ], [ 0, %51 ]
+  %58 = icmp ugt i64 %7, 2305843009213693951
+  br i1 %58, label %59, label %61
+
+59:                                               ; preds = %56
+  %60 = bitcast %"class.std::__1::vector"* %0 to %"class.std::__1::__vector_base_common"*
+  tail call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"* %60) #17
+  unreachable
+
+61:                                               ; preds = %56
+  %62 = ashr exact i64 %57, 3
+  %63 = icmp ult i64 %62, 1152921504606846975
+  br i1 %63, label %64, label %71
+
+64:                                               ; preds = %61
+  %65 = ashr exact i64 %57, 2
+  %66 = icmp ult i64 %65, %7
+  br i1 %66, label %71, label %67
+
+67:                                               ; preds = %64
+  %68 = icmp ugt i64 %65, 2305843009213693951
+  br i1 %68, label %69, label %71
+
+69:                                               ; preds = %67
+  %70 = bitcast %"class.std::__1::vector"* %0 to %"class.std::__1::__vector_base_common"*
+  tail call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"* %70) #17
+  unreachable
+
+71:                                               ; preds = %64, %61, %67
+  %72 = phi i64 [ %65, %67 ], [ 2305843009213693951, %61 ], [ %7, %64 ]
+  %73 = shl i64 %72, 3
+  %74 = tail call i8* @_Znwm(i64 %73) #16
+  %75 = bitcast i8* %74 to %"class.base::PoissonAllocationSampler::SamplesObserver"**
+  %76 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 1
+  %77 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"*** %76 to i8**
+  store i8* %74, i8** %77, align 8
+  %78 = bitcast %"class.std::__1::vector"* %0 to i8**
+  store i8* %74, i8** %78, align 8
+  %79 = getelementptr inbounds %"class.base::PoissonAllocationSampler::SamplesObserver"*, %"class.base::PoissonAllocationSampler::SamplesObserver"** %75, i64 %72
+  store %"class.base::PoissonAllocationSampler::SamplesObserver"** %79, %"class.base::PoissonAllocationSampler::SamplesObserver"*** %8, align 8
+  %80 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"*** %76 to i64*
+  %81 = ptrtoint i8* %74 to i64
+  %82 = icmp sgt i64 %6, 0
+  br i1 %82, label %83, label %88
+
+83:                                               ; preds = %71
+  %84 = lshr exact i64 %6, 3
+  %85 = bitcast %"class.base::PoissonAllocationSampler::SamplesObserver"** %1 to i8*
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %74, i8* align 8 %85, i64 %6, i1 false) #15
+  %86 = getelementptr inbounds %"class.base::PoissonAllocationSampler::SamplesObserver"*, %"class.base::PoissonAllocationSampler::SamplesObserver"** %75, i64 %84
+  %87 = ptrtoint %"class.base::PoissonAllocationSampler::SamplesObserver"** %86 to i64
+  br label %88
+
+88:                                               ; preds = %71, %83
+  %89 = phi i64 [ %87, %83 ], [ %81, %71 ]
+  store i64 %89, i64* %80, align 8
+  br label %90
+
+90:                                               ; preds = %45, %47, %88
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memmove.p0i8.p0i8.i64(i8* nocapture, i8* nocapture readonly, i64, i1 immarg) #3
+
+; Function Attrs: noreturn
+declare void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"*) local_unnamed_addr #13
+
+; Function Attrs: noreturn nounwind
+declare void @abort() local_unnamed_addr #14
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #3
+
+attributes #0 = { nofree norecurse nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { norecurse nounwind readonly ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { argmemonly nounwind }
+attributes #4 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nofree nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { nofree nounwind }
+attributes #9 = { nofree nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #10 = { nofree norecurse nounwind ssp uwtable writeonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #11 = { inlinehint nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #12 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #13 = { noreturn "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #14 = { noreturn nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #15 = { nounwind }
+attributes #16 = { builtin nounwind }
+attributes #17 = { noreturn nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{!"branch_weights", i32 1, i32 1048575}
+!3 = !{!"branch_weights", i32 2000, i32 1}
+!4 = !{!"branch_weights", i32 1, i32 2000}
+!5 = !{i8 0, i8 2}

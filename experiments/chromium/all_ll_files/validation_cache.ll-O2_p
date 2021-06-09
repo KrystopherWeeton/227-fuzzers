@@ -1,0 +1,692 @@
+; ModuleID = '../../native_client/src/trusted/validator/validation_cache.c'
+source_filename = "../../native_client/src/trusted/validator/validation_cache.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.NaClValidationCache = type { i8*, i8* (i8*)*, void (i8*, i8*, i64)*, i32 (i8*)*, void (i8*)*, void (i8*)*, i32 (%struct.NaClValidationMetadata*)* }
+%struct.NaClValidationMetadata = type { i32, i64, i8*, i64, i64, i64, i64, i64, i64 }
+%struct.NaClHostDesc = type { i32, i32 }
+%struct.stat64 = type { i64, i64, i64, i32, i32, i32, i32, i64, i64, i64, i64, %struct.timespec, %struct.timespec, %struct.timespec, [3 x i64] }
+%struct.timespec = type { i64, i64 }
+%struct.NaClRichFileInfo = type { i8, i8*, i32 }
+%struct.NaClDesc = type { %struct.NaClRefCount, i32, i32, i32, i8* }
+%struct.NaClRefCount = type { %struct.NaClRefCountVtbl*, %struct.NaClFastMutex, i64 }
+%struct.NaClRefCountVtbl = type { void (%struct.NaClRefCount*)* }
+%struct.NaClFastMutex = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%struct.NaClDescVtbl = type { %struct.NaClRefCountVtbl, i64 (%struct.NaClDesc*, %struct.NaClDescEffector*, i8*, i64, i32, i32, i64)*, i64 (%struct.NaClDesc*, i8*, i64)*, i64 (%struct.NaClDesc*, i8*, i64)*, i64 (%struct.NaClDesc*, i64, i32)*, i64 (%struct.NaClDesc*, i8*, i64, i64)*, i64 (%struct.NaClDesc*, i8*, i64, i64)*, i32 (%struct.NaClDesc*, %struct.nacl_abi_stat*)*, i32 (%struct.NaClDesc*)*, i32 (%struct.NaClDesc*, i32)*, i32 (%struct.NaClDesc*)*, i32 (%struct.NaClDesc*)*, i32 (%struct.NaClDesc*, i64)*, i64 (%struct.NaClDesc*, i8*, i64)*, i32 (%struct.NaClDesc*, i64*, i64*)*, i32 (%struct.NaClDesc*, %struct.NaClDescXferState*)*, i32 (%struct.NaClDesc*)*, i32 (%struct.NaClDesc*)*, i32 (%struct.NaClDesc*)*, i32 (%struct.NaClDesc*, %struct.NaClDesc*)*, i32 (%struct.NaClDesc*, %struct.NaClDesc*, %struct.nacl_abi_timespec*)*, i32 (%struct.NaClDesc*)*, i32 (%struct.NaClDesc*)*, i64 (%struct.NaClDesc*, %struct.NaClImcTypedMsgHdr*, i32)*, i64 (%struct.NaClDesc*, %struct.NaClImcTypedMsgHdr*, i32)*, i64 (%struct.NaClDesc*, %struct.NaClMessageHeader*, i32)*, i64 (%struct.NaClDesc*, %struct.NaClMessageHeader*, i32)*, i32 (%struct.NaClDesc*, %struct.NaClDesc**)*, i32 (%struct.NaClDesc*, %struct.NaClDesc**)*, i32 (%struct.NaClDesc*)*, i32 (%struct.NaClDesc*)*, i32 (%struct.NaClDesc*)*, i32 (%struct.NaClDesc*, i32, i32, i8*)*, i32 (%struct.NaClDesc*, i32*, i8*)*, void (%struct.NaClDesc*, i32)*, i32 (%struct.NaClDesc*)*, i32 (%struct.NaClDesc*)*, i32 }
+%struct.NaClDescEffector = type opaque
+%struct.nacl_abi_stat = type opaque
+%struct.NaClDescXferState = type { i8*, i8*, i32*, i32* }
+%struct.nacl_abi_timespec = type { i64, i32 }
+%struct.NaClImcTypedMsgHdr = type opaque
+%struct.NaClMessageHeader = type { %struct.NaClIOVec*, i32, i32*, i32, i32 }
+%struct.NaClIOVec = type { i8*, i64 }
+
+@.str = private unnamed_addr constant [40 x i8] c"Fatal error in file %s, line %d: !(%s)\0A\00", align 1
+@.str.1 = private unnamed_addr constant [61 x i8] c"../../native_client/src/trusted/validator/validation_cache.c\00", align 1
+@.str.2 = private unnamed_addr constant [21 x i8] c"0 < file_name_length\00", align 1
+@.str.3 = private unnamed_addr constant [28 x i8] c"NULL != metadata->file_name\00", align 1
+@.str.4 = private unnamed_addr constant [36 x i8] c"identity_type < NaClCodeIdentityMax\00", align 1
+@.str.5 = private unnamed_addr constant [20 x i8] c"metadata->file_name\00", align 1
+@.str.6 = private unnamed_addr constant [27 x i8] c"metadata->file_name_length\00", align 1
+@.str.7 = private unnamed_addr constant [62 x i8] c"metadata->code_offset + (int64_t) size <= metadata->file_size\00", align 1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClCachingIsInexpensive(%struct.NaClValidationCache* nocapture readonly, %struct.NaClValidationMetadata*) local_unnamed_addr #0 {
+  %3 = getelementptr inbounds %struct.NaClValidationCache, %struct.NaClValidationCache* %0, i64 0, i32 6
+  %4 = load i32 (%struct.NaClValidationMetadata*)*, i32 (%struct.NaClValidationMetadata*)** %3, align 8
+  %5 = icmp eq i32 (%struct.NaClValidationMetadata*)* %4, null
+  br i1 %5, label %8, label %6
+
+6:                                                ; preds = %2
+  %7 = tail call i32 %4(%struct.NaClValidationMetadata* %1) #6
+  br label %15
+
+8:                                                ; preds = %2
+  %9 = icmp eq %struct.NaClValidationMetadata* %1, null
+  br i1 %9, label %15, label %10
+
+10:                                               ; preds = %8
+  %11 = getelementptr inbounds %struct.NaClValidationMetadata, %struct.NaClValidationMetadata* %1, i64 0, i32 0
+  %12 = load i32, i32* %11, align 8
+  %13 = icmp eq i32 %12, 1
+  %14 = zext i1 %13 to i32
+  br label %15
+
+15:                                               ; preds = %10, %8, %6
+  %16 = phi i32 [ %7, %6 ], [ 0, %8 ], [ %14, %10 ]
+  ret i32 %16
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClMetadataFromFDCtor(%struct.NaClValidationMetadata* nocapture, i32, i8* nocapture readonly, i64) local_unnamed_addr #0 {
+  %5 = alloca %struct.NaClHostDesc, align 4
+  %6 = alloca %struct.stat64, align 8
+  %7 = bitcast %struct.NaClHostDesc* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %7) #6
+  %8 = getelementptr inbounds %struct.NaClHostDesc, %struct.NaClHostDesc* %5, i64 0, i32 0
+  %9 = getelementptr inbounds %struct.NaClHostDesc, %struct.NaClHostDesc* %5, i64 0, i32 1
+  store i32 -1431655766, i32* %9, align 4
+  %10 = bitcast %struct.stat64* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 144, i8* nonnull %10) #6
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %10, i8 -86, i64 144, i1 false)
+  %11 = bitcast %struct.NaClValidationMetadata* %0 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %11, i8 0, i64 72, i1 false)
+  store i32 %1, i32* %8, align 4
+  %12 = call i32 @NaClHostDescFstat(%struct.NaClHostDesc* nonnull %5, %struct.stat64* nonnull %6) #6
+  %13 = icmp eq i32 %12, 0
+  br i1 %13, label %14, label %39
+
+14:                                               ; preds = %4
+  %15 = getelementptr inbounds %struct.stat64, %struct.stat64* %6, i64 0, i32 1
+  %16 = load i64, i64* %15, align 8
+  %17 = getelementptr inbounds %struct.NaClValidationMetadata, %struct.NaClValidationMetadata* %0, i64 0, i32 5
+  store i64 %16, i64* %17, align 8
+  %18 = getelementptr inbounds %struct.stat64, %struct.stat64* %6, i64 0, i32 8
+  %19 = load i64, i64* %18, align 8
+  %20 = getelementptr inbounds %struct.NaClValidationMetadata, %struct.NaClValidationMetadata* %0, i64 0, i32 6
+  store i64 %19, i64* %20, align 8
+  %21 = getelementptr inbounds %struct.stat64, %struct.stat64* %6, i64 0, i32 12, i32 0
+  %22 = load i64, i64* %21, align 8
+  %23 = getelementptr inbounds %struct.NaClValidationMetadata, %struct.NaClValidationMetadata* %0, i64 0, i32 7
+  store i64 %22, i64* %23, align 8
+  %24 = getelementptr inbounds %struct.stat64, %struct.stat64* %6, i64 0, i32 13, i32 0
+  %25 = load i64, i64* %24, align 8
+  %26 = getelementptr inbounds %struct.NaClValidationMetadata, %struct.NaClValidationMetadata* %0, i64 0, i32 8
+  store i64 %25, i64* %26, align 8
+  %27 = icmp eq i64 %3, 0
+  br i1 %27, label %28, label %29
+
+28:                                               ; preds = %14
+  call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([61 x i8], [61 x i8]* @.str.1, i64 0, i64 0), i32 82, i8* getelementptr inbounds ([21 x i8], [21 x i8]* @.str.2, i64 0, i64 0)) #6
+  br label %29
+
+29:                                               ; preds = %14, %28
+  %30 = call noalias i8* @malloc(i64 %3) #6
+  %31 = getelementptr inbounds %struct.NaClValidationMetadata, %struct.NaClValidationMetadata* %0, i64 0, i32 2
+  store i8* %30, i8** %31, align 8
+  %32 = icmp eq i8* %30, null
+  br i1 %32, label %33, label %35
+
+33:                                               ; preds = %29
+  call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([61 x i8], [61 x i8]* @.str.1, i64 0, i64 0), i32 84, i8* getelementptr inbounds ([28 x i8], [28 x i8]* @.str.3, i64 0, i64 0)) #6
+  %34 = load i8*, i8** %31, align 8
+  br label %35
+
+35:                                               ; preds = %29, %33
+  %36 = phi i8* [ %30, %29 ], [ %34, %33 ]
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %36, i8* align 1 %2, i64 %3, i1 false)
+  %37 = getelementptr inbounds %struct.NaClValidationMetadata, %struct.NaClValidationMetadata* %0, i64 0, i32 3
+  store i64 %3, i64* %37, align 8
+  %38 = getelementptr inbounds %struct.NaClValidationMetadata, %struct.NaClValidationMetadata* %0, i64 0, i32 0
+  store i32 1, i32* %38, align 8
+  br label %39
+
+39:                                               ; preds = %4, %35
+  call void @llvm.lifetime.end.p0i8(i64 144, i8* nonnull %10) #6
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %7) #6
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1
+
+declare i32 @NaClHostDescFstat(%struct.NaClHostDesc*, %struct.stat64*) local_unnamed_addr #2
+
+declare void @NaClLog(i32, i8*, ...) local_unnamed_addr #2
+
+; Function Attrs: nofree nounwind
+declare noalias i8* @malloc(i64) local_unnamed_addr #3
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClMetadataDtor(%struct.NaClValidationMetadata* nocapture) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClValidationMetadata, %struct.NaClValidationMetadata* %0, i64 0, i32 2
+  %3 = load i8*, i8** %2, align 8
+  tail call void @free(i8* %3) #6
+  %4 = bitcast %struct.NaClValidationMetadata* %0 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %4, i8 0, i64 72, i1 false)
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @free(i8* nocapture) local_unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClSerializeNaClDescMetadata(%struct.NaClRichFileInfo* nocapture readonly, i8** nocapture, i32* nocapture) local_unnamed_addr #0 {
+  store i8* null, i8** %1, align 8
+  %4 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %0, i64 0, i32 0
+  store i32 1, i32* %2, align 4
+  %5 = load i8, i8* %4, align 8
+  %6 = icmp eq i8 %5, 0
+  br i1 %6, label %12, label %7
+
+7:                                                ; preds = %3
+  %8 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %0, i64 0, i32 2
+  store i32 5, i32* %2, align 4
+  %9 = load i32, i32* %8, align 8
+  %10 = add i32 %9, 5
+  store i32 %10, i32* %2, align 4
+  %11 = zext i32 %10 to i64
+  br label %12
+
+12:                                               ; preds = %3, %7
+  %13 = phi i64 [ 1, %3 ], [ %11, %7 ]
+  %14 = tail call noalias i8* @malloc(i64 %13) #6
+  store i8* %14, i8** %1, align 8
+  %15 = icmp eq i8* %14, null
+  br i1 %15, label %31, label %16
+
+16:                                               ; preds = %12
+  store i32 0, i32* %2, align 4
+  %17 = load i8, i8* %4, align 1
+  store i8 %17, i8* %14, align 1
+  store i32 1, i32* %2, align 4
+  %18 = load i8, i8* %4, align 8
+  %19 = icmp eq i8 %18, 0
+  br i1 %19, label %31, label %20
+
+20:                                               ; preds = %16
+  %21 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %0, i64 0, i32 2
+  %22 = getelementptr inbounds i8, i8* %14, i64 1
+  %23 = bitcast i8* %22 to i32*
+  %24 = load i32, i32* %21, align 1
+  store i32 %24, i32* %23, align 1
+  store i32 5, i32* %2, align 4
+  %25 = load i32, i32* %21, align 8
+  %26 = zext i32 %25 to i64
+  %27 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %0, i64 0, i32 1
+  %28 = load i8*, i8** %27, align 8
+  %29 = getelementptr inbounds i8, i8* %14, i64 5
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %29, i8* align 1 %28, i64 %26, i1 false) #6
+  %30 = add i32 %25, 5
+  store i32 %30, i32* %2, align 4
+  br label %31
+
+31:                                               ; preds = %20, %16, %12
+  %32 = phi i32 [ 1, %12 ], [ 0, %16 ], [ 0, %20 ]
+  ret i32 %32
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClSetFileOriginInfo(%struct.NaClDesc*, %struct.NaClRichFileInfo* nocapture readonly) local_unnamed_addr #0 {
+  %3 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %1, i64 0, i32 0
+  %4 = load i8, i8* %3, align 8
+  %5 = icmp eq i8 %4, 0
+  br i1 %5, label %11, label %6
+
+6:                                                ; preds = %2
+  %7 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %1, i64 0, i32 2
+  %8 = load i32, i32* %7, align 8
+  %9 = add i32 %8, 5
+  %10 = zext i32 %9 to i64
+  br label %11
+
+11:                                               ; preds = %6, %2
+  %12 = phi i64 [ 1, %2 ], [ %10, %6 ]
+  %13 = tail call noalias i8* @malloc(i64 %12) #6
+  %14 = icmp eq i8* %13, null
+  br i1 %14, label %33, label %15
+
+15:                                               ; preds = %11
+  store i8 %4, i8* %13, align 1
+  br i1 %5, label %26, label %16
+
+16:                                               ; preds = %15
+  %17 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %1, i64 0, i32 2
+  %18 = getelementptr inbounds i8, i8* %13, i64 1
+  %19 = bitcast i8* %18 to i32*
+  %20 = load i32, i32* %17, align 1
+  store i32 %20, i32* %19, align 1
+  %21 = zext i32 %20 to i64
+  %22 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %1, i64 0, i32 1
+  %23 = load i8*, i8** %22, align 8
+  %24 = getelementptr inbounds i8, i8* %13, i64 5
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %24, i8* align 1 %23, i64 %21, i1 false) #6
+  %25 = add i32 %20, 5
+  br label %26
+
+26:                                               ; preds = %15, %16
+  %27 = phi i32 [ %25, %16 ], [ 1, %15 ]
+  %28 = bitcast %struct.NaClDesc* %0 to %struct.NaClDescVtbl**
+  %29 = load %struct.NaClDescVtbl*, %struct.NaClDescVtbl** %28, align 8
+  %30 = getelementptr inbounds %struct.NaClDescVtbl, %struct.NaClDescVtbl* %29, i64 0, i32 32
+  %31 = load i32 (%struct.NaClDesc*, i32, i32, i8*)*, i32 (%struct.NaClDesc*, i32, i32, i8*)** %30, align 8
+  %32 = tail call i32 %31(%struct.NaClDesc* %0, i32 245886989, i32 %27, i8* nonnull %13) #6
+  tail call void @free(i8* nonnull %13) #6
+  br label %33
+
+33:                                               ; preds = %11, %26
+  %34 = phi i32 [ %32, %26 ], [ 1, %11 ]
+  ret i32 %34
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClDeserializeNaClDescMetadata(i8* nocapture readonly, i32, %struct.NaClRichFileInfo* nocapture) local_unnamed_addr #0 {
+  %4 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %2, i64 0, i32 0
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %4, i8 0, i64 24, i1 false) #6
+  %5 = zext i32 %1 to i64
+  %6 = icmp eq i32 %1, 0
+  br i1 %6, label %30, label %7
+
+7:                                                ; preds = %3
+  %8 = load i8, i8* %0, align 1
+  store i8 %8, i8* %4, align 1
+  %9 = icmp eq i8 %8, 0
+  br i1 %9, label %27, label %10
+
+10:                                               ; preds = %7
+  %11 = icmp ult i32 %1, 5
+  br i1 %11, label %30, label %12
+
+12:                                               ; preds = %10
+  %13 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %2, i64 0, i32 2
+  %14 = getelementptr inbounds i8, i8* %0, i64 1
+  %15 = bitcast i8* %14 to i32*
+  %16 = load i32, i32* %15, align 1
+  store i32 %16, i32* %13, align 1
+  %17 = zext i32 %16 to i64
+  %18 = tail call noalias i8* @malloc(i64 %17) #6
+  %19 = icmp eq i8* %18, null
+  br i1 %19, label %30, label %20
+
+20:                                               ; preds = %12
+  %21 = add nuw nsw i64 %17, 5
+  %22 = icmp ugt i64 %21, %5
+  br i1 %22, label %30, label %23
+
+23:                                               ; preds = %20
+  %24 = getelementptr inbounds i8, i8* %0, i64 5
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 1 %18, i8* align 1 %24, i64 %17, i1 false) #6
+  %25 = add i32 %16, 5
+  %26 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %2, i64 0, i32 1
+  store i8* %18, i8** %26, align 8
+  br label %27
+
+27:                                               ; preds = %7, %23
+  %28 = phi i32 [ 1, %7 ], [ %25, %23 ]
+  %29 = icmp eq i32 %28, %1
+  br i1 %29, label %34, label %30
+
+30:                                               ; preds = %20, %10, %3, %27, %12
+  %31 = phi i8* [ null, %12 ], [ null, %27 ], [ null, %3 ], [ null, %10 ], [ %18, %20 ]
+  tail call void @free(i8* %31) #6
+  %32 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %2, i64 0, i32 1
+  %33 = load i8*, i8** %32, align 8
+  tail call void @free(i8* %33) #6
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %4, i8 0, i64 24, i1 false) #6
+  br label %34
+
+34:                                               ; preds = %27, %30
+  %35 = phi i32 [ 1, %30 ], [ 0, %27 ]
+  ret i32 %35
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClRichFileInfoCtor(%struct.NaClRichFileInfo* nocapture) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %0, i64 0, i32 0
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %2, i8 0, i64 24, i1 false)
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClRichFileInfoDtor(%struct.NaClRichFileInfo* nocapture) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %0, i64 0, i32 1
+  %3 = load i8*, i8** %2, align 8
+  tail call void @free(i8* %3) #6
+  %4 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %0, i64 0, i32 0
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %4, i8 0, i64 24, i1 false)
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClGetFileOriginInfo(%struct.NaClDesc*, %struct.NaClRichFileInfo* nocapture) local_unnamed_addr #0 {
+  %3 = alloca i32, align 4
+  %4 = bitcast i32* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %4) #6
+  store i32 0, i32* %3, align 4
+  %5 = bitcast %struct.NaClDesc* %0 to %struct.NaClDescVtbl**
+  %6 = load %struct.NaClDescVtbl*, %struct.NaClDescVtbl** %5, align 8
+  %7 = getelementptr inbounds %struct.NaClDescVtbl, %struct.NaClDescVtbl* %6, i64 0, i32 33
+  %8 = load i32 (%struct.NaClDesc*, i32*, i8*)*, i32 (%struct.NaClDesc*, i32*, i8*)** %7, align 8
+  %9 = call i32 %8(%struct.NaClDesc* %0, i32* nonnull %3, i8* null) #6
+  %10 = icmp eq i32 %9, 245886989
+  br i1 %10, label %11, label %56
+
+11:                                               ; preds = %2
+  %12 = load i32, i32* %3, align 4
+  %13 = zext i32 %12 to i64
+  %14 = call noalias i8* @malloc(i64 %13) #6
+  %15 = icmp eq i8* %14, null
+  br i1 %15, label %56, label %16
+
+16:                                               ; preds = %11
+  %17 = load %struct.NaClDescVtbl*, %struct.NaClDescVtbl** %5, align 8
+  %18 = getelementptr inbounds %struct.NaClDescVtbl, %struct.NaClDescVtbl* %17, i64 0, i32 33
+  %19 = load i32 (%struct.NaClDesc*, i32*, i8*)*, i32 (%struct.NaClDesc*, i32*, i8*)** %18, align 8
+  %20 = call i32 %19(%struct.NaClDesc* %0, i32* nonnull %3, i8* nonnull %14) #6
+  %21 = icmp eq i32 %20, 245886989
+  br i1 %21, label %22, label %56
+
+22:                                               ; preds = %16
+  %23 = load i32, i32* %3, align 4
+  %24 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %1, i64 0, i32 0
+  call void @llvm.memset.p0i8.i64(i8* align 8 %24, i8 0, i64 24, i1 false) #6
+  %25 = zext i32 %23 to i64
+  %26 = icmp eq i32 %23, 0
+  br i1 %26, label %50, label %27
+
+27:                                               ; preds = %22
+  %28 = load i8, i8* %14, align 1
+  store i8 %28, i8* %24, align 1
+  %29 = icmp eq i8 %28, 0
+  br i1 %29, label %47, label %30
+
+30:                                               ; preds = %27
+  %31 = icmp ult i32 %23, 5
+  br i1 %31, label %50, label %32
+
+32:                                               ; preds = %30
+  %33 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %1, i64 0, i32 2
+  %34 = getelementptr inbounds i8, i8* %14, i64 1
+  %35 = bitcast i8* %34 to i32*
+  %36 = load i32, i32* %35, align 1
+  store i32 %36, i32* %33, align 1
+  %37 = zext i32 %36 to i64
+  %38 = call noalias i8* @malloc(i64 %37) #6
+  %39 = icmp eq i8* %38, null
+  br i1 %39, label %50, label %40
+
+40:                                               ; preds = %32
+  %41 = add nuw nsw i64 %37, 5
+  %42 = icmp ugt i64 %41, %25
+  br i1 %42, label %50, label %43
+
+43:                                               ; preds = %40
+  %44 = getelementptr inbounds i8, i8* %14, i64 5
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 1 %38, i8* align 1 %44, i64 %37, i1 false) #6
+  %45 = add i32 %36, 5
+  %46 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %1, i64 0, i32 1
+  store i8* %38, i8** %46, align 8
+  br label %47
+
+47:                                               ; preds = %43, %27
+  %48 = phi i32 [ 1, %27 ], [ %45, %43 ]
+  %49 = icmp eq i32 %48, %23
+  br i1 %49, label %54, label %50
+
+50:                                               ; preds = %47, %40, %32, %30, %22
+  %51 = phi i8* [ null, %32 ], [ null, %47 ], [ null, %22 ], [ null, %30 ], [ %38, %40 ]
+  call void @free(i8* %51) #6
+  %52 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %1, i64 0, i32 1
+  %53 = load i8*, i8** %52, align 8
+  call void @free(i8* %53) #6
+  call void @llvm.memset.p0i8.i64(i8* align 8 %24, i8 0, i64 24, i1 false) #6
+  br label %54
+
+54:                                               ; preds = %47, %50
+  %55 = phi i32 [ 1, %50 ], [ 0, %47 ]
+  call void @free(i8* nonnull %14) #6
+  br label %56
+
+56:                                               ; preds = %16, %11, %2, %54
+  %57 = phi i32 [ %55, %54 ], [ 1, %2 ], [ 1, %11 ], [ 1, %16 ]
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %4) #6
+  ret i32 %57
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClMetadataFromNaClDescCtor(%struct.NaClValidationMetadata* nocapture, %struct.NaClDesc*) local_unnamed_addr #0 {
+  %3 = alloca %struct.NaClRichFileInfo, align 8
+  %4 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %3, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %4) #6
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %4, i8 0, i64 24, i1 false) #6
+  %5 = bitcast %struct.NaClValidationMetadata* %0 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %5, i8 0, i64 72, i1 false)
+  %6 = bitcast %struct.NaClDesc* %1 to %struct.NaClDescVtbl**
+  %7 = load %struct.NaClDescVtbl*, %struct.NaClDescVtbl** %6, align 8
+  %8 = getelementptr inbounds %struct.NaClDescVtbl, %struct.NaClDescVtbl* %7, i64 0, i32 37
+  %9 = load i32, i32* %8, align 8
+  %10 = icmp eq i32 %9, 2
+  br i1 %10, label %11, label %32
+
+11:                                               ; preds = %2
+  %12 = getelementptr inbounds %struct.NaClDesc, %struct.NaClDesc* %1, i64 1
+  %13 = bitcast %struct.NaClDesc* %12 to %struct.NaClHostDesc**
+  %14 = load %struct.NaClHostDesc*, %struct.NaClHostDesc** %13, align 8
+  %15 = getelementptr inbounds %struct.NaClHostDesc, %struct.NaClHostDesc* %14, i64 0, i32 0
+  %16 = load i32, i32* %15, align 4
+  %17 = call i32 @NaClGetFileOriginInfo(%struct.NaClDesc* %1, %struct.NaClRichFileInfo* nonnull %3)
+  %18 = icmp ne i32 %17, 0
+  %19 = load i8, i8* %4, align 8
+  %20 = icmp eq i8 %19, 0
+  %21 = or i1 %18, %20
+  %22 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %3, i64 0, i32 1
+  %23 = load i8*, i8** %22, align 8
+  br i1 %21, label %32, label %24
+
+24:                                               ; preds = %11
+  %25 = icmp eq i8* %23, null
+  br i1 %25, label %32, label %26
+
+26:                                               ; preds = %24
+  %27 = getelementptr inbounds %struct.NaClRichFileInfo, %struct.NaClRichFileInfo* %3, i64 0, i32 2
+  %28 = load i32, i32* %27, align 8
+  %29 = icmp eq i32 %28, 0
+  br i1 %29, label %32, label %30
+
+30:                                               ; preds = %26
+  %31 = zext i32 %28 to i64
+  tail call void @NaClMetadataFromFDCtor(%struct.NaClValidationMetadata* %0, i32 %16, i8* nonnull %23, i64 %31)
+  br label %32
+
+32:                                               ; preds = %11, %2, %24, %26, %30
+  %33 = phi i8* [ null, %2 ], [ null, %24 ], [ %23, %26 ], [ %23, %30 ], [ %23, %11 ]
+  tail call void @free(i8* %33) #6
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %4) #6
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClAddCodeIdentity(i8*, i64, %struct.NaClValidationMetadata*, %struct.NaClValidationCache* nocapture readonly, i8*) local_unnamed_addr #0 {
+  %6 = alloca i64, align 8
+  %7 = alloca i32, align 4
+  store i64 %1, i64* %6, align 8
+  %8 = bitcast i32* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #6
+  store i32 -1431655766, i32* %7, align 4
+  %9 = icmp eq %struct.NaClValidationMetadata* %2, null
+  br i1 %9, label %10, label %11
+
+10:                                               ; preds = %5
+  store i32 0, i32* %7, align 4
+  br label %16
+
+11:                                               ; preds = %5
+  %12 = getelementptr inbounds %struct.NaClValidationMetadata, %struct.NaClValidationMetadata* %2, i64 0, i32 0
+  %13 = load i32, i32* %12, align 8
+  store i32 %13, i32* %7, align 4
+  %14 = icmp ult i32 %13, 2
+  br i1 %14, label %16, label %15
+
+15:                                               ; preds = %11
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([61 x i8], [61 x i8]* @.str.1, i64 0, i64 0), i32 279, i8* getelementptr inbounds ([36 x i8], [36 x i8]* @.str.4, i64 0, i64 0)) #6
+  br label %16
+
+16:                                               ; preds = %10, %15, %11
+  %17 = getelementptr inbounds %struct.NaClValidationCache, %struct.NaClValidationCache* %3, i64 0, i32 2
+  %18 = load void (i8*, i8*, i64)*, void (i8*, i8*, i64)** %17, align 8
+  call void %18(i8* %4, i8* nonnull %8, i64 4) #6
+  %19 = load i32, i32* %7, align 4
+  %20 = icmp eq i32 %19, 1
+  br i1 %20, label %21, label %64
+
+21:                                               ; preds = %16
+  %22 = getelementptr inbounds %struct.NaClValidationMetadata, %struct.NaClValidationMetadata* %2, i64 0, i32 2
+  %23 = load i8*, i8** %22, align 8
+  %24 = icmp eq i8* %23, null
+  br i1 %24, label %25, label %26
+
+25:                                               ; preds = %21
+  call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([61 x i8], [61 x i8]* @.str.1, i64 0, i64 0), i32 289, i8* getelementptr inbounds ([20 x i8], [20 x i8]* @.str.5, i64 0, i64 0)) #6
+  br label %26
+
+26:                                               ; preds = %21, %25
+  %27 = getelementptr inbounds %struct.NaClValidationMetadata, %struct.NaClValidationMetadata* %2, i64 0, i32 3
+  %28 = load i64, i64* %27, align 8
+  %29 = icmp eq i64 %28, 0
+  br i1 %29, label %30, label %31
+
+30:                                               ; preds = %26
+  call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([61 x i8], [61 x i8]* @.str.1, i64 0, i64 0), i32 290, i8* getelementptr inbounds ([27 x i8], [27 x i8]* @.str.6, i64 0, i64 0)) #6
+  br label %31
+
+31:                                               ; preds = %26, %30
+  %32 = getelementptr inbounds %struct.NaClValidationMetadata, %struct.NaClValidationMetadata* %2, i64 0, i32 1
+  %33 = load i64, i64* %32, align 8
+  %34 = load i64, i64* %6, align 8
+  %35 = add nsw i64 %34, %33
+  %36 = getelementptr inbounds %struct.NaClValidationMetadata, %struct.NaClValidationMetadata* %2, i64 0, i32 6
+  %37 = load i64, i64* %36, align 8
+  %38 = icmp sgt i64 %35, %37
+  br i1 %38, label %39, label %40
+
+39:                                               ; preds = %31
+  call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([61 x i8], [61 x i8]* @.str.1, i64 0, i64 0), i32 291, i8* getelementptr inbounds ([62 x i8], [62 x i8]* @.str.7, i64 0, i64 0)) #6
+  br label %40
+
+40:                                               ; preds = %31, %39
+  %41 = load void (i8*, i8*, i64)*, void (i8*, i8*, i64)** %17, align 8
+  %42 = bitcast i64* %32 to i8*
+  call void %41(i8* %4, i8* %42, i64 8) #6
+  %43 = load void (i8*, i8*, i64)*, void (i8*, i8*, i64)** %17, align 8
+  %44 = bitcast i64* %6 to i8*
+  call void %43(i8* %4, i8* nonnull %44, i64 8) #6
+  %45 = load void (i8*, i8*, i64)*, void (i8*, i8*, i64)** %17, align 8
+  %46 = bitcast i64* %27 to i8*
+  call void %45(i8* %4, i8* %46, i64 8) #6
+  %47 = load void (i8*, i8*, i64)*, void (i8*, i8*, i64)** %17, align 8
+  %48 = load i8*, i8** %22, align 8
+  %49 = load i64, i64* %27, align 8
+  call void %47(i8* %4, i8* %48, i64 %49) #6
+  %50 = load void (i8*, i8*, i64)*, void (i8*, i8*, i64)** %17, align 8
+  %51 = getelementptr inbounds %struct.NaClValidationMetadata, %struct.NaClValidationMetadata* %2, i64 0, i32 4
+  %52 = bitcast i64* %51 to i8*
+  call void %50(i8* %4, i8* %52, i64 8) #6
+  %53 = load void (i8*, i8*, i64)*, void (i8*, i8*, i64)** %17, align 8
+  %54 = getelementptr inbounds %struct.NaClValidationMetadata, %struct.NaClValidationMetadata* %2, i64 0, i32 5
+  %55 = bitcast i64* %54 to i8*
+  call void %53(i8* %4, i8* %55, i64 8) #6
+  %56 = load void (i8*, i8*, i64)*, void (i8*, i8*, i64)** %17, align 8
+  %57 = bitcast i64* %36 to i8*
+  call void %56(i8* %4, i8* %57, i64 8) #6
+  %58 = load void (i8*, i8*, i64)*, void (i8*, i8*, i64)** %17, align 8
+  %59 = getelementptr inbounds %struct.NaClValidationMetadata, %struct.NaClValidationMetadata* %2, i64 0, i32 7
+  %60 = bitcast i64* %59 to i8*
+  call void %58(i8* %4, i8* %60, i64 8) #6
+  %61 = load void (i8*, i8*, i64)*, void (i8*, i8*, i64)** %17, align 8
+  %62 = getelementptr inbounds %struct.NaClValidationMetadata, %struct.NaClValidationMetadata* %2, i64 0, i32 8
+  %63 = bitcast i64* %62 to i8*
+  call void %61(i8* %4, i8* %63, i64 8) #6
+  br label %66
+
+64:                                               ; preds = %16
+  %65 = load void (i8*, i8*, i64)*, void (i8*, i8*, i64)** %17, align 8
+  call void %65(i8* %4, i8* %0, i64 %1) #6
+  br label %66
+
+66:                                               ; preds = %64, %40
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #6
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden %struct.NaClDesc* @NaClDescCreateWithFilePathMetadata(i32, i8* nocapture readonly) local_unnamed_addr #0 {
+  %3 = tail call %struct.NaClDesc* @NaClDescIoMakeFromHandle(i32 %0, i32 0) #6
+  %4 = tail call i64 @strlen(i8* %1) #7
+  %5 = icmp eq %struct.NaClDesc* %3, null
+  br i1 %5, label %31, label %6
+
+6:                                                ; preds = %2
+  %7 = icmp eq i64 %4, 0
+  br i1 %7, label %31, label %8
+
+8:                                                ; preds = %6
+  tail call void @NaClDescMarkSafeForMmap(%struct.NaClDesc* nonnull %3) #6
+  %9 = add i64 %4, 1
+  %10 = tail call noalias i8* @malloc(i64 %9) #6
+  %11 = icmp eq i8* %10, null
+  br i1 %11, label %12, label %13
+
+12:                                               ; preds = %8
+  tail call void @NaClDescUnref(%struct.NaClDesc* nonnull %3) #6
+  br label %31
+
+13:                                               ; preds = %8
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 1 %10, i8* align 1 %1, i64 %9, i1 false)
+  %14 = trunc i64 %4 to i32
+  %15 = add i64 %4, 5
+  %16 = and i64 %15, 4294967295
+  %17 = tail call noalias i8* @malloc(i64 %16) #6
+  %18 = icmp eq i8* %17, null
+  br i1 %18, label %30, label %19
+
+19:                                               ; preds = %13
+  store i8 1, i8* %17, align 1
+  %20 = getelementptr inbounds i8, i8* %17, i64 1
+  %21 = bitcast i8* %20 to i32*
+  store i32 %14, i32* %21, align 1
+  %22 = and i64 %4, 4294967295
+  %23 = getelementptr inbounds i8, i8* %17, i64 5
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %23, i8* nonnull align 1 %10, i64 %22, i1 false) #6
+  %24 = add i32 %14, 5
+  %25 = bitcast %struct.NaClDesc* %3 to %struct.NaClDescVtbl**
+  %26 = load %struct.NaClDescVtbl*, %struct.NaClDescVtbl** %25, align 8
+  %27 = getelementptr inbounds %struct.NaClDescVtbl, %struct.NaClDescVtbl* %26, i64 0, i32 32
+  %28 = load i32 (%struct.NaClDesc*, i32, i32, i8*)*, i32 (%struct.NaClDesc*, i32, i32, i8*)** %27, align 8
+  %29 = tail call i32 %28(%struct.NaClDesc* nonnull %3, i32 245886989, i32 %24, i8* nonnull %17) #6
+  tail call void @free(i8* nonnull %17) #6
+  br label %30
+
+30:                                               ; preds = %13, %19
+  tail call void @free(i8* nonnull %10) #6
+  br label %31
+
+31:                                               ; preds = %6, %2, %30, %12
+  %32 = phi %struct.NaClDesc* [ null, %12 ], [ %3, %30 ], [ null, %2 ], [ %3, %6 ]
+  ret %struct.NaClDesc* %32
+}
+
+declare %struct.NaClDesc* @NaClDescIoMakeFromHandle(i32, i32) local_unnamed_addr #2
+
+; Function Attrs: argmemonly nofree nounwind readonly
+declare i64 @strlen(i8* nocapture) local_unnamed_addr #5
+
+declare void @NaClDescMarkSafeForMmap(%struct.NaClDesc*) local_unnamed_addr #2
+
+declare void @NaClDescUnref(%struct.NaClDesc*) local_unnamed_addr #2
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { argmemonly nounwind }
+attributes #2 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nofree nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { argmemonly nofree nounwind readonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nounwind }
+attributes #7 = { nounwind readonly }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}

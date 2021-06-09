@@ -1,0 +1,207 @@
+; ModuleID = '../../native_client/src/shared/platform/nacl_interruptible_mutex.c'
+source_filename = "../../native_client/src/shared/platform/nacl_interruptible_mutex.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%struct.NaClIntrMutex = type { i32, %struct.NaClMutex, %struct.NaClCondVar }
+%struct.NaClMutex = type { %union.pthread_mutex_t, i32 }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%struct.NaClCondVar = type { %union.pthread_cond_t }
+%union.pthread_cond_t = type { %struct.__pthread_cond_s }
+%struct.__pthread_cond_s = type { %union.anon, %union.anon.0, [2 x i32], [2 x i32], i32, i32, [2 x i32] }
+%union.anon = type { i64 }
+%union.anon.0 = type { i64 }
+
+@.str = private unnamed_addr constant [53 x i8] c"NaClIntrMutxUnlock: unlocking when lock is not held\0A\00", align 1
+@.str.1 = private unnamed_addr constant [53 x i8] c"NaClIntrMutexReset: lock at 0x%08lx not interrupted\0A\00", align 1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClIntrMutexCtor(%struct.NaClIntrMutex*) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %0, i64 0, i32 1
+  %3 = tail call i32 @NaClMutexCtor(%struct.NaClMutex* %2) #2
+  %4 = icmp eq i32 %3, 0
+  br i1 %4, label %12, label %5
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %0, i64 0, i32 2
+  %7 = tail call i32 @NaClCondVarCtor(%struct.NaClCondVar* %6) #2
+  %8 = icmp eq i32 %7, 0
+  br i1 %8, label %9, label %10
+
+9:                                                ; preds = %5
+  tail call void @NaClMutexDtor(%struct.NaClMutex* %2) #2
+  br label %12
+
+10:                                               ; preds = %5
+  %11 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %0, i64 0, i32 0
+  store i32 0, i32* %11, align 8
+  br label %12
+
+12:                                               ; preds = %1, %10, %9
+  %13 = phi i32 [ 1, %10 ], [ 0, %9 ], [ 0, %1 ]
+  ret i32 %13
+}
+
+declare i32 @NaClMutexCtor(%struct.NaClMutex*) local_unnamed_addr #1
+
+declare i32 @NaClCondVarCtor(%struct.NaClCondVar*) local_unnamed_addr #1
+
+declare void @NaClMutexDtor(%struct.NaClMutex*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClIntrMutexDtor(%struct.NaClIntrMutex*) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %0, i64 0, i32 2
+  tail call void @NaClCondVarDtor(%struct.NaClCondVar* %2) #2
+  %3 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %0, i64 0, i32 1
+  tail call void @NaClMutexDtor(%struct.NaClMutex* %3) #2
+  ret void
+}
+
+declare void @NaClCondVarDtor(%struct.NaClCondVar*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClIntrMutexLock(%struct.NaClIntrMutex*) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %0, i64 0, i32 1
+  tail call void @NaClXMutexLock(%struct.NaClMutex* %2) #2
+  %3 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %0, i64 0, i32 0
+  %4 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %0, i64 0, i32 2
+  br label %5
+
+5:                                                ; preds = %7, %1
+  %6 = load i32, i32* %3, align 8
+  switch i32 %6, label %9 [
+    i32 1, label %7
+    i32 0, label %8
+  ]
+
+7:                                                ; preds = %5
+  tail call void @NaClXCondVarWait(%struct.NaClCondVar* %4, %struct.NaClMutex* %2) #2
+  br label %5
+
+8:                                                ; preds = %5
+  store i32 1, i32* %3, align 8
+  br label %12
+
+9:                                                ; preds = %5
+  %10 = icmp eq i32 %6, 2
+  %11 = select i1 %10, i32 6, i32 1
+  br label %12
+
+12:                                               ; preds = %9, %8
+  %13 = phi i32 [ 0, %8 ], [ %11, %9 ]
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* %2) #2
+  ret i32 %13
+}
+
+declare void @NaClXMutexLock(%struct.NaClMutex*) local_unnamed_addr #1
+
+declare void @NaClXCondVarWait(%struct.NaClCondVar*, %struct.NaClMutex*) local_unnamed_addr #1
+
+declare void @NaClXMutexUnlock(%struct.NaClMutex*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClIntrMutexTryLock(%struct.NaClIntrMutex*) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %0, i64 0, i32 1
+  tail call void @NaClXMutexLock(%struct.NaClMutex* %2) #2
+  %3 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %0, i64 0, i32 0
+  %4 = load i32, i32* %3, align 8
+  switch i32 %4, label %7 [
+    i32 0, label %5
+    i32 1, label %8
+    i32 2, label %6
+  ]
+
+5:                                                ; preds = %1
+  store i32 1, i32* %3, align 8
+  br label %8
+
+6:                                                ; preds = %1
+  br label %8
+
+7:                                                ; preds = %1
+  br label %8
+
+8:                                                ; preds = %1, %7, %6, %5
+  %9 = phi i32 [ 1, %7 ], [ 6, %6 ], [ 0, %5 ], [ 2, %1 ]
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* %2) #2
+  ret i32 %9
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden i32 @NaClIntrMutexUnlock(%struct.NaClIntrMutex*) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %0, i64 0, i32 1
+  tail call void @NaClXMutexLock(%struct.NaClMutex* %2) #2
+  %3 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %0, i64 0, i32 0
+  %4 = load i32, i32* %3, align 8
+  %5 = icmp eq i32 %4, 1
+  br i1 %5, label %7, label %6
+
+6:                                                ; preds = %1
+  tail call void (i32, i8*, ...) @NaClLog(i32 1, i8* getelementptr inbounds ([53 x i8], [53 x i8]* @.str, i64 0, i64 0)) #2
+  br label %7
+
+7:                                                ; preds = %1, %6
+  %8 = phi i32 [ 5, %6 ], [ 0, %1 ]
+  store i32 0, i32* %3, align 8
+  %9 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %0, i64 0, i32 2
+  tail call void @NaClXCondVarSignal(%struct.NaClCondVar* %9) #2
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* %2) #2
+  ret i32 %8
+}
+
+declare void @NaClLog(i32, i8*, ...) local_unnamed_addr #1
+
+declare void @NaClXCondVarSignal(%struct.NaClCondVar*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClIntrMutexIntr(%struct.NaClIntrMutex*) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %0, i64 0, i32 1
+  tail call void @NaClXMutexLock(%struct.NaClMutex* %2) #2
+  %3 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %0, i64 0, i32 0
+  %4 = load i32, i32* %3, align 8
+  %5 = icmp eq i32 %4, 1
+  store i32 2, i32* %3, align 8
+  br i1 %5, label %6, label %8
+
+6:                                                ; preds = %1
+  %7 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %0, i64 0, i32 2
+  tail call void @NaClXCondVarBroadcast(%struct.NaClCondVar* %7) #2
+  br label %8
+
+8:                                                ; preds = %1, %6
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* %2) #2
+  ret void
+}
+
+declare void @NaClXCondVarBroadcast(%struct.NaClCondVar*) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @NaClIntrMutexReset(%struct.NaClIntrMutex*) local_unnamed_addr #0 {
+  %2 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %0, i64 0, i32 1
+  tail call void @NaClXMutexLock(%struct.NaClMutex* %2) #2
+  %3 = getelementptr inbounds %struct.NaClIntrMutex, %struct.NaClIntrMutex* %0, i64 0, i32 0
+  %4 = load i32, i32* %3, align 8
+  %5 = icmp eq i32 %4, 2
+  br i1 %5, label %8, label %6
+
+6:                                                ; preds = %1
+  %7 = ptrtoint %struct.NaClIntrMutex* %0 to i64
+  tail call void (i32, i8*, ...) @NaClLog(i32 -4, i8* getelementptr inbounds ([53 x i8], [53 x i8]* @.str.1, i64 0, i64 0), i64 %7) #2
+  br label %8
+
+8:                                                ; preds = %1, %6
+  store i32 0, i32* %3, align 8
+  tail call void @NaClXMutexUnlock(%struct.NaClMutex* %2) #2
+  ret void
+}
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}

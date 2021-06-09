@@ -1,0 +1,1107 @@
+; ModuleID = '../../gpu/command_buffer/service/gpu_state_tracer.cc'
+source_filename = "../../gpu/command_buffer/service/gpu_state_tracer.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"struct.base::trace_event::TraceCategory" = type { i8, i32, i8* }
+%"class.base::ThreadLocalPointer" = type { %"class.base::ThreadLocalStorage::Slot" }
+%"class.base::ThreadLocalStorage::Slot" = type { i32, i32 }
+%"class.gpu::gles2::GPUStateTracer" = type { %"struct.gpu::gles2::ContextState"* }
+%"struct.gpu::gles2::ContextState" = type <{ float, float, float, float, i32, i32, i32, i32, i32, i32, float, float, float, float, float, i32, i8, i8, i8, i8, i8, i8, i8, i8, i32, i32, i32, i8, i8, [2 x i8], float, float, i32, i32, i32, i32, float, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, float, float, float, i8, [3 x i8], i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i8, %"struct.gpu::gles2::ContextState::EnableFlags", [3 x i8], i32, %class.scoped_refptr, %class.scoped_refptr, %class.scoped_refptr, %class.scoped_refptr, %class.scoped_refptr, %class.scoped_refptr, %class.scoped_refptr, %"class.std::__1::vector.78", i8, [7 x i8], %"class.std::__1::vector.144", %class.scoped_refptr.152, %class.scoped_refptr.152, %class.scoped_refptr.153, %"class.std::__1::vector.154", %class.scoped_refptr.161, %class.scoped_refptr.161, %class.scoped_refptr.205, %class.scoped_refptr.206, i8, i8, i8, i8, i8, [3 x i8], i32, i8, i8, [2 x i8], %"class.std::__1::vector", float, float, %"class.std::__1::vector.207", %"class.gl::GLApi"*, %"class.gpu::gles2::FeatureInfo"*, i8, [7 x i8] }>
+%"struct.gpu::gles2::ContextState::EnableFlags" = type { i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8 }
+%class.scoped_refptr = type { %"class.gpu::gles2::Buffer"* }
+%"class.gpu::gles2::Buffer" = type <{ %"class.base::RefCounted", [4 x i8], %"class.gpu::gles2::BufferManager"*, %"class.std::__1::vector.50", i64, i8, i8, [2 x i8], i32, i32, i32, i32, i32, %"class.std::__1::unique_ptr.57", %"class.std::__1::map", %class.scoped_refptr.60, i32, [4 x i8] }>
+%"class.base::RefCounted" = type { %"class.base::subtle::RefCountedBase" }
+%"class.base::subtle::RefCountedBase" = type { i32 }
+%"class.gpu::gles2::BufferManager" = type <{ %"class.base::trace_event::MemoryDumpProvider", %"class.std::__1::unique_ptr.0", %"class.gpu::MemoryTracker"*, %class.scoped_refptr.13, %"class.std::__1::unordered_map", i64, i8, i8, [2 x i8], i32, i32, i8, i8, [2 x i8] }>
+%"class.base::trace_event::MemoryDumpProvider" = type { i32 (...)** }
+%"class.std::__1::unique_ptr.0" = type { %"class.std::__1::__compressed_pair.1" }
+%"class.std::__1::__compressed_pair.1" = type { %"struct.std::__1::__compressed_pair_elem.2" }
+%"struct.std::__1::__compressed_pair_elem.2" = type { %"class.gpu::MemoryTypeTracker"* }
+%"class.gpu::MemoryTypeTracker" = type { %"class.gpu::MemoryTracker"*, i64, %"class.base::Lock", %class.scoped_refptr.3, %"class.base::WeakPtrFactory" }
+%"class.base::Lock" = type { %"class.base::internal::LockImpl" }
+%"class.base::internal::LockImpl" = type { %union.pthread_mutex_t }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%class.scoped_refptr.3 = type { %"class.base::SequencedTaskRunner"* }
+%"class.base::SequencedTaskRunner" = type { %"class.base::TaskRunner.base", [4 x i8] }
+%"class.base::TaskRunner.base" = type <{ i32 (...)**, %"class.base::RefCountedThreadSafe" }>
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.4" }
+%"struct.std::__1::__atomic_base.4" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"class.base::WeakPtrFactory" = type { %"class.base::internal::WeakPtrFactoryBase" }
+%"class.base::internal::WeakPtrFactoryBase" = type { %"class.base::internal::WeakReferenceOwner", i64 }
+%"class.base::internal::WeakReferenceOwner" = type { %class.scoped_refptr.5 }
+%class.scoped_refptr.5 = type { %"class.base::internal::WeakReference::Flag"* }
+%"class.base::internal::WeakReference::Flag" = type <{ %"class.base::RefCountedThreadSafe.6", %"class.base::AtomicFlag", [3 x i8] }>
+%"class.base::RefCountedThreadSafe.6" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::AtomicFlag" = type { %"struct.std::__1::atomic.7" }
+%"struct.std::__1::atomic.7" = type { %"struct.std::__1::__atomic_base.8" }
+%"struct.std::__1::__atomic_base.8" = type { %"struct.std::__1::__atomic_base.9" }
+%"struct.std::__1::__atomic_base.9" = type { %"struct.std::__1::__cxx_atomic_impl.10" }
+%"struct.std::__1::__cxx_atomic_impl.10" = type { %"struct.std::__1::__cxx_atomic_base_impl.11" }
+%"struct.std::__1::__cxx_atomic_base_impl.11" = type { i8 }
+%"class.gpu::MemoryTracker" = type { i32 (...)** }
+%class.scoped_refptr.13 = type { %"class.gpu::gles2::FeatureInfo"* }
+%"class.std::__1::unordered_map" = type { %"class.std::__1::__hash_table" }
+%"class.std::__1::__hash_table" = type <{ %"class.std::__1::unique_ptr.31", %"class.std::__1::__compressed_pair.40", %"class.std::__1::__compressed_pair.45", %"class.std::__1::__compressed_pair.47", [4 x i8] }>
+%"class.std::__1::unique_ptr.31" = type { %"class.std::__1::__compressed_pair.32" }
+%"class.std::__1::__compressed_pair.32" = type { %"struct.std::__1::__compressed_pair_elem.33", %"struct.std::__1::__compressed_pair_elem.34" }
+%"struct.std::__1::__compressed_pair_elem.33" = type { %"struct.std::__1::__hash_node_base"** }
+%"struct.std::__1::__hash_node_base" = type { %"struct.std::__1::__hash_node_base"* }
+%"struct.std::__1::__compressed_pair_elem.34" = type { %"class.std::__1::__bucket_list_deallocator" }
+%"class.std::__1::__bucket_list_deallocator" = type { %"class.std::__1::__compressed_pair.35" }
+%"class.std::__1::__compressed_pair.35" = type { %"struct.std::__1::__compressed_pair_elem.36" }
+%"struct.std::__1::__compressed_pair_elem.36" = type { i64 }
+%"class.std::__1::__compressed_pair.40" = type { %"struct.std::__1::__compressed_pair_elem.41" }
+%"struct.std::__1::__compressed_pair_elem.41" = type { %"struct.std::__1::__hash_node_base" }
+%"class.std::__1::__compressed_pair.45" = type { %"struct.std::__1::__compressed_pair_elem.36" }
+%"class.std::__1::__compressed_pair.47" = type { %"struct.std::__1::__compressed_pair_elem.48" }
+%"struct.std::__1::__compressed_pair_elem.48" = type { float }
+%"class.std::__1::vector.50" = type { %"class.std::__1::__vector_base.51" }
+%"class.std::__1::__vector_base.51" = type { i8*, i8*, %"class.std::__1::__compressed_pair.52" }
+%"class.std::__1::__compressed_pair.52" = type { %"struct.std::__1::__compressed_pair_elem.53" }
+%"struct.std::__1::__compressed_pair_elem.53" = type { i8* }
+%"class.std::__1::unique_ptr.57" = type { %"class.std::__1::__compressed_pair.58" }
+%"class.std::__1::__compressed_pair.58" = type { %"struct.std::__1::__compressed_pair_elem.59" }
+%"struct.std::__1::__compressed_pair_elem.59" = type { %"struct.gpu::gles2::Buffer::MappedRange"* }
+%"struct.gpu::gles2::Buffer::MappedRange" = type <{ i64, i64, i32, [4 x i8], i8*, %class.scoped_refptr.60, i32, [4 x i8] }>
+%"class.std::__1::map" = type { %"class.std::__1::__tree" }
+%"class.std::__1::__tree" = type { %"class.std::__1::__tree_end_node"*, %"class.std::__1::__compressed_pair.71", %"class.std::__1::__compressed_pair.76" }
+%"class.std::__1::__tree_end_node" = type { %"class.std::__1::__tree_node_base"* }
+%"class.std::__1::__tree_node_base" = type opaque
+%"class.std::__1::__compressed_pair.71" = type { %"struct.std::__1::__compressed_pair_elem.72" }
+%"struct.std::__1::__compressed_pair_elem.72" = type { %"class.std::__1::__tree_end_node" }
+%"class.std::__1::__compressed_pair.76" = type { %"struct.std::__1::__compressed_pair_elem.36" }
+%class.scoped_refptr.60 = type { %"class.gpu::Buffer"* }
+%"class.gpu::Buffer" = type <{ %"class.base::RefCountedThreadSafe.61", [4 x i8], %"class.std::__1::unique_ptr.62", i8*, i32, [4 x i8] }>
+%"class.base::RefCountedThreadSafe.61" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.std::__1::unique_ptr.62" = type { %"class.std::__1::__compressed_pair.63" }
+%"class.std::__1::__compressed_pair.63" = type { %"struct.std::__1::__compressed_pair_elem.64" }
+%"struct.std::__1::__compressed_pair_elem.64" = type { %"class.gpu::BufferBacking"* }
+%"class.gpu::BufferBacking" = type { i32 (...)** }
+%"class.std::__1::vector.78" = type { %"class.std::__1::__vector_base.79" }
+%"class.std::__1::__vector_base.79" = type { %"struct.gpu::gles2::TextureUnit"*, %"struct.gpu::gles2::TextureUnit"*, %"class.std::__1::__compressed_pair.139" }
+%"struct.gpu::gles2::TextureUnit" = type { i32, %class.scoped_refptr.80, %class.scoped_refptr.80, %class.scoped_refptr.80, %class.scoped_refptr.80, %class.scoped_refptr.80, %class.scoped_refptr.80 }
+%class.scoped_refptr.80 = type { %"class.gpu::gles2::TextureRef"* }
+%"class.gpu::gles2::TextureRef" = type { %"class.base::RefCounted.81", %"class.gpu::gles2::TextureManager"*, %"class.gpu::gles2::Texture"*, i32, i32, i8, %"class.std::__1::unique_ptr.106", %"class.std::__1::unique_ptr.133" }
+%"class.base::RefCounted.81" = type { %"class.base::subtle::RefCountedBase" }
+%"class.gpu::gles2::TextureManager" = type { %"class.base::trace_event::MemoryDumpProvider", %"class.std::__1::unique_ptr.0", %"class.gpu::MemoryTracker"*, %class.scoped_refptr.13, %"class.std::__1::vector.217", %"class.std::__1::unordered_map.224", i32, i32, i32, i32, i32, i32, i32, i32, i8, i32, i32, i32, i32, i8, [6 x i32], [6 x %class.scoped_refptr.80], %"class.std::__1::vector.248", i32, %"class.gl::ProgressReporter"*, %"class.gpu::ServiceDiscardableManager"* }
+%"class.std::__1::vector.217" = type { %"class.std::__1::__vector_base.218" }
+%"class.std::__1::__vector_base.218" = type { %"class.gpu::gles2::FramebufferManager"**, %"class.gpu::gles2::FramebufferManager"**, %"class.std::__1::__compressed_pair.219" }
+%"class.gpu::gles2::FramebufferManager" = type opaque
+%"class.std::__1::__compressed_pair.219" = type { %"struct.std::__1::__compressed_pair_elem.220" }
+%"struct.std::__1::__compressed_pair_elem.220" = type { %"class.gpu::gles2::FramebufferManager"** }
+%"class.std::__1::unordered_map.224" = type { %"class.std::__1::__hash_table.225" }
+%"class.std::__1::__hash_table.225" = type <{ %"class.std::__1::unique_ptr.226", %"class.std::__1::__compressed_pair.236", %"class.std::__1::__compressed_pair.241", %"class.std::__1::__compressed_pair.244", [4 x i8] }>
+%"class.std::__1::unique_ptr.226" = type { %"class.std::__1::__compressed_pair.227" }
+%"class.std::__1::__compressed_pair.227" = type { %"struct.std::__1::__compressed_pair_elem.228", %"struct.std::__1::__compressed_pair_elem.230" }
+%"struct.std::__1::__compressed_pair_elem.228" = type { %"struct.std::__1::__hash_node_base.229"** }
+%"struct.std::__1::__hash_node_base.229" = type { %"struct.std::__1::__hash_node_base.229"* }
+%"struct.std::__1::__compressed_pair_elem.230" = type { %"class.std::__1::__bucket_list_deallocator.231" }
+%"class.std::__1::__bucket_list_deallocator.231" = type { %"class.std::__1::__compressed_pair.232" }
+%"class.std::__1::__compressed_pair.232" = type { %"struct.std::__1::__compressed_pair_elem.36" }
+%"class.std::__1::__compressed_pair.236" = type { %"struct.std::__1::__compressed_pair_elem.237" }
+%"struct.std::__1::__compressed_pair_elem.237" = type { %"struct.std::__1::__hash_node_base.229" }
+%"class.std::__1::__compressed_pair.241" = type { %"struct.std::__1::__compressed_pair_elem.36" }
+%"class.std::__1::__compressed_pair.244" = type { %"struct.std::__1::__compressed_pair_elem.48" }
+%"class.std::__1::vector.248" = type { %"class.std::__1::__vector_base.249" }
+%"class.std::__1::__vector_base.249" = type { %"class.gpu::gles2::TextureManager::DestructionObserver"**, %"class.gpu::gles2::TextureManager::DestructionObserver"**, %"class.std::__1::__compressed_pair.250" }
+%"class.gpu::gles2::TextureManager::DestructionObserver" = type { i32 (...)** }
+%"class.std::__1::__compressed_pair.250" = type { %"struct.std::__1::__compressed_pair_elem.251" }
+%"struct.std::__1::__compressed_pair_elem.251" = type { %"class.gpu::gles2::TextureManager::DestructionObserver"** }
+%"class.gl::ProgressReporter" = type opaque
+%"class.gpu::ServiceDiscardableManager" = type opaque
+%"class.gpu::gles2::Texture" = type <{ %"class.gpu::TextureBase", %"class.std::__1::vector.82", %"class.base::internal::flat_tree.98", i8, [7 x i8], %"class.gpu::gles2::TextureRef"*, i32, i8, [3 x i8], i32, i32, %"struct.gpu::gles2::SamplerState", i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i8, i8, i8, i8, i8, [3 x i8], i32, i8, i8, i8, i8, i32, i32, i8, [7 x i8], %"struct.gpu::gles2::Texture::CompatibilitySwizzle"*, i8, [7 x i8] }>
+%"class.gpu::TextureBase" = type { i32 (...)**, i32, i32, %"class.gpu::MailboxManager"* }
+%"class.gpu::MailboxManager" = type opaque
+%"class.std::__1::vector.82" = type { %"class.std::__1::__vector_base.83" }
+%"class.std::__1::__vector_base.83" = type { %"struct.gpu::gles2::Texture::FaceInfo"*, %"struct.gpu::gles2::Texture::FaceInfo"*, %"class.std::__1::__compressed_pair.93" }
+%"struct.gpu::gles2::Texture::FaceInfo" = type { i32, %"class.std::__1::vector.84" }
+%"class.std::__1::vector.84" = type { %"class.std::__1::__vector_base.85" }
+%"class.std::__1::__vector_base.85" = type { %"struct.gpu::gles2::Texture::LevelInfo"*, %"struct.gpu::gles2::Texture::LevelInfo"*, %"class.std::__1::__compressed_pair.88" }
+%"struct.gpu::gles2::Texture::LevelInfo" = type <{ %"class.gfx::Rect", i32, i32, i32, i32, i32, i32, i32, i32, i32, [4 x i8], %class.scoped_refptr.86, i32, i32, i8, [7 x i8] }>
+%"class.gfx::Rect" = type { %"class.gfx::Point", %"class.gfx::Size" }
+%"class.gfx::Point" = type { i32, i32 }
+%"class.gfx::Size" = type { i32, i32 }
+%class.scoped_refptr.86 = type { %"class.gl::GLImage"* }
+%"class.gl::GLImage" = type { i32 (...)**, %"class.base::RefCounted.87", %"class.gfx::ColorSpace" }
+%"class.base::RefCounted.87" = type { %"class.base::subtle::RefCountedBase" }
+%"class.gfx::ColorSpace" = type { i8, i8, i8, i8, [9 x float], [7 x float] }
+%"class.std::__1::__compressed_pair.88" = type { %"struct.std::__1::__compressed_pair_elem.89" }
+%"struct.std::__1::__compressed_pair_elem.89" = type { %"struct.gpu::gles2::Texture::LevelInfo"* }
+%"class.std::__1::__compressed_pair.93" = type { %"struct.std::__1::__compressed_pair_elem.94" }
+%"struct.std::__1::__compressed_pair_elem.94" = type { %"struct.gpu::gles2::Texture::FaceInfo"* }
+%"class.base::internal::flat_tree.98" = type { %"class.std::__1::vector.99" }
+%"class.std::__1::vector.99" = type { %"class.std::__1::__vector_base.100" }
+%"class.std::__1::__vector_base.100" = type { %"class.gpu::gles2::TextureRef"**, %"class.gpu::gles2::TextureRef"**, %"class.std::__1::__compressed_pair.101" }
+%"class.std::__1::__compressed_pair.101" = type { %"struct.std::__1::__compressed_pair_elem.102" }
+%"struct.std::__1::__compressed_pair_elem.102" = type { %"class.gpu::gles2::TextureRef"** }
+%"struct.gpu::gles2::SamplerState" = type { i32, i32, i32, i32, i32, i32, i32, float, float, float }
+%"struct.gpu::gles2::Texture::CompatibilitySwizzle" = type { i32, i32, i32, i32, i32, i32 }
+%"class.std::__1::unique_ptr.106" = type { %"class.std::__1::__compressed_pair.107" }
+%"class.std::__1::__compressed_pair.107" = type { %"struct.std::__1::__compressed_pair_elem.108" }
+%"struct.std::__1::__compressed_pair_elem.108" = type { %"class.gpu::SharedImageRepresentationGLTexture"* }
+%"class.gpu::SharedImageRepresentationGLTexture" = type { %"class.gpu::SharedImageRepresentationGLTextureBase.base", [6 x i8] }
+%"class.gpu::SharedImageRepresentationGLTextureBase.base" = type { %"class.gpu::SharedImageRepresentation.base" }
+%"class.gpu::SharedImageRepresentation.base" = type <{ i32 (...)**, %"class.gpu::SharedImageManager"*, %"class.gpu::SharedImageBacking"*, %"class.gpu::MemoryTypeTracker"*, i8, i8 }>
+%"class.gpu::SharedImageManager" = type <{ %"class.absl::optional", %"class.base::internal::flat_tree.109", i8, [7 x i8] }>
+%"class.absl::optional" = type { %"class.absl::optional_internal::optional_data" }
+%"class.absl::optional_internal::optional_data" = type { %"class.absl::optional_internal::optional_data_base" }
+%"class.absl::optional_internal::optional_data_base" = type { %"class.absl::optional_internal::optional_data_dtor_base" }
+%"class.absl::optional_internal::optional_data_dtor_base" = type { i8, %union.anon }
+%union.anon = type { %"class.base::Lock" }
+%"class.base::internal::flat_tree.109" = type { %"class.std::__1::vector.110" }
+%"class.std::__1::vector.110" = type { %"class.std::__1::__vector_base.111" }
+%"class.std::__1::__vector_base.111" = type { %"class.std::__1::unique_ptr.112"*, %"class.std::__1::unique_ptr.112"*, %"class.std::__1::__compressed_pair.113" }
+%"class.std::__1::unique_ptr.112" = type opaque
+%"class.std::__1::__compressed_pair.113" = type { %"struct.std::__1::__compressed_pair_elem.114" }
+%"struct.std::__1::__compressed_pair_elem.114" = type { %"class.std::__1::unique_ptr.112"* }
+%"class.gpu::SharedImageBacking" = type { i32 (...)**, %"class.absl::optional", %"struct.gpu::Mailbox", i32, %"class.gfx::Size", %"class.gfx::ColorSpace", i32, i32, i32, i64, %"class.gpu::SharedImageFactory"*, i8, %"class.absl::optional.118", %"class.std::__1::vector.123" }
+%"struct.gpu::Mailbox" = type { [16 x i8] }
+%"class.gpu::SharedImageFactory" = type opaque
+%"class.absl::optional.118" = type { %"class.absl::optional_internal::optional_data.119" }
+%"class.absl::optional_internal::optional_data.119" = type { %"class.absl::optional_internal::optional_data_base.120" }
+%"class.absl::optional_internal::optional_data_base.120" = type { %"class.absl::optional_internal::optional_data_dtor_base.121" }
+%"class.absl::optional_internal::optional_data_dtor_base.121" = type { i8, %union.anon.122 }
+%union.anon.122 = type { %"class.gpu::SharedImageBacking::ScopedWriteUMA" }
+%"class.gpu::SharedImageBacking::ScopedWriteUMA" = type { i8 }
+%"class.std::__1::vector.123" = type { %"class.std::__1::__vector_base.124" }
+%"class.std::__1::__vector_base.124" = type { %"class.gpu::SharedImageRepresentation"**, %"class.gpu::SharedImageRepresentation"**, %"class.std::__1::__compressed_pair.125" }
+%"class.gpu::SharedImageRepresentation" = type <{ i32 (...)**, %"class.gpu::SharedImageManager"*, %"class.gpu::SharedImageBacking"*, %"class.gpu::MemoryTypeTracker"*, i8, i8, [6 x i8] }>
+%"class.std::__1::__compressed_pair.125" = type { %"struct.std::__1::__compressed_pair_elem.126" }
+%"struct.std::__1::__compressed_pair_elem.126" = type { %"class.gpu::SharedImageRepresentation"** }
+%"class.std::__1::unique_ptr.133" = type { %"class.std::__1::__compressed_pair.134" }
+%"class.std::__1::__compressed_pair.134" = type { %"struct.std::__1::__compressed_pair_elem.135" }
+%"struct.std::__1::__compressed_pair_elem.135" = type { %"class.gpu::SharedImageRepresentationGLTextureBase::ScopedAccess"* }
+%"class.gpu::SharedImageRepresentationGLTextureBase::ScopedAccess" = type { %"class.gpu::SharedImageRepresentation::ScopedAccessBase" }
+%"class.gpu::SharedImageRepresentation::ScopedAccessBase" = type { %"class.gpu::SharedImageRepresentationGLTextureBase"* }
+%"class.gpu::SharedImageRepresentationGLTextureBase" = type { %"class.gpu::SharedImageRepresentation.base", [6 x i8] }
+%"class.std::__1::__compressed_pair.139" = type { %"struct.std::__1::__compressed_pair_elem.140" }
+%"struct.std::__1::__compressed_pair_elem.140" = type { %"struct.gpu::gles2::TextureUnit"* }
+%"class.std::__1::vector.144" = type { %"class.std::__1::__vector_base.145" }
+%"class.std::__1::__vector_base.145" = type { %class.scoped_refptr.146*, %class.scoped_refptr.146*, %"class.std::__1::__compressed_pair.147" }
+%class.scoped_refptr.146 = type opaque
+%"class.std::__1::__compressed_pair.147" = type { %"struct.std::__1::__compressed_pair_elem.148" }
+%"struct.std::__1::__compressed_pair_elem.148" = type { %class.scoped_refptr.146* }
+%class.scoped_refptr.152 = type { %"class.gpu::gles2::TransformFeedback"* }
+%"class.gpu::gles2::TransformFeedback" = type opaque
+%class.scoped_refptr.153 = type { %"class.gpu::gles2::IndexedBufferBindingHost"* }
+%"class.gpu::gles2::IndexedBufferBindingHost" = type opaque
+%"class.std::__1::vector.154" = type { %"class.std::__1::__vector_base.155" }
+%"class.std::__1::__vector_base.155" = type { %"class.gpu::gles2::Vec4"*, %"class.gpu::gles2::Vec4"*, %"class.std::__1::__compressed_pair.156" }
+%"class.gpu::gles2::Vec4" = type { [4 x %"union.gpu::gles2::Vec4::ValueUnion"], i32 }
+%"union.gpu::gles2::Vec4::ValueUnion" = type { float }
+%"class.std::__1::__compressed_pair.156" = type { %"struct.std::__1::__compressed_pair_elem.157" }
+%"struct.std::__1::__compressed_pair_elem.157" = type { %"class.gpu::gles2::Vec4"* }
+%class.scoped_refptr.161 = type { %"class.gpu::gles2::VertexAttribManager"* }
+%"class.gpu::gles2::VertexAttribManager" = type { %"class.base::RefCounted.162", i32, %"class.std::__1::vector.163", %"class.std::__1::vector", %"class.std::__1::vector", %class.scoped_refptr, %"class.std::__1::list", %"class.std::__1::list", %"class.gpu::gles2::VertexArrayManager"*, i8, i8, i8, i32 }
+%"class.base::RefCounted.162" = type { %"class.base::subtle::RefCountedBase" }
+%"class.std::__1::vector.163" = type { %"class.std::__1::__vector_base.164" }
+%"class.std::__1::__vector_base.164" = type { %"class.gpu::gles2::VertexAttrib"*, %"class.gpu::gles2::VertexAttrib"*, %"class.std::__1::__compressed_pair.169" }
+%"class.gpu::gles2::VertexAttrib" = type { i32, i8, i8, i32, i32, i32, i8, i32, i32, i32, i8, i8, %class.scoped_refptr, %"class.std::__1::list"*, %"class.std::__1::__list_iterator" }
+%"class.std::__1::__list_iterator" = type { %"struct.std::__1::__list_node_base"* }
+%"struct.std::__1::__list_node_base" = type { %"struct.std::__1::__list_node_base"*, %"struct.std::__1::__list_node_base"* }
+%"class.std::__1::__compressed_pair.169" = type { %"struct.std::__1::__compressed_pair_elem.170" }
+%"struct.std::__1::__compressed_pair_elem.170" = type { %"class.gpu::gles2::VertexAttrib"* }
+%"class.std::__1::list" = type { %"class.std::__1::__list_imp" }
+%"class.std::__1::__list_imp" = type { %"struct.std::__1::__list_node_base", %"class.std::__1::__compressed_pair.165" }
+%"class.std::__1::__compressed_pair.165" = type { %"struct.std::__1::__compressed_pair_elem.36" }
+%"class.gpu::gles2::VertexArrayManager" = type <{ %"class.std::__1::unordered_map.174", %"class.std::__1::vector.198", i32, i8, [3 x i8] }>
+%"class.std::__1::unordered_map.174" = type { %"class.std::__1::__hash_table.175" }
+%"class.std::__1::__hash_table.175" = type <{ %"class.std::__1::unique_ptr.176", %"class.std::__1::__compressed_pair.186", %"class.std::__1::__compressed_pair.191", %"class.std::__1::__compressed_pair.194", [4 x i8] }>
+%"class.std::__1::unique_ptr.176" = type { %"class.std::__1::__compressed_pair.177" }
+%"class.std::__1::__compressed_pair.177" = type { %"struct.std::__1::__compressed_pair_elem.178", %"struct.std::__1::__compressed_pair_elem.180" }
+%"struct.std::__1::__compressed_pair_elem.178" = type { %"struct.std::__1::__hash_node_base.179"** }
+%"struct.std::__1::__hash_node_base.179" = type { %"struct.std::__1::__hash_node_base.179"* }
+%"struct.std::__1::__compressed_pair_elem.180" = type { %"class.std::__1::__bucket_list_deallocator.181" }
+%"class.std::__1::__bucket_list_deallocator.181" = type { %"class.std::__1::__compressed_pair.182" }
+%"class.std::__1::__compressed_pair.182" = type { %"struct.std::__1::__compressed_pair_elem.36" }
+%"class.std::__1::__compressed_pair.186" = type { %"struct.std::__1::__compressed_pair_elem.187" }
+%"struct.std::__1::__compressed_pair_elem.187" = type { %"struct.std::__1::__hash_node_base.179" }
+%"class.std::__1::__compressed_pair.191" = type { %"struct.std::__1::__compressed_pair_elem.36" }
+%"class.std::__1::__compressed_pair.194" = type { %"struct.std::__1::__compressed_pair_elem.48" }
+%"class.std::__1::vector.198" = type { %"class.std::__1::__vector_base.199" }
+%"class.std::__1::__vector_base.199" = type { %class.scoped_refptr.161*, %class.scoped_refptr.161*, %"class.std::__1::__compressed_pair.200" }
+%"class.std::__1::__compressed_pair.200" = type { %"struct.std::__1::__compressed_pair_elem.201" }
+%"struct.std::__1::__compressed_pair_elem.201" = type { %class.scoped_refptr.161* }
+%class.scoped_refptr.205 = type { %"class.gpu::gles2::Program"* }
+%"class.gpu::gles2::Program" = type opaque
+%class.scoped_refptr.206 = type { %"class.gpu::gles2::Renderbuffer"* }
+%"class.gpu::gles2::Renderbuffer" = type opaque
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { i32*, i32*, %"class.std::__1::__compressed_pair.15" }
+%"class.std::__1::__compressed_pair.15" = type { %"struct.std::__1::__compressed_pair_elem.16" }
+%"struct.std::__1::__compressed_pair_elem.16" = type { i32* }
+%"class.std::__1::vector.207" = type { %"class.std::__1::__vector_base.208" }
+%"class.std::__1::__vector_base.208" = type { i32*, i32*, %"class.std::__1::__compressed_pair.209" }
+%"class.std::__1::__compressed_pair.209" = type { %"struct.std::__1::__compressed_pair_elem.210" }
+%"struct.std::__1::__compressed_pair_elem.210" = type { i32* }
+%"class.gl::GLApi" = type { i32 (...)** }
+%"class.gpu::gles2::FeatureInfo" = type { %"class.base::RefCounted.14", i8, [3 x i8], %"struct.gpu::gles2::Validators", %"struct.gpu::gles2::DisallowedFeatures", i32, i8, %"class.base::internal::flat_tree", %"struct.gpu::gles2::FeatureInfo::FeatureFlags", %"class.gpu::GpuDriverBugWorkarounds", i8, i8, i8, i8, i8, i8, %"class.std::__1::unique_ptr.25" }
+%"class.base::RefCounted.14" = type { %"class.base::subtle::RefCountedBase" }
+%"struct.gpu::gles2::Validators" = type <{ %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::BackbufferAttachmentValidator", %"class.gpu::gles2::Validators::BlitFilterValidator", %"class.gpu::gles2::Validators::BufferModeValidator", %"class.gpu::gles2::Validators::BufferParameterValidator", %"class.gpu::gles2::Validators::BufferParameter64Validator", %"class.gpu::gles2::Validators::BufferTargetValidator", %"class.gpu::gles2::Validators::BufferUsageValidator", i8, %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::BufferfvValidator", %"class.gpu::gles2::Validators::BufferivValidator", [6 x i8], %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::CmpFunctionValidator", [7 x i8], %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::DrawModeValidator", [7 x i8], %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::FaceModeValidator", %"class.gpu::gles2::Validators::FaceTypeValidator", [6 x i8], %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::GetMaxIndexTypeValidator", [7 x i8], %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::HintModeValidator", [7 x i8], %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::IndexedBufferTargetValidator", [7 x i8], %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::InternalFormatParameterValidator", %"class.gpu::gles2::Validators::MapBufferAccessValidator", [6 x i8], %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::PixelStoreAlignmentValidator", [7 x i8], %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::QueryObjectParameterValidator", %"class.gpu::gles2::Validators::QueryTargetValidator", [6 x i8], %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::ResetStatusValidator", [7 x i8], %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::ShaderPrecisionValidator", %"class.gpu::gles2::Validators::ShaderTypeValidator", %"class.gpu::gles2::Validators::SharedImageAccessModeValidator", [5 x i8], %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::StencilOpValidator", %"class.gpu::gles2::Validators::StringTypeValidator", %"class.gpu::gles2::Validators::SwapBuffersFlagsValidator", [5 x i8], %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::SyncParameterValidator", %"class.gpu::gles2::Validators::Texture3DTargetValidator", [6 x i8], %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::TextureCompareFuncValidator", [7 x i8], %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::TextureMagFilterModeValidator", %"class.gpu::gles2::Validators::TextureMinFilterModeValidator", [6 x i8], %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::TextureSrgbDecodeExtValidator", [7 x i8], %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::TextureSwizzleValidator", [7 x i8], %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::TextureUsageValidator", %"class.gpu::gles2::Validators::TextureWrapModeValidator", [6 x i8], %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::TransformFeedbackPrimitiveModeValidator", %"class.gpu::gles2::Validators::UniformBlockParameterValidator", %"class.gpu::gles2::Validators::UniformParameterValidator", %"class.gpu::gles2::Validators::VertexAttribITypeValidator", [4 x i8], %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::ValueValidator", %"class.gpu::gles2::Validators::WindowRectanglesModeValidator", [7 x i8] }>
+%"class.gpu::gles2::Validators::BackbufferAttachmentValidator" = type { i8 }
+%"class.gpu::gles2::Validators::BlitFilterValidator" = type { i8 }
+%"class.gpu::gles2::Validators::BufferModeValidator" = type { i8 }
+%"class.gpu::gles2::Validators::BufferParameterValidator" = type { i8 }
+%"class.gpu::gles2::Validators::BufferParameter64Validator" = type { i8 }
+%"class.gpu::gles2::Validators::BufferTargetValidator" = type { i8 }
+%"class.gpu::gles2::Validators::BufferUsageValidator" = type { i8 }
+%"class.gpu::gles2::Validators::BufferfvValidator" = type { i8 }
+%"class.gpu::gles2::Validators::BufferivValidator" = type { i8 }
+%"class.gpu::gles2::Validators::CmpFunctionValidator" = type { i8 }
+%"class.gpu::gles2::Validators::DrawModeValidator" = type { i8 }
+%"class.gpu::gles2::Validators::FaceModeValidator" = type { i8 }
+%"class.gpu::gles2::Validators::FaceTypeValidator" = type { i8 }
+%"class.gpu::gles2::Validators::GetMaxIndexTypeValidator" = type { i8 }
+%"class.gpu::gles2::Validators::HintModeValidator" = type { i8 }
+%"class.gpu::gles2::Validators::IndexedBufferTargetValidator" = type { i8 }
+%"class.gpu::gles2::Validators::InternalFormatParameterValidator" = type { i8 }
+%"class.gpu::gles2::Validators::MapBufferAccessValidator" = type { i8 }
+%"class.gpu::gles2::Validators::PixelStoreAlignmentValidator" = type { i8 }
+%"class.gpu::gles2::Validators::QueryObjectParameterValidator" = type { i8 }
+%"class.gpu::gles2::Validators::QueryTargetValidator" = type { i8 }
+%"class.gpu::gles2::Validators::ResetStatusValidator" = type { i8 }
+%"class.gpu::gles2::Validators::ShaderPrecisionValidator" = type { i8 }
+%"class.gpu::gles2::Validators::ShaderTypeValidator" = type { i8 }
+%"class.gpu::gles2::Validators::SharedImageAccessModeValidator" = type { i8 }
+%"class.gpu::gles2::Validators::StencilOpValidator" = type { i8 }
+%"class.gpu::gles2::Validators::StringTypeValidator" = type { i8 }
+%"class.gpu::gles2::Validators::SwapBuffersFlagsValidator" = type { i8 }
+%"class.gpu::gles2::Validators::SyncParameterValidator" = type { i8 }
+%"class.gpu::gles2::Validators::Texture3DTargetValidator" = type { i8 }
+%"class.gpu::gles2::Validators::TextureCompareFuncValidator" = type { i8 }
+%"class.gpu::gles2::Validators::TextureMagFilterModeValidator" = type { i8 }
+%"class.gpu::gles2::Validators::TextureMinFilterModeValidator" = type { i8 }
+%"class.gpu::gles2::Validators::TextureSrgbDecodeExtValidator" = type { i8 }
+%"class.gpu::gles2::Validators::TextureSwizzleValidator" = type { i8 }
+%"class.gpu::gles2::Validators::TextureUsageValidator" = type { i8 }
+%"class.gpu::gles2::Validators::TextureWrapModeValidator" = type { i8 }
+%"class.gpu::gles2::Validators::TransformFeedbackPrimitiveModeValidator" = type { i8 }
+%"class.gpu::gles2::Validators::UniformBlockParameterValidator" = type { i8 }
+%"class.gpu::gles2::Validators::UniformParameterValidator" = type { i8 }
+%"class.gpu::gles2::Validators::VertexAttribITypeValidator" = type { i8 }
+%"class.gpu::ValueValidator" = type { %"class.std::__1::vector" }
+%"class.gpu::gles2::Validators::WindowRectanglesModeValidator" = type { i8 }
+%"struct.gpu::gles2::DisallowedFeatures" = type { i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8 }
+%"class.base::internal::flat_tree" = type { %"class.std::__1::vector.18" }
+%"class.std::__1::vector.18" = type { %"class.std::__1::__vector_base.19" }
+%"class.std::__1::__vector_base.19" = type { %"class.base::BasicStringPiece"*, %"class.base::BasicStringPiece"*, %"class.std::__1::__compressed_pair.20" }
+%"class.base::BasicStringPiece" = type { i8*, i64 }
+%"class.std::__1::__compressed_pair.20" = type { %"struct.std::__1::__compressed_pair_elem.21" }
+%"struct.std::__1::__compressed_pair_elem.21" = type { %"class.base::BasicStringPiece"* }
+%"struct.gpu::gles2::FeatureInfo::FeatureFlags" = type <{ %"struct.gpu::GpuMemoryBufferFormatSet", i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8 }>
+%"struct.gpu::GpuMemoryBufferFormatSet" = type { i32 }
+%"class.gpu::GpuDriverBugWorkarounds" = type { i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i8, i32, i32, i32 }
+%"class.std::__1::unique_ptr.25" = type { %"class.std::__1::__compressed_pair.26" }
+%"class.std::__1::__compressed_pair.26" = type { %"struct.std::__1::__compressed_pair_elem.27" }
+%"struct.std::__1::__compressed_pair_elem.27" = type { %"struct.gl::GLVersionInfo"* }
+%"struct.gl::GLVersionInfo" = type opaque
+%"class.base::TimeTicks" = type { %"class.base::time_internal::TimeBase" }
+%"class.base::time_internal::TimeBase" = type { i64 }
+%"class.base::trace_event::TraceArguments" = type { i8, [2 x i8], [2 x i8*], [2 x %"union.base::trace_event::TraceValue"] }
+%"union.base::trace_event::TraceValue" = type { i64 }
+%"class.gpu::gles2::(anonymous namespace)::Snapshot" = type { %"class.base::trace_event::ConvertableToTraceFormat", %"struct.gpu::gles2::ContextState"*, %"class.std::__1::vector.50", %"class.gfx::Size" }
+%"class.base::trace_event::ConvertableToTraceFormat" = type { i32 (...)** }
+%"class.protozero::HeapBuffered" = type { %"class.protozero::ScatteredHeapBuffer", %"class.protozero::ScatteredStreamWriter", %"class.protozero::RootMessage" }
+%"class.protozero::ScatteredHeapBuffer" = type { %"class.protozero::ScatteredStreamWriter::Delegate", i64, i64, %"class.protozero::ScatteredStreamWriter"*, %"class.std::__1::vector.261", %"class.protozero::ScatteredHeapBuffer::Slice" }
+%"class.protozero::ScatteredStreamWriter::Delegate" = type { i32 (...)** }
+%"class.std::__1::vector.261" = type { %"class.std::__1::__vector_base.262" }
+%"class.std::__1::__vector_base.262" = type { %"class.protozero::ScatteredHeapBuffer::Slice"*, %"class.protozero::ScatteredHeapBuffer::Slice"*, %"class.std::__1::__compressed_pair.268" }
+%"class.std::__1::__compressed_pair.268" = type { %"struct.std::__1::__compressed_pair_elem.269" }
+%"struct.std::__1::__compressed_pair_elem.269" = type { %"class.protozero::ScatteredHeapBuffer::Slice"* }
+%"class.protozero::ScatteredHeapBuffer::Slice" = type { %"class.std::__1::unique_ptr.263", i64, i64 }
+%"class.std::__1::unique_ptr.263" = type { %"class.std::__1::__compressed_pair.264" }
+%"class.std::__1::__compressed_pair.264" = type { %"struct.std::__1::__compressed_pair_elem.53" }
+%"class.protozero::ScatteredStreamWriter" = type { %"class.protozero::ScatteredStreamWriter::Delegate"*, %"struct.protozero::ContiguousMemoryRange", i8*, i64 }
+%"struct.protozero::ContiguousMemoryRange" = type { i8*, i8* }
+%"class.protozero::RootMessage" = type { %"class.perfetto::protos::pbzero::DebugAnnotation.base", %"class.protozero::MessageArena" }
+%"class.perfetto::protos::pbzero::DebugAnnotation.base" = type { %"class.protozero::Message.base" }
+%"class.protozero::Message.base" = type <{ %"class.protozero::ScatteredStreamWriter"*, %"class.protozero::MessageArena"*, %"class.protozero::Message"*, i8*, i32, i32, i8 }>
+%"class.protozero::Message" = type <{ %"class.protozero::ScatteredStreamWriter"*, %"class.protozero::MessageArena"*, %"class.protozero::Message"*, i8*, i32, i32, i8, [7 x i8] }>
+%"class.protozero::MessageArena" = type { %"class.std::__1::list.273" }
+%"class.std::__1::list.273" = type { %"class.std::__1::__list_imp.274" }
+%"class.std::__1::__list_imp.274" = type { %"struct.std::__1::__list_node_base.275", %"class.std::__1::__compressed_pair.276" }
+%"struct.std::__1::__list_node_base.275" = type { %"struct.std::__1::__list_node_base.275"*, %"struct.std::__1::__list_node_base.275"* }
+%"class.std::__1::__compressed_pair.276" = type { %"struct.std::__1::__compressed_pair_elem.36" }
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.280" }
+%"class.std::__1::__compressed_pair.280" = type { %"struct.std::__1::__compressed_pair_elem.281" }
+%"struct.std::__1::__compressed_pair_elem.281" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon.282 }
+%union.anon.282 = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.std::__1::vector.286" = type { %"class.std::__1::__vector_base.287" }
+%"class.std::__1::__vector_base.287" = type { %"struct.gfx::PNGCodec::Comment"*, %"struct.gfx::PNGCodec::Comment"*, %"class.std::__1::__compressed_pair.288" }
+%"struct.gfx::PNGCodec::Comment" = type { %"class.std::__1::basic_string", %"class.std::__1::basic_string" }
+%"class.std::__1::__compressed_pair.288" = type { %"struct.std::__1::__compressed_pair_elem.289" }
+%"struct.std::__1::__compressed_pair_elem.289" = type { %"struct.gfx::PNGCodec::Comment"* }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short" = type { [23 x i8], %struct.anon }
+%struct.anon = type { i8 }
+%"class.base::trace_event::ConvertableToTraceFormat::ProtoAppender" = type { i32 (...)** }
+%"class.base::trace_event::TraceEventMemoryOverhead" = type { [14 x %"struct.base::trace_event::TraceEventMemoryOverhead::ObjectCountAndSize"] }
+%"struct.base::trace_event::TraceEventMemoryOverhead::ObjectCountAndSize" = type { i64, i64, i64 }
+%"class.std::__1::__vector_base_common" = type { i8 }
+
+$_ZNSt3__16vectorIhNS_9allocatorIhEEE8__appendEm = comdat any
+
+@_ZN4base11trace_event16CategoryRegistry11categories_E = external global [300 x %"struct.base::trace_event::TraceCategory"], align 16
+@.str = private unnamed_addr constant [11 x i8] c"gpu::State\00", align 1
+@.str.1 = private unnamed_addr constant [51 x i8] c"GPUStateTracer::TakeSnapshotWithCurrentFramebuffer\00", align 1
+@.str.2 = private unnamed_addr constant [9 x i8] c"snapshot\00", align 1
+@_ZTVN3gpu5gles212_GLOBAL__N_18SnapshotE = internal unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* null, i8* null, i8* bitcast (void (%"class.gpu::gles2::(anonymous namespace)::Snapshot"*)* @_ZN3gpu5gles212_GLOBAL__N_18SnapshotD2Ev to i8*), i8* bitcast (void (%"class.gpu::gles2::(anonymous namespace)::Snapshot"*)* @_ZN3gpu5gles212_GLOBAL__N_18SnapshotD0Ev to i8*), i8* bitcast (void (%"class.gpu::gles2::(anonymous namespace)::Snapshot"*, %"class.std::__1::basic_string"*)* @_ZNK3gpu5gles212_GLOBAL__N_18Snapshot19AppendAsTraceFormatEPNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEE to i8*), i8* bitcast (i1 (%"class.base::trace_event::ConvertableToTraceFormat"*, %"class.base::trace_event::ConvertableToTraceFormat::ProtoAppender"*)* @_ZN4base11trace_event24ConvertableToTraceFormat13AppendToProtoEPNS1_13ProtoAppenderE to i8*), i8* bitcast (void (%"class.base::trace_event::ConvertableToTraceFormat"*, %"class.base::trace_event::TraceEventMemoryOverhead"*)* @_ZN4base11trace_event24ConvertableToTraceFormat27EstimateTraceMemoryOverheadEPNS0_24TraceEventMemoryOverheadE to i8*)] }, align 8
+@.str.3 = private unnamed_addr constant [2 x i8] c"{\00", align 1
+@.str.4 = private unnamed_addr constant [15 x i8] c"\22screenshot\22:\22\00", align 1
+@.str.5 = private unnamed_addr constant [2 x i8] c"\22\00", align 1
+@.str.6 = private unnamed_addr constant [2 x i8] c"}\00", align 1
+@_ZN2gl24g_current_gl_context_tlsE = external local_unnamed_addr global %"class.base::ThreadLocalPointer"*, align 8
+
+@_ZN3gpu5gles214GPUStateTracerC1EPKNS0_12ContextStateE = hidden unnamed_addr alias void (%"class.gpu::gles2::GPUStateTracer"*, %"struct.gpu::gles2::ContextState"*), void (%"class.gpu::gles2::GPUStateTracer"*, %"struct.gpu::gles2::ContextState"*)* @_ZN3gpu5gles214GPUStateTracerC2EPKNS0_12ContextStateE
+@_ZN3gpu5gles214GPUStateTracerD1Ev = hidden unnamed_addr alias void (%"class.gpu::gles2::GPUStateTracer"*), void (%"class.gpu::gles2::GPUStateTracer"*)* @_ZN3gpu5gles214GPUStateTracerD2Ev
+
+; Function Attrs: nounwind ssp uwtable
+define hidden %"class.gpu::gles2::GPUStateTracer"* @_ZN3gpu5gles214GPUStateTracer6CreateEPKNS0_12ContextStateE(%"struct.gpu::gles2::ContextState"*) local_unnamed_addr #0 align 2 {
+  %2 = alloca %"class.base::TimeTicks", align 8
+  %3 = tail call i8* @_Znwm(i64 8) #7
+  %4 = bitcast i8* %3 to %"class.gpu::gles2::GPUStateTracer"*
+  %5 = bitcast i8* %3 to %"struct.gpu::gles2::ContextState"**
+  store %"struct.gpu::gles2::ContextState"* %0, %"struct.gpu::gles2::ContextState"** %5, align 8
+  %6 = load i8, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 178, i32 0), align 16
+  %7 = and i8 %6, 25
+  %8 = icmp eq i8 %7, 0
+  br i1 %8, label %16, label %9, !prof !2
+
+9:                                                ; preds = %1
+  %10 = ptrtoint %"struct.gpu::gles2::ContextState"* %0 to i64
+  %11 = tail call i32 @_ZN4base14PlatformThread9CurrentIdEv() #8
+  %12 = bitcast %"class.base::TimeTicks"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %12) #8
+  %13 = getelementptr inbounds %"class.base::TimeTicks", %"class.base::TimeTicks"* %2, i64 0, i32 0, i32 0
+  %14 = tail call i64 @_ZN4base6subtle28TimeTicksNowIgnoringOverrideEv() #8
+  store i64 %14, i64* %13, align 8
+  %15 = call i64 @_ZN20trace_event_internal37AddTraceEventWithThreadIdAndTimestampEcPKhPKcS3_yyiRKN4base9TimeTicksEPNS4_11trace_event14TraceArgumentsEj(i8 signext 78, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 178, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str, i64 0, i64 0), i8* null, i64 %10, i64 0, i32 %11, %"class.base::TimeTicks"* nonnull dereferenceable(8) %2, %"class.base::trace_event::TraceArguments"* null, i32 2048) #8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %12) #8
+  br label %16
+
+16:                                               ; preds = %1, %9
+  ret %"class.gpu::gles2::GPUStateTracer"* %4
+}
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #1
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu5gles214GPUStateTracerC2EPKNS0_12ContextStateE(%"class.gpu::gles2::GPUStateTracer"* nocapture, %"struct.gpu::gles2::ContextState"*) unnamed_addr #0 align 2 {
+  %3 = alloca %"class.base::TimeTicks", align 8
+  %4 = getelementptr inbounds %"class.gpu::gles2::GPUStateTracer", %"class.gpu::gles2::GPUStateTracer"* %0, i64 0, i32 0
+  store %"struct.gpu::gles2::ContextState"* %1, %"struct.gpu::gles2::ContextState"** %4, align 8
+  %5 = load i8, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 178, i32 0), align 16
+  %6 = and i8 %5, 25
+  %7 = icmp eq i8 %6, 0
+  br i1 %7, label %15, label %8, !prof !2
+
+8:                                                ; preds = %2
+  %9 = ptrtoint %"struct.gpu::gles2::ContextState"* %1 to i64
+  %10 = tail call i32 @_ZN4base14PlatformThread9CurrentIdEv() #8
+  %11 = bitcast %"class.base::TimeTicks"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %11) #8
+  %12 = getelementptr inbounds %"class.base::TimeTicks", %"class.base::TimeTicks"* %3, i64 0, i32 0, i32 0
+  %13 = tail call i64 @_ZN4base6subtle28TimeTicksNowIgnoringOverrideEv() #8
+  store i64 %13, i64* %12, align 8
+  %14 = call i64 @_ZN20trace_event_internal37AddTraceEventWithThreadIdAndTimestampEcPKhPKcS3_yyiRKN4base9TimeTicksEPNS4_11trace_event14TraceArgumentsEj(i8 signext 78, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 178, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str, i64 0, i64 0), i8* null, i64 %9, i64 0, i32 %10, %"class.base::TimeTicks"* nonnull dereferenceable(8) %3, %"class.base::trace_event::TraceArguments"* null, i32 2048) #8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %11) #8
+  br label %15
+
+15:                                               ; preds = %2, %8
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu5gles214GPUStateTracerD2Ev(%"class.gpu::gles2::GPUStateTracer"* nocapture readonly) unnamed_addr #0 align 2 {
+  %2 = alloca %"class.base::TimeTicks", align 8
+  %3 = load i8, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 178, i32 0), align 16
+  %4 = and i8 %3, 25
+  %5 = icmp eq i8 %4, 0
+  br i1 %5, label %14, label %6, !prof !2
+
+6:                                                ; preds = %1
+  %7 = bitcast %"class.gpu::gles2::GPUStateTracer"* %0 to i64*
+  %8 = load i64, i64* %7, align 8
+  %9 = tail call i32 @_ZN4base14PlatformThread9CurrentIdEv() #8
+  %10 = bitcast %"class.base::TimeTicks"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %10) #8
+  %11 = getelementptr inbounds %"class.base::TimeTicks", %"class.base::TimeTicks"* %2, i64 0, i32 0, i32 0
+  %12 = tail call i64 @_ZN4base6subtle28TimeTicksNowIgnoringOverrideEv() #8
+  store i64 %12, i64* %11, align 8
+  %13 = call i64 @_ZN20trace_event_internal37AddTraceEventWithThreadIdAndTimestampEcPKhPKcS3_yyiRKN4base9TimeTicksEPNS4_11trace_event14TraceArgumentsEj(i8 signext 68, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 178, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str, i64 0, i64 0), i8* null, i64 %8, i64 0, i32 %9, %"class.base::TimeTicks"* nonnull dereferenceable(8) %2, %"class.base::trace_event::TraceArguments"* null, i32 2048) #8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10) #8
+  br label %14
+
+14:                                               ; preds = %1, %6
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN3gpu5gles214GPUStateTracer34TakeSnapshotWithCurrentFramebufferERKN3gfx4SizeE(%"class.gpu::gles2::GPUStateTracer"* nocapture readonly, %"class.gfx::Size"* nocapture readonly dereferenceable(8)) local_unnamed_addr #0 align 2 {
+  %3 = alloca %"class.base::trace_event::TraceArguments", align 8
+  %4 = alloca %"class.base::TimeTicks", align 8
+  %5 = alloca %"class.base::TimeTicks", align 8
+  %6 = load i8, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 178, i32 0), align 16
+  %7 = and i8 %6, 25
+  %8 = icmp eq i8 %7, 0
+  br i1 %8, label %15, label %9, !prof !2
+
+9:                                                ; preds = %2
+  %10 = tail call i32 @_ZN4base14PlatformThread9CurrentIdEv() #8
+  %11 = bitcast %"class.base::TimeTicks"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %11) #8
+  %12 = getelementptr inbounds %"class.base::TimeTicks", %"class.base::TimeTicks"* %5, i64 0, i32 0, i32 0
+  %13 = tail call i64 @_ZN4base6subtle28TimeTicksNowIgnoringOverrideEv() #8
+  store i64 %13, i64* %12, align 8
+  %14 = call i64 @_ZN20trace_event_internal37AddTraceEventWithThreadIdAndTimestampEcPKhPKcS3_yyiRKN4base9TimeTicksEPNS4_11trace_event14TraceArgumentsEj(i8 signext 88, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 178, i32 0), i8* getelementptr inbounds ([51 x i8], [51 x i8]* @.str.1, i64 0, i64 0), i8* null, i64 0, i64 0, i32 %10, %"class.base::TimeTicks"* nonnull dereferenceable(8) %5, %"class.base::trace_event::TraceArguments"* null, i32 0) #8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %11) #8
+  br label %15
+
+15:                                               ; preds = %2, %9
+  %16 = phi i8* [ null, %2 ], [ getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 178, i32 0), %9 ]
+  %17 = phi i8* [ inttoptr (i64 -6148914691236517206 to i8*), %2 ], [ getelementptr inbounds ([51 x i8], [51 x i8]* @.str.1, i64 0, i64 0), %9 ]
+  %18 = phi i64 [ -6148914691236517206, %2 ], [ %14, %9 ]
+  %19 = bitcast %"class.gpu::gles2::GPUStateTracer"* %0 to i64*
+  %20 = load i64, i64* %19, align 8
+  %21 = call i8* @_Znwm(i64 48) #7
+  %22 = bitcast i8* %21 to %"class.gpu::gles2::(anonymous namespace)::Snapshot"*
+  %23 = bitcast i8* %21 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_ZTVN3gpu5gles212_GLOBAL__N_18SnapshotE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %23, align 8
+  %24 = getelementptr inbounds i8, i8* %21, i64 8
+  %25 = bitcast i8* %24 to i64*
+  store i64 %20, i64* %25, align 8
+  %26 = getelementptr inbounds i8, i8* %21, i64 16
+  call void @llvm.memset.p0i8.i64(i8* align 8 %26, i8 0, i64 24, i1 false) #8
+  %27 = getelementptr inbounds i8, i8* %21, i64 40
+  %28 = bitcast %"class.gfx::Size"* %1 to i64*
+  %29 = bitcast i8* %27 to i64*
+  %30 = load i64, i64* %28, align 4
+  store i64 %30, i64* %29, align 8
+  %31 = bitcast i8* %27 to i32*
+  %32 = trunc i64 %30 to i32
+  %33 = getelementptr inbounds i8, i8* %21, i64 44
+  %34 = bitcast i8* %33 to i32*
+  %35 = lshr i64 %30, 32
+  %36 = trunc i64 %35 to i32
+  %37 = shl i32 %32, 2
+  %38 = mul i32 %37, %36
+  %39 = icmp eq i32 %38, 0
+  br i1 %39, label %43, label %40
+
+40:                                               ; preds = %15
+  %41 = sext i32 %38 to i64
+  %42 = bitcast i8* %26 to %"class.std::__1::vector.50"*
+  call void @_ZNSt3__16vectorIhNS_9allocatorIhEEE8__appendEm(%"class.std::__1::vector.50"* %42, i64 %41) #8
+  br label %43
+
+43:                                               ; preds = %15, %40
+  %44 = load %"class.base::ThreadLocalPointer"*, %"class.base::ThreadLocalPointer"** @_ZN2gl24g_current_gl_context_tlsE, align 8
+  %45 = getelementptr inbounds %"class.base::ThreadLocalPointer", %"class.base::ThreadLocalPointer"* %44, i64 0, i32 0
+  %46 = call i8* @_ZNK4base18ThreadLocalStorage4Slot3GetEv(%"class.base::ThreadLocalStorage::Slot"* %45) #8
+  %47 = bitcast i8* %46 to %"class.gl::GLApi"**
+  %48 = load %"class.gl::GLApi"*, %"class.gl::GLApi"** %47, align 8
+  %49 = bitcast %"class.gl::GLApi"* %48 to void (%"class.gl::GLApi"*, i32, i32)***
+  %50 = load void (%"class.gl::GLApi"*, i32, i32)**, void (%"class.gl::GLApi"*, i32, i32)*** %49, align 8
+  %51 = getelementptr inbounds void (%"class.gl::GLApi"*, i32, i32)*, void (%"class.gl::GLApi"*, i32, i32)** %50, i64 328
+  %52 = load void (%"class.gl::GLApi"*, i32, i32)*, void (%"class.gl::GLApi"*, i32, i32)** %51, align 8
+  call void %52(%"class.gl::GLApi"* %48, i32 3333, i32 4) #8
+  %53 = load %"class.base::ThreadLocalPointer"*, %"class.base::ThreadLocalPointer"** @_ZN2gl24g_current_gl_context_tlsE, align 8
+  %54 = getelementptr inbounds %"class.base::ThreadLocalPointer", %"class.base::ThreadLocalPointer"* %53, i64 0, i32 0
+  %55 = call i8* @_ZNK4base18ThreadLocalStorage4Slot3GetEv(%"class.base::ThreadLocalStorage::Slot"* %54) #8
+  %56 = bitcast i8* %55 to %"class.gl::GLApi"**
+  %57 = load %"class.gl::GLApi"*, %"class.gl::GLApi"** %56, align 8
+  %58 = load i32, i32* %31, align 4
+  %59 = load i32, i32* %34, align 4
+  %60 = bitcast i8* %26 to i8**
+  %61 = load i8*, i8** %60, align 8
+  %62 = bitcast %"class.gl::GLApi"* %57 to void (%"class.gl::GLApi"*, i32, i32, i32, i32, i32, i32, i8*)***
+  %63 = load void (%"class.gl::GLApi"*, i32, i32, i32, i32, i32, i32, i8*)**, void (%"class.gl::GLApi"*, i32, i32, i32, i32, i32, i32, i8*)*** %62, align 8
+  %64 = getelementptr inbounds void (%"class.gl::GLApi"*, i32, i32, i32, i32, i32, i32, i8*)*, void (%"class.gl::GLApi"*, i32, i32, i32, i32, i32, i32, i8*)** %63, i64 376
+  %65 = load void (%"class.gl::GLApi"*, i32, i32, i32, i32, i32, i32, i8*)*, void (%"class.gl::GLApi"*, i32, i32, i32, i32, i32, i32, i8*)** %64, align 8
+  call void %65(%"class.gl::GLApi"* %57, i32 0, i32 0, i32 %58, i32 %59, i32 6408, i32 5121, i8* %61) #8
+  %66 = load %"class.base::ThreadLocalPointer"*, %"class.base::ThreadLocalPointer"** @_ZN2gl24g_current_gl_context_tlsE, align 8
+  %67 = getelementptr inbounds %"class.base::ThreadLocalPointer", %"class.base::ThreadLocalPointer"* %66, i64 0, i32 0
+  %68 = call i8* @_ZNK4base18ThreadLocalStorage4Slot3GetEv(%"class.base::ThreadLocalStorage::Slot"* %67) #8
+  %69 = bitcast i8* %68 to %"class.gl::GLApi"**
+  %70 = load %"class.gl::GLApi"*, %"class.gl::GLApi"** %69, align 8
+  %71 = bitcast i8* %24 to %"struct.gpu::gles2::ContextState"**
+  %72 = load %"struct.gpu::gles2::ContextState"*, %"struct.gpu::gles2::ContextState"** %71, align 8
+  %73 = getelementptr inbounds %"struct.gpu::gles2::ContextState", %"struct.gpu::gles2::ContextState"* %72, i64 0, i32 37
+  %74 = load i32, i32* %73, align 4
+  %75 = bitcast %"class.gl::GLApi"* %70 to void (%"class.gl::GLApi"*, i32, i32)***
+  %76 = load void (%"class.gl::GLApi"*, i32, i32)**, void (%"class.gl::GLApi"*, i32, i32)*** %75, align 8
+  %77 = getelementptr inbounds void (%"class.gl::GLApi"*, i32, i32)*, void (%"class.gl::GLApi"*, i32, i32)** %76, i64 328
+  %78 = load void (%"class.gl::GLApi"*, i32, i32)*, void (%"class.gl::GLApi"*, i32, i32)** %77, align 8
+  call void %78(%"class.gl::GLApi"* %70, i32 3333, i32 %74) #8
+  %79 = load i32, i32* %31, align 4
+  %80 = shl nsw i32 %79, 2
+  %81 = load i32, i32* %34, align 4
+  %82 = icmp sgt i32 %81, 1
+  br i1 %82, label %83, label %116
+
+83:                                               ; preds = %43
+  %84 = icmp sgt i32 %79, 0
+  %85 = sext i32 %80 to i64
+  br label %86
+
+86:                                               ; preds = %93, %83
+  %87 = phi i32 [ %81, %83 ], [ %94, %93 ]
+  %88 = phi i64 [ 0, %83 ], [ %95, %93 ]
+  br i1 %84, label %89, label %93
+
+89:                                               ; preds = %86
+  %90 = mul nsw i64 %88, %85
+  %91 = trunc i64 %88 to i32
+  %92 = xor i32 %91, -1
+  br label %99
+
+93:                                               ; preds = %99, %86
+  %94 = phi i32 [ %87, %86 ], [ %115, %99 ]
+  %95 = add nuw nsw i64 %88, 1
+  %96 = sdiv i32 %94, 2
+  %97 = sext i32 %96 to i64
+  %98 = icmp slt i64 %95, %97
+  br i1 %98, label %86, label %116
+
+99:                                               ; preds = %99, %89
+  %100 = phi i32 [ %87, %89 ], [ %115, %99 ]
+  %101 = phi i64 [ 0, %89 ], [ %113, %99 ]
+  %102 = add nsw i64 %101, %90
+  %103 = load i8*, i8** %60, align 8
+  %104 = getelementptr inbounds i8, i8* %103, i64 %102
+  %105 = add i32 %100, %92
+  %106 = mul nsw i32 %105, %80
+  %107 = trunc i64 %101 to i32
+  %108 = add nsw i32 %106, %107
+  %109 = sext i32 %108 to i64
+  %110 = getelementptr inbounds i8, i8* %103, i64 %109
+  %111 = load i8, i8* %104, align 1
+  %112 = load i8, i8* %110, align 1
+  store i8 %112, i8* %104, align 1
+  store i8 %111, i8* %110, align 1
+  %113 = add nuw nsw i64 %101, 1
+  %114 = icmp slt i64 %113, %85
+  %115 = load i32, i32* %34, align 4
+  br i1 %114, label %99, label %93
+
+116:                                              ; preds = %93, %43
+  %117 = load i8, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 178, i32 0), align 16
+  %118 = and i8 %117, 25
+  %119 = icmp eq i8 %118, 0
+  br i1 %119, label %169, label %120, !prof !2
+
+120:                                              ; preds = %116
+  %121 = load i64, i64* %19, align 8
+  %122 = call i32 @_ZN4base14PlatformThread9CurrentIdEv() #8
+  %123 = bitcast %"class.base::TimeTicks"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %123) #8
+  %124 = getelementptr inbounds %"class.base::TimeTicks", %"class.base::TimeTicks"* %4, i64 0, i32 0, i32 0
+  %125 = call i64 @_ZN4base6subtle28TimeTicksNowIgnoringOverrideEv() #8
+  store i64 %125, i64* %124, align 8
+  %126 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %3, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 40, i8* nonnull %126) #8
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %126, i8 -86, i64 40, i1 false) #8
+  store i8 1, i8* %126, align 8
+  %127 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %3, i64 0, i32 1, i64 0
+  store i8 8, i8* %127, align 1
+  %128 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %3, i64 0, i32 2, i64 0
+  store i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.2, i64 0, i64 0), i8** %128, align 8
+  %129 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %3, i64 0, i32 3, i64 0
+  %130 = bitcast %"union.base::trace_event::TraceValue"* %129 to i8**
+  store i8* %21, i8** %130, align 8
+  %131 = call i64 @_ZN20trace_event_internal37AddTraceEventWithThreadIdAndTimestampEcPKhPKcS3_yyiRKN4base9TimeTicksEPNS4_11trace_event14TraceArgumentsEj(i8 signext 79, i8* getelementptr inbounds ([300 x %"struct.base::trace_event::TraceCategory"], [300 x %"struct.base::trace_event::TraceCategory"]* @_ZN4base11trace_event16CategoryRegistry11categories_E, i64 0, i64 178, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str, i64 0, i64 0), i8* null, i64 %121, i64 0, i32 %122, %"class.base::TimeTicks"* nonnull dereferenceable(8) %4, %"class.base::trace_event::TraceArguments"* nonnull %3, i32 2048) #8
+  %132 = load i8, i8* %126, align 8
+  %133 = icmp eq i8 %132, 0
+  br i1 %133, label %168, label %134
+
+134:                                              ; preds = %120, %163
+  %135 = phi i64 [ %164, %163 ], [ 0, %120 ]
+  %136 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %3, i64 0, i32 1, i64 %135
+  %137 = load i8, i8* %136, align 1
+  %138 = icmp eq i8 %137, 8
+  br i1 %138, label %139, label %150
+
+139:                                              ; preds = %134
+  %140 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %3, i64 0, i32 3, i64 %135
+  %141 = bitcast %"union.base::trace_event::TraceValue"* %140 to %"class.base::trace_event::ConvertableToTraceFormat"**
+  %142 = load %"class.base::trace_event::ConvertableToTraceFormat"*, %"class.base::trace_event::ConvertableToTraceFormat"** %141, align 8
+  %143 = icmp eq %"class.base::trace_event::ConvertableToTraceFormat"* %142, null
+  br i1 %143, label %163, label %144
+
+144:                                              ; preds = %139
+  %145 = bitcast %"class.base::trace_event::ConvertableToTraceFormat"* %142 to void (%"class.base::trace_event::ConvertableToTraceFormat"*)***
+  %146 = load void (%"class.base::trace_event::ConvertableToTraceFormat"*)**, void (%"class.base::trace_event::ConvertableToTraceFormat"*)*** %145, align 8
+  %147 = getelementptr inbounds void (%"class.base::trace_event::ConvertableToTraceFormat"*)*, void (%"class.base::trace_event::ConvertableToTraceFormat"*)** %146, i64 1
+  %148 = load void (%"class.base::trace_event::ConvertableToTraceFormat"*)*, void (%"class.base::trace_event::ConvertableToTraceFormat"*)** %147, align 8
+  call void %148(%"class.base::trace_event::ConvertableToTraceFormat"* nonnull %142) #8
+  %149 = load i8, i8* %136, align 1
+  br label %150
+
+150:                                              ; preds = %144, %134
+  %151 = phi i8 [ %137, %134 ], [ %149, %144 ]
+  %152 = icmp eq i8 %151, 9
+  br i1 %152, label %153, label %163
+
+153:                                              ; preds = %150
+  %154 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %3, i64 0, i32 3, i64 %135
+  %155 = bitcast %"union.base::trace_event::TraceValue"* %154 to %"class.protozero::HeapBuffered"**
+  %156 = load %"class.protozero::HeapBuffered"*, %"class.protozero::HeapBuffered"** %155, align 8
+  %157 = icmp eq %"class.protozero::HeapBuffered"* %156, null
+  br i1 %157, label %163, label %158
+
+158:                                              ; preds = %153
+  %159 = getelementptr inbounds %"class.protozero::HeapBuffered", %"class.protozero::HeapBuffered"* %156, i64 0, i32 2, i32 1
+  call void @_ZN9protozero12MessageArenaD1Ev(%"class.protozero::MessageArena"* %159) #8
+  %160 = getelementptr inbounds %"class.protozero::HeapBuffered", %"class.protozero::HeapBuffered"* %156, i64 0, i32 1
+  call void @_ZN9protozero21ScatteredStreamWriterD1Ev(%"class.protozero::ScatteredStreamWriter"* %160) #8
+  %161 = getelementptr inbounds %"class.protozero::HeapBuffered", %"class.protozero::HeapBuffered"* %156, i64 0, i32 0
+  call void @_ZN9protozero19ScatteredHeapBufferD1Ev(%"class.protozero::ScatteredHeapBuffer"* %161) #8
+  %162 = bitcast %"class.protozero::HeapBuffered"* %156 to i8*
+  call void @_ZdlPv(i8* %162) #7
+  br label %163
+
+163:                                              ; preds = %158, %153, %150, %139
+  %164 = add nuw nsw i64 %135, 1
+  %165 = load i8, i8* %126, align 8
+  %166 = zext i8 %165 to i64
+  %167 = icmp ult i64 %164, %166
+  br i1 %167, label %134, label %168
+
+168:                                              ; preds = %163, %120
+  call void @llvm.lifetime.end.p0i8(i64 40, i8* nonnull %126) #8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %123) #8
+  br label %174
+
+169:                                              ; preds = %116
+  %170 = bitcast i8* %21 to void (%"class.gpu::gles2::(anonymous namespace)::Snapshot"*)***
+  %171 = load void (%"class.gpu::gles2::(anonymous namespace)::Snapshot"*)**, void (%"class.gpu::gles2::(anonymous namespace)::Snapshot"*)*** %170, align 8
+  %172 = getelementptr inbounds void (%"class.gpu::gles2::(anonymous namespace)::Snapshot"*)*, void (%"class.gpu::gles2::(anonymous namespace)::Snapshot"*)** %171, i64 1
+  %173 = load void (%"class.gpu::gles2::(anonymous namespace)::Snapshot"*)*, void (%"class.gpu::gles2::(anonymous namespace)::Snapshot"*)** %172, align 8
+  call void %173(%"class.gpu::gles2::(anonymous namespace)::Snapshot"* nonnull %22) #8
+  br label %174
+
+174:                                              ; preds = %168, %169
+  %175 = icmp eq i8* %16, null
+  br i1 %175, label %180, label %176
+
+176:                                              ; preds = %174
+  %177 = load i8, i8* %16, align 1
+  %178 = icmp eq i8 %177, 0
+  br i1 %178, label %180, label %179
+
+179:                                              ; preds = %176
+  call void @_ZN20trace_event_internal24UpdateTraceEventDurationEPKhPKcN4base11trace_event16TraceEventHandleE(i8* nonnull %16, i8* %17, i64 %18) #8
+  br label %180
+
+180:                                              ; preds = %174, %176, %179
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #2
+
+declare i32 @_ZN4base14PlatformThread9CurrentIdEv() local_unnamed_addr #3
+
+declare i64 @_ZN4base6subtle28TimeTicksNowIgnoringOverrideEv() local_unnamed_addr #3
+
+declare i64 @_ZN20trace_event_internal37AddTraceEventWithThreadIdAndTimestampEcPKhPKcS3_yyiRKN4base9TimeTicksEPNS4_11trace_event14TraceArgumentsEj(i8 signext, i8*, i8*, i8*, i64, i64, i32, %"class.base::TimeTicks"* dereferenceable(8), %"class.base::trace_event::TraceArguments"*, i32) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN3gpu5gles212_GLOBAL__N_18SnapshotD2Ev(%"class.gpu::gles2::(anonymous namespace)::Snapshot"* nocapture) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.gpu::gles2::(anonymous namespace)::Snapshot", %"class.gpu::gles2::(anonymous namespace)::Snapshot"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_ZTVN3gpu5gles212_GLOBAL__N_18SnapshotE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.gpu::gles2::(anonymous namespace)::Snapshot", %"class.gpu::gles2::(anonymous namespace)::Snapshot"* %0, i64 0, i32 2, i32 0, i32 0
+  %4 = load i8*, i8** %3, align 8
+  %5 = icmp eq i8* %4, null
+  br i1 %5, label %10, label %6
+
+6:                                                ; preds = %1
+  %7 = ptrtoint i8* %4 to i64
+  %8 = getelementptr inbounds %"class.gpu::gles2::(anonymous namespace)::Snapshot", %"class.gpu::gles2::(anonymous namespace)::Snapshot"* %0, i64 0, i32 2, i32 0, i32 1
+  %9 = bitcast i8** %8 to i64*
+  store i64 %7, i64* %9, align 8
+  tail call void @_ZdlPv(i8* nonnull %4) #7
+  br label %10
+
+10:                                               ; preds = %1, %6
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZN3gpu5gles212_GLOBAL__N_18SnapshotD0Ev(%"class.gpu::gles2::(anonymous namespace)::Snapshot"*) unnamed_addr #0 align 2 {
+  %2 = getelementptr inbounds %"class.gpu::gles2::(anonymous namespace)::Snapshot", %"class.gpu::gles2::(anonymous namespace)::Snapshot"* %0, i64 0, i32 0, i32 0
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_ZTVN3gpu5gles212_GLOBAL__N_18SnapshotE, i64 0, inrange i32 0, i64 2) to i32 (...)**), i32 (...)*** %2, align 8
+  %3 = getelementptr inbounds %"class.gpu::gles2::(anonymous namespace)::Snapshot", %"class.gpu::gles2::(anonymous namespace)::Snapshot"* %0, i64 0, i32 2, i32 0, i32 0
+  %4 = load i8*, i8** %3, align 8
+  %5 = icmp eq i8* %4, null
+  br i1 %5, label %10, label %6
+
+6:                                                ; preds = %1
+  %7 = ptrtoint i8* %4 to i64
+  %8 = getelementptr inbounds %"class.gpu::gles2::(anonymous namespace)::Snapshot", %"class.gpu::gles2::(anonymous namespace)::Snapshot"* %0, i64 0, i32 2, i32 0, i32 1
+  %9 = bitcast i8** %8 to i64*
+  store i64 %7, i64* %9, align 8
+  tail call void @_ZdlPv(i8* nonnull %4) #7
+  br label %10
+
+10:                                               ; preds = %1, %6
+  %11 = bitcast %"class.gpu::gles2::(anonymous namespace)::Snapshot"* %0 to i8*
+  tail call void @_ZdlPv(i8* %11) #7
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define internal void @_ZNK3gpu5gles212_GLOBAL__N_18Snapshot19AppendAsTraceFormatEPNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEE(%"class.gpu::gles2::(anonymous namespace)::Snapshot"*, %"class.std::__1::basic_string"*) unnamed_addr #0 align 2 {
+  %3 = alloca %"class.std::__1::vector.50", align 8
+  %4 = alloca %"class.std::__1::vector.286", align 8
+  %5 = alloca %"class.base::BasicStringPiece", align 8
+  %6 = alloca %"class.std::__1::basic_string", align 8
+  %7 = alloca %"class.std::__1::basic_string", align 8
+  %8 = alloca %"class.std::__1::basic_string", align 8
+  %9 = tail call dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc(%"class.std::__1::basic_string"* %1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @.str.3, i64 0, i64 0)) #8
+  %10 = getelementptr inbounds %"class.gpu::gles2::(anonymous namespace)::Snapshot", %"class.gpu::gles2::(anonymous namespace)::Snapshot"* %0, i64 0, i32 2
+  %11 = getelementptr inbounds %"class.gpu::gles2::(anonymous namespace)::Snapshot", %"class.gpu::gles2::(anonymous namespace)::Snapshot"* %0, i64 0, i32 2, i32 0, i32 1
+  %12 = bitcast i8** %11 to i64*
+  %13 = load i64, i64* %12, align 8
+  %14 = bitcast %"class.std::__1::vector.50"* %10 to i64*
+  %15 = load i64, i64* %14, align 8
+  %16 = icmp eq i64 %13, %15
+  br i1 %16, label %97, label %17
+
+17:                                               ; preds = %2
+  %18 = inttoptr i64 %15 to i8*
+  %19 = bitcast %"class.std::__1::vector.50"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %19) #8
+  %20 = getelementptr inbounds %"class.std::__1::vector.50", %"class.std::__1::vector.50"* %3, i64 0, i32 0, i32 0
+  %21 = getelementptr inbounds %"class.std::__1::vector.50", %"class.std::__1::vector.50"* %3, i64 0, i32 0, i32 1
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %19, i8 0, i64 24, i1 false) #8
+  %22 = getelementptr inbounds %"class.gpu::gles2::(anonymous namespace)::Snapshot", %"class.gpu::gles2::(anonymous namespace)::Snapshot"* %0, i64 0, i32 3
+  %23 = getelementptr inbounds %"class.gfx::Size", %"class.gfx::Size"* %22, i64 0, i32 0
+  %24 = load i32, i32* %23, align 4
+  %25 = shl nsw i32 %24, 2
+  %26 = bitcast %"class.std::__1::vector.286"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %26) #8
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %26, i8 0, i64 24, i1 false) #8
+  %27 = call zeroext i1 @_ZN3gfx8PNGCodec6EncodeEPKhNS0_11ColorFormatERKNS_4SizeEibRKNSt3__16vectorINS0_7CommentENS7_9allocatorIS9_EEEEPNS8_IhNSA_IhEEEE(i8* %18, i32 0, %"class.gfx::Size"* dereferenceable(8) %22, i32 %25, i1 zeroext false, %"class.std::__1::vector.286"* nonnull dereferenceable(24) %4, %"class.std::__1::vector.50"* nonnull %3) #8
+  %28 = getelementptr inbounds %"class.std::__1::vector.286", %"class.std::__1::vector.286"* %4, i64 0, i32 0, i32 0
+  %29 = load %"struct.gfx::PNGCodec::Comment"*, %"struct.gfx::PNGCodec::Comment"** %28, align 8
+  %30 = icmp eq %"struct.gfx::PNGCodec::Comment"* %29, null
+  br i1 %30, label %45, label %31
+
+31:                                               ; preds = %17
+  %32 = bitcast %"struct.gfx::PNGCodec::Comment"* %29 to i8*
+  %33 = getelementptr inbounds %"class.std::__1::vector.286", %"class.std::__1::vector.286"* %4, i64 0, i32 0, i32 1
+  %34 = load %"struct.gfx::PNGCodec::Comment"*, %"struct.gfx::PNGCodec::Comment"** %33, align 8
+  %35 = icmp eq %"struct.gfx::PNGCodec::Comment"* %34, %29
+  br i1 %35, label %43, label %36
+
+36:                                               ; preds = %31, %36
+  %37 = phi %"struct.gfx::PNGCodec::Comment"* [ %38, %36 ], [ %34, %31 ]
+  %38 = getelementptr inbounds %"struct.gfx::PNGCodec::Comment", %"struct.gfx::PNGCodec::Comment"* %37, i64 -1
+  call void @_ZN3gfx8PNGCodec7CommentD1Ev(%"struct.gfx::PNGCodec::Comment"* %38) #8
+  %39 = icmp eq %"struct.gfx::PNGCodec::Comment"* %38, %29
+  br i1 %39, label %40, label %36
+
+40:                                               ; preds = %36
+  %41 = bitcast %"class.std::__1::vector.286"* %4 to i8**
+  %42 = load i8*, i8** %41, align 8
+  br label %43
+
+43:                                               ; preds = %40, %31
+  %44 = phi i8* [ %42, %40 ], [ %32, %31 ]
+  store %"struct.gfx::PNGCodec::Comment"* %29, %"struct.gfx::PNGCodec::Comment"** %33, align 8
+  call void @_ZdlPv(i8* %44) #7
+  br label %45
+
+45:                                               ; preds = %17, %43
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %26) #8
+  %46 = bitcast %"class.base::BasicStringPiece"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %46) #8
+  %47 = getelementptr inbounds %"class.base::BasicStringPiece", %"class.base::BasicStringPiece"* %5, i64 0, i32 1
+  %48 = bitcast %"class.std::__1::vector.50"* %3 to i64*
+  %49 = load i64, i64* %48, align 8
+  %50 = bitcast i8** %21 to i64*
+  %51 = load i64, i64* %50, align 8
+  %52 = sub i64 %51, %49
+  %53 = bitcast %"class.base::BasicStringPiece"* %5 to i64*
+  store i64 %49, i64* %53, align 8
+  store i64 %52, i64* %47, align 8
+  %54 = bitcast %"class.std::__1::basic_string"* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %54) #8
+  %55 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %6, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %54, i8 0, i64 24, i1 false) #8
+  call void @_ZN4base12Base64EncodeERKNS_16BasicStringPieceIcNSt3__111char_traitsIcEEEEPNS1_12basic_stringIcS3_NS1_9allocatorIcEEEE(%"class.base::BasicStringPiece"* nonnull dereferenceable(16) %5, %"class.std::__1::basic_string"* nonnull %6) #8
+  %56 = bitcast %"class.std::__1::basic_string"* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %56) #8
+  %57 = bitcast %"class.std::__1::basic_string"* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %57) #8
+  call void @_ZNSt3__1plIcNS_11char_traitsIcEENS_9allocatorIcEEEENS_12basic_stringIT_T0_T1_EEPKS6_RKS9_(%"class.std::__1::basic_string"* nonnull sret %8, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.4, i64 0, i64 0), %"class.std::__1::basic_string"* nonnull dereferenceable(24) %6) #8
+  %58 = call dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc(%"class.std::__1::basic_string"* nonnull %8, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @.str.5, i64 0, i64 0)) #8, !noalias !3
+  %59 = bitcast %"class.std::__1::basic_string"* %58 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* nonnull align 8 %56, i8* align 8 %59, i64 24, i1 false) #8
+  call void @llvm.memset.p0i8.i64(i8* align 8 %59, i8 0, i64 24, i1 false) #8, !noalias !3
+  %60 = bitcast %"class.std::__1::basic_string"* %7 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %61 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %60, i64 0, i32 1, i32 0
+  %62 = load i8, i8* %61, align 1
+  %63 = icmp slt i8 %62, 0
+  %64 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %7, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %65 = load i8*, i8** %64, align 8
+  %66 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %7, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %67 = load i64, i64* %66, align 8
+  %68 = zext i8 %62 to i64
+  %69 = select i1 %63, i8* %65, i8* %56
+  %70 = select i1 %63, i64 %67, i64 %68
+  %71 = call dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKcm(%"class.std::__1::basic_string"* %1, i8* %69, i64 %70) #8
+  %72 = load i8, i8* %61, align 1
+  %73 = icmp slt i8 %72, 0
+  br i1 %73, label %74, label %76
+
+74:                                               ; preds = %45
+  %75 = load i8*, i8** %64, align 8
+  call void @_ZdlPv(i8* %75) #7
+  br label %76
+
+76:                                               ; preds = %45, %74
+  %77 = bitcast %"class.std::__1::basic_string"* %8 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %78 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %77, i64 0, i32 1, i32 0
+  %79 = load i8, i8* %78, align 1
+  %80 = icmp slt i8 %79, 0
+  br i1 %80, label %81, label %84
+
+81:                                               ; preds = %76
+  %82 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %8, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %83 = load i8*, i8** %82, align 8
+  call void @_ZdlPv(i8* %83) #7
+  br label %84
+
+84:                                               ; preds = %76, %81
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %57) #8
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %56) #8
+  %85 = bitcast %"class.std::__1::basic_string"* %6 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %86 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %85, i64 0, i32 1, i32 0
+  %87 = load i8, i8* %86, align 1
+  %88 = icmp slt i8 %87, 0
+  br i1 %88, label %89, label %91
+
+89:                                               ; preds = %84
+  %90 = load i8*, i8** %55, align 8
+  call void @_ZdlPv(i8* %90) #7
+  br label %91
+
+91:                                               ; preds = %84, %89
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %54) #8
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %46) #8
+  %92 = load i8*, i8** %20, align 8
+  %93 = icmp eq i8* %92, null
+  br i1 %93, label %96, label %94
+
+94:                                               ; preds = %91
+  %95 = ptrtoint i8* %92 to i64
+  store i64 %95, i64* %50, align 8
+  call void @_ZdlPv(i8* nonnull %92) #7
+  br label %96
+
+96:                                               ; preds = %91, %94
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %19) #8
+  br label %97
+
+97:                                               ; preds = %2, %96
+  %98 = call dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc(%"class.std::__1::basic_string"* %1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @.str.6, i64 0, i64 0)) #8
+  ret void
+}
+
+declare zeroext i1 @_ZN4base11trace_event24ConvertableToTraceFormat13AppendToProtoEPNS1_13ProtoAppenderE(%"class.base::trace_event::ConvertableToTraceFormat"*, %"class.base::trace_event::ConvertableToTraceFormat::ProtoAppender"*) unnamed_addr #3
+
+declare void @_ZN4base11trace_event24ConvertableToTraceFormat27EstimateTraceMemoryOverheadEPNS0_24TraceEventMemoryOverheadE(%"class.base::trace_event::ConvertableToTraceFormat"*, %"class.base::trace_event::TraceEventMemoryOverhead"*) unnamed_addr #3
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #4
+
+declare zeroext i1 @_ZN3gfx8PNGCodec6EncodeEPKhNS0_11ColorFormatERKNS_4SizeEibRKNSt3__16vectorINS0_7CommentENS7_9allocatorIS9_EEEEPNS8_IhNSA_IhEEEE(i8*, i32, %"class.gfx::Size"* dereferenceable(8), i32, i1 zeroext, %"class.std::__1::vector.286"* dereferenceable(24), %"class.std::__1::vector.50"*) local_unnamed_addr #3
+
+declare void @_ZN4base12Base64EncodeERKNS_16BasicStringPieceIcNSt3__111char_traitsIcEEEEPNS1_12basic_stringIcS3_NS1_9allocatorIcEEEE(%"class.base::BasicStringPiece"* dereferenceable(16), %"class.std::__1::basic_string"*) local_unnamed_addr #3
+
+declare void @_ZNSt3__1plIcNS_11char_traitsIcEENS_9allocatorIcEEEENS_12basic_stringIT_T0_T1_EEPKS6_RKS9_(%"class.std::__1::basic_string"* sret, i8*, %"class.std::__1::basic_string"* dereferenceable(24)) local_unnamed_addr #3
+
+declare dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc(%"class.std::__1::basic_string"*, i8*) local_unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN3gfx8PNGCodec7CommentD1Ev(%"struct.gfx::PNGCodec::Comment"*) unnamed_addr #5
+
+declare dereferenceable(24) %"class.std::__1::basic_string"* @_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKcm(%"class.std::__1::basic_string"*, i8*, i64) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZNSt3__16vectorIhNS_9allocatorIhEEE8__appendEm(%"class.std::__1::vector.50"*, i64) local_unnamed_addr #0 comdat align 2 {
+  %3 = getelementptr inbounds %"class.std::__1::vector.50", %"class.std::__1::vector.50"* %0, i64 0, i32 0, i32 2, i32 0, i32 0
+  %4 = bitcast i8** %3 to i64*
+  %5 = load i64, i64* %4, align 8
+  %6 = getelementptr inbounds %"class.std::__1::vector.50", %"class.std::__1::vector.50"* %0, i64 0, i32 0, i32 1
+  %7 = bitcast i8** %6 to i64*
+  %8 = load i64, i64* %7, align 8
+  %9 = sub i64 %5, %8
+  %10 = icmp ult i64 %9, %1
+  br i1 %10, label %22, label %11
+
+11:                                               ; preds = %2
+  %12 = inttoptr i64 %8 to i8*
+  %13 = icmp eq i64 %1, 0
+  br i1 %13, label %20, label %14
+
+14:                                               ; preds = %11
+  %15 = getelementptr inbounds i8, i8* %12, i64 %1
+  %16 = sub i64 %1, %8
+  %17 = getelementptr i8, i8* %12, i64 %16
+  %18 = ptrtoint i8* %17 to i64
+  tail call void @llvm.memset.p0i8.i64(i8* align 1 %12, i8 0, i64 %18, i1 false) #8
+  %19 = ptrtoint i8* %15 to i64
+  br label %20
+
+20:                                               ; preds = %11, %14
+  %21 = phi i64 [ %19, %14 ], [ %8, %11 ]
+  store i64 %21, i64* %7, align 8
+  br label %68
+
+22:                                               ; preds = %2
+  %23 = bitcast %"class.std::__1::vector.50"* %0 to i64*
+  %24 = load i64, i64* %23, align 8
+  %25 = sub i64 %8, %24
+  %26 = add i64 %25, %1
+  %27 = icmp slt i64 %26, 0
+  br i1 %27, label %28, label %30
+
+28:                                               ; preds = %22
+  %29 = bitcast %"class.std::__1::vector.50"* %0 to %"class.std::__1::__vector_base_common"*
+  tail call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"* %29) #9
+  unreachable
+
+30:                                               ; preds = %22
+  %31 = sub i64 %5, %24
+  %32 = icmp ult i64 %31, 4611686018427387903
+  br i1 %32, label %33, label %38
+
+33:                                               ; preds = %30
+  %34 = shl i64 %31, 1
+  %35 = icmp ult i64 %34, %26
+  %36 = select i1 %35, i64 %26, i64 %34
+  %37 = icmp eq i64 %36, 0
+  br i1 %37, label %41, label %38
+
+38:                                               ; preds = %30, %33
+  %39 = phi i64 [ %36, %33 ], [ 9223372036854775807, %30 ]
+  %40 = tail call i8* @_Znwm(i64 %39) #7
+  br label %41
+
+41:                                               ; preds = %38, %33
+  %42 = phi i64 [ %39, %38 ], [ 0, %33 ]
+  %43 = phi i8* [ %40, %38 ], [ null, %33 ]
+  %44 = getelementptr inbounds i8, i8* %43, i64 %25
+  %45 = ptrtoint i8* %44 to i64
+  %46 = getelementptr inbounds i8, i8* %43, i64 %42
+  %47 = getelementptr inbounds i8, i8* %44, i64 %1
+  %48 = sub i64 %1, %45
+  %49 = getelementptr i8, i8* %44, i64 %48
+  %50 = ptrtoint i8* %49 to i64
+  tail call void @llvm.memset.p0i8.i64(i8* align 1 %44, i8 0, i64 %50, i1 false) #8
+  %51 = ptrtoint i8* %46 to i64
+  %52 = ptrtoint i8* %47 to i64
+  %53 = getelementptr inbounds %"class.std::__1::vector.50", %"class.std::__1::vector.50"* %0, i64 0, i32 0, i32 0
+  %54 = load i8*, i8** %53, align 8
+  %55 = load i64, i64* %7, align 8
+  %56 = ptrtoint i8* %54 to i64
+  %57 = sub i64 %55, %56
+  %58 = sub i64 0, %57
+  %59 = getelementptr inbounds i8, i8* %44, i64 %58
+  %60 = ptrtoint i8* %59 to i64
+  %61 = icmp sgt i64 %57, 0
+  br i1 %61, label %62, label %64
+
+62:                                               ; preds = %41
+  tail call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %59, i8* align 1 %54, i64 %57, i1 false) #8
+  %63 = load i8*, i8** %53, align 8
+  br label %64
+
+64:                                               ; preds = %41, %62
+  %65 = phi i8* [ %54, %41 ], [ %63, %62 ]
+  store i64 %60, i64* %23, align 8
+  store i64 %52, i64* %7, align 8
+  store i64 %51, i64* %4, align 8
+  %66 = icmp eq i8* %65, null
+  br i1 %66, label %68, label %67
+
+67:                                               ; preds = %64
+  tail call void @_ZdlPv(i8* nonnull %65) #7
+  br label %68
+
+68:                                               ; preds = %67, %64, %20
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+; Function Attrs: noreturn
+declare void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"*) local_unnamed_addr #6
+
+declare i8* @_ZNK4base18ThreadLocalStorage4Slot3GetEv(%"class.base::ThreadLocalStorage::Slot"*) local_unnamed_addr #3
+
+declare void @_ZN20trace_event_internal24UpdateTraceEventDurationEPKhPKcN4base11trace_event16TraceEventHandleE(i8*, i8*, i64) local_unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN9protozero21ScatteredStreamWriterD1Ev(%"class.protozero::ScatteredStreamWriter"*) unnamed_addr #5
+
+; Function Attrs: nounwind
+declare void @_ZN9protozero19ScatteredHeapBufferD1Ev(%"class.protozero::ScatteredHeapBuffer"*) unnamed_addr #5
+
+; Function Attrs: nounwind
+declare void @_ZN9protozero12MessageArenaD1Ev(%"class.protozero::MessageArena"*) unnamed_addr #5
+
+attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { noreturn "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { builtin nounwind }
+attributes #8 = { nounwind }
+attributes #9 = { noreturn nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{!"branch_weights", i32 2000, i32 1}
+!3 = !{!4}
+!4 = distinct !{!4, !5, !"_ZNSt3__1plIcNS_11char_traitsIcEENS_9allocatorIcEEEENS_12basic_stringIT_T0_T1_EEOS9_PKS6_: argument 0"}
+!5 = distinct !{!5, !"_ZNSt3__1plIcNS_11char_traitsIcEENS_9allocatorIcEEEENS_12basic_stringIT_T0_T1_EEOS9_PKS6_"}

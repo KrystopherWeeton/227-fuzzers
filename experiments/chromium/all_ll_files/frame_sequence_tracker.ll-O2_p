@@ -1,0 +1,3536 @@
+; ModuleID = '../../cc/metrics/frame_sequence_tracker.cc'
+source_filename = "../../cc/metrics/frame_sequence_tracker.cc"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm ".symver exp, exp@GLIBC_2.2.5"
+module asm ".symver exp2, exp2@GLIBC_2.2.5"
+module asm ".symver exp2f, exp2f@GLIBC_2.2.5"
+module asm ".symver expf, expf@GLIBC_2.2.5"
+module asm ".symver lgamma, lgamma@GLIBC_2.2.5"
+module asm ".symver lgammaf, lgammaf@GLIBC_2.2.5"
+module asm ".symver lgammal, lgammal@GLIBC_2.2.5"
+module asm ".symver log, log@GLIBC_2.2.5"
+module asm ".symver log2, log2@GLIBC_2.2.5"
+module asm ".symver log2f, log2f@GLIBC_2.2.5"
+module asm ".symver logf, logf@GLIBC_2.2.5"
+module asm ".symver pow, pow@GLIBC_2.2.5"
+module asm ".symver powf, powf@GLIBC_2.2.5"
+
+%"class.std::__1::locale::id" = type <{ %"struct.std::__1::once_flag", i32, [4 x i8] }>
+%"struct.std::__1::once_flag" = type { i64 }
+%"class.cc::FrameSequenceTracker" = type <{ i32, i32, %"struct.cc::FrameSequenceTracker::TrackedFrameData", %"struct.cc::FrameSequenceTracker::TrackedFrameData", %"class.std::__1::unique_ptr", %"struct.cc::FrameSequenceTracker::CheckerboardingData", %"class.base::circular_deque", i64, i32, i32, i64, i64, i64, %"class.base::TimeTicks", %"class.base::TimeTicks", i8, i8, i8, i8, [4 x i8], %"class.base::internal::flat_tree", %"class.base::TimeDelta", i64, i64, i64, i64, i8, [7 x i8], i64, i64, i8, [7 x i8] }>
+%"struct.cc::FrameSequenceTracker::TrackedFrameData" = type <{ i64, i64, i32, [4 x i8] }>
+%"class.std::__1::unique_ptr" = type { %"class.std::__1::__compressed_pair" }
+%"class.std::__1::__compressed_pair" = type { %"struct.std::__1::__compressed_pair_elem" }
+%"struct.std::__1::__compressed_pair_elem" = type { %"class.cc::FrameSequenceMetrics"* }
+%"class.cc::FrameSequenceMetrics" = type { i32, %"struct.cc::FrameSequenceMetrics::TraceData", %"class.cc::ThroughputUkmReporter"*, %"struct.cc::FrameSequenceMetrics::ThroughputData", %"struct.cc::FrameSequenceMetrics::ThroughputData", i32, i32, %"class.base::OnceCallback", %"class.std::__1::unique_ptr.1" }
+%"struct.cc::FrameSequenceMetrics::TraceData" = type { %"class.cc::FrameSequenceMetrics"*, %"class.base::TimeTicks", i32, i8, i8* }
+%"struct.cc::FrameSequenceMetrics::ThroughputData" = type { i32, i32, i32 }
+%"class.base::OnceCallback" = type { %"class.base::internal::CallbackBase" }
+%"class.base::internal::CallbackBase" = type { %class.scoped_refptr }
+%class.scoped_refptr = type { %"class.base::internal::BindStateBase"* }
+%"class.base::internal::BindStateBase" = type { %"class.base::RefCountedThreadSafe", void ()*, void (%"class.base::internal::BindStateBase"*)*, i1 (%"class.base::internal::BindStateBase"*, i32)* }
+%"class.base::RefCountedThreadSafe" = type { %"class.base::subtle::RefCountedThreadSafeBase" }
+%"class.base::subtle::RefCountedThreadSafeBase" = type { %"class.base::AtomicRefCount" }
+%"class.base::AtomicRefCount" = type { %"struct.std::__1::atomic" }
+%"struct.std::__1::atomic" = type { %"struct.std::__1::__atomic_base" }
+%"struct.std::__1::__atomic_base" = type { %"struct.std::__1::__atomic_base.0" }
+%"struct.std::__1::__atomic_base.0" = type { %"struct.std::__1::__cxx_atomic_impl" }
+%"struct.std::__1::__cxx_atomic_impl" = type { %"struct.std::__1::__cxx_atomic_base_impl" }
+%"struct.std::__1::__cxx_atomic_base_impl" = type { i32 }
+%"class.std::__1::unique_ptr.1" = type { %"class.std::__1::__compressed_pair.2" }
+%"class.std::__1::__compressed_pair.2" = type { %"struct.std::__1::__compressed_pair_elem.3" }
+%"struct.std::__1::__compressed_pair_elem.3" = type { %"class.cc::JankMetrics"* }
+%"class.cc::JankMetrics" = type opaque
+%"struct.cc::FrameSequenceTracker::CheckerboardingData" = type { i8, %"class.base::TimeTicks", %"class.base::circular_deque" }
+%"class.base::circular_deque" = type { %"class.base::internal::VectorBuffer", i64, i64 }
+%"class.base::internal::VectorBuffer" = type { i32*, i64 }
+%"class.base::TimeTicks" = type { %"class.base::time_internal::TimeBase" }
+%"class.base::time_internal::TimeBase" = type { i64 }
+%"class.base::internal::flat_tree" = type { %"class.std::__1::vector" }
+%"class.std::__1::vector" = type { %"class.std::__1::__vector_base" }
+%"class.std::__1::__vector_base" = type { i32*, i32*, %"class.std::__1::__compressed_pair.8" }
+%"class.std::__1::__compressed_pair.8" = type { %"struct.std::__1::__compressed_pair_elem.9" }
+%"struct.std::__1::__compressed_pair_elem.9" = type { i32* }
+%"class.base::TimeDelta" = type { i64 }
+%"class.cc::ThroughputUkmReporter" = type opaque
+%"class.base::trace_event::TraceArguments" = type { i8, [2 x i8], [2 x i8*], [2 x %"union.base::trace_event::TraceValue"] }
+%"union.base::trace_event::TraceValue" = type { i64 }
+%"class.base::trace_event::ConvertableToTraceFormat" = type { i32 (...)** }
+%"class.protozero::HeapBuffered" = type { %"class.protozero::ScatteredHeapBuffer", %"class.protozero::ScatteredStreamWriter", %"class.protozero::RootMessage" }
+%"class.protozero::ScatteredHeapBuffer" = type { %"class.protozero::ScatteredStreamWriter::Delegate", i64, i64, %"class.protozero::ScatteredStreamWriter"*, %"class.std::__1::vector.16", %"class.protozero::ScatteredHeapBuffer::Slice" }
+%"class.protozero::ScatteredStreamWriter::Delegate" = type { i32 (...)** }
+%"class.std::__1::vector.16" = type { %"class.std::__1::__vector_base.17" }
+%"class.std::__1::__vector_base.17" = type { %"class.protozero::ScatteredHeapBuffer::Slice"*, %"class.protozero::ScatteredHeapBuffer::Slice"*, %"class.std::__1::__compressed_pair.24" }
+%"class.std::__1::__compressed_pair.24" = type { %"struct.std::__1::__compressed_pair_elem.25" }
+%"struct.std::__1::__compressed_pair_elem.25" = type { %"class.protozero::ScatteredHeapBuffer::Slice"* }
+%"class.protozero::ScatteredHeapBuffer::Slice" = type { %"class.std::__1::unique_ptr.18", i64, i64 }
+%"class.std::__1::unique_ptr.18" = type { %"class.std::__1::__compressed_pair.19" }
+%"class.std::__1::__compressed_pair.19" = type { %"struct.std::__1::__compressed_pair_elem.20" }
+%"struct.std::__1::__compressed_pair_elem.20" = type { i8* }
+%"class.protozero::ScatteredStreamWriter" = type { %"class.protozero::ScatteredStreamWriter::Delegate"*, %"struct.protozero::ContiguousMemoryRange", i8*, i64 }
+%"struct.protozero::ContiguousMemoryRange" = type { i8*, i8* }
+%"class.protozero::RootMessage" = type { %"class.perfetto::protos::pbzero::DebugAnnotation.base", %"class.protozero::MessageArena" }
+%"class.perfetto::protos::pbzero::DebugAnnotation.base" = type { %"class.protozero::Message.base" }
+%"class.protozero::Message.base" = type <{ %"class.protozero::ScatteredStreamWriter"*, %"class.protozero::MessageArena"*, %"class.protozero::Message"*, i8*, i32, i32, i8 }>
+%"class.protozero::Message" = type <{ %"class.protozero::ScatteredStreamWriter"*, %"class.protozero::MessageArena"*, %"class.protozero::Message"*, i8*, i32, i32, i8, [7 x i8] }>
+%"class.protozero::MessageArena" = type { %"class.std::__1::list" }
+%"class.std::__1::list" = type { %"class.std::__1::__list_imp" }
+%"class.std::__1::__list_imp" = type { %"struct.std::__1::__list_node_base", %"class.std::__1::__compressed_pair.29" }
+%"struct.std::__1::__list_node_base" = type { %"struct.std::__1::__list_node_base"*, %"struct.std::__1::__list_node_base"* }
+%"class.std::__1::__compressed_pair.29" = type { %"struct.std::__1::__compressed_pair_elem.30" }
+%"struct.std::__1::__compressed_pair_elem.30" = type { i64 }
+%"struct.viz::BeginFrameArgs" = type { %"class.base::TimeTicks", %"class.base::TimeTicks", %"class.base::TimeDelta", %"struct.viz::BeginFrameId", i64, i32, i8, i8, i64 }
+%"struct.viz::BeginFrameId" = type { i64, i64 }
+%"struct.viz::BeginFrameAck" = type <{ %"struct.viz::BeginFrameId", i64, i8, [7 x i8] }>
+%"struct.gfx::PresentationFeedback" = type { %"class.base::TimeTicks", %"class.base::TimeDelta", i32, %"class.base::TimeTicks", %"class.base::TimeTicks", %"class.base::TimeTicks", %"class.base::TimeTicks" }
+%"class.logging::CheckError" = type { %"class.logging::LogMessage"* }
+%"class.logging::LogMessage" = type { i32 (...)**, i32, %"class.std::__1::basic_ostringstream", i64, i8*, i32, %"class.base::ScopedClearLastErrorBase" }
+%"class.std::__1::basic_ostringstream" = type { %"class.std::__1::basic_ostream.base", %"class.std::__1::basic_stringbuf", %"class.std::__1::basic_ios.base" }
+%"class.std::__1::basic_ostream.base" = type { i32 (...)** }
+%"class.std::__1::basic_stringbuf" = type <{ %"class.std::__1::basic_streambuf", %"class.std::__1::basic_string", i8*, i32, [4 x i8] }>
+%"class.std::__1::basic_streambuf" = type { i32 (...)**, %"class.std::__1::locale", i8*, i8*, i8*, i8*, i8*, i8* }
+%"class.std::__1::locale" = type { %"class.std::__1::locale::__imp"* }
+%"class.std::__1::locale::__imp" = type opaque
+%"class.std::__1::basic_string" = type { %"class.std::__1::__compressed_pair.34" }
+%"class.std::__1::__compressed_pair.34" = type { %"struct.std::__1::__compressed_pair_elem.35" }
+%"struct.std::__1::__compressed_pair_elem.35" = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__rep" = type { %union.anon }
+%union.anon = type { %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" }
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__long" = type { i8*, i64, i64 }
+%"class.std::__1::basic_ios.base" = type <{ %"class.std::__1::ios_base", %"class.std::__1::basic_ostream"*, i32 }>
+%"class.std::__1::ios_base" = type { i32 (...)**, i32, i64, i64, i32, i32, i8*, i8*, void (i32, %"class.std::__1::ios_base"*, i32)**, i32*, i64, i64, i64*, i64, i64, i8**, i64, i64 }
+%"class.std::__1::basic_ostream" = type { i32 (...)**, %"class.std::__1::basic_ios.base" }
+%"class.base::ScopedClearLastErrorBase" = type { i32 }
+%"class.logging::CheckOpResult" = type { i8* }
+%"struct.std::__1::__split_buffer" = type { i32*, i32*, i32*, %"class.std::__1::__compressed_pair.44" }
+%"class.std::__1::__compressed_pair.44" = type { %"struct.std::__1::__compressed_pair_elem.9", %"struct.std::__1::__compressed_pair_elem.45" }
+%"struct.std::__1::__compressed_pair_elem.45" = type { %"class.std::__1::allocator"* }
+%"class.std::__1::allocator" = type { i8 }
+%"class.std::__1::__vector_base_common" = type { i8 }
+%"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry" = type { i8, %"class.std::__1::basic_ostream"* }
+%"class.std::__1::locale::facet" = type { %"class.std::__1::__shared_count" }
+%"class.std::__1::__shared_count" = type { i32 (...)**, i64 }
+%"class.std::__1::ctype" = type <{ %"class.std::__1::locale::facet", i16*, i8, [7 x i8] }>
+%"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short" = type { [23 x i8], %struct.anon }
+%struct.anon = type { i8 }
+
+$_ZN4base14circular_dequeIjED2Ev = comdat any
+
+$_ZNK4base9TimeDelta6IntDivES0_ = comdat any
+
+$_ZNK4base8internal12VectorBufferIjEixEm = comdat any
+
+$_ZN4base8internal12VectorBufferIjEixEm = comdat any
+
+$_ZNSt3__16vectorIjNS_9allocatorIjEEE7emplaceIJRKjEEENS_11__wrap_iterIPjEENS7_IPS5_EEDpOT_ = comdat any
+
+$_ZNSt3__114__split_bufferIjRNS_9allocatorIjEEE12emplace_backIJRKjEEEvDpOT_ = comdat any
+
+$_ZN4base14circular_dequeIjE25ExpandCapacityIfNecessaryEm = comdat any
+
+$_ZN4base14circular_dequeIjE10MoveBufferERNS_8internal12VectorBufferIjEEmmPS4_PmS7_ = comdat any
+
+$_ZN4base8internal12VectorBufferIjE9MoveRangeIjLi0EEEvPjS4_S4_ = comdat any
+
+$_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m = comdat any
+
+$_ZNSt3__116__pad_and_outputIcNS_11char_traitsIcEEEENS_19ostreambuf_iteratorIT_T0_EES6_PKS4_S8_S8_RNS_8ios_baseES4_ = comdat any
+
+$_ZN4base14circular_dequeIjE25ShrinkCapacityIfNecessaryEv = comdat any
+
+@.str = private unnamed_addr constant [20 x i8] c"CompositorAnimation\00", align 1
+@.str.1 = private unnamed_addr constant [20 x i8] c"MainThreadAnimation\00", align 1
+@.str.2 = private unnamed_addr constant [10 x i8] c"PinchZoom\00", align 1
+@.str.3 = private unnamed_addr constant [4 x i8] c"RAF\00", align 1
+@.str.4 = private unnamed_addr constant [12 x i8] c"TouchScroll\00", align 1
+@.str.5 = private unnamed_addr constant [6 x i8] c"Video\00", align 1
+@.str.6 = private unnamed_addr constant [12 x i8] c"WheelScroll\00", align 1
+@.str.7 = private unnamed_addr constant [16 x i8] c"ScrollbarScroll\00", align 1
+@.str.8 = private unnamed_addr constant [7 x i8] c"Custom\00", align 1
+@.str.9 = private unnamed_addr constant [16 x i8] c"CanvasAnimation\00", align 1
+@.str.10 = private unnamed_addr constant [12 x i8] c"JSAnimation\00", align 1
+@.str.11 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@_ZZN2cc20FrameSequenceTrackerC1ENS_24FrameSequenceTrackerTypeEPNS_21ThroughputUkmReporterEE27trace_event_unique_atomic86 = internal global i64 0, align 8
+@.str.12 = private unnamed_addr constant [13 x i8] c"cc,benchmark\00", align 1
+@.str.13 = private unnamed_addr constant [18 x i8] c"TrackerValidation\00", align 1
+@.str.14 = private unnamed_addr constant [5 x i8] c"name\00", align 1
+@_ZZN2cc20FrameSequenceTrackerD1EvE28trace_event_unique_atomic103 = internal global i64 0, align 8
+@.str.15 = private unnamed_addr constant [23 x i8] c"../../base/time/time.h\00", align 1
+@.str.16 = private unnamed_addr constant [38 x i8] c"!is_inf() || (delta_ == other.delta_)\00", align 1
+@.str.17 = private unnamed_addr constant [27 x i8] c"!is_zero() || !a.is_zero()\00", align 1
+@.str.18 = private unnamed_addr constant [25 x i8] c"!is_inf() || !a.is_inf()\00", align 1
+@.str.19 = private unnamed_addr constant [15 x i8] c"i <= capacity_\00", align 1
+@.str.20 = private unnamed_addr constant [38 x i8] c"../../base/containers/vector_buffer.h\00", align 1
+@.str.22 = private unnamed_addr constant [41 x i8] c"!RangesOverlap(from_begin, from_end, to)\00", align 1
+@.str.23 = private unnamed_addr constant [15 x i8] c"from_begin: 0x\00", align 1
+@.str.24 = private unnamed_addr constant [15 x i8] c", from_end: 0x\00", align 1
+@.str.25 = private unnamed_addr constant [9 x i8] c", to: 0x\00", align 1
+@_ZNSt3__15ctypeIcE2idE = external global %"class.std::__1::locale::id", align 8
+@switch.table._ZN2cc20FrameSequenceTrackerC2ENS_24FrameSequenceTrackerTypeEPNS_21ThroughputUkmReporterE = private unnamed_addr constant [13 x i8*] [i8* getelementptr inbounds ([20 x i8], [20 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([20 x i8], [20 x i8]* @.str.1, i64 0, i64 0), i8* getelementptr inbounds ([10 x i8], [10 x i8]* @.str.2, i64 0, i64 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.3, i64 0, i64 0), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @.str.4, i64 0, i64 0), i8* getelementptr inbounds ([20 x i8], [20 x i8]* @.str, i64 0, i64 0), i8* getelementptr inbounds ([6 x i8], [6 x i8]* @.str.5, i64 0, i64 0), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @.str.6, i64 0, i64 0), i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str.7, i64 0, i64 0), i8* getelementptr inbounds ([7 x i8], [7 x i8]* @.str.8, i64 0, i64 0), i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str.9, i64 0, i64 0), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @.str.10, i64 0, i64 0), i8* getelementptr inbounds ([1 x i8], [1 x i8]* @.str.11, i64 0, i64 0)], align 8
+
+@_ZN2cc20FrameSequenceTrackerC1ENS_24FrameSequenceTrackerTypeEPNS_21ThroughputUkmReporterE = hidden unnamed_addr alias void (%"class.cc::FrameSequenceTracker"*, i32, %"class.cc::ThroughputUkmReporter"*), void (%"class.cc::FrameSequenceTracker"*, i32, %"class.cc::ThroughputUkmReporter"*)* @_ZN2cc20FrameSequenceTrackerC2ENS_24FrameSequenceTrackerTypeEPNS_21ThroughputUkmReporterE
+@_ZN2cc20FrameSequenceTrackerC1EiN4base12OnceCallbackIFvRKNS_20FrameSequenceMetrics16CustomReportDataEEEE = hidden unnamed_addr alias void (%"class.cc::FrameSequenceTracker"*, i32, %"class.base::OnceCallback"*), void (%"class.cc::FrameSequenceTracker"*, i32, %"class.base::OnceCallback"*)* @_ZN2cc20FrameSequenceTrackerC2EiN4base12OnceCallbackIFvRKNS_20FrameSequenceMetrics16CustomReportDataEEEE
+@_ZN2cc20FrameSequenceTrackerD1Ev = hidden unnamed_addr alias void (%"class.cc::FrameSequenceTracker"*), void (%"class.cc::FrameSequenceTracker"*)* @_ZN2cc20FrameSequenceTrackerD2Ev
+@_ZN2cc20FrameSequenceTracker19CheckerboardingDataC1Ev = hidden unnamed_addr alias void (%"struct.cc::FrameSequenceTracker::CheckerboardingData"*), void (%"struct.cc::FrameSequenceTracker::CheckerboardingData"*)* @_ZN2cc20FrameSequenceTracker19CheckerboardingDataC2Ev
+@_ZN2cc20FrameSequenceTracker19CheckerboardingDataD1Ev = hidden unnamed_addr alias void (%"struct.cc::FrameSequenceTracker::CheckerboardingData"*), void (%"struct.cc::FrameSequenceTracker::CheckerboardingData"*)* @_ZN2cc20FrameSequenceTracker19CheckerboardingDataD2Ev
+
+; Function Attrs: norecurse nounwind readnone ssp uwtable
+define hidden i8* @_ZN2cc20FrameSequenceTracker31GetFrameSequenceTrackerTypeNameENS_24FrameSequenceTrackerTypeE(i32) local_unnamed_addr #0 align 2 {
+  %2 = trunc i32 %0 to i16
+  %3 = lshr i16 8159, %2
+  %4 = and i16 %3, 1
+  %5 = icmp ne i16 %4, 0
+  call void @llvm.assume(i1 %5)
+  %6 = sext i32 %0 to i64
+  %7 = getelementptr inbounds [13 x i8*], [13 x i8*]* @switch.table._ZN2cc20FrameSequenceTrackerC2ENS_24FrameSequenceTrackerTypeEPNS_21ThroughputUkmReporterE, i64 0, i64 %6
+  %8 = load i8*, i8** %7, align 8
+  ret i8* %8
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc20FrameSequenceTrackerC2ENS_24FrameSequenceTrackerTypeEPNS_21ThroughputUkmReporterE(%"class.cc::FrameSequenceTracker"*, i32, %"class.cc::ThroughputUkmReporter"*) unnamed_addr #1 align 2 {
+  %4 = alloca %"class.base::trace_event::TraceArguments", align 8
+  %5 = alloca %"class.base::TimeTicks", align 8
+  %6 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 0
+  store i32 -1, i32* %6, align 8
+  %7 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 1
+  %8 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 3
+  %9 = bitcast %"struct.cc::FrameSequenceTracker::TrackedFrameData"* %8 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %9, i8 0, i64 20, i1 false) #15
+  %10 = bitcast i32* %7 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 4 %10, i8 0, i64 24, i1 false)
+  %11 = tail call i8* @_Znwm(i64 96) #16
+  %12 = bitcast i8* %11 to %"class.cc::FrameSequenceMetrics"*
+  tail call void @_ZN2cc20FrameSequenceMetricsC1ENS_24FrameSequenceTrackerTypeEPNS_21ThroughputUkmReporterE(%"class.cc::FrameSequenceMetrics"* nonnull %12, i32 %1, %"class.cc::ThroughputUkmReporter"* %2) #15
+  %13 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 4, i32 0, i32 0, i32 0
+  %14 = bitcast %"class.cc::FrameSequenceMetrics"** %13 to i8**
+  store i8* %11, i8** %14, align 8
+  %15 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 0
+  store i8 0, i8* %15, align 8
+  %16 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 1, i32 0, i32 0
+  %17 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 20
+  %18 = bitcast %"class.base::internal::flat_tree"* %17 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %18, i8 0, i64 24, i1 false) #15
+  %19 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 21, i32 0
+  %20 = bitcast i64* %16 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %20, i8 0, i64 132, i1 false)
+  store i64 5000000, i64* %19, align 8
+  %21 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 22
+  %22 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 28
+  %23 = bitcast i64* %21 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %23, i8 0, i64 33, i1 false)
+  %24 = bitcast i64* %22 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %24, i8 0, i64 17, i1 false)
+  %25 = load atomic i64, i64* @_ZZN2cc20FrameSequenceTrackerC1ENS_24FrameSequenceTrackerTypeEPNS_21ThroughputUkmReporterEE27trace_event_unique_atomic86 monotonic, align 8
+  %26 = inttoptr i64 %25 to i8*
+  %27 = icmp eq i64 %25, 0
+  br i1 %27, label %28, label %31, !prof !2
+
+28:                                               ; preds = %3
+  %29 = tail call i8* @_ZN4base11trace_event8TraceLog23GetCategoryGroupEnabledEPKc(i8* getelementptr inbounds ([13 x i8], [13 x i8]* @.str.12, i64 0, i64 0)) #15
+  %30 = ptrtoint i8* %29 to i64
+  store atomic volatile i64 %30, i64* @_ZZN2cc20FrameSequenceTrackerC1ENS_24FrameSequenceTrackerTypeEPNS_21ThroughputUkmReporterEE27trace_event_unique_atomic86 monotonic, align 8
+  br label %31
+
+31:                                               ; preds = %28, %3
+  %32 = phi i8* [ %29, %28 ], [ %26, %3 ]
+  %33 = load i8, i8* %32, align 1
+  %34 = and i8 %33, 25
+  %35 = icmp eq i8 %34, 0
+  br i1 %35, label %92, label %36, !prof !3
+
+36:                                               ; preds = %31
+  %37 = ptrtoint %"class.cc::FrameSequenceTracker"* %0 to i64
+  %38 = tail call i32 @_ZN4base14PlatformThread9CurrentIdEv() #15
+  %39 = bitcast %"class.base::TimeTicks"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %39) #15
+  %40 = tail call i64 @_ZN4base9TimeTicks3NowEv() #15
+  %41 = getelementptr inbounds %"class.base::TimeTicks", %"class.base::TimeTicks"* %5, i64 0, i32 0, i32 0
+  store i64 %40, i64* %41, align 8
+  %42 = trunc i32 %1 to i16
+  %43 = lshr i16 8159, %42
+  %44 = and i16 %43, 1
+  %45 = icmp ne i16 %44, 0
+  call void @llvm.assume(i1 %45)
+  %46 = sext i32 %1 to i64
+  %47 = getelementptr inbounds [13 x i8*], [13 x i8*]* @switch.table._ZN2cc20FrameSequenceTrackerC2ENS_24FrameSequenceTrackerTypeEPNS_21ThroughputUkmReporterE, i64 0, i64 %46
+  %48 = bitcast i8** %47 to i64*
+  %49 = load i64, i64* %48, align 8
+  %50 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %4, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 40, i8* nonnull %50) #15
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %50, i8 -86, i64 40, i1 false) #15
+  store i8 1, i8* %50, align 8
+  %51 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %4, i64 0, i32 1, i64 0
+  store i8 6, i8* %51, align 1
+  %52 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %4, i64 0, i32 2, i64 0
+  store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.14, i64 0, i64 0), i8** %52, align 8
+  %53 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %4, i64 0, i32 3, i64 0, i32 0
+  store i64 %49, i64* %53, align 8
+  %54 = call i64 @_ZN20trace_event_internal37AddTraceEventWithThreadIdAndTimestampEcPKhPKcS3_yyiRKN4base9TimeTicksEPNS4_11trace_event14TraceArgumentsEj(i8 signext 98, i8* %32, i8* getelementptr inbounds ([18 x i8], [18 x i8]* @.str.13, i64 0, i64 0), i8* null, i64 %37, i64 0, i32 %38, %"class.base::TimeTicks"* nonnull dereferenceable(8) %5, %"class.base::trace_event::TraceArguments"* nonnull %4, i32 2064) #15
+  %55 = load i8, i8* %50, align 8
+  %56 = icmp eq i8 %55, 0
+  br i1 %56, label %91, label %57
+
+57:                                               ; preds = %36, %86
+  %58 = phi i64 [ %87, %86 ], [ 0, %36 ]
+  %59 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %4, i64 0, i32 1, i64 %58
+  %60 = load i8, i8* %59, align 1
+  %61 = icmp eq i8 %60, 8
+  br i1 %61, label %62, label %73
+
+62:                                               ; preds = %57
+  %63 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %4, i64 0, i32 3, i64 %58
+  %64 = bitcast %"union.base::trace_event::TraceValue"* %63 to %"class.base::trace_event::ConvertableToTraceFormat"**
+  %65 = load %"class.base::trace_event::ConvertableToTraceFormat"*, %"class.base::trace_event::ConvertableToTraceFormat"** %64, align 8
+  %66 = icmp eq %"class.base::trace_event::ConvertableToTraceFormat"* %65, null
+  br i1 %66, label %86, label %67
+
+67:                                               ; preds = %62
+  %68 = bitcast %"class.base::trace_event::ConvertableToTraceFormat"* %65 to void (%"class.base::trace_event::ConvertableToTraceFormat"*)***
+  %69 = load void (%"class.base::trace_event::ConvertableToTraceFormat"*)**, void (%"class.base::trace_event::ConvertableToTraceFormat"*)*** %68, align 8
+  %70 = getelementptr inbounds void (%"class.base::trace_event::ConvertableToTraceFormat"*)*, void (%"class.base::trace_event::ConvertableToTraceFormat"*)** %69, i64 1
+  %71 = load void (%"class.base::trace_event::ConvertableToTraceFormat"*)*, void (%"class.base::trace_event::ConvertableToTraceFormat"*)** %70, align 8
+  call void %71(%"class.base::trace_event::ConvertableToTraceFormat"* nonnull %65) #15
+  %72 = load i8, i8* %59, align 1
+  br label %73
+
+73:                                               ; preds = %67, %57
+  %74 = phi i8 [ %60, %57 ], [ %72, %67 ]
+  %75 = icmp eq i8 %74, 9
+  br i1 %75, label %76, label %86
+
+76:                                               ; preds = %73
+  %77 = getelementptr inbounds %"class.base::trace_event::TraceArguments", %"class.base::trace_event::TraceArguments"* %4, i64 0, i32 3, i64 %58
+  %78 = bitcast %"union.base::trace_event::TraceValue"* %77 to %"class.protozero::HeapBuffered"**
+  %79 = load %"class.protozero::HeapBuffered"*, %"class.protozero::HeapBuffered"** %78, align 8
+  %80 = icmp eq %"class.protozero::HeapBuffered"* %79, null
+  br i1 %80, label %86, label %81
+
+81:                                               ; preds = %76
+  %82 = getelementptr inbounds %"class.protozero::HeapBuffered", %"class.protozero::HeapBuffered"* %79, i64 0, i32 2, i32 1
+  call void @_ZN9protozero12MessageArenaD1Ev(%"class.protozero::MessageArena"* %82) #15
+  %83 = getelementptr inbounds %"class.protozero::HeapBuffered", %"class.protozero::HeapBuffered"* %79, i64 0, i32 1
+  call void @_ZN9protozero21ScatteredStreamWriterD1Ev(%"class.protozero::ScatteredStreamWriter"* %83) #15
+  %84 = getelementptr inbounds %"class.protozero::HeapBuffered", %"class.protozero::HeapBuffered"* %79, i64 0, i32 0
+  call void @_ZN9protozero19ScatteredHeapBufferD1Ev(%"class.protozero::ScatteredHeapBuffer"* %84) #15
+  %85 = bitcast %"class.protozero::HeapBuffered"* %79 to i8*
+  call void @_ZdlPv(i8* %85) #16
+  br label %86
+
+86:                                               ; preds = %81, %76, %73, %62
+  %87 = add nuw nsw i64 %58, 1
+  %88 = load i8, i8* %50, align 8
+  %89 = zext i8 %88 to i64
+  %90 = icmp ult i64 %87, %89
+  br i1 %90, label %57, label %91
+
+91:                                               ; preds = %86, %36
+  call void @llvm.lifetime.end.p0i8(i64 40, i8* nonnull %50) #15
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %39) #15
+  br label %92
+
+92:                                               ; preds = %31, %91
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+declare i8* @_ZN4base11trace_event8TraceLog23GetCategoryGroupEnabledEPKc(i8*) local_unnamed_addr #3
+
+declare i32 @_ZN4base14PlatformThread9CurrentIdEv() local_unnamed_addr #3
+
+declare i64 @_ZN4base9TimeTicks3NowEv() local_unnamed_addr #3
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc20FrameSequenceTrackerC2EiN4base12OnceCallbackIFvRKNS_20FrameSequenceMetrics16CustomReportDataEEEE(%"class.cc::FrameSequenceTracker"*, i32, %"class.base::OnceCallback"* nocapture) unnamed_addr #1 align 2 {
+  %4 = alloca %"class.base::OnceCallback", align 8
+  %5 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 0
+  store i32 %1, i32* %5, align 8
+  %6 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 1
+  %7 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 3
+  %8 = bitcast %"struct.cc::FrameSequenceTracker::TrackedFrameData"* %7 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %8, i8 0, i64 20, i1 false) #15
+  %9 = bitcast i32* %6 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 4 %9, i8 0, i64 24, i1 false)
+  %10 = tail call i8* @_Znwm(i64 96) #16
+  %11 = bitcast i8* %10 to %"class.cc::FrameSequenceMetrics"*
+  tail call void @_ZN2cc20FrameSequenceMetricsC1ENS_24FrameSequenceTrackerTypeEPNS_21ThroughputUkmReporterE(%"class.cc::FrameSequenceMetrics"* nonnull %11, i32 9, %"class.cc::ThroughputUkmReporter"* null) #15
+  %12 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 4, i32 0, i32 0, i32 0
+  %13 = bitcast %"class.cc::FrameSequenceMetrics"** %12 to i8**
+  store i8* %10, i8** %13, align 8
+  %14 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 0
+  store i8 0, i8* %14, align 8
+  %15 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 1, i32 0, i32 0
+  %16 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 20
+  %17 = bitcast %"class.base::internal::flat_tree"* %16 to i8*
+  tail call void @llvm.memset.p0i8.i64(i8* align 8 %17, i8 0, i64 24, i1 false) #15
+  %18 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 21, i32 0
+  %19 = bitcast i64* %15 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %19, i8 0, i64 132, i1 false)
+  store i64 5000000, i64* %18, align 8
+  %20 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 22
+  %21 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 28
+  %22 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %2, i64 0, i32 0, i32 0, i32 0
+  %23 = bitcast %"class.base::OnceCallback"* %2 to i64*
+  %24 = bitcast i64* %20 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %24, i8 0, i64 33, i1 false)
+  %25 = bitcast i64* %21 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %25, i8 0, i64 17, i1 false)
+  %26 = load i64, i64* %23, align 8
+  %27 = bitcast %"class.base::OnceCallback"* %4 to i64*
+  store i64 %26, i64* %27, align 8
+  store %"class.base::internal::BindStateBase"* null, %"class.base::internal::BindStateBase"** %22, align 8
+  call void @_ZN2cc20FrameSequenceMetrics17SetCustomReporterEN4base12OnceCallbackIFvRKNS0_16CustomReportDataEEEE(%"class.cc::FrameSequenceMetrics"* nonnull %11, %"class.base::OnceCallback"* nonnull %4) #15
+  %28 = getelementptr inbounds %"class.base::OnceCallback", %"class.base::OnceCallback"* %4, i64 0, i32 0
+  call void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"* nonnull %28) #15
+  ret void
+}
+
+declare void @_ZN2cc20FrameSequenceMetrics17SetCustomReporterEN4base12OnceCallbackIFvRKNS0_16CustomReportDataEEEE(%"class.cc::FrameSequenceMetrics"*, %"class.base::OnceCallback"*) local_unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN4base8internal12CallbackBaseD2Ev(%"class.base::internal::CallbackBase"*) unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc20FrameSequenceTrackerD2Ev(%"class.cc::FrameSequenceTracker"*) unnamed_addr #1 align 2 {
+  %2 = alloca %"class.base::TimeTicks", align 8
+  %3 = load atomic i64, i64* @_ZZN2cc20FrameSequenceTrackerD1EvE28trace_event_unique_atomic103 monotonic, align 8
+  %4 = inttoptr i64 %3 to i8*
+  %5 = icmp eq i64 %3, 0
+  br i1 %5, label %6, label %9, !prof !2
+
+6:                                                ; preds = %1
+  %7 = tail call i8* @_ZN4base11trace_event8TraceLog23GetCategoryGroupEnabledEPKc(i8* getelementptr inbounds ([13 x i8], [13 x i8]* @.str.12, i64 0, i64 0)) #15
+  %8 = ptrtoint i8* %7 to i64
+  store atomic volatile i64 %8, i64* @_ZZN2cc20FrameSequenceTrackerD1EvE28trace_event_unique_atomic103 monotonic, align 8
+  br label %9
+
+9:                                                ; preds = %6, %1
+  %10 = phi i8* [ %7, %6 ], [ %4, %1 ]
+  %11 = load i8, i8* %10, align 1
+  %12 = and i8 %11, 25
+  %13 = icmp eq i8 %12, 0
+  br i1 %13, label %21, label %14, !prof !3
+
+14:                                               ; preds = %9
+  %15 = ptrtoint %"class.cc::FrameSequenceTracker"* %0 to i64
+  %16 = tail call i32 @_ZN4base14PlatformThread9CurrentIdEv() #15
+  %17 = bitcast %"class.base::TimeTicks"* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %17) #15
+  %18 = tail call i64 @_ZN4base9TimeTicks3NowEv() #15
+  %19 = getelementptr inbounds %"class.base::TimeTicks", %"class.base::TimeTicks"* %2, i64 0, i32 0, i32 0
+  store i64 %18, i64* %19, align 8
+  %20 = call i64 @_ZN20trace_event_internal37AddTraceEventWithThreadIdAndTimestampEcPKhPKcS3_yyiRKN4base9TimeTicksEPNS4_11trace_event14TraceArgumentsEj(i8 signext 101, i8* %10, i8* getelementptr inbounds ([18 x i8], [18 x i8]* @.str.13, i64 0, i64 0), i8* null, i64 %15, i64 0, i32 %16, %"class.base::TimeTicks"* nonnull dereferenceable(8) %2, %"class.base::trace_event::TraceArguments"* null, i32 2064) #15
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %17) #15
+  br label %21
+
+21:                                               ; preds = %9, %14
+  %22 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 4, i32 0, i32 0, i32 0
+  %23 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %22, align 8
+  %24 = icmp eq %"class.cc::FrameSequenceMetrics"* %23, null
+  br i1 %24, label %26, label %25
+
+25:                                               ; preds = %21
+  call void @_ZN2cc20FrameSequenceMetrics18ReportLeftoverDataEv(%"class.cc::FrameSequenceMetrics"* nonnull %23) #15
+  br label %26
+
+26:                                               ; preds = %21, %25
+  %27 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 20, i32 0, i32 0, i32 0
+  %28 = load i32*, i32** %27, align 8
+  %29 = icmp eq i32* %28, null
+  br i1 %29, label %35, label %30
+
+30:                                               ; preds = %26
+  %31 = ptrtoint i32* %28 to i64
+  %32 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 20, i32 0, i32 0, i32 1
+  %33 = bitcast i32** %32 to i64*
+  store i64 %31, i64* %33, align 8
+  %34 = bitcast i32* %28 to i8*
+  call void @_ZdlPv(i8* %34) #16
+  br label %35
+
+35:                                               ; preds = %26, %30
+  %36 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 6
+  call void @_ZN4base14circular_dequeIjED2Ev(%"class.base::circular_deque"* %36) #15
+  %37 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 2
+  call void @_ZN4base14circular_dequeIjED2Ev(%"class.base::circular_deque"* %37) #15
+  %38 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %22, align 8
+  store %"class.cc::FrameSequenceMetrics"* null, %"class.cc::FrameSequenceMetrics"** %22, align 8
+  %39 = icmp eq %"class.cc::FrameSequenceMetrics"* %38, null
+  br i1 %39, label %42, label %40
+
+40:                                               ; preds = %35
+  call void @_ZN2cc20FrameSequenceMetricsD1Ev(%"class.cc::FrameSequenceMetrics"* nonnull %38) #15
+  %41 = bitcast %"class.cc::FrameSequenceMetrics"* %38 to i8*
+  call void @_ZdlPv(i8* %41) #16
+  br label %42
+
+42:                                               ; preds = %35, %40
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc20FrameSequenceTracker7CleanUpEv(%"class.cc::FrameSequenceTracker"* nocapture readonly) local_unnamed_addr #1 align 2 {
+  %2 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 4, i32 0, i32 0, i32 0
+  %3 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %2, align 8
+  %4 = icmp eq %"class.cc::FrameSequenceMetrics"* %3, null
+  br i1 %4, label %6, label %5
+
+5:                                                ; preds = %1
+  tail call void @_ZN2cc20FrameSequenceMetrics18ReportLeftoverDataEv(%"class.cc::FrameSequenceMetrics"* nonnull %3) #15
+  br label %6
+
+6:                                                ; preds = %1, %5
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base14circular_dequeIjED2Ev(%"class.base::circular_deque"*) unnamed_addr #1 comdat align 2 {
+  %2 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 1
+  %3 = load i64, i64* %2, align 8
+  %4 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 2
+  %5 = load i64, i64* %4, align 8
+  %6 = icmp eq i64 %5, %3
+  br i1 %6, label %18, label %7
+
+7:                                                ; preds = %1
+  %8 = icmp ugt i64 %5, %3
+  %9 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0
+  %10 = tail call dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %9, i64 %3) #15
+  br i1 %8, label %16, label %11
+
+11:                                               ; preds = %7
+  %12 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0, i32 1
+  %13 = load i64, i64* %12, align 8
+  %14 = tail call dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %9, i64 %13) #15
+  %15 = tail call dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %9, i64 0) #15
+  br label %16
+
+16:                                               ; preds = %7, %11
+  %17 = tail call dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %9, i64 %5) #15
+  br label %18
+
+18:                                               ; preds = %16, %1
+  %19 = bitcast %"class.base::circular_deque"* %0 to i8**
+  %20 = load i8*, i8** %19, align 8
+  tail call void @free(i8* %20) #15
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN2cc20FrameSequenceTracker17ScheduleTerminateEv(%"class.cc::FrameSequenceTracker"* nocapture) local_unnamed_addr #5 align 2 {
+  %2 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 30
+  %3 = load i8, i8* %2, align 8, !range !4
+  %4 = icmp eq i8 %3, 0
+  br i1 %4, label %5, label %9
+
+5:                                                ; preds = %1
+  %6 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 9
+  %7 = load i32, i32* %6, align 4
+  %8 = icmp eq i32 %7, 0
+  br i1 %8, label %10, label %9
+
+9:                                                ; preds = %1, %5
+  br label %10
+
+10:                                               ; preds = %5, %9
+  %11 = phi i32 [ 1, %9 ], [ 2, %5 ]
+  %12 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 1
+  store i32 %11, i32* %12, align 4
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN2cc20FrameSequenceTracker20ReportBeginImplFrameERKN3viz14BeginFrameArgsE(%"class.cc::FrameSequenceTracker"* nocapture, %"struct.viz::BeginFrameArgs"* nocapture readonly dereferenceable(64)) local_unnamed_addr #5 align 2 {
+  %3 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 1
+  %4 = load i32, i32* %3, align 4
+  %5 = icmp eq i32 %4, 0
+  br i1 %5, label %6, label %63
+
+6:                                                ; preds = %2
+  %7 = getelementptr inbounds %"struct.viz::BeginFrameArgs", %"struct.viz::BeginFrameArgs"* %1, i64 0, i32 3, i32 0
+  %8 = load i64, i64* %7, align 8
+  %9 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 2, i32 0
+  %10 = load i64, i64* %9, align 8
+  %11 = icmp eq i64 %10, 0
+  %12 = icmp eq i64 %8, 4294967295
+  %13 = icmp ne i64 %10, %8
+  %14 = select i1 %11, i1 %12, i1 %13
+  br i1 %14, label %63, label %15
+
+15:                                               ; preds = %6
+  %16 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 30
+  store i8 1, i8* %16, align 8
+  %17 = getelementptr inbounds %"struct.viz::BeginFrameArgs", %"struct.viz::BeginFrameArgs"* %1, i64 0, i32 3, i32 1
+  %18 = load i64, i64* %17, align 8
+  %19 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 22
+  store i64 %18, i64* %19, align 8
+  %20 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 18
+  %21 = load i8, i8* %20, align 1, !range !4
+  %22 = icmp eq i8 %21, 0
+  br i1 %22, label %30, label %23
+
+23:                                               ; preds = %15
+  %24 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 3, i32 0
+  store i8 0, i8* %20, align 1
+  %25 = bitcast i64* %9 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %25, i8 0, i64 20, i1 false)
+  %26 = bitcast i64* %24 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %26, i8 0, i64 20, i1 false)
+  %27 = load i64, i64* %7, align 8
+  %28 = load i64, i64* %17, align 8
+  %29 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 2, i32 1
+  br label %45
+
+30:                                               ; preds = %15
+  %31 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 2, i32 1
+  %32 = load i64, i64* %31, align 8
+  %33 = load i64, i64* %7, align 8
+  %34 = load i64, i64* %17, align 8
+  %35 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 2, i32 1
+  %36 = icmp ne i64 %32, 0
+  %37 = icmp eq i64 %10, %33
+  %38 = and i1 %36, %37
+  br i1 %38, label %39, label %45
+
+39:                                               ; preds = %30
+  %40 = getelementptr inbounds %"struct.viz::BeginFrameArgs", %"struct.viz::BeginFrameArgs"* %1, i64 0, i32 8
+  %41 = load i64, i64* %40, align 8
+  %42 = sub i64 %34, %41
+  %43 = sub i64 %42, %32
+  %44 = trunc i64 %43 to i32
+  br label %45
+
+45:                                               ; preds = %23, %30, %39
+  %46 = phi i32 [ %44, %39 ], [ 1, %30 ], [ 1, %23 ]
+  %47 = phi i64* [ %35, %39 ], [ %35, %30 ], [ %29, %23 ]
+  %48 = phi i64 [ %34, %39 ], [ %34, %30 ], [ %28, %23 ]
+  %49 = phi i64 [ %33, %39 ], [ %33, %30 ], [ %27, %23 ]
+  %50 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 2, i32 2
+  store i32 %46, i32* %50, align 8
+  %51 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 2, i32 0
+  store i64 %49, i64* %51, align 8
+  store i64 %48, i64* %47, align 8
+  %52 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 4, i32 0, i32 0, i32 0
+  %53 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %52, align 8
+  %54 = getelementptr inbounds %"class.cc::FrameSequenceMetrics", %"class.cc::FrameSequenceMetrics"* %53, i64 0, i32 3, i32 0
+  %55 = load i32, i32* %54, align 4
+  %56 = add i32 %55, %46
+  store i32 %56, i32* %54, align 4
+  %57 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 13, i32 0, i32 0
+  %58 = load i64, i64* %57, align 8
+  %59 = icmp eq i64 %58, 0
+  br i1 %59, label %60, label %63
+
+60:                                               ; preds = %45
+  %61 = getelementptr inbounds %"struct.viz::BeginFrameArgs", %"struct.viz::BeginFrameArgs"* %1, i64 0, i32 0, i32 0, i32 0
+  %62 = load i64, i64* %61, align 8
+  store i64 %62, i64* %57, align 8
+  br label %63
+
+63:                                               ; preds = %2, %6, %60, %45
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden zeroext i1 @_ZNK2cc20FrameSequenceTracker28ShouldIgnoreBeginFrameSourceEm(%"class.cc::FrameSequenceTracker"* nocapture readonly, i64) local_unnamed_addr #6 align 2 {
+  %3 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 2, i32 0
+  %4 = load i64, i64* %3, align 8
+  %5 = icmp eq i64 %4, 0
+  %6 = icmp eq i64 %1, 4294967295
+  %7 = icmp ne i64 %4, %1
+  %8 = select i1 %5, i1 %6, i1 %7
+  ret i1 %8
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #2
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN2cc20FrameSequenceTracker22UpdateTrackedFrameDataEPNS0_16TrackedFrameDataEmmm(%"class.cc::FrameSequenceTracker"* nocapture readnone, %"struct.cc::FrameSequenceTracker::TrackedFrameData"* nocapture, i64, i64, i64) local_unnamed_addr #5 align 2 {
+  %6 = getelementptr inbounds %"struct.cc::FrameSequenceTracker::TrackedFrameData", %"struct.cc::FrameSequenceTracker::TrackedFrameData"* %1, i64 0, i32 1
+  %7 = load i64, i64* %6, align 8
+  %8 = icmp eq i64 %7, 0
+  br i1 %8, label %17, label %9
+
+9:                                                ; preds = %5
+  %10 = getelementptr inbounds %"struct.cc::FrameSequenceTracker::TrackedFrameData", %"struct.cc::FrameSequenceTracker::TrackedFrameData"* %1, i64 0, i32 0
+  %11 = load i64, i64* %10, align 8
+  %12 = icmp eq i64 %11, %2
+  br i1 %12, label %13, label %17
+
+13:                                               ; preds = %9
+  %14 = sub i64 %3, %4
+  %15 = sub i64 %14, %7
+  %16 = trunc i64 %15 to i32
+  br label %17
+
+17:                                               ; preds = %9, %5, %13
+  %18 = phi i32 [ %16, %13 ], [ 1, %5 ], [ 1, %9 ]
+  %19 = getelementptr inbounds %"struct.cc::FrameSequenceTracker::TrackedFrameData", %"struct.cc::FrameSequenceTracker::TrackedFrameData"* %1, i64 0, i32 2
+  store i32 %18, i32* %19, align 8
+  %20 = getelementptr inbounds %"struct.cc::FrameSequenceTracker::TrackedFrameData", %"struct.cc::FrameSequenceTracker::TrackedFrameData"* %1, i64 0, i32 0
+  store i64 %2, i64* %20, align 8
+  store i64 %3, i64* %6, align 8
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN2cc20FrameSequenceTracker20ReportBeginMainFrameERKN3viz14BeginFrameArgsE(%"class.cc::FrameSequenceTracker"* nocapture, %"struct.viz::BeginFrameArgs"* nocapture readonly dereferenceable(64)) local_unnamed_addr #5 align 2 {
+  %3 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 1
+  %4 = load i32, i32* %3, align 4
+  %5 = icmp eq i32 %4, 0
+  br i1 %5, label %6, label %67
+
+6:                                                ; preds = %2
+  %7 = getelementptr inbounds %"struct.viz::BeginFrameArgs", %"struct.viz::BeginFrameArgs"* %1, i64 0, i32 3, i32 0
+  %8 = load i64, i64* %7, align 8
+  %9 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 2, i32 0
+  %10 = load i64, i64* %9, align 8
+  %11 = icmp eq i64 %10, 0
+  %12 = icmp eq i64 %8, 4294967295
+  %13 = icmp ne i64 %10, %8
+  %14 = select i1 %11, i1 %12, i1 %13
+  br i1 %14, label %67, label %15
+
+15:                                               ; preds = %6
+  %16 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 7
+  %17 = load i64, i64* %16, align 8
+  %18 = icmp eq i64 %17, 0
+  %19 = getelementptr inbounds %"struct.viz::BeginFrameArgs", %"struct.viz::BeginFrameArgs"* %1, i64 0, i32 3, i32 1
+  %20 = load i64, i64* %19, align 8
+  br i1 %18, label %23, label %21
+
+21:                                               ; preds = %15
+  %22 = icmp ugt i64 %17, %20
+  br i1 %22, label %67, label %27
+
+23:                                               ; preds = %15
+  %24 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 2, i32 1
+  %25 = load i64, i64* %24, align 8
+  %26 = icmp eq i64 %25, %20
+  br i1 %26, label %27, label %67
+
+27:                                               ; preds = %23, %21
+  %28 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 25
+  store i64 0, i64* %28, align 8
+  %29 = load i64, i64* %19, align 8
+  %30 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 10
+  store i64 %29, i64* %30, align 8
+  %31 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 3
+  %32 = load i64, i64* %7, align 8
+  %33 = load i64, i64* %19, align 8
+  %34 = getelementptr inbounds %"struct.viz::BeginFrameArgs", %"struct.viz::BeginFrameArgs"* %1, i64 0, i32 8
+  %35 = load i64, i64* %34, align 8
+  %36 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 3, i32 1
+  %37 = load i64, i64* %36, align 8
+  %38 = icmp eq i64 %37, 0
+  br i1 %38, label %47, label %39
+
+39:                                               ; preds = %27
+  %40 = getelementptr inbounds %"struct.cc::FrameSequenceTracker::TrackedFrameData", %"struct.cc::FrameSequenceTracker::TrackedFrameData"* %31, i64 0, i32 0
+  %41 = load i64, i64* %40, align 8
+  %42 = icmp eq i64 %41, %32
+  br i1 %42, label %43, label %47
+
+43:                                               ; preds = %39
+  %44 = sub i64 %33, %35
+  %45 = sub i64 %44, %37
+  %46 = trunc i64 %45 to i32
+  br label %47
+
+47:                                               ; preds = %27, %39, %43
+  %48 = phi i32 [ %46, %43 ], [ 1, %39 ], [ 1, %27 ]
+  %49 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 3, i32 2
+  store i32 %48, i32* %49, align 8
+  %50 = getelementptr inbounds %"struct.cc::FrameSequenceTracker::TrackedFrameData", %"struct.cc::FrameSequenceTracker::TrackedFrameData"* %31, i64 0, i32 0
+  store i64 %32, i64* %50, align 8
+  store i64 %33, i64* %36, align 8
+  br i1 %18, label %55, label %51
+
+51:                                               ; preds = %47
+  %52 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 12
+  %53 = load i64, i64* %52, align 8
+  %54 = icmp ugt i64 %17, %53
+  br i1 %54, label %57, label %55
+
+55:                                               ; preds = %51, %47
+  %56 = load i64, i64* %19, align 8
+  store i64 %56, i64* %16, align 8
+  br label %57
+
+57:                                               ; preds = %51, %55
+  %58 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 4, i32 0, i32 0, i32 0
+  %59 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %58, align 8
+  %60 = getelementptr inbounds %"class.cc::FrameSequenceMetrics", %"class.cc::FrameSequenceMetrics"* %59, i64 0, i32 4, i32 0
+  %61 = load i32, i32* %60, align 4
+  %62 = add i32 %61, %48
+  store i32 %62, i32* %60, align 4
+  %63 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 29
+  %64 = load i64, i64* %63, align 8
+  %65 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 28
+  store i64 %64, i64* %65, align 8
+  %66 = load i64, i64* %19, align 8
+  store i64 %66, i64* %63, align 8
+  br label %67
+
+67:                                               ; preds = %23, %2, %21, %6, %57
+  ret void
+}
+
+; Function Attrs: norecurse nounwind readonly ssp uwtable
+define hidden zeroext i1 @_ZNK2cc20FrameSequenceTracker20ShouldIgnoreSequenceEm(%"class.cc::FrameSequenceTracker"* nocapture readonly, i64) local_unnamed_addr #6 align 2 {
+  %3 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 2, i32 1
+  %4 = load i64, i64* %3, align 8
+  %5 = icmp ne i64 %4, %1
+  ret i1 %5
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN2cc20FrameSequenceTracker24ReportMainFrameProcessedERKN3viz14BeginFrameArgsE(%"class.cc::FrameSequenceTracker"* nocapture, %"struct.viz::BeginFrameArgs"* nocapture readonly dereferenceable(64)) local_unnamed_addr #5 align 2 {
+  %3 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 1
+  %4 = load i32, i32* %3, align 4
+  %5 = icmp eq i32 %4, 0
+  br i1 %5, label %6, label %67
+
+6:                                                ; preds = %2
+  %7 = getelementptr inbounds %"struct.viz::BeginFrameArgs", %"struct.viz::BeginFrameArgs"* %1, i64 0, i32 3, i32 0
+  %8 = load i64, i64* %7, align 8
+  %9 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 2, i32 0
+  %10 = load i64, i64* %9, align 8
+  %11 = icmp eq i64 %10, 0
+  %12 = icmp eq i64 %8, 4294967295
+  %13 = icmp ne i64 %10, %8
+  %14 = select i1 %11, i1 %12, i1 %13
+  br i1 %14, label %67, label %15
+
+15:                                               ; preds = %6
+  %16 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 28
+  %17 = load i64, i64* %16, align 8
+  %18 = icmp eq i64 %17, 0
+  br i1 %18, label %27, label %19
+
+19:                                               ; preds = %15
+  %20 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 11
+  %21 = load i64, i64* %20, align 8
+  %22 = icmp eq i64 %21, %17
+  br i1 %22, label %27, label %23
+
+23:                                               ; preds = %19
+  %24 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 12
+  %25 = load i64, i64* %24, align 8
+  %26 = icmp eq i64 %25, %17
+  br label %27
+
+27:                                               ; preds = %15, %19, %23
+  %28 = phi i1 [ false, %15 ], [ true, %19 ], [ %26, %23 ]
+  %29 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 24
+  %30 = load i64, i64* %29, align 8
+  %31 = icmp eq i64 %30, 0
+  br i1 %31, label %47, label %32
+
+32:                                               ; preds = %27
+  %33 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 26
+  %34 = load i8, i8* %33, align 8, !range !4
+  %35 = icmp ne i8 %34, 0
+  %36 = or i1 %28, %35
+  br i1 %36, label %47, label %37
+
+37:                                               ; preds = %32
+  %38 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 3, i32 2
+  %39 = load i32, i32* %38, align 8
+  %40 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 4, i32 0, i32 0, i32 0
+  %41 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %40, align 8
+  %42 = getelementptr inbounds %"class.cc::FrameSequenceMetrics", %"class.cc::FrameSequenceMetrics"* %41, i64 0, i32 4, i32 0
+  %43 = load i32, i32* %42, align 4
+  %44 = sub i32 %43, %39
+  store i32 %44, i32* %42, align 4
+  %45 = load i64, i64* %16, align 8
+  %46 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 12
+  store i64 %45, i64* %46, align 8
+  br label %47
+
+47:                                               ; preds = %32, %27, %37
+  %48 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 26
+  store i8 0, i8* %48, align 8
+  %49 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 7
+  %50 = load i64, i64* %49, align 8
+  %51 = icmp eq i64 %50, 0
+  br i1 %51, label %67, label %52
+
+52:                                               ; preds = %47
+  %53 = getelementptr inbounds %"struct.viz::BeginFrameArgs", %"struct.viz::BeginFrameArgs"* %1, i64 0, i32 3, i32 1
+  %54 = load i64, i64* %53, align 8
+  %55 = icmp ult i64 %54, %50
+  br i1 %55, label %67, label %56
+
+56:                                               ; preds = %52
+  %57 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 10
+  store i64 %54, i64* %29, align 8
+  %58 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 22
+  %59 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 23
+  %60 = load i64, i64* %58, align 8
+  %61 = load i64, i64* %59, align 8
+  %62 = icmp ult i64 %60, %61
+  %63 = select i1 %62, i64 %61, i64 %60
+  %64 = load i64, i64* %53, align 8
+  %65 = sub i64 %63, %64
+  %66 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 25
+  store i64 %65, i64* %66, align 8
+  store i64 0, i64* %57, align 8
+  br label %67
+
+67:                                               ; preds = %56, %47, %52, %2, %6
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc20FrameSequenceTracker17ReportSubmitFrameEjbRKN3viz13BeginFrameAckERKNS1_14BeginFrameArgsE(%"class.cc::FrameSequenceTracker"*, i32, i1 zeroext, %"struct.viz::BeginFrameAck"* nocapture readonly dereferenceable(32), %"struct.viz::BeginFrameArgs"* nocapture readonly dereferenceable(64)) local_unnamed_addr #1 align 2 {
+  %6 = alloca i32, align 4
+  store i32 %1, i32* %6, align 4
+  %7 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 1
+  %8 = load i32, i32* %7, align 4
+  %9 = icmp eq i32 %8, 1
+  br i1 %9, label %10, label %19
+
+10:                                               ; preds = %5
+  %11 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 9
+  %12 = load i32, i32* %11, align 4
+  %13 = icmp eq i32 %12, 0
+  br i1 %13, label %19, label %14
+
+14:                                               ; preds = %10
+  %15 = sub i32 3, %1
+  %16 = add i32 %15, %12
+  %17 = icmp ugt i32 %16, -2147483648
+  br i1 %17, label %18, label %19
+
+18:                                               ; preds = %14
+  store i32 2, i32* %7, align 4
+  br label %158
+
+19:                                               ; preds = %10, %14, %5
+  %20 = getelementptr inbounds %"struct.viz::BeginFrameAck", %"struct.viz::BeginFrameAck"* %3, i64 0, i32 0, i32 0
+  %21 = load i64, i64* %20, align 8
+  %22 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 2, i32 0
+  %23 = load i64, i64* %22, align 8
+  %24 = icmp eq i64 %23, 0
+  %25 = icmp eq i64 %21, 4294967295
+  %26 = icmp ne i64 %23, %21
+  %27 = select i1 %24, i1 %25, i1 %26
+  br i1 %27, label %34, label %28
+
+28:                                               ; preds = %19
+  %29 = getelementptr inbounds %"struct.viz::BeginFrameAck", %"struct.viz::BeginFrameAck"* %3, i64 0, i32 0, i32 1
+  %30 = load i64, i64* %29, align 8
+  %31 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 2, i32 1
+  %32 = load i64, i64* %31, align 8
+  %33 = icmp eq i64 %32, %30
+  br i1 %33, label %69, label %34
+
+34:                                               ; preds = %28, %19
+  %35 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 20
+  %36 = getelementptr inbounds %"class.base::internal::flat_tree", %"class.base::internal::flat_tree"* %35, i64 0, i32 0, i32 0, i32 0
+  %37 = load i32*, i32** %36, align 8
+  %38 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 20, i32 0, i32 0, i32 1
+  %39 = bitcast i32** %38 to i64*
+  %40 = load i64, i64* %39, align 8
+  %41 = ptrtoint i32* %37 to i64
+  %42 = sub i64 %40, %41
+  %43 = icmp eq i64 %42, 0
+  %44 = inttoptr i64 %40 to i32*
+  br i1 %43, label %60, label %45
+
+45:                                               ; preds = %34
+  %46 = ashr exact i64 %42, 2
+  br label %47
+
+47:                                               ; preds = %47, %45
+  %48 = phi i32* [ %37, %45 ], [ %58, %47 ]
+  %49 = phi i64 [ %46, %45 ], [ %57, %47 ]
+  %50 = lshr i64 %49, 1
+  %51 = getelementptr inbounds i32, i32* %48, i64 %50
+  %52 = load i32, i32* %51, align 4
+  %53 = icmp ult i32 %52, %1
+  %54 = getelementptr inbounds i32, i32* %51, i64 1
+  %55 = xor i64 %50, -1
+  %56 = add i64 %49, %55
+  %57 = select i1 %53, i64 %56, i64 %50
+  %58 = select i1 %53, i32* %54, i32* %48
+  %59 = icmp eq i64 %57, 0
+  br i1 %59, label %60, label %47
+
+60:                                               ; preds = %47, %34
+  %61 = phi i32* [ %37, %34 ], [ %58, %47 ]
+  %62 = icmp eq i32* %61, %44
+  br i1 %62, label %66, label %63
+
+63:                                               ; preds = %60
+  %64 = load i32, i32* %61, align 4
+  %65 = icmp ugt i32 %64, %1
+  br i1 %65, label %66, label %158
+
+66:                                               ; preds = %63, %60
+  %67 = getelementptr inbounds %"class.base::internal::flat_tree", %"class.base::internal::flat_tree"* %35, i64 0, i32 0
+  %68 = call i32* @_ZNSt3__16vectorIjNS_9allocatorIjEEE7emplaceIJRKjEEENS_11__wrap_iterIPjEENS7_IPS5_EEDpOT_(%"class.std::__1::vector"* %67, i32* %61, i32* nonnull dereferenceable(4) %6) #15
+  br label %158
+
+69:                                               ; preds = %28
+  %70 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 23
+  store i64 %30, i64* %70, align 8
+  %71 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 8
+  %72 = load i32, i32* %71, align 8
+  %73 = icmp eq i32 %72, 0
+  br i1 %73, label %74, label %75
+
+74:                                               ; preds = %69
+  store i32 %1, i32* %71, align 8
+  br label %75
+
+75:                                               ; preds = %74, %69
+  %76 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 9
+  store i32 %1, i32* %76, align 4
+  %77 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 16
+  store i8 1, i8* %77, align 1
+  %78 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 26
+  store i8 1, i8* %78, align 8
+  %79 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 4, i32 0, i32 0, i32 0
+  %80 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %79, align 8
+  %81 = load i64, i64* %29, align 8
+  %82 = trunc i64 %81 to i32
+  tail call void @_ZN2cc20FrameSequenceMetrics27NotifySubmitForJankReporterENS0_10ThreadTypeEjj(%"class.cc::FrameSequenceMetrics"* %80, i32 1, i32 %1, i32 %82) #15
+  %83 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 7
+  %84 = load i64, i64* %83, align 8
+  %85 = getelementptr inbounds %"struct.viz::BeginFrameArgs", %"struct.viz::BeginFrameArgs"* %4, i64 0, i32 3, i32 1
+  %86 = load i64, i64* %85, align 8
+  %87 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 11
+  %88 = load i64, i64* %87, align 8
+  %89 = icmp ne i64 %88, 0
+  %90 = icmp ule i64 %86, %88
+  %91 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 12
+  %92 = load i64, i64* %91, align 8
+  %93 = icmp ne i64 %92, 0
+  %94 = icmp eq i64 %86, %92
+  %95 = and i1 %94, %93
+  %96 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 3, i32 1
+  %97 = load i64, i64* %96, align 8
+  %98 = getelementptr inbounds %"struct.viz::BeginFrameArgs", %"struct.viz::BeginFrameArgs"* %4, i64 0, i32 3, i32 0
+  %99 = load i64, i64* %98, align 8
+  %100 = load i64, i64* %22, align 8
+  %101 = icmp eq i64 %100, 0
+  %102 = icmp eq i64 %99, 4294967295
+  %103 = icmp ne i64 %100, %99
+  %104 = select i1 %101, i1 %102, i1 %103
+  %105 = icmp ugt i64 %86, %97
+  %106 = or i1 %105, %104
+  %107 = add i64 %84, -1
+  %108 = icmp uge i64 %107, %86
+  %109 = or i1 %108, %106
+  %110 = and i1 %90, %89
+  %111 = or i1 %110, %109
+  %112 = or i1 %95, %111
+  br i1 %112, label %137, label %113
+
+113:                                              ; preds = %75
+  %114 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 17
+  store i8 1, i8* %114, align 2
+  %115 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %79, align 8
+  %116 = load i64, i64* %85, align 8
+  %117 = trunc i64 %116 to i32
+  tail call void @_ZN2cc20FrameSequenceMetrics27NotifySubmitForJankReporterENS0_10ThreadTypeEjj(%"class.cc::FrameSequenceMetrics"* %115, i32 0, i32 %1, i32 %117) #15
+  %118 = load i64, i64* %85, align 8
+  store i64 %118, i64* %87, align 8
+  %119 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 6
+  tail call void @_ZN4base14circular_dequeIjE25ExpandCapacityIfNecessaryEm(%"class.base::circular_deque"* %119, i64 1) #15
+  %120 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %119, i64 0, i32 0
+  %121 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 6, i32 2
+  %122 = load i64, i64* %121, align 8
+  %123 = tail call dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %120, i64 %122) #15
+  store i32 %1, i32* %123, align 4
+  %124 = load i64, i64* %121, align 8
+  %125 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 6, i32 0, i32 1
+  %126 = load i64, i64* %125, align 8
+  %127 = add i64 %126, -1
+  %128 = icmp eq i64 %124, %127
+  br i1 %128, label %129, label %130
+
+129:                                              ; preds = %113
+  store i64 0, i64* %121, align 8
+  br label %133
+
+130:                                              ; preds = %113
+  %131 = add i64 %124, 1
+  store i64 %131, i64* %121, align 8
+  %132 = icmp eq i64 %131, 0
+  br i1 %132, label %133, label %134
+
+133:                                              ; preds = %130, %129
+  br label %134
+
+134:                                              ; preds = %130, %133
+  %135 = phi i64 [ %127, %133 ], [ %124, %130 ]
+  %136 = tail call dereferenceable(4) i32* @_ZNK4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %120, i64 %135) #15
+  br label %137
+
+137:                                              ; preds = %75, %134
+  br i1 %2, label %138, label %158
+
+138:                                              ; preds = %137
+  %139 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 2
+  tail call void @_ZN4base14circular_dequeIjE25ExpandCapacityIfNecessaryEm(%"class.base::circular_deque"* %139, i64 1) #15
+  %140 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %139, i64 0, i32 0
+  %141 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 2, i32 2
+  %142 = load i64, i64* %141, align 8
+  %143 = tail call dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %140, i64 %142) #15
+  %144 = load i32, i32* %6, align 4
+  store i32 %144, i32* %143, align 4
+  %145 = load i64, i64* %141, align 8
+  %146 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 2, i32 0, i32 1
+  %147 = load i64, i64* %146, align 8
+  %148 = add i64 %147, -1
+  %149 = icmp eq i64 %145, %148
+  br i1 %149, label %150, label %151
+
+150:                                              ; preds = %138
+  store i64 0, i64* %141, align 8
+  br label %154
+
+151:                                              ; preds = %138
+  %152 = add i64 %145, 1
+  store i64 %152, i64* %141, align 8
+  %153 = icmp eq i64 %152, 0
+  br i1 %153, label %154, label %155
+
+154:                                              ; preds = %151, %150
+  br label %155
+
+155:                                              ; preds = %151, %154
+  %156 = phi i64 [ %148, %154 ], [ %145, %151 ]
+  %157 = tail call dereferenceable(4) i32* @_ZNK4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %140, i64 %156) #15
+  br label %158
+
+158:                                              ; preds = %66, %63, %137, %155, %18
+  ret void
+}
+
+declare void @_ZN2cc20FrameSequenceMetrics27NotifySubmitForJankReporterENS0_10ThreadTypeEjj(%"class.cc::FrameSequenceMetrics"*, i32, i32, i32) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc20FrameSequenceTracker14ReportFrameEndERKN3viz14BeginFrameArgsES4_(%"class.cc::FrameSequenceTracker"*, %"struct.viz::BeginFrameArgs"* nocapture readonly dereferenceable(64), %"struct.viz::BeginFrameArgs"* nocapture readnone dereferenceable(64)) local_unnamed_addr #1 align 2 {
+  %4 = getelementptr inbounds %"struct.viz::BeginFrameArgs", %"struct.viz::BeginFrameArgs"* %1, i64 0, i32 3, i32 0
+  %5 = load i64, i64* %4, align 8
+  %6 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 2, i32 0
+  %7 = load i64, i64* %6, align 8
+  %8 = icmp eq i64 %7, 0
+  %9 = icmp eq i64 %5, 4294967295
+  %10 = icmp ne i64 %7, %5
+  %11 = select i1 %8, i1 %9, i1 %10
+  br i1 %11, label %79, label %12
+
+12:                                               ; preds = %3
+  %13 = getelementptr inbounds %"struct.viz::BeginFrameArgs", %"struct.viz::BeginFrameArgs"* %1, i64 0, i32 3, i32 1
+  %14 = load i64, i64* %13, align 8
+  %15 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 2, i32 1
+  %16 = load i64, i64* %15, align 8
+  %17 = icmp eq i64 %16, %14
+  %18 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 18
+  %19 = load i8, i8* %18, align 1, !range !4
+  %20 = icmp eq i8 %19, 0
+  br i1 %20, label %25, label %21
+
+21:                                               ; preds = %12
+  %22 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 3, i32 0
+  store i8 0, i8* %18, align 1
+  %23 = bitcast i64* %6 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %23, i8 0, i64 20, i1 false)
+  %24 = bitcast i64* %22 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %24, i8 0, i64 20, i1 false)
+  br label %25
+
+25:                                               ; preds = %12, %21
+  br i1 %17, label %28, label %26
+
+26:                                               ; preds = %25
+  %27 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 30
+  store i8 0, i8* %27, align 8
+  br label %79
+
+28:                                               ; preds = %25
+  %29 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 16
+  %30 = load i8, i8* %29, align 1, !range !4
+  %31 = icmp eq i8 %30, 0
+  br i1 %31, label %47, label %32
+
+32:                                               ; preds = %28
+  %33 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 17
+  %34 = load i8, i8* %33, align 2, !range !4
+  %35 = icmp eq i8 %34, 0
+  br i1 %35, label %47, label %36
+
+36:                                               ; preds = %32
+  %37 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 25
+  %38 = load i64, i64* %37, align 8
+  %39 = icmp eq i64 %38, 0
+  br i1 %39, label %47, label %40
+
+40:                                               ; preds = %36
+  %41 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 4, i32 0, i32 0, i32 0
+  %42 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %41, align 8
+  %43 = getelementptr inbounds %"class.cc::FrameSequenceMetrics", %"class.cc::FrameSequenceMetrics"* %42, i64 0, i32 4, i32 0
+  %44 = load i32, i32* %43, align 4
+  %45 = trunc i64 %38 to i32
+  %46 = add i32 %44, %45
+  store i32 %46, i32* %43, align 4
+  br label %47
+
+47:                                               ; preds = %36, %32, %28, %40
+  %48 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 15
+  %49 = load i8, i8* %48, align 8, !range !4
+  %50 = icmp eq i8 %49, 0
+  br i1 %50, label %65, label %51
+
+51:                                               ; preds = %47
+  %52 = load i8, i8* %29, align 1, !range !4
+  %53 = icmp eq i8 %52, 0
+  br i1 %53, label %54, label %65
+
+54:                                               ; preds = %51
+  %55 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 4, i32 0, i32 0, i32 0
+  %56 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %55, align 8
+  %57 = getelementptr inbounds %"class.cc::FrameSequenceMetrics", %"class.cc::FrameSequenceMetrics"* %56, i64 0, i32 3, i32 0
+  %58 = load i32, i32* %57, align 4
+  %59 = add i32 %58, -1
+  store i32 %59, i32* %57, align 4
+  %60 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %55, align 8
+  %61 = load i64, i64* %13, align 8
+  %62 = trunc i64 %61 to i32
+  %63 = getelementptr inbounds %"struct.viz::BeginFrameArgs", %"struct.viz::BeginFrameArgs"* %1, i64 0, i32 2, i32 0
+  %64 = load i64, i64* %63, align 8
+  tail call void @_ZN2cc20FrameSequenceMetrics29NotifyNoUpdateForJankReporterENS0_10ThreadTypeEjN4base9TimeDeltaE(%"class.cc::FrameSequenceMetrics"* %60, i32 1, i32 %62, i64 %64) #15
+  store i64 0, i64* %15, align 8
+  br label %65
+
+65:                                               ; preds = %51, %47, %54
+  %66 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 1
+  %67 = load i32, i32* %66, align 4
+  %68 = icmp eq i32 %67, 1
+  br i1 %68, label %69, label %74
+
+69:                                               ; preds = %65
+  %70 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 9
+  %71 = load i32, i32* %70, align 4
+  %72 = icmp eq i32 %71, 0
+  br i1 %72, label %73, label %74
+
+73:                                               ; preds = %69
+  store i32 2, i32* %66, align 4
+  br label %74
+
+74:                                               ; preds = %73, %69, %65
+  store i8 0, i8* %48, align 8
+  store i8 0, i8* %29, align 1
+  %75 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 17
+  store i8 0, i8* %75, align 2
+  %76 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 25
+  store i64 0, i64* %76, align 8
+  %77 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 30
+  store i8 0, i8* %77, align 8
+  %78 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 22
+  store i64 0, i64* %78, align 8
+  br label %79
+
+79:                                               ; preds = %26, %74, %3
+  ret void
+}
+
+declare void @_ZN2cc20FrameSequenceMetrics29NotifyNoUpdateForJankReporterENS0_10ThreadTypeEjN4base9TimeDeltaE(%"class.cc::FrameSequenceMetrics"*, i32, i32, i64) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc20FrameSequenceTracker20ReportFramePresentedEjRKN3gfx20PresentationFeedbackE(%"class.cc::FrameSequenceTracker"*, i32, %"struct.gfx::PresentationFeedback"* nocapture readonly dereferenceable(56)) local_unnamed_addr #1 align 2 {
+  %4 = alloca %"class.logging::CheckError", align 8
+  %5 = alloca %"class.base::TimeDelta", align 8
+  %6 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 9
+  %7 = load i32, i32* %6, align 4
+  %8 = icmp eq i32 %7, 0
+  %9 = sub i32 %1, %7
+  %10 = icmp ugt i32 %9, -2147483648
+  %11 = or i1 %8, %10
+  br i1 %11, label %13, label %12
+
+12:                                               ; preds = %3
+  store i32 0, i32* %6, align 4
+  br label %13
+
+13:                                               ; preds = %3, %12
+  %14 = phi i32 [ %7, %3 ], [ 0, %12 ]
+  %15 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 1
+  %16 = load i32, i32* %15, align 4
+  %17 = icmp eq i32 %16, 1
+  %18 = icmp eq i32 %14, 0
+  %19 = and i1 %17, %18
+  br i1 %19, label %20, label %25
+
+20:                                               ; preds = %13
+  %21 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 30
+  %22 = load i8, i8* %21, align 8, !range !4
+  %23 = icmp eq i8 %22, 0
+  br i1 %23, label %24, label %25
+
+24:                                               ; preds = %20
+  store i32 2, i32* %15, align 4
+  br label %25
+
+25:                                               ; preds = %20, %24, %13
+  %26 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 8
+  %27 = load i32, i32* %26, align 8
+  %28 = icmp eq i32 %27, 0
+  %29 = sub i32 %1, %27
+  %30 = icmp ugt i32 %29, -2147483648
+  %31 = or i1 %28, %30
+  br i1 %31, label %404, label %32
+
+32:                                               ; preds = %25
+  %33 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 20, i32 0, i32 0, i32 0
+  %34 = load i32*, i32** %33, align 8
+  %35 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 20, i32 0, i32 0, i32 1
+  %36 = load i32*, i32** %35, align 8
+  %37 = icmp eq i32* %34, %36
+  %38 = ptrtoint i32* %36 to i64
+  br i1 %37, label %47, label %39
+
+39:                                               ; preds = %32, %44
+  %40 = phi i32* [ %45, %44 ], [ %34, %32 ]
+  %41 = load i32, i32* %40, align 4
+  %42 = sub i32 %41, %1
+  %43 = icmp ugt i32 %42, -2147483648
+  br i1 %43, label %47, label %44
+
+44:                                               ; preds = %39
+  %45 = getelementptr inbounds i32, i32* %40, i64 1
+  %46 = icmp eq i32* %45, %36
+  br i1 %46, label %111, label %39
+
+47:                                               ; preds = %39, %32
+  %48 = phi i32* [ %34, %32 ], [ %40, %39 ]
+  %49 = ptrtoint i32* %48 to i64
+  %50 = icmp eq i32* %48, %36
+  br i1 %50, label %111, label %51
+
+51:                                               ; preds = %47
+  %52 = getelementptr inbounds i32, i32* %48, i64 1
+  %53 = icmp eq i32* %52, %36
+  br i1 %53, label %104, label %54
+
+54:                                               ; preds = %51
+  %55 = getelementptr i32, i32* %36, i64 -2
+  %56 = ptrtoint i32* %55 to i64
+  %57 = sub i64 %56, %49
+  %58 = lshr i64 %57, 2
+  %59 = add nuw nsw i64 %58, 1
+  %60 = and i64 %59, 3
+  %61 = icmp eq i64 %60, 0
+  br i1 %61, label %78, label %62
+
+62:                                               ; preds = %54, %73
+  %63 = phi i32* [ %75, %73 ], [ %52, %54 ]
+  %64 = phi i64 [ %74, %73 ], [ %49, %54 ]
+  %65 = phi i64 [ %76, %73 ], [ %60, %54 ]
+  %66 = load i32, i32* %63, align 4
+  %67 = sub i32 %66, %1
+  %68 = icmp ugt i32 %67, -2147483648
+  br i1 %68, label %73, label %69
+
+69:                                               ; preds = %62
+  %70 = inttoptr i64 %64 to i32*
+  store i32 %66, i32* %70, align 4
+  %71 = getelementptr inbounds i32, i32* %70, i64 1
+  %72 = ptrtoint i32* %71 to i64
+  br label %73
+
+73:                                               ; preds = %69, %62
+  %74 = phi i64 [ %64, %62 ], [ %72, %69 ]
+  %75 = getelementptr inbounds i32, i32* %63, i64 1
+  %76 = add i64 %65, -1
+  %77 = icmp eq i64 %76, 0
+  br i1 %77, label %78, label %62, !llvm.loop !5
+
+78:                                               ; preds = %73, %54
+  %79 = phi i64 [ undef, %54 ], [ %74, %73 ]
+  %80 = phi i32* [ %52, %54 ], [ %75, %73 ]
+  %81 = phi i64 [ %49, %54 ], [ %74, %73 ]
+  %82 = icmp ult i64 %57, 12
+  br i1 %82, label %99, label %83
+
+83:                                               ; preds = %78, %429
+  %84 = phi i32* [ %431, %429 ], [ %80, %78 ]
+  %85 = phi i64 [ %430, %429 ], [ %81, %78 ]
+  %86 = load i32, i32* %84, align 4
+  %87 = sub i32 %86, %1
+  %88 = icmp ugt i32 %87, -2147483648
+  br i1 %88, label %93, label %89
+
+89:                                               ; preds = %83
+  %90 = inttoptr i64 %85 to i32*
+  store i32 %86, i32* %90, align 4
+  %91 = getelementptr inbounds i32, i32* %90, i64 1
+  %92 = ptrtoint i32* %91 to i64
+  br label %93
+
+93:                                               ; preds = %89, %83
+  %94 = phi i64 [ %85, %83 ], [ %92, %89 ]
+  %95 = getelementptr inbounds i32, i32* %84, i64 1
+  %96 = load i32, i32* %95, align 4
+  %97 = sub i32 %96, %1
+  %98 = icmp ugt i32 %97, -2147483648
+  br i1 %98, label %409, label %405
+
+99:                                               ; preds = %429, %78
+  %100 = phi i64 [ %79, %78 ], [ %430, %429 ]
+  %101 = inttoptr i64 %100 to i32*
+  %102 = load i32*, i32** %35, align 8
+  %103 = ptrtoint i32* %102 to i64
+  br label %104
+
+104:                                              ; preds = %99, %51
+  %105 = phi i64 [ %38, %51 ], [ %103, %99 ]
+  %106 = phi i32* [ %36, %51 ], [ %102, %99 ]
+  %107 = phi i32* [ %48, %51 ], [ %101, %99 ]
+  %108 = icmp eq i32* %107, %106
+  br i1 %108, label %111, label %109
+
+109:                                              ; preds = %104
+  store i32* %107, i32** %35, align 8
+  %110 = ptrtoint i32* %107 to i64
+  br label %111
+
+111:                                              ; preds = %44, %47, %104, %109
+  %112 = phi i64 [ %38, %47 ], [ %105, %104 ], [ %110, %109 ], [ %38, %44 ]
+  %113 = load i32*, i32** %33, align 8
+  %114 = ptrtoint i32* %113 to i64
+  %115 = sub i64 %112, %114
+  %116 = icmp eq i64 %115, 0
+  %117 = inttoptr i64 %112 to i32*
+  br i1 %116, label %133, label %118
+
+118:                                              ; preds = %111
+  %119 = ashr exact i64 %115, 2
+  br label %120
+
+120:                                              ; preds = %120, %118
+  %121 = phi i32* [ %113, %118 ], [ %131, %120 ]
+  %122 = phi i64 [ %119, %118 ], [ %130, %120 ]
+  %123 = lshr i64 %122, 1
+  %124 = getelementptr inbounds i32, i32* %121, i64 %123
+  %125 = load i32, i32* %124, align 4
+  %126 = icmp ult i32 %125, %1
+  %127 = getelementptr inbounds i32, i32* %124, i64 1
+  %128 = xor i64 %123, -1
+  %129 = add i64 %122, %128
+  %130 = select i1 %126, i64 %129, i64 %123
+  %131 = select i1 %126, i32* %127, i32* %121
+  %132 = icmp eq i64 %130, 0
+  br i1 %132, label %133, label %120
+
+133:                                              ; preds = %120, %111
+  %134 = phi i32* [ %113, %111 ], [ %131, %120 ]
+  %135 = icmp eq i32* %134, %117
+  br i1 %135, label %139, label %136
+
+136:                                              ; preds = %133
+  %137 = load i32, i32* %134, align 4
+  %138 = icmp ugt i32 %137, %1
+  br i1 %138, label %139, label %404
+
+139:                                              ; preds = %136, %133
+  %140 = getelementptr inbounds %"struct.gfx::PresentationFeedback", %"struct.gfx::PresentationFeedback"* %2, i64 0, i32 1, i32 0
+  %141 = load i64, i64* %140, align 8
+  %142 = icmp eq i64 %141, 0
+  %143 = select i1 %142, i64 16666, i64 %141
+  %144 = sitofp i64 %143 to double
+  %145 = fmul double %144, 1.500000e+00
+  %146 = fcmp oge double %145, 0xC3E0000000000000
+  %147 = fcmp ole double %145, 0x43DFFFFFFFFFFFFF
+  %148 = and i1 %147, %146
+  %149 = fptosi double %145 to i64
+  %150 = icmp sgt i64 %143, -1
+  %151 = select i1 %150, i64 9223372036854775807, i64 -9223372036854775808
+  %152 = select i1 %148, i64 %149, i64 %151
+  %153 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 14, i32 0, i32 0
+  %154 = load i64, i64* %153, align 8
+  %155 = add i64 %152, -9223372036854775807
+  %156 = icmp ult i64 %155, 2
+  br i1 %156, label %164, label %157
+
+157:                                              ; preds = %139
+  %158 = icmp slt i64 %152, 0
+  %159 = select i1 %158, i64 -9223372036854775808, i64 9223372036854775807
+  %160 = tail call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %154, i64 %152) #15
+  %161 = extractvalue { i64, i1 } %160, 1
+  %162 = extractvalue { i64, i1 } %160, 0
+  %163 = select i1 %161, i64 %159, i64 %162, !prof !2
+  br label %172
+
+164:                                              ; preds = %139
+  %165 = add i64 %154, -9223372036854775807
+  %166 = icmp ugt i64 %165, 1
+  %167 = icmp eq i64 %154, %152
+  %168 = or i1 %166, %167
+  br i1 %168, label %172, label %169
+
+169:                                              ; preds = %164
+  %170 = bitcast %"class.logging::CheckError"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %170) #15
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %4, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.15, i64 0, i64 0), i32 378, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.16, i64 0, i64 0)) #15
+  %171 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %4) #15
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %4) #15
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %170) #15
+  br label %172
+
+172:                                              ; preds = %157, %164, %169
+  %173 = phi i64 [ %163, %157 ], [ %152, %164 ], [ %152, %169 ]
+  %174 = getelementptr inbounds %"struct.gfx::PresentationFeedback", %"struct.gfx::PresentationFeedback"* %2, i64 0, i32 2
+  %175 = load i32, i32* %174, align 8
+  %176 = and i32 %175, 16
+  %177 = icmp ne i32 %176, 0
+  %178 = or i1 %8, %177
+  br i1 %178, label %209, label %179
+
+179:                                              ; preds = %172
+  %180 = load i64, i64* %153, align 8
+  %181 = icmp eq i64 %180, 0
+  br i1 %181, label %192, label %182
+
+182:                                              ; preds = %179
+  %183 = getelementptr inbounds %"struct.gfx::PresentationFeedback", %"struct.gfx::PresentationFeedback"* %2, i64 0, i32 0, i32 0, i32 0
+  %184 = load i64, i64* %183, align 8
+  %185 = icmp slt i64 %173, %184
+  br i1 %185, label %186, label %192
+
+186:                                              ; preds = %182
+  %187 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 4, i32 0, i32 0, i32 0
+  %188 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %187, align 8
+  %189 = getelementptr inbounds %"class.cc::FrameSequenceMetrics", %"class.cc::FrameSequenceMetrics"* %188, i64 0, i32 3, i32 2
+  %190 = load i32, i32* %189, align 4
+  %191 = add i32 %190, 1
+  store i32 %191, i32* %189, align 4
+  br label %192
+
+192:                                              ; preds = %186, %182, %179
+  %193 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 4, i32 0, i32 0, i32 0
+  %194 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %193, align 8
+  %195 = getelementptr inbounds %"class.cc::FrameSequenceMetrics", %"class.cc::FrameSequenceMetrics"* %194, i64 0, i32 3, i32 1
+  %196 = load i32, i32* %195, align 4
+  %197 = add i32 %196, 1
+  store i32 %197, i32* %195, align 4
+  %198 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %193, align 8
+  %199 = call i32 @_ZNK2cc20FrameSequenceMetrics18GetEffectiveThreadEv(%"class.cc::FrameSequenceMetrics"* %198) #15
+  %200 = icmp eq i32 %199, 1
+  br i1 %200, label %201, label %205
+
+201:                                              ; preds = %192
+  %202 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %193, align 8
+  %203 = getelementptr inbounds %"struct.gfx::PresentationFeedback", %"struct.gfx::PresentationFeedback"* %2, i64 0, i32 0, i32 0, i32 0
+  %204 = load i64, i64* %203, align 8
+  call void @_ZN2cc20FrameSequenceMetrics12AdvanceTraceEN4base9TimeTicksE(%"class.cc::FrameSequenceMetrics"* %202, i64 %204) #15
+  br label %205
+
+205:                                              ; preds = %201, %192
+  %206 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %193, align 8
+  %207 = getelementptr inbounds %"struct.gfx::PresentationFeedback", %"struct.gfx::PresentationFeedback"* %2, i64 0, i32 0, i32 0, i32 0
+  %208 = load i64, i64* %207, align 8
+  call void @_ZN2cc20FrameSequenceMetrics11ComputeJankENS0_10ThreadTypeEjN4base9TimeTicksENS2_9TimeDeltaE(%"class.cc::FrameSequenceMetrics"* %206, i32 1, i32 %1, i64 %208, i64 %143) #15
+  br label %209
+
+209:                                              ; preds = %172, %205
+  br i1 %177, label %210, label %213
+
+210:                                              ; preds = %209
+  %211 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 2, i32 2
+  %212 = load i64, i64* %211, align 8
+  br label %374
+
+213:                                              ; preds = %209
+  %214 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 6
+  %215 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 6, i32 1
+  %216 = load i64, i64* %215, align 8
+  %217 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 6, i32 2
+  %218 = load i64, i64* %217, align 8
+  %219 = icmp ult i64 %218, %216
+  br i1 %219, label %222, label %220
+
+220:                                              ; preds = %213
+  %221 = sub i64 %218, %216
+  br label %227
+
+222:                                              ; preds = %213
+  %223 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 6, i32 0, i32 1
+  %224 = load i64, i64* %223, align 8
+  %225 = sub i64 %218, %216
+  %226 = add i64 %225, %224
+  br label %227
+
+227:                                              ; preds = %220, %222
+  %228 = phi i64 [ %221, %220 ], [ %226, %222 ]
+  %229 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %214, i64 0, i32 0
+  %230 = icmp eq i64 %218, %216
+  br i1 %230, label %256, label %231
+
+231:                                              ; preds = %227
+  %232 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 6, i32 0, i32 1
+  br label %233
+
+233:                                              ; preds = %231, %240
+  %234 = phi i64 [ %216, %231 ], [ %250, %240 ]
+  %235 = call dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %229, i64 %234) #15
+  %236 = load i32, i32* %235, align 4
+  %237 = sub i32 %1, %236
+  %238 = icmp ult i32 %237, -2147483647
+  %239 = load i64, i64* %215, align 8
+  br i1 %238, label %240, label %253
+
+240:                                              ; preds = %233
+  %241 = call dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %229, i64 %239) #15
+  %242 = load i64, i64* %215, align 8
+  %243 = add i64 %242, 1
+  %244 = call dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %229, i64 %243) #15
+  %245 = load i64, i64* %215, align 8
+  %246 = add i64 %245, 1
+  %247 = load i64, i64* %232, align 8
+  %248 = icmp eq i64 %246, %247
+  %249 = select i1 %248, i64 0, i64 %246
+  store i64 %249, i64* %215, align 8
+  call void @_ZN4base14circular_dequeIjE25ShrinkCapacityIfNecessaryEv(%"class.base::circular_deque"* %214) #15
+  %250 = load i64, i64* %215, align 8
+  %251 = load i64, i64* %217, align 8
+  %252 = icmp eq i64 %250, %251
+  br i1 %252, label %256, label %233
+
+253:                                              ; preds = %233
+  %254 = load i64, i64* %217, align 8
+  %255 = icmp ult i64 %254, %239
+  br i1 %255, label %260, label %256
+
+256:                                              ; preds = %240, %227, %253
+  %257 = phi i64 [ %239, %253 ], [ %216, %227 ], [ %250, %240 ]
+  %258 = phi i64 [ %254, %253 ], [ %216, %227 ], [ %250, %240 ]
+  %259 = sub i64 %258, %257
+  br label %265
+
+260:                                              ; preds = %253
+  %261 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 6, i32 0, i32 1
+  %262 = load i64, i64* %261, align 8
+  %263 = sub i64 %254, %239
+  %264 = add i64 %263, %262
+  br label %265
+
+265:                                              ; preds = %256, %260
+  %266 = phi i64 [ %257, %256 ], [ %239, %260 ]
+  %267 = phi i64 [ %258, %256 ], [ %254, %260 ]
+  %268 = phi i64 [ %259, %256 ], [ %264, %260 ]
+  %269 = and i64 %228, 4294967295
+  %270 = icmp ult i64 %268, %269
+  br i1 %270, label %271, label %290
+
+271:                                              ; preds = %265
+  %272 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 4, i32 0, i32 0, i32 0
+  %273 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %272, align 8
+  %274 = getelementptr inbounds %"class.cc::FrameSequenceMetrics", %"class.cc::FrameSequenceMetrics"* %273, i64 0, i32 4, i32 1
+  %275 = load i32, i32* %274, align 4
+  %276 = add i32 %275, 1
+  store i32 %276, i32* %274, align 4
+  %277 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %272, align 8
+  %278 = call i32 @_ZNK2cc20FrameSequenceMetrics18GetEffectiveThreadEv(%"class.cc::FrameSequenceMetrics"* %277) #15
+  %279 = icmp eq i32 %278, 0
+  br i1 %279, label %280, label %284
+
+280:                                              ; preds = %271
+  %281 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %272, align 8
+  %282 = getelementptr inbounds %"struct.gfx::PresentationFeedback", %"struct.gfx::PresentationFeedback"* %2, i64 0, i32 0, i32 0, i32 0
+  %283 = load i64, i64* %282, align 8
+  call void @_ZN2cc20FrameSequenceMetrics12AdvanceTraceEN4base9TimeTicksE(%"class.cc::FrameSequenceMetrics"* %281, i64 %283) #15
+  br label %284
+
+284:                                              ; preds = %280, %271
+  %285 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %272, align 8
+  %286 = getelementptr inbounds %"struct.gfx::PresentationFeedback", %"struct.gfx::PresentationFeedback"* %2, i64 0, i32 0, i32 0, i32 0
+  %287 = load i64, i64* %286, align 8
+  call void @_ZN2cc20FrameSequenceMetrics11ComputeJankENS0_10ThreadTypeEjN4base9TimeTicksENS2_9TimeDeltaE(%"class.cc::FrameSequenceMetrics"* %285, i32 0, i32 %1, i64 %287, i64 %143) #15
+  %288 = load i64, i64* %215, align 8
+  %289 = load i64, i64* %217, align 8
+  br label %290
+
+290:                                              ; preds = %284, %265
+  %291 = phi i64 [ %289, %284 ], [ %267, %265 ]
+  %292 = phi i64 [ %288, %284 ], [ %266, %265 ]
+  %293 = icmp ult i64 %291, %292
+  br i1 %293, label %296, label %294
+
+294:                                              ; preds = %290
+  %295 = sub i64 %291, %292
+  br label %301
+
+296:                                              ; preds = %290
+  %297 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 6, i32 0, i32 1
+  %298 = load i64, i64* %297, align 8
+  %299 = sub i64 %291, %292
+  %300 = add i64 %299, %298
+  br label %301
+
+301:                                              ; preds = %294, %296
+  %302 = phi i64 [ %295, %294 ], [ %300, %296 ]
+  %303 = icmp ult i64 %302, %269
+  br i1 %303, label %304, label %317
+
+304:                                              ; preds = %301
+  %305 = load i64, i64* %153, align 8
+  %306 = icmp eq i64 %305, 0
+  br i1 %306, label %317, label %307
+
+307:                                              ; preds = %304
+  %308 = getelementptr inbounds %"struct.gfx::PresentationFeedback", %"struct.gfx::PresentationFeedback"* %2, i64 0, i32 0, i32 0, i32 0
+  %309 = load i64, i64* %308, align 8
+  %310 = icmp slt i64 %173, %309
+  br i1 %310, label %311, label %317
+
+311:                                              ; preds = %307
+  %312 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 4, i32 0, i32 0, i32 0
+  %313 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %312, align 8
+  %314 = getelementptr inbounds %"class.cc::FrameSequenceMetrics", %"class.cc::FrameSequenceMetrics"* %313, i64 0, i32 4, i32 2
+  %315 = load i32, i32* %314, align 4
+  %316 = add i32 %315, 1
+  store i32 %316, i32* %314, align 4
+  br label %317
+
+317:                                              ; preds = %304, %307, %311, %301
+  %318 = getelementptr inbounds %"struct.gfx::PresentationFeedback", %"struct.gfx::PresentationFeedback"* %2, i64 0, i32 0, i32 0, i32 0
+  %319 = load i64, i64* %318, align 8
+  store i64 %319, i64* %153, align 8
+  %320 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 0
+  %321 = load i8, i8* %320, align 8, !range !4
+  %322 = icmp eq i8 %321, 0
+  br i1 %322, label %344, label %323
+
+323:                                              ; preds = %317
+  %324 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 1, i32 0, i32 0
+  %325 = load i64, i64* %324, align 8
+  %326 = load i64, i64* %318, align 8
+  %327 = sub nsw i64 %326, %325
+  %328 = load i64, i64* %140, align 8
+  %329 = icmp eq i64 %328, 0
+  %330 = select i1 %329, i64 16666, i64 %328
+  %331 = bitcast %"class.base::TimeDelta"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %331) #15
+  %332 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %327, i64 1000) #15
+  %333 = extractvalue { i64, i1 } %332, 1
+  %334 = extractvalue { i64, i1 } %332, 0
+  %335 = select i1 %333, i64 9223372036854775807, i64 %334, !prof !2
+  %336 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %5, i64 0, i32 0
+  store i64 %335, i64* %336, align 8
+  %337 = call i64 @_ZNK4base9TimeDelta6IntDivES0_(%"class.base::TimeDelta"* nonnull %5, i64 %330)
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %331) #15
+  %338 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 4, i32 0, i32 0, i32 0
+  %339 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %338, align 8
+  %340 = getelementptr inbounds %"class.cc::FrameSequenceMetrics", %"class.cc::FrameSequenceMetrics"* %339, i64 0, i32 6
+  %341 = load i32, i32* %340, align 4
+  %342 = trunc i64 %337 to i32
+  %343 = add i32 %341, %342
+  store i32 %343, i32* %340, align 4
+  br label %344
+
+344:                                              ; preds = %317, %323
+  %345 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 2, i32 1
+  %346 = load i64, i64* %345, align 8
+  %347 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 2, i32 2
+  %348 = load i64, i64* %347, align 8
+  %349 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 2, i32 0
+  %350 = icmp eq i64 %346, %348
+  br i1 %350, label %367, label %351
+
+351:                                              ; preds = %344
+  %352 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 2, i32 0, i32 1
+  br label %353
+
+353:                                              ; preds = %358, %351
+  %354 = phi i64 [ %346, %351 ], [ %362, %358 ]
+  %355 = call dereferenceable(4) i32* @_ZNK4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %349, i64 %354) #15
+  %356 = load i32, i32* %355, align 4
+  %357 = icmp eq i32 %356, %1
+  br i1 %357, label %364, label %358
+
+358:                                              ; preds = %353
+  %359 = add i64 %354, 1
+  %360 = load i64, i64* %352, align 8
+  %361 = icmp eq i64 %359, %360
+  %362 = select i1 %361, i64 0, i64 %359
+  %363 = icmp eq i64 %362, %348
+  br i1 %363, label %364, label %353
+
+364:                                              ; preds = %358, %353
+  %365 = phi i64 [ %354, %353 ], [ %348, %358 ]
+  %366 = load i64, i64* %347, align 8
+  br label %367
+
+367:                                              ; preds = %344, %364
+  %368 = phi i64 [ %346, %344 ], [ %366, %364 ]
+  %369 = phi i64 [ %346, %344 ], [ %365, %364 ]
+  %370 = icmp ne i64 %369, %368
+  %371 = zext i1 %370 to i8
+  store i8 %371, i8* %320, align 8
+  %372 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 1, i32 0, i32 0
+  %373 = load i64, i64* %318, align 8
+  store i64 %373, i64* %372, align 8
+  br label %374
+
+374:                                              ; preds = %210, %367
+  %375 = phi i64 [ %212, %210 ], [ %368, %367 ]
+  %376 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 2
+  %377 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %376, i64 0, i32 0
+  %378 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 2, i32 1
+  %379 = load i64, i64* %378, align 8
+  %380 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 2, i32 2
+  %381 = icmp eq i64 %379, %375
+  br i1 %381, label %404, label %382
+
+382:                                              ; preds = %374
+  %383 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 5, i32 2, i32 0, i32 1
+  br label %384
+
+384:                                              ; preds = %382, %390
+  %385 = phi i64 [ %379, %382 ], [ %401, %390 ]
+  %386 = call dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %377, i64 %385) #15
+  %387 = load i32, i32* %386, align 4
+  %388 = sub i32 %1, %387
+  %389 = icmp ugt i32 %388, -2147483648
+  br i1 %389, label %404, label %390
+
+390:                                              ; preds = %384
+  %391 = load i64, i64* %378, align 8
+  %392 = call dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %377, i64 %391) #15
+  %393 = load i64, i64* %378, align 8
+  %394 = add i64 %393, 1
+  %395 = call dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %377, i64 %394) #15
+  %396 = load i64, i64* %378, align 8
+  %397 = add i64 %396, 1
+  %398 = load i64, i64* %383, align 8
+  %399 = icmp eq i64 %397, %398
+  %400 = select i1 %399, i64 0, i64 %397
+  store i64 %400, i64* %378, align 8
+  call void @_ZN4base14circular_dequeIjE25ShrinkCapacityIfNecessaryEv(%"class.base::circular_deque"* %376) #15
+  %401 = load i64, i64* %378, align 8
+  %402 = load i64, i64* %380, align 8
+  %403 = icmp eq i64 %401, %402
+  br i1 %403, label %404, label %384
+
+404:                                              ; preds = %384, %390, %374, %136, %25
+  ret void
+
+405:                                              ; preds = %93
+  %406 = inttoptr i64 %94 to i32*
+  store i32 %96, i32* %406, align 4
+  %407 = getelementptr inbounds i32, i32* %406, i64 1
+  %408 = ptrtoint i32* %407 to i64
+  br label %409
+
+409:                                              ; preds = %405, %93
+  %410 = phi i64 [ %94, %93 ], [ %408, %405 ]
+  %411 = getelementptr inbounds i32, i32* %84, i64 2
+  %412 = load i32, i32* %411, align 4
+  %413 = sub i32 %412, %1
+  %414 = icmp ugt i32 %413, -2147483648
+  br i1 %414, label %419, label %415
+
+415:                                              ; preds = %409
+  %416 = inttoptr i64 %410 to i32*
+  store i32 %412, i32* %416, align 4
+  %417 = getelementptr inbounds i32, i32* %416, i64 1
+  %418 = ptrtoint i32* %417 to i64
+  br label %419
+
+419:                                              ; preds = %415, %409
+  %420 = phi i64 [ %410, %409 ], [ %418, %415 ]
+  %421 = getelementptr inbounds i32, i32* %84, i64 3
+  %422 = load i32, i32* %421, align 4
+  %423 = sub i32 %422, %1
+  %424 = icmp ugt i32 %423, -2147483648
+  br i1 %424, label %429, label %425
+
+425:                                              ; preds = %419
+  %426 = inttoptr i64 %420 to i32*
+  store i32 %422, i32* %426, align 4
+  %427 = getelementptr inbounds i32, i32* %426, i64 1
+  %428 = ptrtoint i32* %427 to i64
+  br label %429
+
+429:                                              ; preds = %425, %419
+  %430 = phi i64 [ %420, %419 ], [ %428, %425 ]
+  %431 = getelementptr inbounds i32, i32* %84, i64 4
+  %432 = icmp eq i32* %431, %36
+  br i1 %432, label %99, label %83
+}
+
+declare i32 @_ZNK2cc20FrameSequenceMetrics18GetEffectiveThreadEv(%"class.cc::FrameSequenceMetrics"*) local_unnamed_addr #3
+
+declare void @_ZN2cc20FrameSequenceMetrics12AdvanceTraceEN4base9TimeTicksE(%"class.cc::FrameSequenceMetrics"*, i64) local_unnamed_addr #3
+
+declare void @_ZN2cc20FrameSequenceMetrics11ComputeJankENS0_10ThreadTypeEjN4base9TimeTicksENS2_9TimeDeltaE(%"class.cc::FrameSequenceMetrics"*, i32, i32, i64, i64) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden i64 @_ZNK4base9TimeDelta6IntDivES0_(%"class.base::TimeDelta"*, i64) local_unnamed_addr #1 comdat align 2 {
+  %3 = alloca %"class.logging::CheckError", align 8
+  %4 = alloca %"class.logging::CheckError", align 8
+  %5 = getelementptr inbounds %"class.base::TimeDelta", %"class.base::TimeDelta"* %0, i64 0, i32 0
+  %6 = load i64, i64* %5, align 8
+  %7 = add i64 %6, -9223372036854775807
+  %8 = icmp ult i64 %7, 2
+  br i1 %8, label %20, label %9
+
+9:                                                ; preds = %2
+  %10 = icmp eq i64 %1, 0
+  br i1 %10, label %13, label %11
+
+11:                                               ; preds = %9
+  %12 = sdiv i64 %6, %1
+  br label %38
+
+13:                                               ; preds = %9
+  %14 = icmp eq i64 %6, 0
+  br i1 %14, label %15, label %20
+
+15:                                               ; preds = %13
+  %16 = bitcast %"class.logging::CheckError"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %16) #15
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %3, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.15, i64 0, i64 0), i32 313, i8* getelementptr inbounds ([27 x i8], [27 x i8]* @.str.17, i64 0, i64 0)) #15
+  %17 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %3) #15
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %3) #15
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %16) #15
+  %18 = load i64, i64* %5, align 8
+  %19 = add i64 %18, -9223372036854775807
+  br label %20
+
+20:                                               ; preds = %2, %13, %15
+  %21 = phi i64 [ %7, %2 ], [ %7, %13 ], [ %19, %15 ]
+  %22 = phi i64 [ %6, %2 ], [ %6, %13 ], [ %18, %15 ]
+  %23 = add i64 %1, -9223372036854775807
+  %24 = or i64 %21, %23
+  %25 = icmp ult i64 %24, 2
+  br i1 %25, label %26, label %30
+
+26:                                               ; preds = %20
+  %27 = bitcast %"class.logging::CheckError"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %27) #15
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %4, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.15, i64 0, i64 0), i32 314, i8* getelementptr inbounds ([25 x i8], [25 x i8]* @.str.18, i64 0, i64 0)) #15
+  %28 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %4) #15
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %4) #15
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %27) #15
+  %29 = load i64, i64* %5, align 8
+  br label %30
+
+30:                                               ; preds = %20, %26
+  %31 = phi i64 [ %22, %20 ], [ %29, %26 ]
+  %32 = lshr i64 %31, 63
+  %33 = trunc i64 %32 to i32
+  %34 = lshr i64 %1, 63
+  %35 = trunc i64 %34 to i32
+  %36 = icmp eq i32 %33, %35
+  %37 = select i1 %36, i64 9223372036854775807, i64 -9223372036854775808
+  br label %38
+
+38:                                               ; preds = %30, %11
+  %39 = phi i64 [ %37, %30 ], [ %12, %11 ]
+  ret i64 %39
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden void @_ZN2cc20FrameSequenceTracker29ReportImplFrameCausedNoDamageERKN3viz13BeginFrameAckE(%"class.cc::FrameSequenceTracker"* nocapture, %"struct.viz::BeginFrameAck"* nocapture readonly dereferenceable(32)) local_unnamed_addr #5 align 2 {
+  %3 = getelementptr inbounds %"struct.viz::BeginFrameAck", %"struct.viz::BeginFrameAck"* %1, i64 0, i32 0, i32 0
+  %4 = load i64, i64* %3, align 8
+  %5 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 2, i32 0
+  %6 = load i64, i64* %5, align 8
+  %7 = icmp eq i64 %6, 0
+  %8 = icmp eq i64 %4, 4294967295
+  %9 = icmp ne i64 %6, %4
+  %10 = select i1 %7, i1 %8, i1 %9
+  br i1 %10, label %20, label %11
+
+11:                                               ; preds = %2
+  %12 = getelementptr inbounds %"struct.viz::BeginFrameAck", %"struct.viz::BeginFrameAck"* %1, i64 0, i32 0, i32 1
+  %13 = load i64, i64* %12, align 8
+  %14 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 2, i32 1
+  %15 = load i64, i64* %14, align 8
+  %16 = icmp eq i64 %15, %13
+  br i1 %16, label %17, label %20
+
+17:                                               ; preds = %11
+  %18 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 23
+  store i64 %13, i64* %18, align 8
+  %19 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 15
+  store i8 1, i8* %19, align 8
+  br label %20
+
+20:                                               ; preds = %11, %2, %17
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc20FrameSequenceTracker29ReportMainFrameCausedNoDamageERKN3viz14BeginFrameArgsE(%"class.cc::FrameSequenceTracker"* nocapture, %"struct.viz::BeginFrameArgs"* nocapture readonly dereferenceable(64)) local_unnamed_addr #1 align 2 {
+  %3 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 1
+  %4 = load i32, i32* %3, align 4
+  %5 = icmp eq i32 %4, 0
+  br i1 %5, label %6, label %41
+
+6:                                                ; preds = %2
+  %7 = getelementptr inbounds %"struct.viz::BeginFrameArgs", %"struct.viz::BeginFrameArgs"* %1, i64 0, i32 3, i32 0
+  %8 = load i64, i64* %7, align 8
+  %9 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 2, i32 0
+  %10 = load i64, i64* %9, align 8
+  %11 = icmp eq i64 %10, 0
+  %12 = icmp eq i64 %8, 4294967295
+  %13 = icmp ne i64 %10, %8
+  %14 = select i1 %11, i1 %12, i1 %13
+  br i1 %14, label %41, label %15
+
+15:                                               ; preds = %6
+  %16 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 7
+  %17 = load i64, i64* %16, align 8
+  %18 = icmp eq i64 %17, 0
+  br i1 %18, label %41, label %19
+
+19:                                               ; preds = %15
+  %20 = getelementptr inbounds %"struct.viz::BeginFrameArgs", %"struct.viz::BeginFrameArgs"* %1, i64 0, i32 3, i32 1
+  %21 = load i64, i64* %20, align 8
+  %22 = icmp ugt i64 %17, %21
+  br i1 %22, label %41, label %23
+
+23:                                               ; preds = %19
+  %24 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 12
+  %25 = load i64, i64* %24, align 8
+  %26 = icmp eq i64 %25, %21
+  br i1 %26, label %41, label %27
+
+27:                                               ; preds = %23
+  %28 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 10
+  store i64 0, i64* %28, align 8
+  %29 = load i64, i64* %20, align 8
+  store i64 %29, i64* %24, align 8
+  %30 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 4, i32 0, i32 0, i32 0
+  %31 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %30, align 8
+  %32 = getelementptr inbounds %"class.cc::FrameSequenceMetrics", %"class.cc::FrameSequenceMetrics"* %31, i64 0, i32 4, i32 0
+  %33 = load i32, i32* %32, align 4
+  %34 = add i32 %33, -1
+  store i32 %34, i32* %32, align 4
+  %35 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %30, align 8
+  %36 = load i64, i64* %20, align 8
+  %37 = trunc i64 %36 to i32
+  %38 = getelementptr inbounds %"struct.viz::BeginFrameArgs", %"struct.viz::BeginFrameArgs"* %1, i64 0, i32 2, i32 0
+  %39 = load i64, i64* %38, align 8
+  tail call void @_ZN2cc20FrameSequenceMetrics29NotifyNoUpdateForJankReporterENS0_10ThreadTypeEjN4base9TimeDeltaE(%"class.cc::FrameSequenceMetrics"* %35, i32 0, i32 %37, i64 %39) #15
+  %40 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 3, i32 1
+  store i64 0, i64* %40, align 8
+  br label %41
+
+41:                                               ; preds = %15, %2, %23, %19, %6, %27
+  ret void
+}
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable writeonly
+define hidden void @_ZN2cc20FrameSequenceTracker20PauseFrameProductionEv(%"class.cc::FrameSequenceTracker"* nocapture) local_unnamed_addr #7 align 2 {
+  %2 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 18
+  store i8 1, i8* %2, align 1
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden zeroext i1 @_ZNK2cc20FrameSequenceTracker22ShouldReportMetricsNowERKN3viz14BeginFrameArgsE(%"class.cc::FrameSequenceTracker"* nocapture readonly, %"struct.viz::BeginFrameArgs"* nocapture readonly dereferenceable(64)) local_unnamed_addr #1 align 2 {
+  %3 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 4, i32 0, i32 0, i32 0
+  %4 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %3, align 8
+  %5 = tail call zeroext i1 @_ZNK2cc20FrameSequenceMetrics25HasEnoughDataForReportingEv(%"class.cc::FrameSequenceMetrics"* %4) #15
+  br i1 %5, label %6, label %17
+
+6:                                                ; preds = %2
+  %7 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 13, i32 0, i32 0
+  %8 = load i64, i64* %7, align 8
+  %9 = icmp eq i64 %8, 0
+  br i1 %9, label %17, label %10
+
+10:                                               ; preds = %6
+  %11 = getelementptr inbounds %"struct.viz::BeginFrameArgs", %"struct.viz::BeginFrameArgs"* %1, i64 0, i32 0, i32 0, i32 0
+  %12 = load i64, i64* %11, align 8
+  %13 = sub nsw i64 %12, %8
+  %14 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 21, i32 0
+  %15 = load i64, i64* %14, align 8
+  %16 = icmp sge i64 %13, %15
+  br label %17
+
+17:                                               ; preds = %10, %6, %2
+  %18 = phi i1 [ false, %6 ], [ false, %2 ], [ %16, %10 ]
+  ret i1 %18
+}
+
+declare zeroext i1 @_ZNK2cc20FrameSequenceMetrics25HasEnoughDataForReportingEv(%"class.cc::FrameSequenceMetrics"*) local_unnamed_addr #3
+
+; Function Attrs: nofree norecurse nounwind ssp uwtable
+define hidden %"class.cc::FrameSequenceMetrics"* @_ZN2cc20FrameSequenceTracker11TakeMetricsEv(%"class.cc::FrameSequenceTracker"* nocapture) local_unnamed_addr #5 align 2 {
+  %2 = getelementptr inbounds %"class.cc::FrameSequenceTracker", %"class.cc::FrameSequenceTracker"* %0, i64 0, i32 4, i32 0, i32 0, i32 0
+  %3 = load %"class.cc::FrameSequenceMetrics"*, %"class.cc::FrameSequenceMetrics"** %2, align 8
+  store %"class.cc::FrameSequenceMetrics"* null, %"class.cc::FrameSequenceMetrics"** %2, align 8
+  ret %"class.cc::FrameSequenceMetrics"* %3
+}
+
+declare void @_ZN2cc20FrameSequenceMetrics18ReportLeftoverDataEv(%"class.cc::FrameSequenceMetrics"*) local_unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc20FrameSequenceTracker19CheckerboardingDataC2Ev(%"struct.cc::FrameSequenceTracker::CheckerboardingData"* nocapture) unnamed_addr #1 align 2 {
+  %2 = getelementptr inbounds %"struct.cc::FrameSequenceTracker::CheckerboardingData", %"struct.cc::FrameSequenceTracker::CheckerboardingData"* %0, i64 0, i32 0
+  store i8 0, i8* %2, align 8
+  %3 = getelementptr inbounds %"struct.cc::FrameSequenceTracker::CheckerboardingData", %"struct.cc::FrameSequenceTracker::CheckerboardingData"* %0, i64 0, i32 1, i32 0, i32 0
+  %4 = bitcast i64* %3 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %4, i8 0, i64 40, i1 false)
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define hidden void @_ZN2cc20FrameSequenceTracker19CheckerboardingDataD2Ev(%"struct.cc::FrameSequenceTracker::CheckerboardingData"*) unnamed_addr #1 align 2 {
+  %2 = getelementptr inbounds %"struct.cc::FrameSequenceTracker::CheckerboardingData", %"struct.cc::FrameSequenceTracker::CheckerboardingData"* %0, i64 0, i32 2
+  tail call void @_ZN4base14circular_dequeIjED2Ev(%"class.base::circular_deque"* %2) #15
+  ret void
+}
+
+declare i64 @_ZN20trace_event_internal37AddTraceEventWithThreadIdAndTimestampEcPKhPKcS3_yyiRKN4base9TimeTicksEPNS4_11trace_event14TraceArgumentsEj(i8 signext, i8*, i8*, i8*, i64, i64, i32, %"class.base::TimeTicks"* dereferenceable(8), %"class.base::trace_event::TraceArguments"*, i32) local_unnamed_addr #3
+
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) local_unnamed_addr #8
+
+; Function Attrs: cold noreturn nounwind
+declare void @llvm.trap() #9
+
+declare void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* sret, i8*, i32, i8*) local_unnamed_addr #3
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"*) local_unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"*) unnamed_addr #4
+
+; Function Attrs: nounwind readnone speculatable
+declare { i64, i1 } @llvm.sadd.with.overflow.i64(i64, i64) #10
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden dereferenceable(4) i32* @_ZNK4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"*, i64) local_unnamed_addr #1 comdat align 2 {
+  %3 = alloca %"class.logging::CheckOpResult", align 8
+  %4 = alloca %"class.logging::CheckOpResult", align 8
+  %5 = alloca %"class.logging::CheckError", align 8
+  %6 = bitcast %"class.logging::CheckOpResult"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %6) #15
+  %7 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %4, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %7, align 8
+  %8 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %0, i64 0, i32 1
+  %9 = load i64, i64* %8, align 8
+  %10 = bitcast %"class.logging::CheckOpResult"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %10)
+  %11 = icmp ult i64 %9, %1
+  br i1 %11, label %13, label %12
+
+12:                                               ; preds = %2
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* null, i8** %7, align 8
+  br label %22
+
+13:                                               ; preds = %2
+  %14 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 %1) #15
+  %15 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 %9) #15
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %3, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.19, i64 0, i64 0), i8* %14, i8* %15) #15
+  %16 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %3, i64 0, i32 0
+  %17 = load i8*, i8** %16, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* %17, i8** %7, align 8
+  %18 = icmp eq i8* %17, null
+  br i1 %18, label %22, label %19
+
+19:                                               ; preds = %13
+  %20 = bitcast %"class.logging::CheckError"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %20) #15
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %5, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.20, i64 0, i64 0), i32 89, %"class.logging::CheckOpResult"* nonnull %4) #15
+  %21 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %5) #15
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %5) #15
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %20) #15
+  br label %22
+
+22:                                               ; preds = %12, %13, %19
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %6) #15
+  %23 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %0, i64 0, i32 0
+  %24 = load i32*, i32** %23, align 8
+  %25 = getelementptr inbounds i32, i32* %24, i64 %1
+  ret i32* %25
+}
+
+declare void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* sret, i8*, i32, %"class.logging::CheckOpResult"*) local_unnamed_addr #3
+
+declare i8* @_ZN7logging15CheckOpValueStrEm(i64) local_unnamed_addr #3
+
+declare void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"*, i8*, i8*, i8*) unnamed_addr #3
+
+; Function Attrs: nobuiltin nofree
+declare noalias nonnull i8* @_Znwm(i64) local_unnamed_addr #11
+
+declare void @_ZN2cc20FrameSequenceMetricsC1ENS_24FrameSequenceTrackerTypeEPNS_21ThroughputUkmReporterE(%"class.cc::FrameSequenceMetrics"*, i32, %"class.cc::ThroughputUkmReporter"*) unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZN2cc20FrameSequenceMetricsD1Ev(%"class.cc::FrameSequenceMetrics"*) unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"*, i64) local_unnamed_addr #1 comdat align 2 {
+  %3 = alloca %"class.logging::CheckOpResult", align 8
+  %4 = alloca %"class.logging::CheckOpResult", align 8
+  %5 = alloca %"class.logging::CheckError", align 8
+  %6 = bitcast %"class.logging::CheckOpResult"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %6) #15
+  %7 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %4, i64 0, i32 0
+  store i8* inttoptr (i64 -6148914691236517206 to i8*), i8** %7, align 8
+  %8 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %0, i64 0, i32 1
+  %9 = load i64, i64* %8, align 8
+  %10 = bitcast %"class.logging::CheckOpResult"* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %10)
+  %11 = icmp ult i64 %9, %1
+  br i1 %11, label %13, label %12
+
+12:                                               ; preds = %2
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* null, i8** %7, align 8
+  br label %22
+
+13:                                               ; preds = %2
+  %14 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 %1) #15
+  %15 = tail call i8* @_ZN7logging15CheckOpValueStrEm(i64 %9) #15
+  call void @_ZN7logging13CheckOpResultC1EPKcPcS3_(%"class.logging::CheckOpResult"* nonnull %3, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.19, i64 0, i64 0), i8* %14, i8* %15) #15
+  %16 = getelementptr inbounds %"class.logging::CheckOpResult", %"class.logging::CheckOpResult"* %3, i64 0, i32 0
+  %17 = load i8*, i8** %16, align 8
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %10)
+  store i8* %17, i8** %7, align 8
+  %18 = icmp eq i8* %17, null
+  br i1 %18, label %22, label %19
+
+19:                                               ; preds = %13
+  %20 = bitcast %"class.logging::CheckError"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %20) #15
+  call void @_ZN7logging10CheckError7CheckOpEPKciPNS_13CheckOpResultE(%"class.logging::CheckError"* nonnull sret %5, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.20, i64 0, i64 0), i32 84, %"class.logging::CheckOpResult"* nonnull %4) #15
+  %21 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %5) #15
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %5) #15
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %20) #15
+  br label %22
+
+22:                                               ; preds = %12, %13, %19
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %6) #15
+  %23 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %0, i64 0, i32 0
+  %24 = load i32*, i32** %23, align 8
+  %25 = getelementptr inbounds i32, i32* %24, i64 %1
+  ret i32* %25
+}
+
+; Function Attrs: nounwind
+declare void @free(i8* nocapture) local_unnamed_addr #4
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #2
+
+; Function Attrs: nounwind
+declare void @_ZN9protozero21ScatteredStreamWriterD1Ev(%"class.protozero::ScatteredStreamWriter"*) unnamed_addr #4
+
+; Function Attrs: nounwind
+declare void @_ZN9protozero19ScatteredHeapBufferD1Ev(%"class.protozero::ScatteredHeapBuffer"*) unnamed_addr #4
+
+; Function Attrs: nounwind
+declare void @_ZN9protozero12MessageArenaD1Ev(%"class.protozero::MessageArena"*) unnamed_addr #4
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden i32* @_ZNSt3__16vectorIjNS_9allocatorIjEEE7emplaceIJRKjEEENS_11__wrap_iterIPjEENS7_IPS5_EEDpOT_(%"class.std::__1::vector"*, i32*, i32* dereferenceable(4)) local_unnamed_addr #1 comdat align 2 {
+  %4 = ptrtoint i32* %1 to i64
+  %5 = alloca %"struct.std::__1::__split_buffer", align 8
+  %6 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 0
+  %7 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 1
+  %8 = load i32*, i32** %7, align 8
+  %9 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 2, i32 0, i32 0
+  %10 = load i32*, i32** %9, align 8
+  %11 = icmp ult i32* %8, %10
+  %12 = ptrtoint i32* %8 to i64
+  %13 = ptrtoint i32* %10 to i64
+  br i1 %11, label %14, label %158
+
+14:                                               ; preds = %3
+  %15 = icmp eq i32* %8, %1
+  %16 = load i32, i32* %2, align 4
+  br i1 %15, label %17, label %21
+
+17:                                               ; preds = %14
+  store i32 %16, i32* %1, align 4
+  %18 = getelementptr inbounds i32, i32* %1, i64 1
+  %19 = ptrtoint i32* %18 to i64
+  %20 = bitcast i32** %7 to i64*
+  store i64 %19, i64* %20, align 8
+  br label %301
+
+21:                                               ; preds = %14
+  %22 = getelementptr inbounds i32, i32* %1, i64 1
+  %23 = ptrtoint i32* %22 to i64
+  %24 = sub i64 %12, %23
+  %25 = ashr exact i64 %24, 2
+  %26 = getelementptr inbounds i32, i32* %1, i64 %25
+  %27 = bitcast i32** %7 to i64*
+  %28 = icmp ult i32* %26, %8
+  br i1 %28, label %29, label %142
+
+29:                                               ; preds = %21
+  %30 = sub nsw i64 0, %25
+  %31 = getelementptr i32, i32* %8, i64 %30
+  %32 = bitcast i32* %31 to i8*
+  %33 = xor i64 %4, -1
+  %34 = getelementptr i8, i8* %32, i64 %33
+  %35 = ptrtoint i8* %34 to i64
+  %36 = lshr i64 %35, 2
+  %37 = add nuw nsw i64 %36, 1
+  %38 = icmp ult i64 %37, 8
+  br i1 %38, label %39, label %42
+
+39:                                               ; preds = %137, %42, %29
+  %40 = phi i32* [ %8, %42 ], [ %8, %29 ], [ %60, %137 ]
+  %41 = phi i32* [ %26, %42 ], [ %26, %29 ], [ %61, %137 ]
+  br label %150
+
+42:                                               ; preds = %29
+  %43 = sub nsw i64 0, %25
+  %44 = getelementptr i32, i32* %8, i64 %43
+  %45 = bitcast i32* %44 to i8*
+  %46 = xor i64 %4, -1
+  %47 = getelementptr i8, i8* %45, i64 %46
+  %48 = ptrtoint i8* %47 to i64
+  %49 = lshr i64 %48, 2
+  %50 = add nuw nsw i64 %49, 1
+  %51 = getelementptr i32, i32* %8, i64 %50
+  %52 = add nsw i64 %25, %49
+  %53 = add i64 %52, 1
+  %54 = getelementptr i32, i32* %1, i64 %53
+  %55 = icmp ult i32* %8, %54
+  %56 = icmp ult i32* %26, %51
+  %57 = and i1 %55, %56
+  br i1 %57, label %39, label %58
+
+58:                                               ; preds = %42
+  %59 = and i64 %37, 9223372036854775800
+  %60 = getelementptr i32, i32* %8, i64 %59
+  %61 = getelementptr i32, i32* %26, i64 %59
+  %62 = add nsw i64 %59, -8
+  %63 = lshr exact i64 %62, 3
+  %64 = add nuw nsw i64 %63, 1
+  %65 = and i64 %64, 3
+  %66 = icmp ult i64 %62, 24
+  br i1 %66, label %118, label %67
+
+67:                                               ; preds = %58
+  %68 = sub nsw i64 %64, %65
+  br label %69
+
+69:                                               ; preds = %69, %67
+  %70 = phi i64 [ 0, %67 ], [ %115, %69 ]
+  %71 = phi i64 [ %68, %67 ], [ %116, %69 ]
+  %72 = getelementptr i32, i32* %8, i64 %70
+  %73 = getelementptr i32, i32* %26, i64 %70
+  %74 = bitcast i32* %73 to <4 x i32>*
+  %75 = load <4 x i32>, <4 x i32>* %74, align 4, !alias.scope !7
+  %76 = getelementptr i32, i32* %73, i64 4
+  %77 = bitcast i32* %76 to <4 x i32>*
+  %78 = load <4 x i32>, <4 x i32>* %77, align 4, !alias.scope !7
+  %79 = bitcast i32* %72 to <4 x i32>*
+  store <4 x i32> %75, <4 x i32>* %79, align 4, !alias.scope !10, !noalias !7
+  %80 = getelementptr i32, i32* %72, i64 4
+  %81 = bitcast i32* %80 to <4 x i32>*
+  store <4 x i32> %78, <4 x i32>* %81, align 4, !alias.scope !10, !noalias !7
+  %82 = or i64 %70, 8
+  %83 = getelementptr i32, i32* %8, i64 %82
+  %84 = getelementptr i32, i32* %26, i64 %82
+  %85 = bitcast i32* %84 to <4 x i32>*
+  %86 = load <4 x i32>, <4 x i32>* %85, align 4, !alias.scope !7
+  %87 = getelementptr i32, i32* %84, i64 4
+  %88 = bitcast i32* %87 to <4 x i32>*
+  %89 = load <4 x i32>, <4 x i32>* %88, align 4, !alias.scope !7
+  %90 = bitcast i32* %83 to <4 x i32>*
+  store <4 x i32> %86, <4 x i32>* %90, align 4, !alias.scope !10, !noalias !7
+  %91 = getelementptr i32, i32* %83, i64 4
+  %92 = bitcast i32* %91 to <4 x i32>*
+  store <4 x i32> %89, <4 x i32>* %92, align 4, !alias.scope !10, !noalias !7
+  %93 = or i64 %70, 16
+  %94 = getelementptr i32, i32* %8, i64 %93
+  %95 = getelementptr i32, i32* %26, i64 %93
+  %96 = bitcast i32* %95 to <4 x i32>*
+  %97 = load <4 x i32>, <4 x i32>* %96, align 4, !alias.scope !7
+  %98 = getelementptr i32, i32* %95, i64 4
+  %99 = bitcast i32* %98 to <4 x i32>*
+  %100 = load <4 x i32>, <4 x i32>* %99, align 4, !alias.scope !7
+  %101 = bitcast i32* %94 to <4 x i32>*
+  store <4 x i32> %97, <4 x i32>* %101, align 4, !alias.scope !10, !noalias !7
+  %102 = getelementptr i32, i32* %94, i64 4
+  %103 = bitcast i32* %102 to <4 x i32>*
+  store <4 x i32> %100, <4 x i32>* %103, align 4, !alias.scope !10, !noalias !7
+  %104 = or i64 %70, 24
+  %105 = getelementptr i32, i32* %8, i64 %104
+  %106 = getelementptr i32, i32* %26, i64 %104
+  %107 = bitcast i32* %106 to <4 x i32>*
+  %108 = load <4 x i32>, <4 x i32>* %107, align 4, !alias.scope !7
+  %109 = getelementptr i32, i32* %106, i64 4
+  %110 = bitcast i32* %109 to <4 x i32>*
+  %111 = load <4 x i32>, <4 x i32>* %110, align 4, !alias.scope !7
+  %112 = bitcast i32* %105 to <4 x i32>*
+  store <4 x i32> %108, <4 x i32>* %112, align 4, !alias.scope !10, !noalias !7
+  %113 = getelementptr i32, i32* %105, i64 4
+  %114 = bitcast i32* %113 to <4 x i32>*
+  store <4 x i32> %111, <4 x i32>* %114, align 4, !alias.scope !10, !noalias !7
+  %115 = add i64 %70, 32
+  %116 = add i64 %71, -4
+  %117 = icmp eq i64 %116, 0
+  br i1 %117, label %118, label %69, !llvm.loop !12
+
+118:                                              ; preds = %69, %58
+  %119 = phi i64 [ 0, %58 ], [ %115, %69 ]
+  %120 = icmp eq i64 %65, 0
+  br i1 %120, label %137, label %121
+
+121:                                              ; preds = %118, %121
+  %122 = phi i64 [ %134, %121 ], [ %119, %118 ]
+  %123 = phi i64 [ %135, %121 ], [ %65, %118 ]
+  %124 = getelementptr i32, i32* %8, i64 %122
+  %125 = getelementptr i32, i32* %26, i64 %122
+  %126 = bitcast i32* %125 to <4 x i32>*
+  %127 = load <4 x i32>, <4 x i32>* %126, align 4, !alias.scope !7
+  %128 = getelementptr i32, i32* %125, i64 4
+  %129 = bitcast i32* %128 to <4 x i32>*
+  %130 = load <4 x i32>, <4 x i32>* %129, align 4, !alias.scope !7
+  %131 = bitcast i32* %124 to <4 x i32>*
+  store <4 x i32> %127, <4 x i32>* %131, align 4, !alias.scope !10, !noalias !7
+  %132 = getelementptr i32, i32* %124, i64 4
+  %133 = bitcast i32* %132 to <4 x i32>*
+  store <4 x i32> %130, <4 x i32>* %133, align 4, !alias.scope !10, !noalias !7
+  %134 = add i64 %122, 8
+  %135 = add i64 %123, -1
+  %136 = icmp eq i64 %135, 0
+  br i1 %136, label %137, label %121, !llvm.loop !14
+
+137:                                              ; preds = %121, %118
+  %138 = icmp eq i64 %37, %59
+  br i1 %138, label %139, label %39
+
+139:                                              ; preds = %150, %137
+  %140 = phi i32* [ %60, %137 ], [ %155, %150 ]
+  %141 = ptrtoint i32* %140 to i64
+  br label %142
+
+142:                                              ; preds = %139, %21
+  %143 = phi i64 [ %141, %139 ], [ %12, %21 ]
+  store i64 %143, i64* %27, align 8
+  %144 = icmp eq i64 %24, 0
+  br i1 %144, label %157, label %145
+
+145:                                              ; preds = %142
+  %146 = sub nsw i64 0, %25
+  %147 = getelementptr inbounds i32, i32* %8, i64 %146
+  %148 = bitcast i32* %147 to i8*
+  %149 = bitcast i32* %1 to i8*
+  tail call void @llvm.memmove.p0i8.p0i8.i64(i8* align 4 %148, i8* align 4 %149, i64 %24, i1 false) #15
+  br label %157
+
+150:                                              ; preds = %39, %150
+  %151 = phi i32* [ %155, %150 ], [ %40, %39 ]
+  %152 = phi i32* [ %154, %150 ], [ %41, %39 ]
+  %153 = load i32, i32* %152, align 4
+  store i32 %153, i32* %151, align 4
+  %154 = getelementptr inbounds i32, i32* %152, i64 1
+  %155 = getelementptr inbounds i32, i32* %151, i64 1
+  %156 = icmp ult i32* %154, %8
+  br i1 %156, label %150, label %139, !llvm.loop !15
+
+157:                                              ; preds = %142, %145
+  store i32 %16, i32* %1, align 4
+  br label %301
+
+158:                                              ; preds = %3
+  %159 = getelementptr inbounds %"class.std::__1::vector", %"class.std::__1::vector"* %0, i64 0, i32 0, i32 2
+  %160 = bitcast %"struct.std::__1::__split_buffer"* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 40, i8* nonnull %160) #15
+  %161 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %5, i64 0, i32 0
+  %162 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %5, i64 0, i32 1
+  %163 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %5, i64 0, i32 2
+  %164 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %5, i64 0, i32 3, i32 0, i32 0
+  %165 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %5, i64 0, i32 3, i32 1, i32 0
+  %166 = bitcast i32** %7 to i64*
+  %167 = bitcast %"class.std::__1::vector"* %0 to i64*
+  %168 = bitcast %"struct.std::__1::__split_buffer"* %5 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %168, i8 -86, i64 40, i1 false)
+  %169 = load i64, i64* %167, align 8
+  %170 = sub i64 %12, %169
+  %171 = ashr exact i64 %170, 2
+  %172 = add nsw i64 %171, 1
+  %173 = icmp ugt i64 %172, 4611686018427387903
+  br i1 %173, label %174, label %176
+
+174:                                              ; preds = %158
+  %175 = bitcast %"class.std::__1::vector"* %0 to %"class.std::__1::__vector_base_common"*
+  tail call void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"* %175) #17
+  unreachable
+
+176:                                              ; preds = %158
+  %177 = bitcast i32** %9 to i64*
+  %178 = sub i64 %13, %169
+  %179 = ashr exact i64 %178, 2
+  %180 = icmp ult i64 %179, 2305843009213693951
+  br i1 %180, label %185, label %181
+
+181:                                              ; preds = %176
+  %182 = sub i64 %4, %169
+  %183 = ashr exact i64 %182, 2
+  store i32* null, i32** %164, align 8
+  %184 = bitcast %"class.std::__1::allocator"** %165 to %"class.std::__1::__compressed_pair.8"**
+  store %"class.std::__1::__compressed_pair.8"* %159, %"class.std::__1::__compressed_pair.8"** %184, align 8
+  br label %196
+
+185:                                              ; preds = %176
+  %186 = ashr exact i64 %178, 1
+  %187 = icmp ult i64 %186, %172
+  %188 = select i1 %187, i64 %172, i64 %186
+  %189 = sub i64 %4, %169
+  %190 = ashr exact i64 %189, 2
+  store i32* null, i32** %164, align 8
+  %191 = bitcast %"class.std::__1::allocator"** %165 to %"class.std::__1::__compressed_pair.8"**
+  store %"class.std::__1::__compressed_pair.8"* %159, %"class.std::__1::__compressed_pair.8"** %191, align 8
+  %192 = icmp eq i64 %188, 0
+  br i1 %192, label %202, label %193
+
+193:                                              ; preds = %185
+  %194 = icmp ugt i64 %188, 4611686018427387903
+  br i1 %194, label %195, label %196
+
+195:                                              ; preds = %193
+  tail call void @abort() #17
+  unreachable
+
+196:                                              ; preds = %181, %193
+  %197 = phi i64 [ 4611686018427387903, %181 ], [ %188, %193 ]
+  %198 = phi i64 [ %183, %181 ], [ %190, %193 ]
+  %199 = shl i64 %197, 2
+  %200 = tail call i8* @_Znwm(i64 %199) #16
+  %201 = bitcast i8* %200 to i32*
+  br label %202
+
+202:                                              ; preds = %185, %196
+  %203 = phi i64 [ %198, %196 ], [ %190, %185 ]
+  %204 = phi i64 [ %197, %196 ], [ 0, %185 ]
+  %205 = phi i32* [ %201, %196 ], [ null, %185 ]
+  store i32* %205, i32** %161, align 8
+  %206 = getelementptr inbounds i32, i32* %205, i64 %203
+  store i32* %206, i32** %163, align 8
+  store i32* %206, i32** %162, align 8
+  %207 = getelementptr inbounds i32, i32* %205, i64 %204
+  store i32* %207, i32** %164, align 8
+  call void @_ZNSt3__114__split_bufferIjRNS_9allocatorIjEEE12emplace_backIJRKjEEEvDpOT_(%"struct.std::__1::__split_buffer"* nonnull %5, i32* dereferenceable(4) %2)
+  %208 = load i32*, i32** %162, align 8
+  %209 = load i32*, i32** %6, align 8
+  %210 = ptrtoint i32* %209 to i64
+  %211 = sub i64 %4, %210
+  %212 = ashr exact i64 %211, 2
+  %213 = sub nsw i64 0, %212
+  %214 = getelementptr inbounds i32, i32* %208, i64 %213
+  store i32* %214, i32** %162, align 8
+  %215 = icmp sgt i64 %211, 0
+  br i1 %215, label %216, label %219
+
+216:                                              ; preds = %202
+  %217 = bitcast i32* %214 to i8*
+  %218 = bitcast i32* %209 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %217, i8* align 4 %218, i64 %211, i1 false) #15
+  br label %219
+
+219:                                              ; preds = %216, %202
+  %220 = load i32*, i32** %7, align 8
+  %221 = icmp eq i32* %220, %1
+  br i1 %221, label %222, label %226
+
+222:                                              ; preds = %219
+  %223 = ptrtoint i32* %220 to i64
+  %224 = bitcast i32** %163 to i64*
+  %225 = load i64, i64* %224, align 8
+  br label %275
+
+226:                                              ; preds = %219
+  %227 = load i32*, i32** %163, align 8
+  %228 = getelementptr i32, i32* %220, i64 -1
+  %229 = ptrtoint i32* %228 to i64
+  %230 = sub i64 %229, %4
+  %231 = lshr i64 %230, 2
+  %232 = add nuw nsw i64 %231, 1
+  %233 = and i64 %232, 3
+  %234 = icmp eq i64 %233, 0
+  br i1 %234, label %245, label %235
+
+235:                                              ; preds = %226, %235
+  %236 = phi i32* [ %242, %235 ], [ %227, %226 ]
+  %237 = phi i32* [ %240, %235 ], [ %1, %226 ]
+  %238 = phi i64 [ %243, %235 ], [ %233, %226 ]
+  %239 = load i32, i32* %237, align 4
+  store i32 %239, i32* %236, align 4
+  %240 = getelementptr inbounds i32, i32* %237, i64 1
+  %241 = load i32*, i32** %163, align 8
+  %242 = getelementptr inbounds i32, i32* %241, i64 1
+  store i32* %242, i32** %163, align 8
+  %243 = add i64 %238, -1
+  %244 = icmp eq i64 %243, 0
+  br i1 %244, label %245, label %235, !llvm.loop !16
+
+245:                                              ; preds = %235, %226
+  %246 = phi i32* [ undef, %226 ], [ %242, %235 ]
+  %247 = phi i32* [ %227, %226 ], [ %242, %235 ]
+  %248 = phi i32* [ %1, %226 ], [ %240, %235 ]
+  %249 = icmp ult i64 %230, 12
+  br i1 %249, label %270, label %250
+
+250:                                              ; preds = %245, %250
+  %251 = phi i32* [ %268, %250 ], [ %247, %245 ]
+  %252 = phi i32* [ %266, %250 ], [ %248, %245 ]
+  %253 = load i32, i32* %252, align 4
+  store i32 %253, i32* %251, align 4
+  %254 = getelementptr inbounds i32, i32* %252, i64 1
+  %255 = load i32*, i32** %163, align 8
+  %256 = getelementptr inbounds i32, i32* %255, i64 1
+  store i32* %256, i32** %163, align 8
+  %257 = load i32, i32* %254, align 4
+  store i32 %257, i32* %256, align 4
+  %258 = getelementptr inbounds i32, i32* %252, i64 2
+  %259 = load i32*, i32** %163, align 8
+  %260 = getelementptr inbounds i32, i32* %259, i64 1
+  store i32* %260, i32** %163, align 8
+  %261 = load i32, i32* %258, align 4
+  store i32 %261, i32* %260, align 4
+  %262 = getelementptr inbounds i32, i32* %252, i64 3
+  %263 = load i32*, i32** %163, align 8
+  %264 = getelementptr inbounds i32, i32* %263, i64 1
+  store i32* %264, i32** %163, align 8
+  %265 = load i32, i32* %262, align 4
+  store i32 %265, i32* %264, align 4
+  %266 = getelementptr inbounds i32, i32* %252, i64 4
+  %267 = load i32*, i32** %163, align 8
+  %268 = getelementptr inbounds i32, i32* %267, i64 1
+  store i32* %268, i32** %163, align 8
+  %269 = icmp eq i32* %266, %220
+  br i1 %269, label %270, label %250
+
+270:                                              ; preds = %250, %245
+  %271 = phi i32* [ %246, %245 ], [ %268, %250 ]
+  %272 = ptrtoint i32* %271 to i64
+  %273 = load i64, i64* %166, align 8
+  %274 = bitcast i32** %163 to i64*
+  br label %275
+
+275:                                              ; preds = %222, %270
+  %276 = phi i64* [ %224, %222 ], [ %274, %270 ]
+  %277 = phi i64 [ %225, %222 ], [ %272, %270 ]
+  %278 = phi i64 [ %223, %222 ], [ %273, %270 ]
+  %279 = load i64, i64* %167, align 8
+  %280 = bitcast i32** %162 to i64*
+  %281 = load i64, i64* %280, align 8
+  store i64 %281, i64* %167, align 8
+  store i64 %279, i64* %280, align 8
+  store i64 %277, i64* %166, align 8
+  store i64 %278, i64* %276, align 8
+  %282 = load i64, i64* %177, align 8
+  %283 = bitcast i32** %164 to i64*
+  %284 = load i64, i64* %283, align 8
+  store i64 %284, i64* %177, align 8
+  store i64 %282, i64* %283, align 8
+  %285 = bitcast %"struct.std::__1::__split_buffer"* %5 to i64*
+  store i64 %279, i64* %285, align 8
+  %286 = inttoptr i64 %279 to i32*
+  %287 = inttoptr i64 %278 to i32*
+  %288 = icmp eq i32* %287, %286
+  br i1 %288, label %296, label %289
+
+289:                                              ; preds = %275
+  %290 = getelementptr i32, i32* %287, i64 -1
+  %291 = ptrtoint i32* %290 to i64
+  %292 = sub i64 %291, %279
+  %293 = lshr i64 %292, 2
+  %294 = xor i64 %293, -1
+  %295 = getelementptr i32, i32* %287, i64 %294
+  store i32* %295, i32** %163, align 8
+  br label %296
+
+296:                                              ; preds = %289, %275
+  %297 = icmp eq i64 %279, 0
+  br i1 %297, label %300, label %298
+
+298:                                              ; preds = %296
+  %299 = inttoptr i64 %279 to i8*
+  call void @_ZdlPv(i8* %299) #16
+  br label %300
+
+300:                                              ; preds = %296, %298
+  call void @llvm.lifetime.end.p0i8(i64 40, i8* nonnull %160) #15
+  br label %301
+
+301:                                              ; preds = %17, %157, %300
+  %302 = phi i32* [ %1, %17 ], [ %1, %157 ], [ %208, %300 ]
+  ret i32* %302
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZNSt3__114__split_bufferIjRNS_9allocatorIjEEE12emplace_backIJRKjEEEvDpOT_(%"struct.std::__1::__split_buffer"*, i32* dereferenceable(4)) local_unnamed_addr #1 comdat align 2 {
+  %3 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %0, i64 0, i32 2
+  %4 = load i32*, i32** %3, align 8
+  %5 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %0, i64 0, i32 3, i32 0, i32 0
+  %6 = load i32*, i32** %5, align 8
+  %7 = icmp eq i32* %4, %6
+  %8 = ptrtoint i32* %6 to i64
+  br i1 %7, label %9, label %229
+
+9:                                                ; preds = %2
+  %10 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %0, i64 0, i32 1
+  %11 = load i32*, i32** %10, align 8
+  %12 = bitcast i32* %11 to i8*
+  %13 = getelementptr inbounds %"struct.std::__1::__split_buffer", %"struct.std::__1::__split_buffer"* %0, i64 0, i32 0
+  %14 = load i32*, i32** %13, align 8
+  %15 = icmp ugt i32* %11, %14
+  %16 = ptrtoint i32* %14 to i64
+  br i1 %15, label %17, label %35
+
+17:                                               ; preds = %9
+  %18 = ptrtoint i32* %11 to i64
+  %19 = sub i64 %18, %16
+  %20 = ashr exact i64 %19, 2
+  %21 = add nsw i64 %20, 1
+  %22 = sdiv i64 %21, -2
+  %23 = getelementptr inbounds i32, i32* %11, i64 %22
+  %24 = ptrtoint i32* %4 to i64
+  %25 = sub i64 %24, %18
+  %26 = ashr exact i64 %25, 2
+  %27 = icmp eq i64 %25, 0
+  br i1 %27, label %31, label %28
+
+28:                                               ; preds = %17
+  %29 = bitcast i32* %23 to i8*
+  tail call void @llvm.memmove.p0i8.p0i8.i64(i8* align 4 %29, i8* align 4 %12, i64 %25, i1 false) #15
+  %30 = load i32*, i32** %10, align 8
+  br label %31
+
+31:                                               ; preds = %17, %28
+  %32 = phi i32* [ %11, %17 ], [ %30, %28 ]
+  %33 = getelementptr inbounds i32, i32* %23, i64 %26
+  store i32* %33, i32** %3, align 8
+  %34 = getelementptr inbounds i32, i32* %32, i64 %22
+  store i32* %34, i32** %10, align 8
+  br label %229
+
+35:                                               ; preds = %9
+  %36 = bitcast i32** %5 to i64*
+  %37 = bitcast %"struct.std::__1::__split_buffer"* %0 to i64*
+  %38 = sub i64 %8, %16
+  %39 = ashr exact i64 %38, 1
+  %40 = icmp eq i64 %38, 0
+  %41 = select i1 %40, i64 1, i64 %39
+  %42 = icmp ugt i64 %41, 4611686018427387903
+  br i1 %42, label %43, label %44
+
+43:                                               ; preds = %35
+  tail call void @abort() #17
+  unreachable
+
+44:                                               ; preds = %35
+  %45 = lshr i64 %41, 2
+  %46 = shl i64 %41, 2
+  %47 = tail call i8* @_Znwm(i64 %46) #16
+  %48 = bitcast i8* %47 to i32*
+  %49 = ptrtoint i8* %47 to i64
+  %50 = getelementptr inbounds i32, i32* %48, i64 %45
+  %51 = ptrtoint i32* %50 to i64
+  %52 = getelementptr inbounds i32, i32* %48, i64 %41
+  %53 = ptrtoint i32* %52 to i64
+  %54 = ptrtoint i32* %11 to i64
+  %55 = ptrtoint i32* %4 to i64
+  %56 = sub i64 %55, %54
+  %57 = ashr exact i64 %56, 2
+  %58 = getelementptr inbounds i32, i32* %50, i64 %57
+  %59 = icmp eq i64 %56, 0
+  br i1 %59, label %219, label %60
+
+60:                                               ; preds = %44
+  %61 = add i64 %56, -4
+  %62 = lshr i64 %61, 2
+  %63 = add nuw nsw i64 %62, 1
+  %64 = icmp ult i64 %63, 8
+  br i1 %64, label %161, label %65
+
+65:                                               ; preds = %60
+  %66 = and i64 %41, -4
+  %67 = getelementptr i8, i8* %47, i64 %66
+  %68 = add i64 %56, -4
+  %69 = lshr i64 %68, 2
+  %70 = and i64 %68, -4
+  %71 = add i64 %66, %70
+  %72 = add i64 %71, 4
+  %73 = getelementptr i8, i8* %47, i64 %72
+  %74 = add nuw nsw i64 %69, 1
+  %75 = getelementptr i32, i32* %11, i64 %74
+  %76 = bitcast i32* %75 to i8*
+  %77 = icmp ult i8* %67, %76
+  %78 = icmp ugt i8* %73, %12
+  %79 = and i1 %77, %78
+  br i1 %79, label %161, label %80
+
+80:                                               ; preds = %65
+  %81 = and i64 %63, 9223372036854775800
+  %82 = getelementptr i32, i32* %50, i64 %81
+  %83 = getelementptr i32, i32* %11, i64 %81
+  %84 = add nsw i64 %81, -8
+  %85 = lshr exact i64 %84, 3
+  %86 = add nuw nsw i64 %85, 1
+  %87 = and i64 %86, 3
+  %88 = icmp ult i64 %84, 24
+  br i1 %88, label %140, label %89
+
+89:                                               ; preds = %80
+  %90 = sub nsw i64 %86, %87
+  br label %91
+
+91:                                               ; preds = %91, %89
+  %92 = phi i64 [ 0, %89 ], [ %137, %91 ]
+  %93 = phi i64 [ %90, %89 ], [ %138, %91 ]
+  %94 = getelementptr i32, i32* %50, i64 %92
+  %95 = getelementptr i32, i32* %11, i64 %92
+  %96 = bitcast i32* %95 to <4 x i32>*
+  %97 = load <4 x i32>, <4 x i32>* %96, align 4, !alias.scope !17
+  %98 = getelementptr i32, i32* %95, i64 4
+  %99 = bitcast i32* %98 to <4 x i32>*
+  %100 = load <4 x i32>, <4 x i32>* %99, align 4, !alias.scope !17
+  %101 = bitcast i32* %94 to <4 x i32>*
+  store <4 x i32> %97, <4 x i32>* %101, align 4, !alias.scope !20, !noalias !17
+  %102 = getelementptr i32, i32* %94, i64 4
+  %103 = bitcast i32* %102 to <4 x i32>*
+  store <4 x i32> %100, <4 x i32>* %103, align 4, !alias.scope !20, !noalias !17
+  %104 = or i64 %92, 8
+  %105 = getelementptr i32, i32* %50, i64 %104
+  %106 = getelementptr i32, i32* %11, i64 %104
+  %107 = bitcast i32* %106 to <4 x i32>*
+  %108 = load <4 x i32>, <4 x i32>* %107, align 4, !alias.scope !17
+  %109 = getelementptr i32, i32* %106, i64 4
+  %110 = bitcast i32* %109 to <4 x i32>*
+  %111 = load <4 x i32>, <4 x i32>* %110, align 4, !alias.scope !17
+  %112 = bitcast i32* %105 to <4 x i32>*
+  store <4 x i32> %108, <4 x i32>* %112, align 4, !alias.scope !20, !noalias !17
+  %113 = getelementptr i32, i32* %105, i64 4
+  %114 = bitcast i32* %113 to <4 x i32>*
+  store <4 x i32> %111, <4 x i32>* %114, align 4, !alias.scope !20, !noalias !17
+  %115 = or i64 %92, 16
+  %116 = getelementptr i32, i32* %50, i64 %115
+  %117 = getelementptr i32, i32* %11, i64 %115
+  %118 = bitcast i32* %117 to <4 x i32>*
+  %119 = load <4 x i32>, <4 x i32>* %118, align 4, !alias.scope !17
+  %120 = getelementptr i32, i32* %117, i64 4
+  %121 = bitcast i32* %120 to <4 x i32>*
+  %122 = load <4 x i32>, <4 x i32>* %121, align 4, !alias.scope !17
+  %123 = bitcast i32* %116 to <4 x i32>*
+  store <4 x i32> %119, <4 x i32>* %123, align 4, !alias.scope !20, !noalias !17
+  %124 = getelementptr i32, i32* %116, i64 4
+  %125 = bitcast i32* %124 to <4 x i32>*
+  store <4 x i32> %122, <4 x i32>* %125, align 4, !alias.scope !20, !noalias !17
+  %126 = or i64 %92, 24
+  %127 = getelementptr i32, i32* %50, i64 %126
+  %128 = getelementptr i32, i32* %11, i64 %126
+  %129 = bitcast i32* %128 to <4 x i32>*
+  %130 = load <4 x i32>, <4 x i32>* %129, align 4, !alias.scope !17
+  %131 = getelementptr i32, i32* %128, i64 4
+  %132 = bitcast i32* %131 to <4 x i32>*
+  %133 = load <4 x i32>, <4 x i32>* %132, align 4, !alias.scope !17
+  %134 = bitcast i32* %127 to <4 x i32>*
+  store <4 x i32> %130, <4 x i32>* %134, align 4, !alias.scope !20, !noalias !17
+  %135 = getelementptr i32, i32* %127, i64 4
+  %136 = bitcast i32* %135 to <4 x i32>*
+  store <4 x i32> %133, <4 x i32>* %136, align 4, !alias.scope !20, !noalias !17
+  %137 = add i64 %92, 32
+  %138 = add i64 %93, -4
+  %139 = icmp eq i64 %138, 0
+  br i1 %139, label %140, label %91, !llvm.loop !22
+
+140:                                              ; preds = %91, %80
+  %141 = phi i64 [ 0, %80 ], [ %137, %91 ]
+  %142 = icmp eq i64 %87, 0
+  br i1 %142, label %159, label %143
+
+143:                                              ; preds = %140, %143
+  %144 = phi i64 [ %156, %143 ], [ %141, %140 ]
+  %145 = phi i64 [ %157, %143 ], [ %87, %140 ]
+  %146 = getelementptr i32, i32* %50, i64 %144
+  %147 = getelementptr i32, i32* %11, i64 %144
+  %148 = bitcast i32* %147 to <4 x i32>*
+  %149 = load <4 x i32>, <4 x i32>* %148, align 4, !alias.scope !17
+  %150 = getelementptr i32, i32* %147, i64 4
+  %151 = bitcast i32* %150 to <4 x i32>*
+  %152 = load <4 x i32>, <4 x i32>* %151, align 4, !alias.scope !17
+  %153 = bitcast i32* %146 to <4 x i32>*
+  store <4 x i32> %149, <4 x i32>* %153, align 4, !alias.scope !20, !noalias !17
+  %154 = getelementptr i32, i32* %146, i64 4
+  %155 = bitcast i32* %154 to <4 x i32>*
+  store <4 x i32> %152, <4 x i32>* %155, align 4, !alias.scope !20, !noalias !17
+  %156 = add i64 %144, 8
+  %157 = add i64 %145, -1
+  %158 = icmp eq i64 %157, 0
+  br i1 %158, label %159, label %143, !llvm.loop !23
+
+159:                                              ; preds = %143, %140
+  %160 = icmp eq i64 %63, %81
+  br i1 %160, label %216, label %161
+
+161:                                              ; preds = %159, %65, %60
+  %162 = phi i32* [ %50, %65 ], [ %50, %60 ], [ %82, %159 ]
+  %163 = phi i32* [ %11, %65 ], [ %11, %60 ], [ %83, %159 ]
+  %164 = ptrtoint i32* %162 to i64
+  %165 = and i64 %41, -4
+  %166 = add i64 %56, %165
+  %167 = add i64 %166, -4
+  %168 = sub i64 %167, %164
+  %169 = getelementptr i8, i8* %47, i64 %168
+  %170 = ptrtoint i8* %169 to i64
+  %171 = lshr i64 %170, 2
+  %172 = add nuw nsw i64 %171, 1
+  %173 = and i64 %172, 7
+  %174 = icmp eq i64 %173, 0
+  br i1 %174, label %184, label %175
+
+175:                                              ; preds = %161, %175
+  %176 = phi i32* [ %180, %175 ], [ %162, %161 ]
+  %177 = phi i32* [ %181, %175 ], [ %163, %161 ]
+  %178 = phi i64 [ %182, %175 ], [ %173, %161 ]
+  %179 = load i32, i32* %177, align 4
+  store i32 %179, i32* %176, align 4
+  %180 = getelementptr inbounds i32, i32* %176, i64 1
+  %181 = getelementptr inbounds i32, i32* %177, i64 1
+  %182 = add i64 %178, -1
+  %183 = icmp eq i64 %182, 0
+  br i1 %183, label %184, label %175, !llvm.loop !24
+
+184:                                              ; preds = %175, %161
+  %185 = phi i32* [ %162, %161 ], [ %180, %175 ]
+  %186 = phi i32* [ %163, %161 ], [ %181, %175 ]
+  %187 = icmp ult i8* %169, inttoptr (i64 28 to i8*)
+  br i1 %187, label %216, label %188
+
+188:                                              ; preds = %184, %188
+  %189 = phi i32* [ %213, %188 ], [ %185, %184 ]
+  %190 = phi i32* [ %214, %188 ], [ %186, %184 ]
+  %191 = load i32, i32* %190, align 4
+  store i32 %191, i32* %189, align 4
+  %192 = getelementptr inbounds i32, i32* %189, i64 1
+  %193 = getelementptr inbounds i32, i32* %190, i64 1
+  %194 = load i32, i32* %193, align 4
+  store i32 %194, i32* %192, align 4
+  %195 = getelementptr inbounds i32, i32* %189, i64 2
+  %196 = getelementptr inbounds i32, i32* %190, i64 2
+  %197 = load i32, i32* %196, align 4
+  store i32 %197, i32* %195, align 4
+  %198 = getelementptr inbounds i32, i32* %189, i64 3
+  %199 = getelementptr inbounds i32, i32* %190, i64 3
+  %200 = load i32, i32* %199, align 4
+  store i32 %200, i32* %198, align 4
+  %201 = getelementptr inbounds i32, i32* %189, i64 4
+  %202 = getelementptr inbounds i32, i32* %190, i64 4
+  %203 = load i32, i32* %202, align 4
+  store i32 %203, i32* %201, align 4
+  %204 = getelementptr inbounds i32, i32* %189, i64 5
+  %205 = getelementptr inbounds i32, i32* %190, i64 5
+  %206 = load i32, i32* %205, align 4
+  store i32 %206, i32* %204, align 4
+  %207 = getelementptr inbounds i32, i32* %189, i64 6
+  %208 = getelementptr inbounds i32, i32* %190, i64 6
+  %209 = load i32, i32* %208, align 4
+  store i32 %209, i32* %207, align 4
+  %210 = getelementptr inbounds i32, i32* %189, i64 7
+  %211 = getelementptr inbounds i32, i32* %190, i64 7
+  %212 = load i32, i32* %211, align 4
+  store i32 %212, i32* %210, align 4
+  %213 = getelementptr inbounds i32, i32* %189, i64 8
+  %214 = getelementptr inbounds i32, i32* %190, i64 8
+  %215 = icmp eq i32* %58, %213
+  br i1 %215, label %216, label %188, !llvm.loop !25
+
+216:                                              ; preds = %184, %188, %159
+  %217 = ptrtoint i32* %58 to i64
+  %218 = load i32*, i32** %13, align 8
+  br label %219
+
+219:                                              ; preds = %44, %216
+  %220 = phi i32* [ %218, %216 ], [ %14, %44 ]
+  %221 = phi i64 [ %217, %216 ], [ %51, %44 ]
+  store i64 %49, i64* %37, align 8
+  %222 = bitcast i32** %10 to i64*
+  store i64 %51, i64* %222, align 8
+  %223 = bitcast i32** %3 to i64*
+  store i64 %221, i64* %223, align 8
+  store i64 %53, i64* %36, align 8
+  %224 = icmp eq i32* %220, null
+  %225 = inttoptr i64 %221 to i32*
+  br i1 %224, label %229, label %226
+
+226:                                              ; preds = %219
+  %227 = bitcast i32* %220 to i8*
+  tail call void @_ZdlPv(i8* %227) #16
+  %228 = load i32*, i32** %3, align 8
+  br label %229
+
+229:                                              ; preds = %226, %219, %31, %2
+  %230 = phi i32* [ %228, %226 ], [ %225, %219 ], [ %33, %31 ], [ %4, %2 ]
+  %231 = load i32, i32* %1, align 4
+  store i32 %231, i32* %230, align 4
+  %232 = load i32*, i32** %3, align 8
+  %233 = getelementptr inbounds i32, i32* %232, i64 1
+  store i32* %233, i32** %3, align 8
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memmove.p0i8.p0i8.i64(i8* nocapture, i8* nocapture readonly, i64, i1 immarg) #2
+
+; Function Attrs: noreturn
+declare void @_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv(%"class.std::__1::__vector_base_common"*) local_unnamed_addr #12
+
+; Function Attrs: noreturn nounwind
+declare void @abort() local_unnamed_addr #13
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base14circular_dequeIjE25ExpandCapacityIfNecessaryEm(%"class.base::circular_deque"*, i64) local_unnamed_addr #1 comdat align 2 {
+  %3 = alloca <2 x i64>, align 16
+  %4 = bitcast <2 x i64>* %3 to %"class.base::internal::VectorBuffer"*
+  %5 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 1
+  %6 = load i64, i64* %5, align 8
+  %7 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 2
+  %8 = load i64, i64* %7, align 8
+  %9 = icmp ult i64 %8, %6
+  br i1 %9, label %14, label %10
+
+10:                                               ; preds = %2
+  %11 = sub i64 %8, %6
+  %12 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0, i32 1
+  %13 = load i64, i64* %12, align 8
+  br label %19
+
+14:                                               ; preds = %2
+  %15 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0, i32 1
+  %16 = load i64, i64* %15, align 8
+  %17 = sub i64 %8, %6
+  %18 = add i64 %17, %16
+  br label %19
+
+19:                                               ; preds = %10, %14
+  %20 = phi i64 [ %13, %10 ], [ %16, %14 ]
+  %21 = phi i64 [ %11, %10 ], [ %18, %14 ]
+  %22 = add i64 %21, %1
+  %23 = icmp eq i64 %20, 0
+  %24 = add i64 %20, -1
+  %25 = select i1 %23, i64 0, i64 %24
+  %26 = icmp ult i64 %25, %22
+  br i1 %26, label %27, label %49
+
+27:                                               ; preds = %19
+  %28 = icmp ugt i64 %22, 3
+  %29 = select i1 %28, i64 %22, i64 3
+  %30 = lshr i64 %25, 2
+  %31 = add i64 %30, %25
+  %32 = icmp ult i64 %29, %31
+  %33 = select i1 %32, i64 %31, i64 %29
+  %34 = bitcast <2 x i64>* %3 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %34) #15
+  %35 = add i64 %33, 1
+  %36 = tail call { i64, i1 } @llvm.umul.with.overflow.i64(i64 %35, i64 4) #15
+  %37 = extractvalue { i64, i1 } %36, 1
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %34, i8 -86, i64 16, i1 false) #15
+  br i1 %37, label %38, label %39, !prof !2
+
+38:                                               ; preds = %27
+  tail call void @llvm.trap() #15
+  unreachable
+
+39:                                               ; preds = %27
+  %40 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %4, i64 0, i32 1
+  %41 = extractvalue { i64, i1 } %36, 0
+  %42 = tail call noalias i8* @malloc(i64 %41) #15
+  %43 = bitcast <2 x i64>* %3 to i8**
+  store i8* %42, i8** %43, align 16
+  store i64 %35, i64* %40, align 8
+  %44 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0
+  call void @_ZN4base14circular_dequeIjE10MoveBufferERNS_8internal12VectorBufferIjEEmmPS4_PmS7_(%"class.base::internal::VectorBuffer"* dereferenceable(16) %44, i64 %6, i64 %8, %"class.base::internal::VectorBuffer"* nonnull %4, i64* %5, i64* %7) #15
+  %45 = bitcast %"class.base::circular_deque"* %0 to i8**
+  %46 = load i8*, i8** %45, align 8
+  call void @free(i8* %46) #15
+  %47 = load <2 x i64>, <2 x i64>* %3, align 16
+  %48 = bitcast %"class.base::circular_deque"* %0 to <2 x i64>*
+  store <2 x i64> %47, <2 x i64>* %48, align 8
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %34) #15
+  br label %49
+
+49:                                               ; preds = %19, %39
+  ret void
+}
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base14circular_dequeIjE10MoveBufferERNS_8internal12VectorBufferIjEEmmPS4_PmS7_(%"class.base::internal::VectorBuffer"* dereferenceable(16), i64, i64, %"class.base::internal::VectorBuffer"*, i64*, i64*) local_unnamed_addr #1 comdat align 2 {
+  %7 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %0, i64 0, i32 1
+  %8 = load i64, i64* %7, align 8
+  store i64 0, i64* %4, align 8
+  %9 = icmp ugt i64 %2, %1
+  br i1 %9, label %10, label %16
+
+10:                                               ; preds = %6
+  %11 = tail call dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %0, i64 %1)
+  %12 = tail call dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %0, i64 %2)
+  %13 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %3, i64 0, i32 0
+  %14 = load i32*, i32** %13, align 8
+  tail call void @_ZN4base8internal12VectorBufferIjE9MoveRangeIjLi0EEEvPjS4_S4_(i32* %11, i32* %12, i32* %14)
+  %15 = sub i64 %2, %1
+  br label %28
+
+16:                                               ; preds = %6
+  %17 = icmp ult i64 %2, %1
+  br i1 %17, label %18, label %28
+
+18:                                               ; preds = %16
+  %19 = tail call dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %0, i64 %1)
+  %20 = tail call dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %0, i64 %8)
+  %21 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %3, i64 0, i32 0
+  %22 = load i32*, i32** %21, align 8
+  tail call void @_ZN4base8internal12VectorBufferIjE9MoveRangeIjLi0EEEvPjS4_S4_(i32* %19, i32* %20, i32* %22)
+  %23 = sub i64 %8, %1
+  %24 = tail call dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %0, i64 0)
+  %25 = tail call dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %0, i64 %2)
+  %26 = tail call dereferenceable(4) i32* @_ZN4base8internal12VectorBufferIjEixEm(%"class.base::internal::VectorBuffer"* %3, i64 %23)
+  tail call void @_ZN4base8internal12VectorBufferIjE9MoveRangeIjLi0EEEvPjS4_S4_(i32* %24, i32* %25, i32* %26)
+  %27 = add i64 %23, %2
+  br label %28
+
+28:                                               ; preds = %16, %18, %10
+  %29 = phi i64 [ %27, %18 ], [ %15, %10 ], [ 0, %16 ]
+  store i64 %29, i64* %5, align 8
+  ret void
+}
+
+; Function Attrs: nofree nounwind
+declare noalias i8* @malloc(i64) local_unnamed_addr #14
+
+; Function Attrs: nounwind readnone speculatable
+declare { i64, i1 } @llvm.umul.with.overflow.i64(i64, i64) #10
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base8internal12VectorBufferIjE9MoveRangeIjLi0EEEvPjS4_S4_(i32*, i32*, i32*) local_unnamed_addr #1 comdat align 2 {
+  %4 = alloca %"class.logging::CheckError", align 8
+  %5 = ptrtoint i32* %0 to i64
+  %6 = icmp ult i32* %2, %1
+  br i1 %6, label %7, label %41
+
+7:                                                ; preds = %3
+  %8 = ptrtoint i32* %2 to i64
+  %9 = ptrtoint i32* %1 to i64
+  %10 = tail call { i64, i1 } @llvm.usub.with.overflow.i64(i64 %9, i64 %5) #15
+  %11 = extractvalue { i64, i1 } %10, 1
+  %12 = extractvalue { i64, i1 } %10, 0
+  %13 = tail call { i64, i1 } @llvm.uadd.with.overflow.i64(i64 %8, i64 %12) #15
+  %14 = extractvalue { i64, i1 } %13, 1
+  %15 = or i1 %11, %14
+  br i1 %15, label %16, label %17, !prof !2
+
+16:                                               ; preds = %7
+  tail call void @llvm.trap() #15
+  unreachable
+
+17:                                               ; preds = %7
+  %18 = extractvalue { i64, i1 } %13, 0
+  %19 = icmp ugt i64 %18, %5
+  br i1 %19, label %20, label %46
+
+20:                                               ; preds = %17
+  %21 = bitcast %"class.logging::CheckError"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %21) #15
+  call void @_ZN7logging10CheckError5CheckEPKciS2_(%"class.logging::CheckError"* nonnull sret %4, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.20, i64 0, i64 0), i32 132, i8* getelementptr inbounds ([41 x i8], [41 x i8]* @.str.22, i64 0, i64 0)) #15
+  %22 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZN7logging10CheckError6streamEv(%"class.logging::CheckError"* nonnull %4) #15
+  %23 = bitcast %"class.std::__1::basic_ostream"* %22 to i8**
+  %24 = load i8*, i8** %23, align 8
+  %25 = getelementptr i8, i8* %24, i64 -24
+  %26 = bitcast i8* %25 to i64*
+  %27 = load i64, i64* %26, align 8
+  %28 = bitcast %"class.std::__1::basic_ostream"* %22 to i8*
+  %29 = getelementptr inbounds i8, i8* %28, i64 %27
+  %30 = getelementptr inbounds i8, i8* %29, i64 8
+  %31 = bitcast i8* %30 to i32*
+  %32 = load i32, i32* %31, align 8
+  %33 = and i32 %32, -75
+  %34 = or i32 %33, 8
+  store i32 %34, i32* %31, align 8
+  %35 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %22, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.23, i64 0, i64 0), i64 14) #15
+  %36 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEm(%"class.std::__1::basic_ostream"* %35, i64 %5) #15
+  %37 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %36, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.24, i64 0, i64 0), i64 14) #15
+  %38 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEm(%"class.std::__1::basic_ostream"* %37, i64 %9) #15
+  %39 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160) %38, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.25, i64 0, i64 0), i64 8) #15
+  %40 = call dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEm(%"class.std::__1::basic_ostream"* %39, i64 %8) #15
+  call void @_ZN7logging10CheckErrorD1Ev(%"class.logging::CheckError"* nonnull %4) #15
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %21) #15
+  br label %46
+
+41:                                               ; preds = %3
+  %42 = ptrtoint i32* %1 to i64
+  %43 = call { i64, i1 } @llvm.usub.with.overflow.i64(i64 %42, i64 %5) #15
+  %44 = extractvalue { i64, i1 } %43, 1
+  br i1 %44, label %45, label %46, !prof !2
+
+45:                                               ; preds = %41
+  call void @llvm.trap() #15
+  unreachable
+
+46:                                               ; preds = %20, %17, %41
+  %47 = phi { i64, i1 } [ %43, %41 ], [ %10, %17 ], [ %10, %20 ]
+  %48 = extractvalue { i64, i1 } %47, 0
+  %49 = bitcast i32* %0 to i8*
+  %50 = bitcast i32* %2 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %50, i8* align 4 %49, i64 %48, i1 false)
+  ret void
+}
+
+declare dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEm(%"class.std::__1::basic_ostream"*, i64) local_unnamed_addr #3
+
+; Function Attrs: nounwind readnone speculatable
+declare { i64, i1 } @llvm.uadd.with.overflow.i64(i64, i64) #10
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden dereferenceable(160) %"class.std::__1::basic_ostream"* @_ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m(%"class.std::__1::basic_ostream"* dereferenceable(160), i8*, i64) local_unnamed_addr #1 comdat {
+  %4 = alloca %"class.std::__1::locale", align 8
+  %5 = alloca %"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry", align 8
+  %6 = getelementptr inbounds %"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry", %"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry"* %5, i64 0, i32 0
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %6) #15
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %6, i8 -86, i64 16, i1 false)
+  call void @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryC1ERS3_(%"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry"* nonnull %5, %"class.std::__1::basic_ostream"* dereferenceable(160) %0) #15
+  %7 = load i8, i8* %6, align 8, !range !4
+  %8 = icmp eq i8 %7, 0
+  br i1 %8, label %58, label %9
+
+9:                                                ; preds = %3
+  %10 = bitcast %"class.std::__1::basic_ostream"* %0 to i8**
+  %11 = load i8*, i8** %10, align 8
+  %12 = getelementptr i8, i8* %11, i64 -24
+  %13 = bitcast i8* %12 to i64*
+  %14 = load i64, i64* %13, align 8
+  %15 = bitcast %"class.std::__1::basic_ostream"* %0 to i8*
+  %16 = getelementptr inbounds i8, i8* %15, i64 %14
+  %17 = getelementptr inbounds i8, i8* %16, i64 40
+  %18 = bitcast i8* %17 to %"class.std::__1::basic_streambuf"**
+  %19 = load %"class.std::__1::basic_streambuf"*, %"class.std::__1::basic_streambuf"** %18, align 8
+  %20 = bitcast i8* %16 to %"class.std::__1::ios_base"*
+  %21 = getelementptr inbounds i8, i8* %16, i64 8
+  %22 = bitcast i8* %21 to i32*
+  %23 = load i32, i32* %22, align 8
+  %24 = and i32 %23, 176
+  %25 = icmp eq i32 %24, 32
+  %26 = getelementptr inbounds i8, i8* %1, i64 %2
+  %27 = select i1 %25, i8* %26, i8* %1
+  %28 = getelementptr inbounds i8, i8* %16, i64 144
+  %29 = bitcast i8* %28 to i32*
+  %30 = load i32, i32* %29, align 8
+  %31 = icmp eq i32 %30, -1
+  br i1 %31, label %32, label %42
+
+32:                                               ; preds = %9
+  %33 = bitcast %"class.std::__1::locale"* %4 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %33) #15
+  call void @_ZNKSt3__18ios_base6getlocEv(%"class.std::__1::locale"* nonnull sret %4, %"class.std::__1::ios_base"* %20) #15
+  %34 = call %"class.std::__1::locale::facet"* @_ZNKSt3__16locale9use_facetERNS0_2idE(%"class.std::__1::locale"* nonnull %4, %"class.std::__1::locale::id"* nonnull dereferenceable(16) @_ZNSt3__15ctypeIcE2idE) #15
+  %35 = bitcast %"class.std::__1::locale::facet"* %34 to %"class.std::__1::ctype"*
+  %36 = bitcast %"class.std::__1::locale::facet"* %34 to i8 (%"class.std::__1::ctype"*, i8)***
+  %37 = load i8 (%"class.std::__1::ctype"*, i8)**, i8 (%"class.std::__1::ctype"*, i8)*** %36, align 8
+  %38 = getelementptr inbounds i8 (%"class.std::__1::ctype"*, i8)*, i8 (%"class.std::__1::ctype"*, i8)** %37, i64 7
+  %39 = load i8 (%"class.std::__1::ctype"*, i8)*, i8 (%"class.std::__1::ctype"*, i8)** %38, align 8
+  %40 = call signext i8 %39(%"class.std::__1::ctype"* %35, i8 signext 32) #15
+  call void @_ZNSt3__16localeD1Ev(%"class.std::__1::locale"* nonnull %4) #15
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %33) #15
+  %41 = sext i8 %40 to i32
+  store i32 %41, i32* %29, align 8
+  br label %42
+
+42:                                               ; preds = %9, %32
+  %43 = phi i32 [ %41, %32 ], [ %30, %9 ]
+  %44 = trunc i32 %43 to i8
+  %45 = call %"class.std::__1::basic_streambuf"* @_ZNSt3__116__pad_and_outputIcNS_11char_traitsIcEEEENS_19ostreambuf_iteratorIT_T0_EES6_PKS4_S8_S8_RNS_8ios_baseES4_(%"class.std::__1::basic_streambuf"* %19, i8* %1, i8* %27, i8* %26, %"class.std::__1::ios_base"* dereferenceable(136) %20, i8 signext %44)
+  %46 = icmp eq %"class.std::__1::basic_streambuf"* %45, null
+  br i1 %46, label %47, label %58
+
+47:                                               ; preds = %42
+  %48 = load i8*, i8** %10, align 8
+  %49 = getelementptr i8, i8* %48, i64 -24
+  %50 = bitcast i8* %49 to i64*
+  %51 = load i64, i64* %50, align 8
+  %52 = getelementptr inbounds i8, i8* %15, i64 %51
+  %53 = bitcast i8* %52 to %"class.std::__1::ios_base"*
+  %54 = getelementptr inbounds i8, i8* %52, i64 32
+  %55 = bitcast i8* %54 to i32*
+  %56 = load i32, i32* %55, align 8
+  %57 = or i32 %56, 5
+  call void @_ZNSt3__18ios_base5clearEj(%"class.std::__1::ios_base"* %53, i32 %57) #15
+  br label %58
+
+58:                                               ; preds = %3, %42, %47
+  call void @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryD1Ev(%"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry"* nonnull %5) #15
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %6) #15
+  ret %"class.std::__1::basic_ostream"* %0
+}
+
+declare void @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryC1ERS3_(%"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry"*, %"class.std::__1::basic_ostream"* dereferenceable(160)) unnamed_addr #3
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden %"class.std::__1::basic_streambuf"* @_ZNSt3__116__pad_and_outputIcNS_11char_traitsIcEEEENS_19ostreambuf_iteratorIT_T0_EES6_PKS4_S8_S8_RNS_8ios_baseES4_(%"class.std::__1::basic_streambuf"*, i8*, i8*, i8*, %"class.std::__1::ios_base"* dereferenceable(136), i8 signext) local_unnamed_addr #1 comdat {
+  %7 = alloca %"class.std::__1::basic_string", align 8
+  %8 = icmp eq %"class.std::__1::basic_streambuf"* %0, null
+  br i1 %8, label %78, label %9
+
+9:                                                ; preds = %6
+  %10 = ptrtoint i8* %3 to i64
+  %11 = ptrtoint i8* %1 to i64
+  %12 = sub i64 %10, %11
+  %13 = getelementptr inbounds %"class.std::__1::ios_base", %"class.std::__1::ios_base"* %4, i64 0, i32 3
+  %14 = load i64, i64* %13, align 8
+  %15 = icmp sgt i64 %14, %12
+  %16 = sub nsw i64 %14, %12
+  %17 = select i1 %15, i64 %16, i64 0
+  %18 = ptrtoint i8* %2 to i64
+  %19 = sub i64 %18, %11
+  %20 = icmp sgt i64 %19, 0
+  br i1 %20, label %21, label %28
+
+21:                                               ; preds = %9
+  %22 = bitcast %"class.std::__1::basic_streambuf"* %0 to i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)***
+  %23 = load i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)**, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*** %22, align 8
+  %24 = getelementptr inbounds i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)** %23, i64 12
+  %25 = load i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)** %24, align 8
+  %26 = tail call i64 %25(%"class.std::__1::basic_streambuf"* nonnull %0, i8* %1, i64 %19) #15
+  %27 = icmp eq i64 %26, %19
+  br i1 %27, label %28, label %78
+
+28:                                               ; preds = %21, %9
+  %29 = icmp sgt i64 %17, 0
+  br i1 %29, label %30, label %67
+
+30:                                               ; preds = %28
+  %31 = bitcast %"class.std::__1::basic_string"* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 24, i8* nonnull %31) #15
+  %32 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %7, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0
+  %33 = icmp ult i64 %17, 23
+  %34 = bitcast %"class.std::__1::basic_string"* %7 to i8*
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 8 %34, i8 -86, i64 24, i1 false)
+  br i1 %33, label %43, label %35
+
+35:                                               ; preds = %30
+  %36 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %7, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 2
+  %37 = getelementptr inbounds %"class.std::__1::basic_string", %"class.std::__1::basic_string"* %7, i64 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1
+  %38 = add nuw i64 %17, 16
+  %39 = and i64 %38, -16
+  %40 = tail call i8* @_Znwm(i64 %39) #16
+  store i8* %40, i8** %32, align 8
+  %41 = or i64 %39, -9223372036854775808
+  store i64 %41, i64* %36, align 8
+  store i64 %17, i64* %37, align 8
+  %42 = bitcast %"class.std::__1::basic_string"* %7 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  br label %47
+
+43:                                               ; preds = %30
+  %44 = trunc i64 %17 to i8
+  %45 = bitcast %"class.std::__1::basic_string"* %7 to %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"*
+  %46 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %45, i64 0, i32 1, i32 0
+  store i8 %44, i8* %46, align 1
+  br label %47
+
+47:                                               ; preds = %35, %43
+  %48 = phi %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* [ %42, %35 ], [ %45, %43 ]
+  %49 = phi i8* [ %40, %35 ], [ %31, %43 ]
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 1 %49, i8 %5, i64 %17, i1 false) #15
+  %50 = getelementptr inbounds i8, i8* %49, i64 %17
+  store i8 0, i8* %50, align 1
+  %51 = getelementptr inbounds %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short", %"struct.std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__short"* %48, i64 0, i32 1, i32 0
+  %52 = load i8, i8* %51, align 1
+  %53 = icmp slt i8 %52, 0
+  %54 = load i8*, i8** %32, align 8
+  %55 = select i1 %53, i8* %54, i8* %31
+  %56 = bitcast %"class.std::__1::basic_streambuf"* %0 to i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)***
+  %57 = load i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)**, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*** %56, align 8
+  %58 = getelementptr inbounds i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)** %57, i64 12
+  %59 = load i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)** %58, align 8
+  %60 = call i64 %59(%"class.std::__1::basic_streambuf"* nonnull %0, i8* %55, i64 %17) #15
+  %61 = icmp eq i64 %60, %17
+  %62 = load i8, i8* %51, align 1
+  %63 = icmp slt i8 %62, 0
+  br i1 %63, label %64, label %66
+
+64:                                               ; preds = %47
+  %65 = load i8*, i8** %32, align 8
+  call void @_ZdlPv(i8* %65) #16
+  br label %66
+
+66:                                               ; preds = %47, %64
+  call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %31) #15
+  br i1 %61, label %67, label %78
+
+67:                                               ; preds = %66, %28
+  %68 = sub i64 %10, %18
+  %69 = icmp sgt i64 %68, 0
+  br i1 %69, label %70, label %77
+
+70:                                               ; preds = %67
+  %71 = bitcast %"class.std::__1::basic_streambuf"* %0 to i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)***
+  %72 = load i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)**, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*** %71, align 8
+  %73 = getelementptr inbounds i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)** %72, i64 12
+  %74 = load i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)*, i64 (%"class.std::__1::basic_streambuf"*, i8*, i64)** %73, align 8
+  %75 = call i64 %74(%"class.std::__1::basic_streambuf"* nonnull %0, i8* %2, i64 %68) #15
+  %76 = icmp eq i64 %75, %68
+  br i1 %76, label %77, label %78
+
+77:                                               ; preds = %70, %67
+  store i64 0, i64* %13, align 8
+  br label %78
+
+78:                                               ; preds = %77, %66, %21, %70, %6
+  %79 = phi %"class.std::__1::basic_streambuf"* [ null, %6 ], [ %0, %77 ], [ null, %66 ], [ null, %21 ], [ null, %70 ]
+  ret %"class.std::__1::basic_streambuf"* %79
+}
+
+; Function Attrs: nounwind
+declare void @_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryD1Ev(%"class.std::__1::basic_ostream<char, std::__1::char_traits<char> >::sentry"*) unnamed_addr #4
+
+declare void @_ZNKSt3__18ios_base6getlocEv(%"class.std::__1::locale"* sret, %"class.std::__1::ios_base"*) local_unnamed_addr #3
+
+; Function Attrs: nounwind
+declare void @_ZNSt3__16localeD1Ev(%"class.std::__1::locale"*) unnamed_addr #4
+
+declare %"class.std::__1::locale::facet"* @_ZNKSt3__16locale9use_facetERNS0_2idE(%"class.std::__1::locale"*, %"class.std::__1::locale::id"* dereferenceable(16)) local_unnamed_addr #3
+
+declare void @_ZNSt3__18ios_base5clearEj(%"class.std::__1::ios_base"*, i32) local_unnamed_addr #3
+
+; Function Attrs: nounwind readnone speculatable
+declare { i64, i1 } @llvm.usub.with.overflow.i64(i64, i64) #10
+
+; Function Attrs: nounwind ssp uwtable
+define linkonce_odr hidden void @_ZN4base14circular_dequeIjE25ShrinkCapacityIfNecessaryEv(%"class.base::circular_deque"*) local_unnamed_addr #1 comdat align 2 {
+  %2 = alloca <2 x i64>, align 16
+  %3 = bitcast <2 x i64>* %2 to %"class.base::internal::VectorBuffer"*
+  %4 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0, i32 1
+  %5 = load i64, i64* %4, align 8
+  %6 = icmp eq i64 %5, 0
+  %7 = add i64 %5, -1
+  %8 = select i1 %6, i64 0, i64 %7
+  %9 = icmp ult i64 %8, 4
+  br i1 %9, label %43, label %10
+
+10:                                               ; preds = %1
+  %11 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 1
+  %12 = load i64, i64* %11, align 8
+  %13 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 2
+  %14 = load i64, i64* %13, align 8
+  %15 = icmp ult i64 %14, %12
+  %16 = sub i64 %14, %12
+  %17 = select i1 %15, i64 %5, i64 0
+  %18 = add i64 %17, %16
+  %19 = sub i64 %8, %18
+  %20 = icmp ult i64 %19, %18
+  br i1 %20, label %43, label %21
+
+21:                                               ; preds = %10
+  %22 = lshr i64 %18, 2
+  %23 = add i64 %22, %18
+  %24 = icmp ugt i64 %23, 3
+  %25 = select i1 %24, i64 %23, i64 3
+  %26 = icmp ult i64 %25, %8
+  br i1 %26, label %27, label %43
+
+27:                                               ; preds = %21
+  %28 = bitcast <2 x i64>* %2 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %28) #15
+  %29 = add nuw i64 %25, 1
+  %30 = tail call { i64, i1 } @llvm.umul.with.overflow.i64(i64 %29, i64 4) #15
+  %31 = extractvalue { i64, i1 } %30, 1
+  call void @llvm.memset.p0i8.i64(i8* nonnull align 16 %28, i8 -86, i64 16, i1 false) #15
+  br i1 %31, label %32, label %33, !prof !2
+
+32:                                               ; preds = %27
+  tail call void @llvm.trap() #15
+  unreachable
+
+33:                                               ; preds = %27
+  %34 = getelementptr inbounds %"class.base::internal::VectorBuffer", %"class.base::internal::VectorBuffer"* %3, i64 0, i32 1
+  %35 = extractvalue { i64, i1 } %30, 0
+  %36 = tail call noalias i8* @malloc(i64 %35) #15
+  %37 = bitcast <2 x i64>* %2 to i8**
+  store i8* %36, i8** %37, align 16
+  store i64 %29, i64* %34, align 8
+  %38 = getelementptr inbounds %"class.base::circular_deque", %"class.base::circular_deque"* %0, i64 0, i32 0
+  call void @_ZN4base14circular_dequeIjE10MoveBufferERNS_8internal12VectorBufferIjEEmmPS4_PmS7_(%"class.base::internal::VectorBuffer"* dereferenceable(16) %38, i64 %12, i64 %14, %"class.base::internal::VectorBuffer"* nonnull %3, i64* %11, i64* %13) #15
+  %39 = bitcast %"class.base::circular_deque"* %0 to i8**
+  %40 = load i8*, i8** %39, align 8
+  call void @free(i8* %40) #15
+  %41 = load <2 x i64>, <2 x i64>* %2, align 16
+  %42 = bitcast %"class.base::circular_deque"* %0 to <2 x i64>*
+  store <2 x i64> %41, <2 x i64>* %42, align 8
+  call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %28) #15
+  br label %43
+
+43:                                               ; preds = %10, %33, %21, %1
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @llvm.assume(i1) #15
+
+attributes #0 = { norecurse nounwind readnone ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nofree norecurse nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { norecurse nounwind readonly ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { nofree norecurse nounwind ssp uwtable writeonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { nobuiltin nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #9 = { cold noreturn nounwind }
+attributes #10 = { nounwind readnone speculatable }
+attributes #11 = { nobuiltin nofree "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #12 = { noreturn "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #13 = { noreturn nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #14 = { nofree nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "null-pointer-is-valid"="true" "stack-protector-buffer-size"="4" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #15 = { nounwind }
+attributes #16 = { builtin nounwind }
+attributes #17 = { noreturn nounwind }
+
+!llvm.module.flags = !{!0, !1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{!"branch_weights", i32 1, i32 2000}
+!3 = !{!"branch_weights", i32 2000, i32 1}
+!4 = !{i8 0, i8 2}
+!5 = distinct !{!5, !6}
+!6 = !{!"llvm.loop.unroll.disable"}
+!7 = !{!8}
+!8 = distinct !{!8, !9}
+!9 = distinct !{!9, !"LVerDomain"}
+!10 = !{!11}
+!11 = distinct !{!11, !9}
+!12 = distinct !{!12, !13}
+!13 = !{!"llvm.loop.isvectorized", i32 1}
+!14 = distinct !{!14, !6}
+!15 = distinct !{!15, !13}
+!16 = distinct !{!16, !6}
+!17 = !{!18}
+!18 = distinct !{!18, !19}
+!19 = distinct !{!19, !"LVerDomain"}
+!20 = !{!21}
+!21 = distinct !{!21, !19}
+!22 = distinct !{!22, !13}
+!23 = distinct !{!23, !6}
+!24 = distinct !{!24, !6}
+!25 = distinct !{!25, !13}
